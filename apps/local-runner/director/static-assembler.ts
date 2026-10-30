@@ -34,7 +34,7 @@ export async function assembleStatic(args:{state:LoopState;maxTurns:number;timeM
   const construction=hasFrame&&context?.construction?{...context.construction,focus:'Continue the existing component. Apply the requested correction in the captured view; preserve the square composition, existing options and adaptive logic outside the necessary change. Then check the source. Do not restart square-first construction.'}:context?.construction;
   let text:string;try{text=await args.call(args.state,'files',context?.files,construction);}catch(error){if(!(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'))throw error;args.state.turn++;args.state.transcript.push({from:'tool',text:JSON.stringify({error:'OUTPUT_TOKEN_LIMIT',detail:OUTPUT_LIMIT_FEEDBACK})});await args.save(args.state);continue;}
   const first=args.state.turn===0;args.state.turn++;args.state.transcript.push({from:'agent',text});await args.save(args.state);
-  try{const parsed=reply.parse(JSON.parse(text));
+  try{const rawParsed=reply.parse(JSON.parse(text)),cleanPath=(p:string)=>p.trim().replace(/^\.\//,''),parsed={files:rawParsed.files.map(f=>({...f,path:cleanPath(f.path)})),edits:rawParsed.edits.map(e=>({...e,path:cleanPath(e.path)}))};
    if(parsed.edits.some(edit=>parsed.files.some(file=>file.path===edit.path)))throw new Error('Return either exact edits or a replacement for each file, not both. Nothing was written.');
    if(parsed.edits.length){
     const latest=await args.filesContext?.(args.state);

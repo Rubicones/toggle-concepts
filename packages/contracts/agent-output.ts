@@ -4,6 +4,27 @@ import {canonicalJson} from './common';
 import {resolveAgentRole} from './agent-role';
 import {bindVariantIdentities,expandProvidedManifest} from './variant-identities';
 export const OUTPUT_PROTOCOL_VERSION='agent-output-1.3';
+const deliverableAliases:Record<string,string[]>={research:['ledger','claims','claimsLedger','evidence'],strategy:['territories','strategicTerritories'],script:['directions','concepts','scenarios','scripts','storyboards'],localization:['copy','translations','localizedStrings','entries'],'visual-direction':['visualTreatments','directionTreatments','conceptTreatments']};
+const canonicalDeliverableKey:Record<string,string>={research:'evidenceLedger',strategy:'threeTerritories',script:'threeDirections',localization:'localizedCopy','visual-direction':'treatments'};
+const mapItemIdKey:Record<string,string>={research:'claimId',strategy:'territoryId',script:'conceptId'};
+function normalizeDeliverableShape(deliverable:Record<string,unknown>,role:string){
+ const target=canonicalDeliverableKey[role];if(!target)return {deliverable,changed:false};
+ const next={...deliverable};let changed=false;
+ if(!(target in next)){
+  const matches=(deliverableAliases[role]??[]).filter(k=>k in next&&next[k]!==undefined);
+  if(matches.length===1){next[target]=next[matches[0]];delete next[matches[0]];changed=true;}
+ }
+ const value=next[target];
+ if(['research','strategy','script'].includes(role)&&value&&typeof value==='object'&&!Array.isArray(value)){
+  const entries=Object.entries(value as Record<string,unknown>);
+  if(entries.length&&entries.every(([,v])=>v&&typeof v==='object'&&!Array.isArray(v))){
+   const idKey=mapItemIdKey[role]??'id';
+   next[target]=entries.map(([k,v])=>{const o=v as Record<string,unknown>;return ('id' in o||idKey in o)?o:{[idKey]:k,...o};});
+   changed=true;
+  }
+ }
+ return {deliverable:next,changed};
+}
 /** Only known wire-label aliases. Never edit creative content, facts, scope or a different canonical role. */
 export function canonicalizeAgentRole(text:string,role:string){
  const parsed=JSON.parse(text),changes:string[]=[];
@@ -12,6 +33,7 @@ export function canonicalizeAgentRole(text:string,role:string){
 }
 export function prepareAgentOutput(text:string,role:string,production:boolean,manifest?:{entries:Record<string,unknown>[]}){
  const normalized=canonicalizeAgentRole(text,role);
+ if(production){const parsed=JSON.parse(normalized.text);if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)&&parsed.status!=='blocked'&&parsed.deliverable&&typeof parsed.deliverable==='object'&&!Array.isArray(parsed.deliverable)){const shaped=normalizeDeliverableShape(parsed.deliverable as Record<string,unknown>,role);if(shaped.changed){parsed.deliverable=shaped.deliverable;normalized.text=canonicalJson(parsed);normalized.changes.push('canonical-deliverable-shape');}}}
  if(production&&role==='variants'&&manifest){const parsed=JSON.parse(normalized.text);if(parsed.status!=='blocked'&&parsed.deliverable){const provided=expandProvidedManifest(parsed.deliverable,manifest),binding=bindVariantIdentities(provided.deliverable,manifest);if(provided.changed||binding.changed){parsed.deliverable=binding.deliverable;normalized.text=canonicalJson(parsed);normalized.changes.push(provided.changed?'application-provided-manifest':'application-variant-identities');}}}
  if(production&&role==='localization'&&manifest){const parsed=JSON.parse(normalized.text);if(parsed.status!=='blocked'&&parsed.deliverable){const binding=bindLocalizedCopy(parsed.deliverable,manifest.entries as LocalizationVariant[]);if(binding.changed){parsed.deliverable=binding.deliverable;normalized.text=canonicalJson(parsed);normalized.changes.push('application-localization-bindings');}}}
  const {blocked}=validateWorkflowOutput(normalized.text,role,production,manifest);
@@ -34,5 +56,5 @@ export function agentResponseSchema(role:string,manifest?:{entries:Record<string
 }
 export function planningRecovery(text:string,role:string,manifest:{entries:Record<string,unknown>[]}){
  const prepared=prepareAgentOutput(text,role,true,manifest);agentEnvelopeSchema.parse(JSON.parse(prepared.text));
- if(prepared.blocked||!prepared.changes.length||prepared.changes.some(change=>!['canonical-role-label','application-variant-identities'].includes(change)))throw new Error('NO_METADATA_RECOVERY');return prepared;
+ if(prepared.blocked||!prepared.changes.length||prepared.changes.some(change=>!['canonical-role-label','canonical-deliverable-shape','application-variant-identities','application-provided-manifest','application-localization-bindings'].includes(change)))throw new Error('NO_METADATA_RECOVERY');return prepared;
 }

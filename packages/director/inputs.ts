@@ -30,29 +30,45 @@ export function approvedScenes(raw:unknown,directionId:string):Scene[]{
   const s=planningScene(item),start=seconds(s.startTime,s.startTimeSeconds,s.start,s.startSeconds),end=seconds(s.endTime,s.endTimeSeconds,s.end,s.endSeconds)??(start!==undefined?(()=>{const d=seconds(s.duration,s.durationSeconds);return d===undefined?undefined:start+d;})():undefined);
   const visual=words(s.visualNotes,s.scene,s.visual,s.visuals,s.description,s.shot,s.motionNotes,s.narration)??(typeof s.visualPremiseRef==='string'?`Visual premise ${s.visualPremiseRef}`:''),copy=words(s.onScreenCopy,s.onScreenText,s.copy,s.text)??'';
   if(start===undefined||end===undefined||end<=start)throw storyboardProblem(`scene ${index+1} has no valid start and end time (its fields: ${Object.keys(s).slice(0,12).join(', ')})`);
-  const copyLines=Array.isArray(s.onScreenCopy)&&s.onScreenCopy.every(v=>typeof v==='string')?s.onScreenCopy as string[]:copy?[copy]:[];
-  return {id:requestId({directionId,scene:index}),...(typeof (s.sceneId??s.id)==='string'?{sourceSceneId:String(s.sceneId??s.id)}:{}),start,end,copy:copyLines,visualNotes:visual,motionNotes:typeof s.motionNotes==='string'?s.motionNotes:visual,maxStaticSeconds:typeof s.maxStaticSeconds==='number'?s.maxStaticSeconds:.75};
+  const extractedCopy=Array.isArray(s.onScreenCopy)?s.onScreenCopy.map(v=>typeof v==='string'?v:v&&typeof v==='object'?words((v as Record<string,unknown>).onScreenCopy,(v as Record<string,unknown>).onScreenText,(v as Record<string,unknown>).copy,(v as Record<string,unknown>).text,(v as Record<string,unknown>).headline,(v as Record<string,unknown>).line):undefined).filter((v):v is string=>typeof v==='string'&&!!v.trim()):s.onScreenCopy&&typeof s.onScreenCopy==='object'?[words((s.onScreenCopy as Record<string,unknown>).onScreenCopy,(s.onScreenCopy as Record<string,unknown>).onScreenText,(s.onScreenCopy as Record<string,unknown>).copy,(s.onScreenCopy as Record<string,unknown>).text,(s.onScreenCopy as Record<string,unknown>).headline,(s.onScreenCopy as Record<string,unknown>).line)].filter((v):v is string=>typeof v==='string'&&!!v.trim()):[];
+  const copyLines=Array.isArray(s.onScreenCopy)&&s.onScreenCopy.every(v=>typeof v==='string')?s.onScreenCopy as string[]:copy?[copy]:extractedCopy;
+  const rawSourceId=s.sceneId??s.id;
+  return {id:requestId({directionId,scene:index}),...((typeof rawSourceId==='string'||typeof rawSourceId==='number')&&String(rawSourceId).trim()?{sourceSceneId:String(rawSourceId).trim()}:{}),start,end,copy:copyLines,visualNotes:visual,motionNotes:typeof s.motionNotes==='string'?s.motionNotes:visual,maxStaticSeconds:typeof s.maxStaticSeconds==='number'?s.maxStaticSeconds:.75};
  });
 }
 export type ApprovedLocalization={copySlot:string;locale:string;text:string;variantIds:string[];sceneId?:string;direction?:string};
 export function variantFacts(args:{variants:Variant[];scenes:Scene[];directionIndex:number;referenceLocale:string;localization:ApprovedLocalization[];sourceDirections?:PlanningDirection[];protectedCopy:Record<string,Record<string,string>>}){
  const facts:NonNullable<DirectionInput['variantFacts']>={};
+ const stripSlot=(slotName:string)=>slotName.replace(/^onscreen(?:copy)?[_ .-]/i,'').replace(/[_ .-]onscreen(?:copy)?$/i,'');
+ const stripDirectionToken=(slotName:string)=>stripSlot(slotName).replace(/^(?:concept|direction|dir)[_ .-]?\d+[_ .-]/i,'').replace(/[_ .-](?:concept|direction|dir)[_ .-]?\d+$/i,'');
  for(const v of args.variants){
   // An authored hook can have its own storyboard. Preserve that source's IDs and copy;
   // the creative agents decide its relationship to the direction's displayed key frames.
   const rows=args.localization.filter(r=>r.locale===v.locale&&r.variantIds.includes(v.id));
   const routes=(args.sourceDirections??[]).filter(d=>{
    const bindings=d.value.variantBindings;
-   return bindings&&typeof bindings==='object'&&!Array.isArray(bindings)&&Object.hasOwn(bindings,`hook-${v.hook}`)&&d.storyboard.some(raw=>{const scene=planningScene(raw),id=String(scene.id??'');return !!id&&rows.some(r=>r.sceneId===id||r.copySlot.replace(/^onscreen(?:copy)?[_ .-]/i,'').replace(/[_ .-]onscreen(?:copy)?$/i,'')===id);});
+   return bindings&&typeof bindings==='object'&&!Array.isArray(bindings)&&Object.hasOwn(bindings,`hook-${v.hook}`)&&d.storyboard.some(raw=>{const scene=planningScene(raw),id=String(scene.id??'');return !!id&&rows.some(r=>r.sceneId===id||stripSlot(r.copySlot)===id||stripDirectionToken(r.copySlot)===id);});
   });
   const own=routes.find(d=>args.sourceDirections!.indexOf(d)===args.directionIndex);
   if(!own&&routes.length>1)throw new Error('AMBIGUOUS_LOCALIZED_SCENE_COPY');
   const route=own??routes[0],alternate=route&&args.sourceDirections!.indexOf(route)!==args.directionIndex;
   const scenes=alternate?approvedScenes(route.storyboard,requestId({directionScene:args.scenes[0]?.id,sourceDirection:route.id})):args.scenes;
   const entities=scenes.map(s=>({id:s.id,aliases:s.sourceSceneId?[s.sourceSceneId]:[]}));
-  const onScreen=rows.filter(r=>/^onscreen(?:copy)?(?:[_ .-]|$)/i.test(r.copySlot)||/(?:^|[_ .-])onscreen(?:copy)?$/i.test(r.copySlot)),sceneCopy:Record<string,string[]>={};
+  const explicitOnScreen=rows.filter(r=>/(?:^|[_ .-])onscreen(?:copy)?(?:[_ .-]|$)/i.test(r.copySlot));
+  const onScreen=explicitOnScreen.length?explicitOnScreen:rows.filter(r=>/^(?:(?:concept|direction|dir)[_ .-]?\d+[_ .-])?(?:scene|beat|shot)[_ .-]/i.test(r.copySlot)&&!/narration|voice|audio|subtitle|sfx|music|cta|offer|legal|disclaimer/i.test(r.copySlot));
+  const sceneCopy:Record<string,string[]>={};
   for(const [index,scene]of scenes.entries()){
-   const matches=onScreen.filter(r=>{const named=resolveReference(r.sceneId,entities),slot=resolveReference(r.copySlot.replace(/^onscreen(?:copy)?[_ .-]/i,'').replace(/[_ .-]onscreen(?:copy)?$/i,''),entities);if(named.status==='ambiguous'||slot.status==='ambiguous'||named.status==='resolved'&&slot.status==='resolved'&&named.id!==slot.id)throw new Error('AMBIGUOUS_LOCALIZED_SCENE_COPY');if(named.status==='resolved')return named.id===scene.id;if(slot.status==='resolved')return slot.id===scene.id;return r.copySlot===`onScreen_${args.directionIndex+1}_${index+1}`||r.copySlot===`onScreen_${index+1}`;});
+   const matches=onScreen.filter(r=>{
+    const named=resolveReference(r.sceneId,entities),primarySlot=resolveReference(stripSlot(r.copySlot),entities),slot=primarySlot.status==='missing'?resolveReference(stripDirectionToken(r.copySlot),entities):primarySlot;
+    if(named.status==='ambiguous'||slot.status==='ambiguous'||named.status==='resolved'&&slot.status==='resolved'&&named.id!==slot.id)throw new Error('AMBIGUOUS_LOCALIZED_SCENE_COPY');
+    if(named.status==='resolved')return named.id===scene.id;
+    if(slot.status==='resolved')return slot.id===scene.id;
+    if(r.copySlot===`onScreen_${args.directionIndex+1}_${index+1}`||r.copySlot===`onScreen_${index+1}`)return true;
+    const numbered=/^(?:(?:concept|direction|dir)[_ .-]?(\d+)[_ .-])?(?:onscreen(?:copy)?|scene|beat|shot)[_ .-](?:(\d+)[_ .-])?(\d+)$/i.exec(r.copySlot);
+    if(!numbered)return false;
+    const dirNum=numbered[1]??numbered[2],sceneNum=numbered[3];
+    return (dirNum===undefined||Number(dirNum)===args.directionIndex+1)&&Number(sceneNum)===index+1;
+   });
    const values=[...new Set(matches.map(r=>r.text))];
    if(values.length>1)throw new Error('AMBIGUOUS_LOCALIZED_SCENE_COPY');
    if(values.length)sceneCopy[scene.id]=values;

@@ -10,9 +10,19 @@ import {prepareAgentOutput,planningRecovery} from '../packages/contracts/agent-o
 import {propagateExecutionFailure} from '../packages/director/execution-failures';
 import {assembleStatic} from '../apps/local-runner/director/static-assembler';
 import {readLiveOptions} from '../packages/director/live-options.local';
+import {readPlanningDirections,readPlanningLocalization,localizationForDirection} from '../packages/director/planning';
+import {approvedScenes,variantFacts} from '../packages/director/inputs';
+import {buildCreativeHandoff} from '../packages/director/creative-handoff';
+import {readDesign} from '../packages/director/contract';
+import {applySourceEdits} from '../packages/director/source-edits';
 import type {LoopState} from '../packages/director/state';
 import type {DirectionInput} from '../packages/director/types';
 import recorded from '../fixtures/director/static/input.json';
+import liveVariants from '../fixtures/creative/live/variants.json';
+import liveScript from '../fixtures/creative/live/script.json';
+import liveLocalization from '../fixtures/creative/live/localization.json';
+import liveVisual from '../fixtures/creative/live/visual-direction.json';
+import liveStrategy from '../fixtures/creative/live/strategy.json';
 import {dashboardItems} from '../packages/contracts/dashboard';
 import {eventPriceLabel,type DirectorEvent} from '../packages/director/events';
 const envelope=(deliverable:unknown)=>JSON.stringify({schemaVersion:'1.0',role:'variants',status:'draft',summary:'Scope audit',deliverable,inputRefs:[],assumptions:[],blockingQuestions:[],warnings:[],handoff:{nextRole:'script',requiredInputs:[],checks:[]}});
@@ -70,4 +80,79 @@ test('open request pricing uses the reservation rather than a synthetic zero and
 test('historical allowance questions keep their diagnostic without making the AD read raw token arithmetic or tool JSON',()=>{
  const question:ADQuestion={id:'q',directionId:'d',reason:'budget',question:'54,968 used. Last tool result: {"error":"OUTPUT_TOKEN_LIMIT"}',technical:'ROLE_ALLOWANCE_EXHAUSTED: assembler: output 24000 of 24000',options:[]},before=structuredClone(question);
  assert.match(directionQuestionSummary(question),/Saved source/);assert.doesNotMatch(directionQuestionSummary(question),/54,968|Last tool result|OUTPUT_TOKEN_LIMIT/);assert.deepEqual(question,before);
+});
+
+test('deliverable alias keys and keyed object maps normalize locally without altering canonical outputs',()=>{
+ const strategyRaw=JSON.stringify({schemaVersion:'1.0',role:'strategy',status:'draft',summary:'Three territories',deliverable:{territories:{t1:{title:'One'},t2:{title:'Two'},t3:{title:'Three'}}},inputRefs:[],assumptions:[],blockingQuestions:[],warnings:[],handoff:{nextRole:'variants',requiredInputs:[],checks:[]}});
+ const strategyRes=planningRecovery(strategyRaw,'strategy',{entries:[]});
+ assert.deepEqual(strategyRes.changes,['canonical-deliverable-shape']);
+ assert.equal(JSON.parse(strategyRes.text).deliverable.threeTerritories.length,3);
+ const scriptRaw=JSON.stringify({schemaVersion:'1.0',role:'script',status:'draft',summary:'Three concepts',deliverable:{concepts:[{id:'c1'},{id:'c2'},{id:'c3'}]},inputRefs:[],assumptions:[],blockingQuestions:[],warnings:[],handoff:{nextRole:'localization',requiredInputs:[],checks:[]}});
+ const scriptRes=prepareAgentOutput(scriptRaw,'script',true);
+ assert.deepEqual(scriptRes.changes,['canonical-deliverable-shape']);
+ assert.equal(JSON.parse(scriptRes.text).deliverable.threeDirections.length,3);
+});
+
+test('multi-conceptSlot live fixtures bind every direction, beatID and treatment alias without blocking',()=>{
+ const manifestEntries=liveVariants.output.deliverable.manifest.entries;
+ const directions=readPlanningDirections(liveScript.output);
+ const localization=readPlanningLocalization(liveLocalization.output,manifestEntries);
+ const variants=manifestEntries.map(e=>({id:e.id,format:e.placementId,locale:e.locale,hook:e.hook,cta:e.offer,length:e.durationSeconds}));
+ assert.equal(directions.length,3);
+ for(const [directionIndex,direction]of directions.entries()){
+  const scenes=approvedScenes(direction.storyboard,`dir-${directionIndex+1}`);
+  assert.ok(scenes.every(s=>!!s.sourceSceneId));
+  const loc=localizationForDirection(localization,direction,directions);
+  const facts=variantFacts({variants,scenes,directionIndex,referenceLocale:'en-US',localization:loc,sourceDirections:directions,protectedCopy:{}});
+  assert.equal(Object.keys(facts).length,variants.length);
+  const baseInput={...(recorded as DirectionInput),storyboard:scenes};
+  const handoff=buildCreativeHandoff({
+   brief:{},
+   direction,
+   directions,
+   script:{id:'j-script',job_key:'script',state:'succeeded',output:liveScript.output},
+   visual:{id:'j-visual',job_key:'asset-plan',state:'succeeded',output:liveVisual.output},
+   strategy:{id:'j-strategy',job_key:'strategy',state:'succeeded',output:liveStrategy.output},
+   input:baseInput
+  });
+  assert.equal(handoff.intent.direction.id,direction.id);
+  const underscoreHandoff=buildCreativeHandoff({
+   brief:{},
+   direction,
+   directions,
+   script:{id:'j-script',job_key:'script',state:'succeeded',output:liveScript.output},
+   visual:{id:'j-visual',job_key:'asset-plan',state:'succeeded',output:{deliverable:{visualDirection:{concept_1:{palette:'warm'},concept_2:{palette:'cool'},concept_3:{palette:'neutral'}}}}},
+   strategy:{id:'j-strategy',job_key:'strategy',state:'succeeded',output:liveStrategy.output},
+   input:baseInput
+  });
+  assert.equal(underscoreHandoff.intent.direction.id,direction.id);
+ }
+});
+
+test('draft reference boundary cleans non-proxy null proxyFor and resolves compact scene aliases while rejecting invalid proxy contracts',()=>{
+ const assetId='asset-ref-1';
+ const input:DirectionInput={...(recorded as DirectionInput),stage:'draft',resourceIds:['res-1'],assets:[{id:assetId,url:'a.png',thumbnail:'a.png',revisionId:'rev-1',mime:'image/png',width:100,height:100,sha256:'abc'}]};
+ const sceneIds=input.storyboard.map(s=>s.id);
+ const raw={
+  designDocument:'A clear square composition with explicit hierarchy and continuous responsive rules across aspect ratios.',
+  keyFrames:input.storyboard.map((_,i)=>({sceneId:`scene_${i+1}`,moments:[{id:`m_${i+1}`,description:'Opening hero lockup with clear product proof.'}]})),
+  resources:[{id:'hero_still',scene:'s1',kind:'still',purpose:'Hero product visual',prompt:'Studio headphones on slate surface, soft key from top left',aspect:'1:1',referenceAssetIds:[assetId,assetId],mustNotContain:['text'],proxy:false,proxyFor:null,resolution:'low'}]
+ };
+ const parsed=readDesign(raw,input);
+ assert.deepEqual(parsed.keyFrames?.map(k=>k.sceneId),sceneIds);
+ assert.equal(parsed.resources[0].scene,sceneIds[0]);
+ assert.equal((parsed.resources[0] as {proxyFor?:string}).proxyFor,undefined);
+ assert.deepEqual(parsed.resources[0].referenceAssetIds,[assetId]);
+ assert.throws(()=>readDesign({...raw,resources:[{...raw.resources[0],proxy:false,proxyFor:'video'}]},input),/PROXY_LABEL_REQUIRED/);
+});
+
+test('previewOptions accepts template literals, const arrays, string lengths and sourceSceneIds while source edits normalize ./ paths and CRLF',()=>{
+ const input={...(recorded as DirectionInput),storyboard:(recorded as DirectionInput).storyboard.map((s,i)=>({...s,sourceSceneId:`beat_0${i+1}`}))};
+ const v=input.variants[0],source=`const SCENES=['beat_01']; export const previewOptions={hooks:[\`${v.hook}\`],ctas:[${JSON.stringify(v.cta)}],locales:[${JSON.stringify(v.locale)}],lengths:[${JSON.stringify(String(v.length))}],scenes:SCENES,adaptive:true};`;
+ const read=readLiveOptions(source,input);
+ assert.deepEqual(read.options.scenes,[input.storyboard[0].id]);
+ assert.deepEqual(read.options.lengths,[v.length]);
+ const edited=applySourceEdits([{path:'Frame.tsx',source:'line1\r\nconst x = 1;\r\nline3'}],[{path:'./Frame.tsx',oldText:'const x = 1;\nline3',newText:'const x = 2;\nline3'}]);
+ assert.equal(edited[0].path,'Frame.tsx');
+ assert.equal(edited[0].source,'line1\r\nconst x = 2;\r\nline3');
 });
