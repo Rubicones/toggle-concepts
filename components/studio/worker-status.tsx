@@ -6,11 +6,17 @@ import { workerViewSchema, type WorkerView } from "@/packages/contracts/studio";
 const empty: WorkerView = { online: false, status: null, reason: "not-started" };
 let view=empty;
 let latestRequest=0;
+let pending:Promise<void>|undefined;
 const listeners=new Set<()=>void>();
 const subscribe=(listener:()=>void)=>{listeners.add(listener);return()=>{listeners.delete(listener);};};
 const getSnapshot=()=>view;
 const getServerSnapshot=()=>empty;
-async function refresh() {
+function refresh():Promise<void> {
+  if(pending)return pending;
+  pending=readStatus().finally(()=>{pending=undefined;});
+  return pending;
+}
+async function readStatus() {
   const requestId=++latestRequest;
   let next:WorkerView;
   try {
@@ -21,7 +27,16 @@ async function refresh() {
   if(requestId===latestRequest){view=next;for(const listener of listeners)listener();}
 }
 export function WorkerProvider({children}:{children:React.ReactNode}) {
-  useEffect(()=>{const initial=setTimeout(()=>void refresh(),0);const timer=setInterval(()=>void refresh(),4000);return()=>{clearTimeout(initial);clearInterval(timer);};},[]);
+  useEffect(()=>{
+    let closed=false,timer:ReturnType<typeof setTimeout>|undefined;
+    // This observes a local heartbeat file, never Supabase. A dead process cannot
+    // announce its own disappearance; retain a slower check only while visible.
+    const visible=()=>document.visibilityState!=='hidden';
+    const check=async()=>{clearTimeout(timer);if(closed||!visible())return;await refresh();if(!closed&&visible())timer=setTimeout(()=>void check(),15000);};
+    const visibility=()=>{clearTimeout(timer);if(document.visibilityState!=='hidden')void check();};
+    timer=setTimeout(()=>void check(),0);document.addEventListener('visibilitychange',visibility);
+    return()=>{closed=true;clearTimeout(timer);document.removeEventListener('visibilitychange',visibility);};
+  },[]);
   return children;
 }
 export function useWorker() {

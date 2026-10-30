@@ -1,6 +1,6 @@
 "use client";
 import {Select} from '@/components/ui/select';
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import { ArrowRight, Check, Download, FileText, FolderOpen, LogOut, RefreshCw, S
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import {subscribeStudioChanges} from '@/lib/studio-events';
+import {observeStudioRead} from '@/lib/studio-read';
 import { clientResponseSchema, workspaceResponseSchema, accessResponseSchema, readAccessSchema, uploadAccessSchema, type WorkspaceResponse } from "@/packages/contracts/data";
 
 class RequestError extends Error { constructor(public code:string,message:string) {super(message);} }
@@ -20,13 +20,13 @@ async function request(path:string,init?:RequestInit) {
 const post=(path:string,data?:unknown)=>request(path,{method:"POST",...(data ? {headers:{"Content-Type":"application/json"},body:JSON.stringify(data)} : {})});
 function useRemote<T>(path:string,schema:z.ZodType<T>) {
   const [snapshot,setSnapshot]=useState<{path:string;data:T}|null>(null); const [failure,setFailure]=useState<{path:string;message:string}|null>(null);
-  const [revision,setRevision]=useState(0);
-  const refresh=useCallback(async()=>{setRevision((value)=>value+1);},[]);
+  const reader=useRef<ReturnType<typeof observeStudioRead>|null>(null);
+  const refresh=useCallback(async()=>{reader.current?.refresh();},[]);
   useEffect(()=>{
-    let active=true; let timer:ReturnType<typeof setTimeout>; const controller=new AbortController();
-    const load=async()=>{
+    let active=true;
+    const observer=observeStudioRead(path,async signal=>{
       try {
-        const data=schema.parse(await request(path,{signal:controller.signal}));
+        const data=schema.parse(await request(path,{signal}));
         if(active){setSnapshot({path,data});setFailure(null);}
       } catch(error) {
         if(!active)return;
@@ -34,10 +34,10 @@ function useRemote<T>(path:string,schema:z.ZodType<T>) {
         if(error instanceof RequestError && error.code==="CLIENT_PORTAL"){window.location.replace("/portal");return;}
         setFailure({path,message:error instanceof Error ? error.message : "The local data service is unavailable."});
       }
-    };
-    const unsubscribe=subscribeStudioChanges(path,()=>{clearTimeout(timer);timer=setTimeout(()=>void load(),300);});
-    timer=setTimeout(()=>void load(),0);return()=>{active=false;clearTimeout(timer);controller.abort();unsubscribe();};
-  },[path,schema,revision]);
+    });
+    reader.current=observer;
+    return()=>{active=false;observer.close();if(reader.current===observer)reader.current=null;};
+  },[path,schema]);
   return {data:snapshot?.path===path ? snapshot.data : null,error:failure?.path===path ? failure.message : "",refresh};
 }
 export function SignOutButton() {

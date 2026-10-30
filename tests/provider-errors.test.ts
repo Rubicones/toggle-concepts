@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import {submitText} from '../packages/agents/text-provider';
 import {intakeOutputRequest} from '../packages/brand/intake-output';
 import {providerFailureSummary} from '../packages/contracts/provider-error';
+test('429 preserves cooldown and limit source without retrying an untracked provider request',async()=>{
+ const old=globalThis.fetch;let calls=0;
+ try{globalThis.fetch=async()=>{calls++;return Response.json({error:{code:429,message:'Provider returned error',metadata:{provider_name:'Google AI Studio',limit_source:'upstream_provider_shared_pool',raw:'google/gemini-2.5-flash is temporarily rate-limited upstream.'}}},{status:429,headers:{'retry-after':'90'}});};
+ const result=await submitText('google/gemini-2.5-flash','Fixture',{instructions:'Frozen',maxOutputTokens:1000,pricing:{inputPrice:0.0000003,outputPrice:0.0000025}});
+ assert.equal(calls,1);assert.equal(result.cost,0);assert.equal(result.outcome,'failed');assert.equal(result.providerError?.retryAfterMs,90000);assert.equal(result.providerError?.limitSource,'upstream_provider_shared_pool');assert.match(result.providerError!.message,/rate-limiting/);
+ }finally{globalThis.fetch=old;}
+});
 test('provider rejection persists a bounded, redacted explanation with zero charge and no retry',async()=>{
  const previous=globalThis.fetch,key=process.env.OPENROUTER_API_KEY;process.env.OPENROUTER_API_KEY='sk-or-v1-local-secret-fixture';let calls=0;
  try{globalThis.fetch=async()=>{calls++;return Response.json({error:{code:400,message:'Provider returned error',metadata:{provider_name:'Google',raw:JSON.stringify({error:{message:'Schema too complex. Bearer sk-or-v1-local-secret-fixture'}})}}},{status:400,headers:{'x-request-id':'request-fixture'}});};const result=await submitText('google/gemini-2.5-flash','fixture',{instructions:'Frozen instructions',maxOutputTokens:3600,pricing:{inputPrice:.0000003,outputPrice:.0000025},outputFormat:'json_schema',responseSchema:intakeOutputRequest(9,3600).responseSchema});assert.equal(result.failure,'PROVIDER_400');assert.equal(result.cost,0);assert.equal(result.outcome,'failed');assert.equal(calls,1);assert.match(result.providerError!.message,/Schema too complex/);assert.ok(!JSON.stringify(result.providerError).includes('local-secret-fixture'));assert.equal(result.providerError!.provider,'Google');assert.equal(result.providerError!.requestId,'request-fixture');

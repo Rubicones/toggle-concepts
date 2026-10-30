@@ -25,7 +25,7 @@ try:
  if pathlib.Path('supabase/tests/m07g-creative.sql').exists(): run(['psql',*pg,'-f','supabase/tests/m07g-creative.sql'])
  if pathlib.Path('supabase/tests/m07g-counters.sql').exists(): run(['psql',*pg,'-f','supabase/tests/m07g-counters.sql'])
  if pathlib.Path('supabase/tests/restart-guided-run.sql').exists(): run(['psql',*pg,'-f','supabase/tests/restart-guided-run.sql'])
- for fixture in ['planning-admission.sql','workflow-role-recovery.sql','automatic-technical-recovery.sql','automatic-planning-config.sql']:
+ for fixture in ['brand-read-backoff.sql','planning-admission.sql','workflow-role-recovery.sql','automatic-technical-recovery.sql','automatic-planning-config.sql']:
   if pathlib.Path('supabase/tests',fixture).exists(): run(['psql',*pg,'-f',str(pathlib.Path('supabase/tests',fixture))])
  result=run(['psql',*pg,'-Atc',"select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname like 'studio_%creative%';"])
  print(json.dumps({'migration':'passed','creativeFunctions':int(result),'database':'isolated temporary Postgres','productionChanged':False}))

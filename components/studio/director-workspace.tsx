@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element -- media uses authenticated short-lived redirect URLs */
 import {Disclosure} from '@/components/ui/disclosure';
 import {Select} from '@/components/ui/select';
-import {useEffect,useRef,useState} from 'react';
+import {useRef,useState} from 'react';
 import {publicStepMessage} from '@/packages/director/events';
 import {DirectorAttempts,directionQuestionSummary,directionStatus,recoveryActions} from '@/packages/director/ad-flow';
 import {useShared,studioRequest} from '@/lib/shared-http';
@@ -21,12 +21,11 @@ const price=(micro:number)=>new Intl.NumberFormat('en-US',{style:'currency',curr
 const roleLabel:Record<string,string>={director:'Creative direction',resources:'Picture resources',assembler:'Component and code',critic:'Creative review'};
 
 export function DirectorWorkspace({campaignId,canStart=true}:{campaignId:string;canStart?:boolean}){
- const endpoint=`/api/studio/campaigns/${campaignId}/director`,{data,error,refresh}=useShared<DirectorView>(endpoint);
+ const endpoint=`/api/studio/campaigns/${campaignId}/director`,{data,error,refresh}=useShared<DirectorView>(endpoint,{isActive:data=>['running','queued'].includes(data.status)||data.iterations.some(i=>i.deliveries.some(d=>!d.ready&&['queued','running'].includes(d.state??'')))});
  const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[failed,setFailed]=useState(false),[quote,setQuote]=useState<Quote|null>(null),[mode,setMode]=useState<Mode>('start'),[count,setCount]=useState<number|''>('');
  const [receiptDirection,setReceiptDirection]=useState<string|null>(null);
  const [extension,setExtension]=useState<{directionId:string;questionId:string;maxCostMicroUsd:number}|null>(null);
  const locked=useRef(false),attempts=useRef(new DirectorAttempts()),feedback=useRef<HTMLParagraphElement>(null),pricePanel=useRef<HTMLDivElement>(null);
- useEffect(()=>{if(!data||!['running','queued','review'].includes(data.status)&&!data.iterations.some(i=>i.deliveries.some(d=>!d.ready&&['queued','running'].includes(d.state??''))))return;const timer=setInterval(refresh,4000);return()=>clearInterval(timer);},[data,refresh]);
  const begin=()=>{if(locked.current)return false;locked.current=true;setBusy(true);setMessage('');setFailed(false);return true;};
  const finish=()=>{locked.current=false;setBusy(false);};
  const focusResult=()=>requestAnimationFrame(()=>feedback.current?.focus({preventScroll:true}));
@@ -62,7 +61,7 @@ export function DirectorWorkspace({campaignId,canStart=true}:{campaignId:string;
    </div>}
    {!archived&&receiptDirection===direction.id&&question?.reason==='receipt'&&<ProviderReceipts runId={direction.runId} onContinue={()=>{void command({action:'decide',directionId:direction.id,questionId:question.id,decision:'resume',requestId:crypto.randomUUID()}).then(ok=>{if(ok)setReceiptDirection(null);});}}/>}
    {direction.stage==='draft'&&<LiveDraftGenerator endpoint={endpoint} directionId={direction.id} iterationId={archived?versions.at(-1)?.id:undefined} command={archived?undefined:command} busy={busy} working={!archived&&['running','queued'].includes(direction.status??'')}/>}
-   <DirectorTimeline events={direction.events??[]} scenes={direction.pendingDesign?.keyFrames??versions[0]?.keyFrames}/>
+   <DirectorTimeline endpoint={endpoint} directionId={direction.id} events={direction.events??[]} scenes={direction.pendingDesign?.keyFrames??versions[0]?.keyFrames}/>
    {!!versions.length&&<Disclosure className={styles.secondary}><summary>Saved versions · {versions.length}</summary><div className={styles.versions}>{[...versions].reverse().map(iteration=><Version key={iteration.id} iteration={iteration} variants={direction.variants} endpoint={endpoint} busy={busy} command={command} readOnly={archived||iteration.archived===true}/>)}</div></Disclosure>}
    {direction.pendingDesign&&<Disclosure><summary>Creative direction and picture briefs</summary><div className={styles.document}>{publicStepMessage(direction.pendingDesign.designDocument,16000)}</div><ul>{direction.pendingDesign.resources.map(r=><li key={r.id}>{r.proxy?'Still proxy · ':''}{publicStepMessage(r.purpose)}: {publicStepMessage(r.prompt,6000)}</li>)}</ul></Disclosure>}
    {direction.progress&&<Disclosure><summary>Agent working log · {direction.progress.turns} coder turns</summary>{direction.progress.activeSince&&!question&&<p>{direction.progress.activeRole==='director'?'The director':'The coder'} is writing its answer since {new Date(direction.progress.activeSince).toLocaleTimeString()}.</p>}<pre className={styles.technical}>{[...(direction.progress.events??[]),...direction.progress.log].join('\n\n')}</pre></Disclosure>}

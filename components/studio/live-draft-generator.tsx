@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {readStudioResponse} from '@/packages/contracts/studio-response';
-import {subscribeStudioChanges} from '@/lib/studio-events';
+import {observeStudioRead} from '@/lib/studio-read';
 import type {LivePreview,LiveFrameProps} from '@/packages/director/live-preview';
 import {liveAspectPresets,liveFormat,liveSelection,readyLiveVariants,livePreviewDocument,reconcileLiveSelection} from '@/packages/director/live-preview';
 import {loadLiveAssets,availableLiveResources,LIVE_ASSET_BYTES,type CachedLiveAsset} from '@/packages/director/live-assets';
@@ -21,11 +21,13 @@ export function LiveDraftGenerator({endpoint,directionId,iterationId,working=fal
   if(!withAssets&&sentKey.current===key)return;sentKey.current=key;targetRef.current=next;setTarget(next);setAcknowledged(false);setError('');
   frame.current?.contentWindow?.postMessage({type:'preview-view',token:channel.current,sequence:++sequence.current,reviewKey:next?key:'',props,...(withAssets?{assets:maps.current,resources:resources.current}:{})},'*');
  },[]);
+ const activeWork=useRef(working);
+ useEffect(()=>{activeWork.current=working;},[working]);
  const choose=(value:LiveFrameProps)=>{selection.current=value;setSelected(value);publishView();};
  useEffect(()=>{
-  let closed=false,loading=false,again=false,timer:ReturnType<typeof setTimeout>;const abort=new AbortController(),cache=new Map<string,CachedLiveAsset>();revision.current='';sentKey.current='';
+  let closed=false,assetRetries=0;const abort=new AbortController(),cache=new Map<string,CachedLiveAsset>();revision.current='';assetRevision.current='';sentKey.current='';
   const request=async<T,>(url:string):Promise<T>=>{const r=await fetch(url,{cache:'no-store',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(45000)])});return readStudioResponse<T>(r);};
-  const update=async()=>{if(closed)return;if(loading){again=true;return;}loading=true;let savedReady=false;try{
+  const update=async()=>{if(closed)return;try{
    const next=await request<LivePreview>(base);if(closed)return;setLoadError('');setNotice(next.message??'');
    if(!next.revision){setPreview(old=>old.revision?old:next);return;}
    const changedAssets=next.assetRevision!==assetRevision.current;
@@ -41,12 +43,15 @@ export function LiveDraftGenerator({endpoint,directionId,iterationId,working=fal
    if(bundle){channel.current=crypto.randomUUID();revision.current=next.revision!;sentKey.current='';publishView();setDocument(livePreviewDocument({...bundle,token:channel.current,props:current,assets:available,resources:resources.current,reviewKey:targetRef.current?reviewKey(targetRef.current):''}));}
    else publishView();
    if(assetTask){const loaded=await assetTask;if(closed)return;missing=loaded.missing;maps.current=loaded.assets;resources.current=availableLiveResources(next.resources,loaded.assets);}
-   savedReady=!!iterationId&&!missing.length;
-   if(!missing.length)assetRevision.current=next.assetRevision??'';else setNotice('A supplied picture or font is still loading; the preview will update when it arrives.');
-  }catch(e){savedReady=!!iterationId;if(!closed){const message=e instanceof Error&&e.name==='TimeoutError'?'Preview loading took too long. Retry to reopen the saved source.':e instanceof Error?e.message:'The preview could not be loaded.';setLoadError(message);setNotice(message);}}finally{loading=false;if(!closed&&!savedReady){clearTimeout(timer);timer=setTimeout(update,again?0:working?1800:4000);again=false;}}};
-  const unsubscribe=iterationId?()=>{}:subscribeStudioChanges(base,()=>{clearTimeout(timer);if(loading)again=true;else timer=setTimeout(update,100);});
-  void update();return()=>{closed=true;abort.abort();clearTimeout(timer);unsubscribe();};
- },[base,iterationId,working,publishView,reload]);
+   if(!missing.length){assetRevision.current=next.assetRevision??'';assetRetries=0;}else{
+    setNotice('A supplied picture or font is still loading; the preview will update when it arrives.');
+    if(assetRetries<3)observer.retry(2000*++assetRetries);
+    else setLoadError('A picture or font could not be loaded. Retry the preview to check it again.');
+   }
+  }catch(e){if(!closed){const message=e instanceof Error&&e.name==='TimeoutError'?'Preview loading took too long. Retry to reopen the saved source.':e instanceof Error?e.message:'The preview could not be loaded.';setLoadError(message);setNotice(message);}}};
+  const observer=observeStudioRead(base,update,{live:!iterationId,active:()=>activeWork.current});
+  return()=>{closed=true;abort.abort();observer.close();};
+ },[base,iterationId,publishView,reload]);
  useEffect(()=>{const receive=(event:MessageEvent)=>{if(event.source!==frame.current?.contentWindow||event.data?.token!==channel.current)return;
   if(event.data.type==='preview-ready'){sentKey.current='';publishView(true);return;}
   const key=targetRef.current?reviewKey(targetRef.current):'';if(event.data.sequence!==sequence.current||event.data.reviewKey!==key)return;

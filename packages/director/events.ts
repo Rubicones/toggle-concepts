@@ -1,6 +1,6 @@
 /** Append-only facts. A step changes status by appending another fact with the same stepId. */
 export type DirectorEvent = {
- id:string;stepId:string;kind:'request'|'design'|'picture'|'coder'|'render'|'checks'|'critic'|'delivery'|'control'|'compaction'|'preview'|'review';
+ id:string;directionId?:string;stepId:string;kind:'request'|'design'|'picture'|'coder'|'render'|'checks'|'critic'|'delivery'|'control'|'compaction'|'preview'|'review';
  status:'queued'|'running'|'done'|'failed';at:string;startedAt?:string;endedAt?:string;model?:string;
  costMicroUsd?:number|null;reservedMicroUsd?:number;message:string;detail?:unknown;
  imageUrl?:string;proxy?:boolean;prompt?:string;

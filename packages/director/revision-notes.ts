@@ -1,6 +1,14 @@
 import type {BlockSnapshot,RoutedNote} from './state';
 import {reviewKey} from './review';
 
+/** The new note's recipient wins over historical feedback carried for continuity. */
+export function revisionRecipient(requested:'director'|'assembler'|undefined,inherited:'director'|'assembler'|undefined,notes:readonly RoutedNote[]):'director'|'assembler'{
+ return requested??inherited??(notes.length>0&&notes.every(note=>note.recipient==='assembler')?'assembler':'director');
+}
+export function coderOnlyRevision(snapshot:{revisionRecipient?:'director'|'assembler'},notes:readonly RoutedNote[]){
+ return revisionRecipient(undefined,snapshot.revisionRecipient,notes)==='assembler';
+}
+
 type RevisionBlock={id:string;snapshot:{seedWork?:Record<string,{iterationId:string}>;seedIterationIds?:BlockSnapshot['seedIterationIds'];notes?:BlockSnapshot['notes']}};
 type RevisionWork={block_id:string;iteration_id:string};
 /** Source ancestry needs scalar pointers and notes, never every inherited source file. */

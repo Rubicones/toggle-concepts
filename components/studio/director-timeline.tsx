@@ -1,22 +1,39 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- authenticated signed stills */
 import {Disclosure} from '@/components/ui/disclosure';
-import {useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import {studioRequest} from '@/lib/shared-http';
+import {mergeDirectorEvents,type ActivityCursor,type DirectorActivityPage} from '@/packages/director/activity';
 import {Button} from '@/components/ui/button';
 import type {DirectorEvent} from '@/packages/director/events';
 import {eventPriceLabel,latestSteps,publicStepMessage} from '@/packages/director/events';
 import {DeferredDetails} from './deferred-details';
-export function DirectorTimeline({events,scenes=[]}:{events:DirectorEvent[];scenes?:{sceneId:string}[]}){
+export function DirectorTimeline({events,scenes=[],endpoint,directionId}:{events:DirectorEvent[];scenes?:{sceneId:string}[];endpoint?:string;directionId?:string}){
  const steps=latestSteps(events),open=steps.filter(e=>e.status==='running'||e.status==='queued'),delivery=steps.findLast(e=>e.kind==='delivery'&&e.status==='done'),recent=open.length?open:delivery?[delivery]:steps.slice(-1);
- return <section className="director-timeline-activity" aria-label="Direction activity"><div className="director-timeline-heading"><h4>{open.length?'Working now':'Latest activity'}</h4><span>{steps.filter(e=>e.kind==='request').length} text requests · {steps.filter(e=>e.kind==='picture'&&e.status==='done').length} pictures</span></div>
+ return <section className="director-timeline-activity" aria-label="Direction activity"><div className="director-timeline-heading"><h4>{open.length?'Working now':'Latest activity'}</h4><span>{steps.filter(e=>e.kind==='request').length} recent text requests · {steps.filter(e=>e.kind==='picture'&&e.status==='done').length} pictures</span></div>
   <div aria-live="polite" aria-relevant="additions text">{recent.length?<ol className="director-timeline-recent">{recent.map(event=><li key={event.stepId}><EventFact event={event} scenes={scenes}/></li>)}</ol>:<p>Waiting for the first saved step.</p>}</div>
-  {!!events.length&&<DeferredDetails summary="Activity, costs and decisions"><ActivityHistory steps={steps} events={events} scenes={scenes}/></DeferredDetails>}
+  {!!events.length&&<DeferredDetails summary="Activity, costs and decisions"><PagedActivityHistory key={`${endpoint}:${directionId}`} events={events} scenes={scenes} endpoint={endpoint} directionId={directionId}/></DeferredDetails>}
  </section>;
 }
-function ActivityHistory({steps,events,scenes}:{steps:DirectorEvent[];events:DirectorEvent[];scenes:{sceneId:string}[]}){
+function PagedActivityHistory({events,scenes,endpoint,directionId}:{events:DirectorEvent[];scenes:{sceneId:string}[];endpoint?:string;directionId?:string}){
+ const [history,setHistory]=useState<DirectorEvent[]>([]),[page,setPage]=useState<DirectorActivityPage|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false);
+ const pending=useRef(false),abort=useRef<AbortController|null>(null);
+ const load=useCallback(async(cursor?:ActivityCursor)=>{
+  if(!endpoint||!directionId||pending.current)return;
+  pending.current=true;setLoading(true);setError('');const controller=new AbortController();abort.current=controller;
+  try{const next=await studioRequest<DirectorActivityPage>(`${endpoint}?activity=1&direction=${encodeURIComponent(directionId)}${cursor?`&before=${encodeURIComponent(JSON.stringify(cursor))}`:''}`,'GET',undefined,{signal:controller.signal});
+   if(!controller.signal.aborted){setHistory(old=>mergeDirectorEvents(old,next.events));setPage(next);}
+  }catch(error){if(!controller.signal.aborted)setError(error instanceof Error?error.message:'Activity could not be loaded.');}
+  finally{pending.current=false;if(!controller.signal.aborted)setLoading(false);}
+ },[endpoint,directionId]);
+ useEffect(()=>{const timer=setTimeout(()=>void load(),0);return()=>{clearTimeout(timer);abort.current?.abort();};},[load]);
+ const merged=mergeDirectorEvents(history,events);
+ return <><ActivityHistory steps={latestSteps(merged)} events={merged} scenes={scenes} hasMore={!!page?.next} loading={loading} onMore={()=>void load(page?.next??undefined)}/>{loading&&<p role="status">Loading saved activity…</p>}{error&&<p role="alert">{error}</p>}{!loading&&error&&<Button variant="outline" onClick={()=>void load(page?.next??undefined)}>Retry saved activity</Button>}</>;
+}
+function ActivityHistory({steps,events,scenes,hasMore=false,loading=false,onMore}:{steps:DirectorEvent[];events:DirectorEvent[];scenes:{sceneId:string}[];hasMore?:boolean;loading?:boolean;onMore?:()=>void}){
  const [filter,setFilter]=useState('all'),[limit,setLimit]=useState(25),[query,setQuery]=useState('');
  const filtered=[...steps].reverse().filter(e=>(filter==='all'||filter==='requests'&&e.kind==='request'||filter==='pictures'&&e.kind==='picture'||filter==='decisions'&&['control','review','critic'].includes(e.kind)||filter==='code'&&['coder','checks','preview'].includes(e.kind))&&`${e.message} ${e.model??''}`.toLowerCase().includes(query.toLowerCase()));
- return <div className="director-activity-browser"><div className="director-activity-filters" aria-label="Filter activity">{[['all','All activity'],['requests','Requests and cost'],['pictures','Pictures'],['code','Code and checks'],['decisions','Decisions']].map(([value,label])=><button type="button" key={value} aria-pressed={filter===value} onClick={()=>{setFilter(value);setLimit(25);}}>{label}</button>)}<input aria-label="Search direction activity" placeholder="Search activity" value={query} onChange={e=>{setQuery(e.target.value);setLimit(25);}}/></div><p className="director-timeline-meta">{filtered.length} matching steps · newest first</p><ol className="director-timeline-history">{filtered.slice(0,limit).map(event=><li key={event.stepId}><EventFact event={event} scenes={scenes} expanded/></li>)}</ol>{!filtered.length&&<p>No activity matches this filter.</p>}{filtered.length>limit&&<Button variant="outline" onClick={()=>setLimit(n=>n+25)}>Show 25 earlier steps</Button>}<DeferredDetails summary={`Audit record · ${events.length} original transitions`}><AuditTransitions events={events}/></DeferredDetails></div>;
+ return <div className="director-activity-browser"><div className="director-activity-filters" aria-label="Filter activity">{[['all','All activity'],['requests','Requests and cost'],['pictures','Pictures'],['code','Code and checks'],['decisions','Decisions']].map(([value,label])=><button type="button" key={value} aria-pressed={filter===value} onClick={()=>{setFilter(value);setLimit(25);}}>{label}</button>)}<input aria-label="Search direction activity" placeholder="Search activity" value={query} onChange={e=>{setQuery(e.target.value);setLimit(25);}}/></div><p className="director-timeline-meta">{filtered.length} matching loaded steps · newest first</p><ol className="director-timeline-history">{filtered.slice(0,limit).map(event=><li key={event.stepId}><EventFact event={event} scenes={scenes} expanded/></li>)}</ol>{!filtered.length&&<p>No activity matches this filter.</p>}{(filtered.length>limit||hasMore)&&<Button variant="outline" disabled={loading} onClick={()=>{setLimit(n=>n+25);if(filtered.length<=limit)onMore?.();}}>Show earlier activity</Button>}<DeferredDetails summary={`Audit record · ${events.length} original transitions`}><AuditTransitions events={events}/></DeferredDetails></div>;
 }
 function AuditTransitions({events}:{events:DirectorEvent[]}){const [limit,setLimit]=useState(25);return <><ol className="director-timeline-history">{[...events].reverse().slice(0,limit).map(event=><li key={event.id}><p><time dateTime={event.at}>{new Date(event.at).toLocaleString()}</time> · {event.kind} · {event.status}</p><p>{publicStepMessage(event.message,4000)}</p><Disclosure><summary>Original event</summary><pre className="director-timeline-technical">{JSON.stringify(event,null,2)}</pre></Disclosure></li>)}</ol>{events.length>limit&&<Button variant="outline" onClick={()=>setLimit(n=>n+25)}>Show earlier transitions</Button>}</>;}
 function EventFact({event,scenes,expanded=false}:{event:DirectorEvent;scenes:{sceneId:string}[];expanded?:boolean}){

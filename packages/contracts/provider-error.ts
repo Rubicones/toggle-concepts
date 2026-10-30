@@ -1,5 +1,5 @@
 // A bounded projection, never the raw provider body or request payload.
-export type ProviderErrorDetail={httpStatus:number;code:string|null;message:string;provider:string|null;requestId:string|null;details:string[]};
+export type ProviderErrorDetail={httpStatus:number;code:string|null;message:string;provider:string|null;requestId:string|null;details:string[];retryAfterMs?:number;limitSource?:string};
 export function providerFailureSummary(code:string,output:string|null,usage?:{_studio?:{providerError?:ProviderErrorDetail;finishReason?:string|null;maxOutputTokens?:number;validation?:{code?:string;message?:string;issues?:string[]}|null}}|null){
  const validation=usage?._studio?.validation;if(validation?.message)return {message:validation.message,details:validation.issues??[]};
  const detail=usage?._studio?.providerError;

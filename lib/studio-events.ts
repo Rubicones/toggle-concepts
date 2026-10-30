@@ -5,6 +5,19 @@ type Subscriber = { topic: Topic; listener: () => void };
 const subscribers = new Set<Subscriber>();
 let source: EventSource | undefined;
 let revisions: Record<string, string> | undefined;
+let connected = false;
+const connectionListeners = new Set<() => void>();
+
+export const studioConnected = () => connected;
+export function subscribeStudioConnection(listener: () => void) {
+  connectionListeners.add(listener);
+  return () => { connectionListeners.delete(listener); };
+}
+function connectionChanged(value: boolean) {
+  if (connected === value) return;
+  connected = value;
+  for (const listener of connectionListeners) listener();
+}
 
 export function studioTopic(path: string): Topic {
   if (/\/agents(?:\/|$|\?)/.test(path)) return 'agents';
@@ -15,7 +28,10 @@ export function studioTopic(path: string): Topic {
 function connect() {
   if (source || !subscribers.size || document.visibilityState === 'hidden' || typeof EventSource === 'undefined') return;
   source = new EventSource('/api/studio/events');
+  source.onopen = () => connectionChanged(true);
+  source.onerror = () => connectionChanged(false);
   source.onmessage = event => {
+    connectionChanged(true);
     const next = JSON.parse(event.data) as Record<string, string>;
     const previous = revisions; revisions = next;
     if (previous) for (const subscriber of subscribers) {
@@ -25,7 +41,7 @@ function connect() {
 }
 
 function visibilityChanged() {
-  if (document.visibilityState === 'hidden') { source?.close(); source = undefined; }
+  if (document.visibilityState === 'hidden') { source?.close(); source = undefined; connectionChanged(false); }
   else connect(); // The revision snapshot catches writes missed while hidden/offline.
 }
 
@@ -40,6 +56,7 @@ export function subscribeStudioChanges(path: string, listener: () => void) {
     subscribers.delete(subscriber);
     if (!subscribers.size) {
       source?.close(); source = undefined; revisions = undefined;
+      connectionChanged(false);
       document.removeEventListener('visibilitychange', visibilityChanged);
     }
   };

@@ -10,7 +10,8 @@ import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {draftConstruction} from './construction';
 import {propagateExecutionFailure} from '../../../packages/director/execution-failures';
-const reply=z.object({files:z.array(z.object({path:z.string().min(1),source:z.string().min(1).max(65536)})).min(1).max(8)});
+import {applySourceEdits} from '../../../packages/director/source-edits';
+const reply=z.object({files:z.array(z.object({path:z.string().min(1),source:z.string().min(1).max(65536)})).max(8).default([]),edits:z.array(z.object({path:z.string().min(1),oldText:z.string().min(1).max(65536),newText:z.string().max(65536)})).max(32).default([])}).refine(value=>value.files.length+value.edits.length>0,'Return changed files or exact edits.');
 /** A source copied from a previous iteration is an input, not work on this request. */
 function hasCurrentSourceWrite(state:LoopState){
  return state.transcript.some(entry=>{
@@ -29,9 +30,17 @@ export async function assembleStatic(args:{state:LoopState;maxTurns:number;timeM
  }
  while(!args.state.complete&&args.state.turn<Math.min(3,args.maxTurns)&&now()-args.state.startedAt<args.timeMs){
   const context=await args.filesContext?.(args.state);if(context?.oversized)break;
-  let text:string;try{text=await args.call(args.state,'files',context?.files,context?.construction);}catch(error){if(!(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'))throw error;args.state.turn++;args.state.transcript.push({from:'tool',text:JSON.stringify({error:'OUTPUT_TOKEN_LIMIT',detail:OUTPUT_LIMIT_FEEDBACK})});await args.save(args.state);continue;}
+  const hasFrame=context?.files.some(file=>file.path==='Frame.tsx')??false;
+  const construction=hasFrame&&context?.construction?{...context.construction,focus:'Continue the existing component. Apply the requested correction in the captured view; preserve the square composition, existing options and adaptive logic outside the necessary change. Then check the source. Do not restart square-first construction.'}:context?.construction;
+  let text:string;try{text=await args.call(args.state,'files',context?.files,construction);}catch(error){if(!(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'))throw error;args.state.turn++;args.state.transcript.push({from:'tool',text:JSON.stringify({error:'OUTPUT_TOKEN_LIMIT',detail:OUTPUT_LIMIT_FEEDBACK})});await args.save(args.state);continue;}
   const first=args.state.turn===0;args.state.turn++;args.state.transcript.push({from:'agent',text});await args.save(args.state);
-  try{const files=reply.parse(JSON.parse(text)).files;if(first&&files[0].path!=='Frame.tsx')throw new Error('Write executable Frame.tsx first; no plan or generated data reads.');
+  try{const parsed=reply.parse(JSON.parse(text));
+   if(parsed.edits.some(edit=>parsed.files.some(file=>file.path===edit.path)))throw new Error('Return either exact edits or a replacement for each file, not both. Nothing was written.');
+   if(parsed.edits.length){
+    const latest=await args.filesContext?.(args.state);
+    if(!context||!latest||parsed.edits.some(edit=>latest.files.find(file=>file.path===edit.path)?.source!==context.files.find(file=>file.path===edit.path)?.source))throw new Error('EDIT_SOURCE_CHANGED: Authored source changed while preparing this edit. Use the refreshed currentFiles; nothing was written.');
+   }
+   const files=[...parsed.files,...applySourceEdits(context?.files??[],parsed.edits)];if(first&&!hasFrame&&files[0].path!=='Frame.tsx')throw new Error('Write executable Frame.tsx first for a new component; no plan or generated data reads.');
    for(const file of files){const result=await args.tool({tool:'write',...file});args.state.transcript.push({from:'tool',text:JSON.stringify({tool:'write',result})});await args.save(args.state);}
    for(const tool of ['typecheck','bundle','finish'] as const){const result=await args.tool({tool});args.state.transcript.push({from:'tool',text:JSON.stringify({tool,result}).slice(0,8192)});if(tool==='finish'&&(result as {complete?:boolean}).complete)args.state.complete=true;await args.save(args.state);}
   }catch(error){if(propagateExecutionFailure(error))throw error;args.state.transcript.push({from:'tool',text:JSON.stringify({error:error instanceof Error?error.message:'Repair the source'}).slice(0,4096)});await args.save(args.state);}

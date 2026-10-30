@@ -4,7 +4,7 @@ import { compileBriefScope, type BriefDraft, type BriefRecord } from "../contrac
 import { canonicalJson } from "../contracts/common";
 import { executionConfigSchema, parseCheckpoint } from "../contracts/workflow";
 import type { AgentSetting } from "../contracts/shared";
-export function buildC1Snapshot({campaign,draft,agents,sources:sourceOrder,actorId}:{campaign:{id:string;name:string;brand:string;version:number;document?:Record<string,unknown>};draft:BriefDraft;agents:AgentSetting[];sources:BriefRecord["assets"];actorId:string}) {
+export function buildC1Snapshot({campaign,draft,sourceDraft=draft,agents,sources:sourceOrder,actorId}:{campaign:{id:string;name:string;brand:string;version:number;document?:Record<string,unknown>};draft:BriefDraft;sourceDraft?:unknown;agents:AgentSetting[];sources:BriefRecord["assets"];actorId:string}) {
   const campaignId = campaign.id;
   const runId = randomUUID(), briefId = randomUUID(), configId = randomUUID();
   const { scope, manifest } = compileBriefScope(draft, { campaignId, scopeId: randomUUID(), manifestId: randomUUID(), briefId });
@@ -13,7 +13,9 @@ export function buildC1Snapshot({campaign,draft,agents,sources:sourceOrder,actor
     runBudgetScopeId: `budget-run-${runId}`, runCapMicroUsd: draft.runCapMicroUsd,
     steps: agents.map(a => ({ stepKey: a.role, budgetScopeId: `budget-step-${runId}-${a.role}`, capMicroUsd: a.step_cap_micro_usd })) });
   const briefText = canonicalJson({ schemaVersion: "1.0", revisionId: briefId, campaignId, campaignRevision: campaign.version,
-    brand: campaign.brand, campaignName: campaign.name, legacyBriefNotes: campaign.document?.brief ?? "", questionnaire: draft, sources: sourceOrder,
+    // Compile the validated representation, but freeze the exact persisted source:
+    // schema defaults/alias normalization must not change the C1 source hash.
+    brand: campaign.brand, campaignName: campaign.name, legacyBriefNotes: campaign.document?.brief ?? "", questionnaire: sourceDraft, sources: sourceOrder,
     creativeDevelopment: {schemaVersion: "1.0", contentStage: "scenario", hookSlots: draft.hooks, beatSequenceSlots: draft.beatSequences,
       instructions: "C1 reserves creative slot IDs and ordered quantities, not completed scripts. Generate actual opening hooks, narrative beat sequences and timing together with the three scenarios during internal script development. Bind the generated content to these exact slot IDs for each direction and ordered variant. Optional variationNotes are guidance, not a required client-written scenario. Preserve supplied facts, offer, CTA and constraints; do not expand the ordered manifest."} });
   const configText = canonicalJson({ schemaVersion: "1.0", executionConfig: config, agents });
