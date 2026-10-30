@@ -7,7 +7,7 @@ import {loadCreativeVision} from '../../packages/creative/vision.local';
 import type {CreativeStage} from '../../packages/agents/prompts/creative-v1';
 import {textRequestQuote,retryOutputLimit,requireRequestAllowance} from '../../packages/agents/text-quote';
 import {preparePreviewProposal,PREVIEW_PROTOCOL,type PreviewInputs} from '../../packages/contracts/preview-proposal';
-import {localizationTask,type LocalizationVariant} from '../../packages/contracts/localization';
+import {planningTransportTask,PLANNING_RETRY_FEEDBACK,type LocalizationVariant} from '../../packages/contracts/localization';
 import {agentResponseSchema,prepareAgentOutput,outputDiagnostic} from '../../packages/contracts/agent-output';
 import {effectiveRunAgents} from '../../packages/data/run-limits';
 import {isPlanningJob} from '../../packages/contracts/planning-job';
@@ -90,7 +90,7 @@ async function execute(claim:Claim){
    if(!model.supportedParameters.includes('structured_outputs')&&!model.supportedParameters.includes('response_format'))throw new Error('STRUCTURED_OUTPUT_UNAVAILABLE');
    snapshot.responseSchema=agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest);snapshot.outputFormat='json_schema';
   }
-  let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='localization'?localizationTask(snapshot.campaignContext.variantManifest.entries as LocalizationVariant[]):job.role==='variants'?variantAuditTask:''):'';
+  let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count)):'';
   if(transportTask)snapshot.transportTask=transportTask;
   let reservation:number;
   // Manual requests already have a frozen quote/reservation. Don't change the admitted request on restart.

@@ -6,12 +6,14 @@ import {draftBatchV2Schema} from '../packages/contracts/frame-program';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {scenarioPresentation} from '../packages/contracts/run-presentation';
-import {prepareAgentOutput,planningRecovery} from '../packages/contracts/agent-output';
+import {prepareAgentOutput,planningRecovery,agentResponseSchema} from '../packages/contracts/agent-output';
+import {lintStaticComposition} from '../packages/director/policy.local';
 import {propagateExecutionFailure} from '../packages/director/execution-failures';
 import {assembleStatic} from '../apps/local-runner/director/static-assembler';
 import {readLiveOptions} from '../packages/director/live-options.local';
 import {readPlanningDirections,readPlanningLocalization,localizationForDirection} from '../packages/director/planning';
 import {approvedScenes,variantFacts} from '../packages/director/inputs';
+import {planningTransportTask} from '../packages/contracts/localization';
 import {buildCreativeHandoff} from '../packages/director/creative-handoff';
 import {readDesign} from '../packages/director/contract';
 import {applySourceEdits} from '../packages/director/source-edits';
@@ -155,4 +157,57 @@ test('previewOptions accepts template literals, const arrays, string lengths and
  const edited=applySourceEdits([{path:'Frame.tsx',source:'line1\r\nconst x = 1;\r\nline3'}],[{path:'./Frame.tsx',oldText:'const x = 1;\nline3',newText:'const x = 2;\nline3'}]);
  assert.equal(edited[0].path,'Frame.tsx');
  assert.equal(edited[0].source,'line1\r\nconst x = 2;\r\nline3');
+});
+
+test('slotId storyboard aliases, hook variation maps, stage-direction stripping and motion-aware transport tasks work together',()=>{
+ const rawDirection={
+  id:'sonicdesk-direction-1',
+  hook:{primary:'Losing track of song versions?','hook-1':'Your band\'s music, always in sync.','hook-2':'Stop the version chaos.'},
+  cta:'Sign up',
+  timedStoryboard:[
+   {sceneId:'scene-1',slotId:'intro-text-1',startTime:0,endTime:1.5,copy:'VOICEOVER: Losing track of song versions?',motionNotes:'Fast waveform snap'},
+   {sceneId:'scene-2',slotId:'message-text-1',startTime:1.5,endTime:3,copy:'ON-SCREEN: sonicdesk.',motionNotes:'Wordmark lockup'},
+   {sceneId:'scene-3',slotId:'product-proof-1',startTime:3,endTime:5,copy:'ON-SCREEN: VERSION CONTROL FOR MUSIC.\nON-SCREEN: EVERY TAKE.',motionNotes:'Snippet loop selector'},
+   {sceneId:'scene-4',slotId:'cta-1',startTime:5,endTime:6,copy:'ON-SCREEN: Free 1st month band-plan this month. SIGN UP.',motionNotes:'CTA pulse'}
+  ]
+ };
+ const directions=readPlanningDirections({threeDirections:[rawDirection]});
+ const scenes=approvedScenes(directions[0].storyboard,'dir-1');
+ assert.deepEqual(scenes.map(s=>s.copy),[
+  ['Losing track of song versions?'],
+  ['sonicdesk.'],
+  ['VERSION CONTROL FOR MUSIC.\nEVERY TAKE.'],
+  ['Free 1st month band-plan this month. SIGN UP.']
+ ]);
+ const variants=[
+  {id:'v-primary-6',format:'vertical',locale:'en-GB',hook:'primary',cta:'primary',length:6},
+  {id:'v-hook1-6',format:'vertical',locale:'en-GB',hook:'hook-1',cta:'primary',length:6},
+  {id:'v-hook1-15',format:'vertical',locale:'en-GB',hook:'hook-1',cta:'primary',length:15}
+ ];
+ const localization=[
+  {copySlot:'intro-text-1',locale:'en-GB',text:'Losing track of song versions?',variantIds:['v-primary-6']},
+  {copySlot:'message-text-1',locale:'en-GB',text:'sonicdesk.',variantIds:['v-primary-6','v-hook1-6','v-hook1-15']},
+  {copySlot:'product-proof-1',locale:'en-GB',text:'VERSION CONTROL FOR MUSIC. EVERY TAKE.',variantIds:['v-primary-6','v-hook1-6']},
+  {copySlot:'product-proof-1',locale:'en-GB',text:'VERSION CONTROL FOR MUSIC. Every idea, every take, organised.',variantIds:['v-hook1-15']},
+  {copySlot:'cta-1',locale:'en-GB',text:'Free 1st month band-plan this month. SIGN UP.',variantIds:['v-primary-6','v-hook1-6','v-hook1-15']},
+  {copySlot:'intro-text-1',locale:'en-GB',text:'Your band\'s music, always in sync.',variantIds:['v-hook1-6','v-hook1-15']}
+ ];
+ const facts=variantFacts({variants,scenes,directionIndex:0,referenceLocale:'en-GB',localization,sourceDirections:directions,protectedCopy:{}});
+ assert.deepEqual(facts['v-primary-6'].sceneCopy[scenes[0].id],['Losing track of song versions?']);
+ assert.deepEqual(facts['v-hook1-6'].sceneCopy[scenes[0].id],['Your band\'s music, always in sync.']);
+ assert.deepEqual(facts['v-hook1-15'].sceneCopy[scenes[2].id],['VERSION CONTROL FOR MUSIC. Every idea, every take, organised.']);
+ const presentation=scenarioPresentation({threeDirections:[rawDirection]})!;
+ assert.equal(presentation[0].hook,'Losing track of song versions?');
+ assert.deepEqual(presentation[0].rest.hookVariations,{'hook-1':'Your band\'s music, always in sync.','hook-2':'Stop the version chaos.'});
+ assert.match(planningTransportTask('strategy'),/specific promoted feature/);
+ assert.match(planningTransportTask('script'),/NEVER prefix copy with stage labels/);
+ assert.match(planningTransportTask('visual-direction'),/Hero Styleframe/);
+ for(const role of ['research','strategy','variants','script','localization','visual-direction']){
+  const serialized=JSON.stringify(agentResponseSchema(role,{entries:variants}).schema);
+  assert.ok(!serialized.includes('"additionalProperties":true'),`${role} schema must not contain additionalProperties:true`);
+  assert.ok(serialized.length<2400,`${role} schema must stay under 2400 bytes`);
+  if(role!=='variants'&&role!=='localization')assert.match(planningTransportTask(role,variants as never,1),/OUTPUT BUDGET & ANTI-ECHO CONTRACT/);
+  assert.match(planningTransportTask(role,variants as never,2),/RETRY COMPACTNESS OVERRIDE/);
+ }
+ assert.ok(lintStaticComposition('export default function Frame(){const res={ready:true,proxy:true,url:"x"};return !res.proxy?null:null;}').some(i=>i.includes('!res.proxy')));
 });

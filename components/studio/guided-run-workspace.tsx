@@ -13,6 +13,7 @@ import Link from "next/link";
 import { ArrowRight, Check, Pause, Play, RotateCcw, Send, Sparkles, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { studioRequest, useShared } from "@/lib/shared-http";
+import { canContinueFailure } from "@/packages/contracts/run-limits";
 import {agentLabel} from '@/packages/contracts/run-budget';
 import { money } from "@/packages/contracts/shared";
 import {savedStageOutputs,readableOutput} from '@/packages/contracts/run-output';
@@ -364,6 +365,28 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
                 ) : (
                   <div><p>The saved answer needs a metadata-recovery database update before it can be reused.</p><Disclosure><summary>Setup update</summary><p>Apply migration {data.failureStep.variantIdentityRecovery ? "059" : "056"}, then reload this page. No new generation is required.</p><a className="text-link" href={`/api/studio/setup?milestone=${data.failureStep.variantIdentityRecovery ? "variant-recovery" : "role-recovery"}`} download>Download recovery update</a></Disclosure></div>
                 ))}
+              {control.stage === "planning" && !data.failureStep.canRecover && !!data.limits?.ready && !!data.failureStep.jobId && canContinueFailure(data.failureStep.code) && (
+                <div className={styles.retryAction}>
+                  <Button
+                    disabled={busy}
+                    onClick={() =>
+                      void command({
+                        action: "limits",
+                        requestId: crypto.randomUUID(),
+                        expectedVersion: data.limits!.version,
+                        runCapMicroUsd: Number(data.run?.cap_micro_usd ?? 0),
+                        agents: [],
+                        continueRun: true,
+                        retryJobId: data.failureStep!.jobId,
+                      })
+                    }
+                  >
+                    <Play size={14} />
+                    {busy ? "Retrying…" : "Retry step"}
+                  </Button>
+                  <small>Retries this step within your remaining run and agent budget; earlier charges stay counted.</small>
+                </div>
+              )}
               {data.failureStep.role === "localization" && !data.failureStep.canRecover && (
                 <Button
                   variant="outline"

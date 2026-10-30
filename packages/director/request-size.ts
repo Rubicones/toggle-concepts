@@ -54,11 +54,12 @@ export function compactDraftRequest(prompt:string,snapshot:TextSnapshot,images:{
   const context=cfg.campaignContext as Record<string,unknown>;
   const input=(context.input&&typeof context.input==='object'?context.input:context) as Record<string,unknown>;
   const handoff=input.creativeHandoff as {strategy?:unknown;visual?:unknown}|undefined;
-  if(handoff){
+  if(handoff&&(handoff.strategy!==undefined||handoff.visual!==undefined)){
    const original={strategy:handoff.strategy,visual:handoff.visual};
    for(const characters of [320,160,80]){
     if(bound()<=target)break;
-    handoff.strategy=planningSummary(original.strategy,characters);handoff.visual=planningSummary(original.visual,characters);
+    if(original.strategy!==undefined)handoff.strategy=planningSummary(original.strategy,characters);
+    if(original.visual!==undefined)handoff.visual=planningSummary(original.visual,characters);
     actions.push(`Summarized strategy and visual-source prose to at most ${characters} characters per passage. Full sources and provenance remain saved; approved copy, brand rules, AD intent and the current design are unchanged.`);
    }
   }

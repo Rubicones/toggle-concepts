@@ -44,6 +44,7 @@ export async function lintWorkspace(folder:string){
 export function lintStaticComposition(source:string,file='Frame.tsx'){
  const issues=lintComposition(source,file),tree=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  if(/@keyframes\b/i.test(source))issues.push('CSS key frames are unavailable in static drafts');
+ if(/!\s*[A-Za-z_$][\w$]*(?:\?\.)?\.proxy\b/.test(source))issues.push('Render ready proxy resources with <Img src={staticFile(res.url)} />; do not hide ready images with !res.proxy');
  const runtimeAliases=new Set(['React','remotion']);ts.forEachChild(tree,n=>{if(ts.isImportDeclaration(n)&&ts.isStringLiteral(n.moduleSpecifier)&&['react','remotion'].includes(n.moduleSpecifier.text)){if(n.importClause?.name)runtimeAliases.add(n.importClause.name.text);if(n.importClause?.namedBindings&&ts.isNamespaceImport(n.importClause.namedBindings))runtimeAliases.add(n.importClause.namedBindings.name.text);}});
  const blocked=new Set(['Freeze','Loop','useCurrentFrame','useGsapTimeline','interpolate','interpolateColors','spring','Sequence','Series','Video','OffthreadVideo','Audio','AnimatedImage','Lottie','ThreeCanvas','useFrame','useEffect','useLayoutEffect','useState','useReducer','gsap']);
  const visit=(n:ts.Node)=>{if(ts.isIdentifier(n)&&blocked.has(n.text))issues.push(`Animation API is unavailable in static drafts: ${n.text}`);
