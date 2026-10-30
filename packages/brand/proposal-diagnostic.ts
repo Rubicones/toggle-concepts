@@ -1,0 +1,14 @@
+import {providerFailureSummary,type ProviderErrorDetail} from '../contracts/provider-error';
+import {importBrandProposal,brandInputErrors,type BrandDraft,type BrandAsset} from '../contracts/brand-kit';
+export type BrandResult={stepId:string;model:string;costMicroUsd:number|null;status:string;errorCode:string|null;providerMessage:string|null;summary:string;rules:{category:string;key:string;value:string;status:string}[];issues:string[];canImport:boolean;imported:boolean;draftVersion:number;output:string|null};
+/** Deterministic projection of the saved response and exact trusted source IDs. */
+export function diagnoseBrandProposal(args:{stepId:string;model:string;costMicroUsd:number|null;status:string;errorCode:string|null;usage?:{_studio?:{providerError?:ProviderErrorDetail;finishReason?:string|null;maxOutputTokens?:number}}|null;output:string|null;draft:BrandDraft;draftVersion:number;preparedVersion:number;checkpointId:string;briefRevisionId:string;assets:BrandAsset[];materials:BrandAsset[]}):BrandResult{
+ const {draft,output}=args,imported=draft.proposalStepId===args.stepId,issues:string[]=[];let summary='',rules:BrandResult['rules']=[];
+ try{const data=JSON.parse(output??'null');summary=typeof data?.summary==='string'?data.summary:'';const candidates=data?.deliverable?.brandKitProposal?.rules;if(Array.isArray(candidates))rules=candidates.filter(r=>r&&typeof r.category==='string'&&typeof r.key==='string'&&typeof r.value==='string').map(r=>({category:r.category,key:r.key,value:r.value,status:typeof r.status==='string'?r.status:'unreviewed'}));}catch{if(output)issues.push('The saved response is not complete JSON.');}
+ if(!imported&&args.status==='succeeded'){
+  if(args.draftVersion!==args.preparedVersion)issues.push('The working kit changed after this request. This result cannot replace the newer version.');
+  let sequence=0;
+  try{const proposed=importBrandProposal(output??'',draft,args.stepId,()=>`00000000-0000-4000-8000-${String(++sequence).padStart(12,'0')}`,{checkpointId:args.checkpointId,briefRevisionId:args.briefRevisionId});issues.push(...brandInputErrors(proposed,args.checkpointId,args.assets,args.materials));}catch(error){if(error&&typeof error==='object'&&'issues' in error&&Array.isArray(error.issues))issues.push(...error.issues.slice(0,8).map(i=>`${i.path.join('.')}: ${i.message}`));else if(!issues.length)issues.push('The response does not contain a complete Brand Kit proposal.');}
+ }
+ return {stepId:args.stepId,model:args.model,costMicroUsd:args.costMicroUsd,status:args.status,errorCode:args.errorCode,providerMessage:args.errorCode?providerFailureSummary(args.errorCode,output,args.usage).message:null,summary,rules,issues:[...new Set(issues)],canImport:!imported&&args.status==='succeeded'&&!issues.length,imported,draftVersion:args.draftVersion,output};
+}

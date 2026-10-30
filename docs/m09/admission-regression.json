@@ -1,0 +1,40 @@
+{
+  "case": "Recorded 128-variant Sonicdesk draft-start failure",
+  "variants": 128,
+  "copyKeys": 323,
+  "scenes": 5,
+  "hardRequestCap": 32768,
+  "testDesignCharacters": 8000,
+  "director": {
+    "inputTokenBound": 28738,
+    "referenceImages": 1
+  },
+  "coder": {
+    "inputTokenBound": 32280
+  },
+  "critic": {
+    "inputTokenBound": 28592,
+    "reviewImages": 2,
+    "formatsPreserved": [
+      "vertical",
+      "square",
+      "portrait",
+      "wide"
+    ]
+  },
+  "liveQuote": {
+    "httpStatus": 200,
+    "maxCostMicroUsd": 1500322,
+    "approved": false
+  },
+  "providerCalls": 0,
+  "newMigrationsRequired": false,
+  "verification": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "build": true,
+    "testsPassed": 347,
+    "visualVerification": false
+  }
+}

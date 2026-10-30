@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="900" viewBox="0 0 1000 900">
+ <defs>
+  <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#ffe3c1"/><stop offset="1" stop-color="#edb87d"/></linearGradient>
+  <linearGradient id="orange" x2="1" y2="1"><stop stop-color="#ff9461"/><stop offset=".5" stop-color="#ff632f"/><stop offset="1" stop-color="#f44212"/></linearGradient>
+  <linearGradient id="orb" x2="1" y2="1"><stop stop-color="#1b4c59"/><stop offset="1" stop-color="#082c3d"/></linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="28" stdDeviation="22" flood-color="#87361b" flood-opacity=".25"/></filter>
+ </defs>
+ <rect width="1000" height="900" fill="url(#bg)"/>
+ <circle cx="800" cy="800" r="450" fill="url(#orb)"/>
+ <circle cx="100" cy="120" r="200" fill="#fff3dc" opacity=".5"/>
+ <g transform="translate(275 215) rotate(-17 210 280)" filter="url(#shadow)">
+  <rect width="390" height="550" rx="28" fill="url(#orange)"/>
+  <path d="M23 2h344q21 0 21 27" stroke="#ffb18a" stroke-width="3" fill="none"/>
+  <rect x="43" y="52" width="47" height="60" rx="9" fill="#ffe4c2"/>
+  <path d="M60 52v60m12-60v60M43 72h47M43 92h47" stroke="#d19a60" stroke-width="2"/>
+  <path d="M121 65q21 15 0 34m12-45q34 28 0 57" stroke="#ffdec5" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <text x="40" y="355" fill="#fff0db" font-family="Arial,sans-serif" font-weight="900" font-size="92" letter-spacing="-4">KITE</text>
+  <text x="43" y="489" fill="#fff0db" font-family="Arial,sans-serif" font-size="19" letter-spacing="4">EVERYDAY, UPGRADED.</text>
+  <circle cx="315" cy="455" r="25" fill="#fff0db" opacity=".8"/><circle cx="338" cy="455" r="25" fill="#fff0db" opacity=".4"/>
+ </g>
+</svg>

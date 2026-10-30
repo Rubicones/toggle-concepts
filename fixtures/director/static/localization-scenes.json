@@ -1,0 +1,5875 @@
+{
+  "description": "Recorded planning scene aliases, bound localized rows and ordered variants; no provider requests.",
+  "referenceLocale": "en-GB",
+  "storyboard": [
+    {
+      "sceneId": "scene-1",
+      "startTime": 0,
+      "endTime": 1.5,
+      "onScreenCopy": "Kite: Your daily rewards.",
+      "narration": "Kite: Your daily rewards.",
+      "audioIntent": "Upbeat, light background music.",
+      "motionNotes": "Open on a close-up of the Kite card in a person's hand, subtly integrated into an everyday setting like a cafe. Gentle camera movement following the card.",
+      "visualPremiseRef": "acceptedBrandKit.payload.kit.rules[9].value",
+      "visualNotes": "Open on a close-up of the Kite card in a person's hand, subtly integrated into an everyday setting like a cafe. Gentle camera movement following the card."
+    },
+    {
+      "sceneId": "scene-2",
+      "startTime": 1.5,
+      "endTime": 3,
+      "onScreenCopy": "5% back on groceries.",
+      "narration": "Get 5% back on groceries.",
+      "audioIntent": "Friendly, direct tone.",
+      "motionNotes": "Cut to a hand holding the Kite card while picking up groceries. Focus on the card.",
+      "visualPremiseRef": "acceptedBrandKit.payload.kit.rules[9].value",
+      "visualNotes": "Cut to a hand holding the Kite card while picking up groceries. Focus on the card."
+    },
+    {
+      "sceneId": "scene-3",
+      "startTime": 3,
+      "endTime": 4,
+      "onScreenCopy": "Get paid now!",
+      "narration": "Get paid now!",
+      "audioIntent": "Clear, encouraging.",
+      "motionNotes": "Close-up on the Kite card with the CTA overlay.",
+      "visualPremiseRef": "acceptedBrandKit.payload.kit.rules[9].value",
+      "visualNotes": "Close-up on the Kite card with the CTA overlay."
+    }
+  ],
+  "variants": [
+    {
+      "id": "0b49c2fb-02dd-45bf-b32f-cd3288270aeb",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "539cd38e-94c5-4c5b-bad1-26d91a736dd3",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "44f8a90e-ce84-4de2-8b5a-344c99676c1c",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "546e472c-99fa-4c8f-a303-351c6b5cc453",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "6fdd1a4c-796c-4fc7-a280-9354313968e4",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "1725078d-dbd5-4402-8971-bf74787a5819",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "9d4afdd8-df7c-4d90-a392-f38561ce8f1d",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "d9da55c1-b402-4313-ae23-a2fed1b390a1",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "763486a9-9ecc-4c1d-a78b-fb7b2331cf23",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "d74c98f5-3df8-4b30-a210-fd281d92c106",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "72c8502f-8d43-479d-9417-eb7c774b4e00",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "6f5f1894-123f-45ce-b8a1-b6d065e3fa15",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "219e92e9-3bca-41e5-a893-4d2de8873cc5",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "5fee5c6a-49d5-4c8e-95f8-ee64af4921fd",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "a1e864c2-fd79-46ca-9397-fe3a30abf20a",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "10de2269-7454-46cc-a4df-3d2bb9887ca8",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "8b6b1cf3-9b13-4856-bf39-56f606cc74b4",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "5c222410-0ce2-4db1-a6c4-db854d796b44",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "2360fba9-a748-433a-b139-7104635a2525",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "53336ae7-1b5e-4699-a185-004f8c1386b2",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "a899576e-cb14-4093-9333-fd64dc21a7ed",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "2307d5ae-8772-4194-b634-7122b315b9a1",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "a5df6aa3-8952-4cfc-b24a-749941613df5",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "20357e7e-e799-4226-bc2e-c84371823146",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "f02b1205-cf36-4947-ade7-b367f40a996b",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "cee644fa-4bff-423f-b604-49e89902b090",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "8342887f-88f9-4a6c-b7a5-8c880cb1d12d",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "47b9041f-b406-459b-a617-8de2e72e556a",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "ad3bf2fa-482f-4dc6-8c1c-9c4b15f862d1",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "821805d3-e1d5-4cad-be9d-5e9d084762ee",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "7387671f-f614-401e-9b85-82c6442c0c8b",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "aa805bf2-2cb7-4a3f-812d-b5921827d481",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "6ee99ba9-a004-452f-9a12-d3df6927ab38",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "e8024377-45a1-4545-9373-ce33dd99bea1",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "728a04de-4b5a-4690-86f9-f97c6708a3ee",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "194bb364-7135-41db-9ac6-b61d2e20bca2",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "92ce21b9-09e7-480a-bc48-9a9ac3180af2",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "e4f57011-0593-4579-a48f-cf3076942f71",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "c8eae7a1-b0f0-4883-9e1b-d9d01516836b",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "9e0a6b9d-f3b5-4055-9dce-375a336d124c",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "0afd62c5-6f9b-4b35-8ff9-43edbf85ebe7",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "65a740b3-df28-4b88-9987-526878fca46e",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "bc4f8d38-6945-4b1a-91fe-e56546705b10",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "7b89cfbc-a907-48b5-b8dd-62ab92a4d020",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "65453c54-9272-406d-80d6-9ec200a520c1",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "b5b5e26a-bbf4-4ae6-bef2-de1737bdeea1",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "e31f66f1-75be-456c-a3e7-da24ea3ad9f9",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "6c32156b-7d20-4811-9ff8-f5a34a56d8bc",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "d5fdfbf7-ae77-4c6c-b74b-a508deccb667",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "5b2ccec3-937f-4984-a261-0a08fcf17ff3",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "169f6dfd-624e-4d63-bcd8-0fede2a9a4fc",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "dad4eafd-7aeb-4c84-9901-207a1977fc87",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "1998bfeb-3032-4196-b807-f1226ad9fee7",
+      "format": "vertical",
+      "locale": "de-DE",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "a040a35a-4a16-4829-acae-6f41a62951d8",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "b36bcf54-5a10-44e8-b344-de782fb3fb84",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "f1e454c7-d201-40a2-ae6e-385d747e8ca0",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "e0f7bf0d-6fb8-40a2-a39c-c14a49a0115b",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "893edbb2-3565-4e0d-8744-95d98282540a",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "32965a2e-7fde-44f9-8e43-af997d9de17d",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "ec63e38a-4699-4ffb-a670-689b99d858f6",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "f68c0734-66a2-4265-8ccb-208f2567c584",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "7394384f-a1e2-437c-b3e1-4d8081d26c0b",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "db52e26b-df92-4874-a582-ee4f459e3388",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "6b361fea-f804-4b54-ab68-5b80c70eda6f",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "857c367b-956f-4b63-b889-e5ba088b34bc",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "11fd53c7-1280-4d6e-9365-670bc112e068",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "49272704-e79a-4c06-b1eb-aa6438e3bf75",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "24c9e7b3-3f05-48bb-addb-54bf77ddb2ac",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "6aeedfe9-1750-44bf-8315-143a9b37b32f",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "30ff3761-bf90-412b-8cef-e46a4a0970c5",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-1",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "528af7af-fe13-454f-9f11-be1ec0df8463",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "445bd2ef-bbeb-487b-9be9-ad2851731969",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "6338c321-3e27-4aa6-bea8-b2a0e3729a88",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "19feb468-2094-4fed-80f7-d8dbc5ee7fcf",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "27a55938-9636-4238-8b9e-ef5bb5cc4451",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "e82f144d-10e9-4629-8fe7-518654e6fa88",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 12
+    },
+    {
+      "id": "9e4234a5-1473-4947-a146-a9ac2d8e665a",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 4
+    },
+    {
+      "id": "894fae7c-800d-44e7-ae7e-e0a5ea12564c",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 8
+    },
+    {
+      "id": "28f6e89c-c35c-4ef7-a1b0-190bea741fa5",
+      "format": "vertical",
+      "locale": "es-ES",
+      "hook": "hook-2",
+      "cta": "primary",
+      "length": 12
+    }
+  ],
+  "localization": [
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "0b49c2fb-02dd-45bf-b32f-cd3288270aeb"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "0b49c2fb-02dd-45bf-b32f-cd3288270aeb"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries.",
+      "variantIds": [
+        "0b49c2fb-02dd-45bf-b32f-cd3288270aeb"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Get 5% back on groceries.",
+      "variantIds": [
+        "0b49c2fb-02dd-45bf-b32f-cd3288270aeb"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "0b49c2fb-02dd-45bf-b32f-cd3288270aeb"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "0b49c2fb-02dd-45bf-b32f-cd3288270aeb"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "539cd38e-94c5-4c5b-bad1-26d91a736dd3"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "539cd38e-94c5-4c5b-bad1-26d91a736dd3"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries.",
+      "variantIds": [
+        "539cd38e-94c5-4c5b-bad1-26d91a736dd3"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Get 5% back on groceries.",
+      "variantIds": [
+        "539cd38e-94c5-4c5b-bad1-26d91a736dd3"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "5% on transport and coffee.",
+      "variantIds": [
+        "539cd38e-94c5-4c5b-bad1-26d91a736dd3"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Plus 5% on transport and coffee.",
+      "variantIds": [
+        "539cd38e-94c5-4c5b-bad1-26d91a736dd3"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "539cd38e-94c5-4c5b-bad1-26d91a736dd3"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "539cd38e-94c5-4c5b-bad1-26d91a736dd3"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries.",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Get 5% back on groceries.",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "5% on transport and coffee.",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Plus 5% on transport and coffee.",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Earn rewards effortlessly.",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Earn rewards effortlessly every day.",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "44f8a90e-ce84-4de2-8b5a-344c99676c1c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "546e472c-99fa-4c8f-a303-351c6b5cc453"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "546e472c-99fa-4c8f-a303-351c6b5cc453"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries.",
+      "variantIds": [
+        "546e472c-99fa-4c8f-a303-351c6b5cc453"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Get 5% back on groceries.",
+      "variantIds": [
+        "546e472c-99fa-4c8f-a303-351c6b5cc453"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "546e472c-99fa-4c8f-a303-351c6b5cc453"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "546e472c-99fa-4c8f-a303-351c6b5cc453"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "6fdd1a4c-796c-4fc7-a280-9354313968e4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "6fdd1a4c-796c-4fc7-a280-9354313968e4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries.",
+      "variantIds": [
+        "6fdd1a4c-796c-4fc7-a280-9354313968e4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Get 5% back on groceries.",
+      "variantIds": [
+        "6fdd1a4c-796c-4fc7-a280-9354313968e4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "5% on transport and coffee.",
+      "variantIds": [
+        "6fdd1a4c-796c-4fc7-a280-9354313968e4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Plus 5% on transport and coffee.",
+      "variantIds": [
+        "6fdd1a4c-796c-4fc7-a280-9354313968e4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "6fdd1a4c-796c-4fc7-a280-9354313968e4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "6fdd1a4c-796c-4fc7-a280-9354313968e4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries.",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Get 5% back on groceries.",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "5% on transport and coffee.",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Plus 5% on transport and coffee.",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Earn rewards effortlessly.",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Earn rewards effortlessly every day.",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "1725078d-dbd5-4402-8971-bf74787a5819"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "9d4afdd8-df7c-4d90-a392-f38561ce8f1d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "9d4afdd8-df7c-4d90-a392-f38561ce8f1d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries.",
+      "variantIds": [
+        "9d4afdd8-df7c-4d90-a392-f38561ce8f1d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Get 5% back on groceries.",
+      "variantIds": [
+        "9d4afdd8-df7c-4d90-a392-f38561ce8f1d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "9d4afdd8-df7c-4d90-a392-f38561ce8f1d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "9d4afdd8-df7c-4d90-a392-f38561ce8f1d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "d9da55c1-b402-4313-ae23-a2fed1b390a1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "d9da55c1-b402-4313-ae23-a2fed1b390a1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries.",
+      "variantIds": [
+        "d9da55c1-b402-4313-ae23-a2fed1b390a1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Get 5% back on groceries.",
+      "variantIds": [
+        "d9da55c1-b402-4313-ae23-a2fed1b390a1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "5% on transport and coffee.",
+      "variantIds": [
+        "d9da55c1-b402-4313-ae23-a2fed1b390a1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Plus 5% on transport and coffee.",
+      "variantIds": [
+        "d9da55c1-b402-4313-ae23-a2fed1b390a1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "d9da55c1-b402-4313-ae23-a2fed1b390a1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "d9da55c1-b402-4313-ae23-a2fed1b390a1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Kite: Your daily rewards.",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries.",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Get 5% back on groceries.",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "5% on transport and coffee.",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Plus 5% on transport and coffee.",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Earn rewards effortlessly.",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Earn rewards effortlessly every day.",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "763486a9-9ecc-4c1d-a78b-fb7b2331cf23"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "d74c98f5-3df8-4b30-a210-fd281d92c106"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "d74c98f5-3df8-4b30-a210-fd281d92c106"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "d74c98f5-3df8-4b30-a210-fd281d92c106"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "d74c98f5-3df8-4b30-a210-fd281d92c106"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "d74c98f5-3df8-4b30-a210-fd281d92c106"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "d74c98f5-3df8-4b30-a210-fd281d92c106"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "72c8502f-8d43-479d-9417-eb7c774b4e00"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "72c8502f-8d43-479d-9417-eb7c774b4e00"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "72c8502f-8d43-479d-9417-eb7c774b4e00"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "72c8502f-8d43-479d-9417-eb7c774b4e00"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Groceries. Get 5% back.",
+      "variantIds": [
+        "72c8502f-8d43-479d-9417-eb7c774b4e00"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "And groceries. Get 5% back.",
+      "variantIds": [
+        "72c8502f-8d43-479d-9417-eb7c774b4e00"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "72c8502f-8d43-479d-9417-eb7c774b4e00"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "72c8502f-8d43-479d-9417-eb7c774b4e00"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Groceries. Get 5% back.",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "And groceries. Get 5% back.",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Rewards for your everyday.",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Rewards for your everyday spending.",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "6f5f1894-123f-45ce-b8a1-b6d065e3fa15"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "219e92e9-3bca-41e5-a893-4d2de8873cc5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "219e92e9-3bca-41e5-a893-4d2de8873cc5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "219e92e9-3bca-41e5-a893-4d2de8873cc5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "219e92e9-3bca-41e5-a893-4d2de8873cc5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "219e92e9-3bca-41e5-a893-4d2de8873cc5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "219e92e9-3bca-41e5-a893-4d2de8873cc5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "5fee5c6a-49d5-4c8e-95f8-ee64af4921fd"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "5fee5c6a-49d5-4c8e-95f8-ee64af4921fd"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "5fee5c6a-49d5-4c8e-95f8-ee64af4921fd"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "5fee5c6a-49d5-4c8e-95f8-ee64af4921fd"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Groceries. Get 5% back.",
+      "variantIds": [
+        "5fee5c6a-49d5-4c8e-95f8-ee64af4921fd"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "And groceries. Get 5% back.",
+      "variantIds": [
+        "5fee5c6a-49d5-4c8e-95f8-ee64af4921fd"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "5fee5c6a-49d5-4c8e-95f8-ee64af4921fd"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "5fee5c6a-49d5-4c8e-95f8-ee64af4921fd"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Groceries. Get 5% back.",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "And groceries. Get 5% back.",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Rewards for your everyday.",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Rewards for your everyday spending.",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "a1e864c2-fd79-46ca-9397-fe3a30abf20a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "10de2269-7454-46cc-a4df-3d2bb9887ca8"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "10de2269-7454-46cc-a4df-3d2bb9887ca8"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "10de2269-7454-46cc-a4df-3d2bb9887ca8"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "10de2269-7454-46cc-a4df-3d2bb9887ca8"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "10de2269-7454-46cc-a4df-3d2bb9887ca8"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "10de2269-7454-46cc-a4df-3d2bb9887ca8"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "8b6b1cf3-9b13-4856-bf39-56f606cc74b4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "8b6b1cf3-9b13-4856-bf39-56f606cc74b4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "8b6b1cf3-9b13-4856-bf39-56f606cc74b4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "8b6b1cf3-9b13-4856-bf39-56f606cc74b4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Groceries. Get 5% back.",
+      "variantIds": [
+        "8b6b1cf3-9b13-4856-bf39-56f606cc74b4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "And groceries. Get 5% back.",
+      "variantIds": [
+        "8b6b1cf3-9b13-4856-bf39-56f606cc74b4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "8b6b1cf3-9b13-4856-bf39-56f606cc74b4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "8b6b1cf3-9b13-4856-bf39-56f606cc74b4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Morning coffee. Get 5% back.",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "Daily transport. Get 5% back.",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Groceries. Get 5% back.",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "And groceries. Get 5% back.",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Rewards for your everyday.",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Rewards for your everyday spending.",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "5c222410-0ce2-4db1-a6c4-db854d796b44"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. More back.",
+      "variantIds": [
+        "2360fba9-a748-433a-b139-7104635a2525"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. Get more back.",
+      "variantIds": [
+        "2360fba9-a748-433a-b139-7104635a2525"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% on groceries, transport & coffee.",
+      "variantIds": [
+        "2360fba9-a748-433a-b139-7104635a2525"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries, transport, and coffee.",
+      "variantIds": [
+        "2360fba9-a748-433a-b139-7104635a2525"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "2360fba9-a748-433a-b139-7104635a2525"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "2360fba9-a748-433a-b139-7104635a2525"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. More back.",
+      "variantIds": [
+        "53336ae7-1b5e-4699-a185-004f8c1386b2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. Get more back.",
+      "variantIds": [
+        "53336ae7-1b5e-4699-a185-004f8c1386b2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% on groceries, transport & coffee.",
+      "variantIds": [
+        "53336ae7-1b5e-4699-a185-004f8c1386b2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries, transport, and coffee.",
+      "variantIds": [
+        "53336ae7-1b5e-4699-a185-004f8c1386b2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Your daily companion.",
+      "variantIds": [
+        "53336ae7-1b5e-4699-a185-004f8c1386b2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Kite, your daily companion for effortless rewards.",
+      "variantIds": [
+        "53336ae7-1b5e-4699-a185-004f8c1386b2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "53336ae7-1b5e-4699-a185-004f8c1386b2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "53336ae7-1b5e-4699-a185-004f8c1386b2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. More back.",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. Get more back.",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% on groceries, transport & coffee.",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries, transport, and coffee.",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Your daily companion.",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Kite, your daily companion for effortless rewards.",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Always rewarding.",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Making every day more rewarding.",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "a899576e-cb14-4093-9333-fd64dc21a7ed"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. More back.",
+      "variantIds": [
+        "2307d5ae-8772-4194-b634-7122b315b9a1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. Get more back.",
+      "variantIds": [
+        "2307d5ae-8772-4194-b634-7122b315b9a1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% on groceries, transport & coffee.",
+      "variantIds": [
+        "2307d5ae-8772-4194-b634-7122b315b9a1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries, transport, and coffee.",
+      "variantIds": [
+        "2307d5ae-8772-4194-b634-7122b315b9a1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "2307d5ae-8772-4194-b634-7122b315b9a1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "2307d5ae-8772-4194-b634-7122b315b9a1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. More back.",
+      "variantIds": [
+        "a5df6aa3-8952-4cfc-b24a-749941613df5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. Get more back.",
+      "variantIds": [
+        "a5df6aa3-8952-4cfc-b24a-749941613df5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% on groceries, transport & coffee.",
+      "variantIds": [
+        "a5df6aa3-8952-4cfc-b24a-749941613df5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries, transport, and coffee.",
+      "variantIds": [
+        "a5df6aa3-8952-4cfc-b24a-749941613df5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Your daily companion.",
+      "variantIds": [
+        "a5df6aa3-8952-4cfc-b24a-749941613df5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Kite, your daily companion for effortless rewards.",
+      "variantIds": [
+        "a5df6aa3-8952-4cfc-b24a-749941613df5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "a5df6aa3-8952-4cfc-b24a-749941613df5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "a5df6aa3-8952-4cfc-b24a-749941613df5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. More back.",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. Get more back.",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% on groceries, transport & coffee.",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries, transport, and coffee.",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Your daily companion.",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Kite, your daily companion for effortless rewards.",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Always rewarding.",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Making every day more rewarding.",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "20357e7e-e799-4226-bc2e-c84371823146"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. More back.",
+      "variantIds": [
+        "f02b1205-cf36-4947-ade7-b367f40a996b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. Get more back.",
+      "variantIds": [
+        "f02b1205-cf36-4947-ade7-b367f40a996b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% on groceries, transport & coffee.",
+      "variantIds": [
+        "f02b1205-cf36-4947-ade7-b367f40a996b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries, transport, and coffee.",
+      "variantIds": [
+        "f02b1205-cf36-4947-ade7-b367f40a996b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "f02b1205-cf36-4947-ade7-b367f40a996b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "f02b1205-cf36-4947-ade7-b367f40a996b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. More back.",
+      "variantIds": [
+        "cee644fa-4bff-423f-b604-49e89902b090"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. Get more back.",
+      "variantIds": [
+        "cee644fa-4bff-423f-b604-49e89902b090"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% on groceries, transport & coffee.",
+      "variantIds": [
+        "cee644fa-4bff-423f-b604-49e89902b090"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries, transport, and coffee.",
+      "variantIds": [
+        "cee644fa-4bff-423f-b604-49e89902b090"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Your daily companion.",
+      "variantIds": [
+        "cee644fa-4bff-423f-b604-49e89902b090"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Kite, your daily companion for effortless rewards.",
+      "variantIds": [
+        "cee644fa-4bff-423f-b604-49e89902b090"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "cee644fa-4bff-423f-b604-49e89902b090"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "cee644fa-4bff-423f-b604-49e89902b090"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. More back.",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "en-GB",
+      "text": "Everyday spending. Get more back.",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "en-GB",
+      "text": "5% on groceries, transport & coffee.",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "en-GB",
+      "text": "5% back on groceries, transport, and coffee.",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "en-GB",
+      "text": "Your daily companion.",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "en-GB",
+      "text": "Kite, your daily companion for effortless rewards.",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "en-GB",
+      "text": "Always rewarding.",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "en-GB",
+      "text": "Making every day more rewarding.",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "en-GB",
+      "text": "Get paid now!",
+      "variantIds": [
+        "8342887f-88f9-4a6c-b7a5-8c880cb1d12d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "47b9041f-b406-459b-a617-8de2e72e556a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "47b9041f-b406-459b-a617-8de2e72e556a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe.",
+      "variantIds": [
+        "47b9041f-b406-459b-a617-8de2e72e556a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Erhalten Sie 5% zurück auf Einkäufe.",
+      "variantIds": [
+        "47b9041f-b406-459b-a617-8de2e72e556a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "47b9041f-b406-459b-a617-8de2e72e556a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "47b9041f-b406-459b-a617-8de2e72e556a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "ad3bf2fa-482f-4dc6-8c1c-9c4b15f862d1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "ad3bf2fa-482f-4dc6-8c1c-9c4b15f862d1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe.",
+      "variantIds": [
+        "ad3bf2fa-482f-4dc6-8c1c-9c4b15f862d1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Erhalten Sie 5% zurück auf Einkäufe.",
+      "variantIds": [
+        "ad3bf2fa-482f-4dc6-8c1c-9c4b15f862d1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "5% auf Transport und Kaffee.",
+      "variantIds": [
+        "ad3bf2fa-482f-4dc6-8c1c-9c4b15f862d1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Plus 5% auf Transport und Kaffee.",
+      "variantIds": [
+        "ad3bf2fa-482f-4dc6-8c1c-9c4b15f862d1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "ad3bf2fa-482f-4dc6-8c1c-9c4b15f862d1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "ad3bf2fa-482f-4dc6-8c1c-9c4b15f862d1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe.",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Erhalten Sie 5% zurück auf Einkäufe.",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "5% auf Transport und Kaffee.",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Plus 5% auf Transport und Kaffee.",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien mühelos verdienen.",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien mühelos jeden Tag verdienen.",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "821805d3-e1d5-4cad-be9d-5e9d084762ee"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "7387671f-f614-401e-9b85-82c6442c0c8b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "7387671f-f614-401e-9b85-82c6442c0c8b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe.",
+      "variantIds": [
+        "7387671f-f614-401e-9b85-82c6442c0c8b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Erhalten Sie 5% zurück auf Einkäufe.",
+      "variantIds": [
+        "7387671f-f614-401e-9b85-82c6442c0c8b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "7387671f-f614-401e-9b85-82c6442c0c8b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "7387671f-f614-401e-9b85-82c6442c0c8b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "aa805bf2-2cb7-4a3f-812d-b5921827d481"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "aa805bf2-2cb7-4a3f-812d-b5921827d481"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe.",
+      "variantIds": [
+        "aa805bf2-2cb7-4a3f-812d-b5921827d481"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Erhalten Sie 5% zurück auf Einkäufe.",
+      "variantIds": [
+        "aa805bf2-2cb7-4a3f-812d-b5921827d481"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "5% auf Transport und Kaffee.",
+      "variantIds": [
+        "aa805bf2-2cb7-4a3f-812d-b5921827d481"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Plus 5% auf Transport und Kaffee.",
+      "variantIds": [
+        "aa805bf2-2cb7-4a3f-812d-b5921827d481"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "aa805bf2-2cb7-4a3f-812d-b5921827d481"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "aa805bf2-2cb7-4a3f-812d-b5921827d481"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe.",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Erhalten Sie 5% zurück auf Einkäufe.",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "5% auf Transport und Kaffee.",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Plus 5% auf Transport und Kaffee.",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien mühelos verdienen.",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien mühelos jeden Tag verdienen.",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "6ee99ba9-a004-452f-9a12-d3df6927ab38"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "e8024377-45a1-4545-9373-ce33dd99bea1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "e8024377-45a1-4545-9373-ce33dd99bea1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe.",
+      "variantIds": [
+        "e8024377-45a1-4545-9373-ce33dd99bea1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Erhalten Sie 5% zurück auf Einkäufe.",
+      "variantIds": [
+        "e8024377-45a1-4545-9373-ce33dd99bea1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "e8024377-45a1-4545-9373-ce33dd99bea1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "e8024377-45a1-4545-9373-ce33dd99bea1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "728a04de-4b5a-4690-86f9-f97c6708a3ee"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "728a04de-4b5a-4690-86f9-f97c6708a3ee"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe.",
+      "variantIds": [
+        "728a04de-4b5a-4690-86f9-f97c6708a3ee"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Erhalten Sie 5% zurück auf Einkäufe.",
+      "variantIds": [
+        "728a04de-4b5a-4690-86f9-f97c6708a3ee"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "5% auf Transport und Kaffee.",
+      "variantIds": [
+        "728a04de-4b5a-4690-86f9-f97c6708a3ee"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Plus 5% auf Transport und Kaffee.",
+      "variantIds": [
+        "728a04de-4b5a-4690-86f9-f97c6708a3ee"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "728a04de-4b5a-4690-86f9-f97c6708a3ee"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "728a04de-4b5a-4690-86f9-f97c6708a3ee"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Kite: Ihre täglichen Prämien.",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe.",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Erhalten Sie 5% zurück auf Einkäufe.",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "5% auf Transport und Kaffee.",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Plus 5% auf Transport und Kaffee.",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien mühelos verdienen.",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien mühelos jeden Tag verdienen.",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "194bb364-7135-41db-9ac6-b61d2e20bca2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "92ce21b9-09e7-480a-bc48-9a9ac3180af2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "92ce21b9-09e7-480a-bc48-9a9ac3180af2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "92ce21b9-09e7-480a-bc48-9a9ac3180af2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "92ce21b9-09e7-480a-bc48-9a9ac3180af2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "92ce21b9-09e7-480a-bc48-9a9ac3180af2"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "92ce21b9-09e7-480a-bc48-9a9ac3180af2"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "e4f57011-0593-4579-a48f-cf3076942f71"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "e4f57011-0593-4579-a48f-cf3076942f71"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "e4f57011-0593-4579-a48f-cf3076942f71"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "e4f57011-0593-4579-a48f-cf3076942f71"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Einkäufe. 5% zurück.",
+      "variantIds": [
+        "e4f57011-0593-4579-a48f-cf3076942f71"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Und Einkäufe. 5% zurück.",
+      "variantIds": [
+        "e4f57011-0593-4579-a48f-cf3076942f71"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "e4f57011-0593-4579-a48f-cf3076942f71"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "e4f57011-0593-4579-a48f-cf3076942f71"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Einkäufe. 5% zurück.",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Und Einkäufe. 5% zurück.",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien für Ihren Alltag.",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien für Ihre täglichen Ausgaben.",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "c8eae7a1-b0f0-4883-9e1b-d9d01516836b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "9e0a6b9d-f3b5-4055-9dce-375a336d124c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "9e0a6b9d-f3b5-4055-9dce-375a336d124c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "9e0a6b9d-f3b5-4055-9dce-375a336d124c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "9e0a6b9d-f3b5-4055-9dce-375a336d124c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "9e0a6b9d-f3b5-4055-9dce-375a336d124c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "9e0a6b9d-f3b5-4055-9dce-375a336d124c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "0afd62c5-6f9b-4b35-8ff9-43edbf85ebe7"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "0afd62c5-6f9b-4b35-8ff9-43edbf85ebe7"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "0afd62c5-6f9b-4b35-8ff9-43edbf85ebe7"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "0afd62c5-6f9b-4b35-8ff9-43edbf85ebe7"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Einkäufe. 5% zurück.",
+      "variantIds": [
+        "0afd62c5-6f9b-4b35-8ff9-43edbf85ebe7"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Und Einkäufe. 5% zurück.",
+      "variantIds": [
+        "0afd62c5-6f9b-4b35-8ff9-43edbf85ebe7"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "0afd62c5-6f9b-4b35-8ff9-43edbf85ebe7"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "0afd62c5-6f9b-4b35-8ff9-43edbf85ebe7"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Einkäufe. 5% zurück.",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Und Einkäufe. 5% zurück.",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien für Ihren Alltag.",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien für Ihre täglichen Ausgaben.",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "d3c34bd8-6b57-4faf-b644-35fbcbcc8fae"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "65a740b3-df28-4b88-9987-526878fca46e"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "65a740b3-df28-4b88-9987-526878fca46e"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "65a740b3-df28-4b88-9987-526878fca46e"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "65a740b3-df28-4b88-9987-526878fca46e"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "65a740b3-df28-4b88-9987-526878fca46e"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "65a740b3-df28-4b88-9987-526878fca46e"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "bc4f8d38-6945-4b1a-91fe-e56546705b10"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "bc4f8d38-6945-4b1a-91fe-e56546705b10"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "bc4f8d38-6945-4b1a-91fe-e56546705b10"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "bc4f8d38-6945-4b1a-91fe-e56546705b10"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Einkäufe. 5% zurück.",
+      "variantIds": [
+        "bc4f8d38-6945-4b1a-91fe-e56546705b10"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Und Einkäufe. 5% zurück.",
+      "variantIds": [
+        "bc4f8d38-6945-4b1a-91fe-e56546705b10"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "bc4f8d38-6945-4b1a-91fe-e56546705b10"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "bc4f8d38-6945-4b1a-91fe-e56546705b10"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Morgenkaffee. 5% zurück.",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "Täglicher Transport. 5% zurück.",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Einkäufe. 5% zurück.",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Und Einkäufe. 5% zurück.",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien für Ihren Alltag.",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Prämien für Ihre täglichen Ausgaben.",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "7b89cfbc-a907-48b5-b8dd-62ab92a4d020"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurück.",
+      "variantIds": [
+        "65453c54-9272-406d-80d6-9ec200a520c1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurückbekommen.",
+      "variantIds": [
+        "65453c54-9272-406d-80d6-9ec200a520c1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% auf Einkäufe, Transport & Kaffee.",
+      "variantIds": [
+        "65453c54-9272-406d-80d6-9ec200a520c1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe, Transport und Kaffee.",
+      "variantIds": [
+        "65453c54-9272-406d-80d6-9ec200a520c1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "65453c54-9272-406d-80d6-9ec200a520c1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "65453c54-9272-406d-80d6-9ec200a520c1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurück.",
+      "variantIds": [
+        "b5b5e26a-bbf4-4ae6-bef2-de1737bdeea1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurückbekommen.",
+      "variantIds": [
+        "b5b5e26a-bbf4-4ae6-bef2-de1737bdeea1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% auf Einkäufe, Transport & Kaffee.",
+      "variantIds": [
+        "b5b5e26a-bbf4-4ae6-bef2-de1737bdeea1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe, Transport und Kaffee.",
+      "variantIds": [
+        "b5b5e26a-bbf4-4ae6-bef2-de1737bdeea1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Ihr täglicher Begleiter.",
+      "variantIds": [
+        "b5b5e26a-bbf4-4ae6-bef2-de1737bdeea1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Kite, Ihr täglicher Begleiter für mühelose Prämien.",
+      "variantIds": [
+        "b5b5e26a-bbf4-4ae6-bef2-de1737bdeea1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "b5b5e26a-bbf4-4ae6-bef2-de1737bdeea1"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "b5b5e26a-bbf4-4ae6-bef2-de1737bdeea1"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurück.",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurückbekommen.",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% auf Einkäufe, Transport & Kaffee.",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe, Transport und Kaffee.",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Ihr täglicher Begleiter.",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Kite, Ihr täglicher Begleiter für mühelose Prämien.",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Immer lohnenswert.",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jeden Tag lohnenswerter machen.",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "e31f66f1-75be-456c-a3e7-da24ea3ad9f9"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurück.",
+      "variantIds": [
+        "6c32156b-7d20-4811-9ff8-f5a34a56d8bc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurückbekommen.",
+      "variantIds": [
+        "6c32156b-7d20-4811-9ff8-f5a34a56d8bc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% auf Einkäufe, Transport & Kaffee.",
+      "variantIds": [
+        "6c32156b-7d20-4811-9ff8-f5a34a56d8bc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe, Transport und Kaffee.",
+      "variantIds": [
+        "6c32156b-7d20-4811-9ff8-f5a34a56d8bc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "6c32156b-7d20-4811-9ff8-f5a34a56d8bc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "6c32156b-7d20-4811-9ff8-f5a34a56d8bc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurück.",
+      "variantIds": [
+        "d5fdfbf7-ae77-4c6c-b74b-a508deccb667"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurückbekommen.",
+      "variantIds": [
+        "d5fdfbf7-ae77-4c6c-b74b-a508deccb667"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% auf Einkäufe, Transport & Kaffee.",
+      "variantIds": [
+        "d5fdfbf7-ae77-4c6c-b74b-a508deccb667"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe, Transport und Kaffee.",
+      "variantIds": [
+        "d5fdfbf7-ae77-4c6c-b74b-a508deccb667"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Ihr täglicher Begleiter.",
+      "variantIds": [
+        "d5fdfbf7-ae77-4c6c-b74b-a508deccb667"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Kite, Ihr täglicher Begleiter für mühelose Prämien.",
+      "variantIds": [
+        "d5fdfbf7-ae77-4c6c-b74b-a508deccb667"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "d5fdfbf7-ae77-4c6c-b74b-a508deccb667"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "d5fdfbf7-ae77-4c6c-b74b-a508deccb667"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurück.",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurückbekommen.",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% auf Einkäufe, Transport & Kaffee.",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe, Transport und Kaffee.",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Ihr täglicher Begleiter.",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Kite, Ihr täglicher Begleiter für mühelose Prämien.",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Immer lohnenswert.",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jeden Tag lohnenswerter machen.",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "5b2ccec3-937f-4984-a261-0a08fcf17ff3"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurück.",
+      "variantIds": [
+        "169f6dfd-624e-4d63-bcd8-0fede2a9a4fc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurückbekommen.",
+      "variantIds": [
+        "169f6dfd-624e-4d63-bcd8-0fede2a9a4fc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% auf Einkäufe, Transport & Kaffee.",
+      "variantIds": [
+        "169f6dfd-624e-4d63-bcd8-0fede2a9a4fc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe, Transport und Kaffee.",
+      "variantIds": [
+        "169f6dfd-624e-4d63-bcd8-0fede2a9a4fc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "169f6dfd-624e-4d63-bcd8-0fede2a9a4fc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "169f6dfd-624e-4d63-bcd8-0fede2a9a4fc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurück.",
+      "variantIds": [
+        "dad4eafd-7aeb-4c84-9901-207a1977fc87"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurückbekommen.",
+      "variantIds": [
+        "dad4eafd-7aeb-4c84-9901-207a1977fc87"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% auf Einkäufe, Transport & Kaffee.",
+      "variantIds": [
+        "dad4eafd-7aeb-4c84-9901-207a1977fc87"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe, Transport und Kaffee.",
+      "variantIds": [
+        "dad4eafd-7aeb-4c84-9901-207a1977fc87"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Ihr täglicher Begleiter.",
+      "variantIds": [
+        "dad4eafd-7aeb-4c84-9901-207a1977fc87"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Kite, Ihr täglicher Begleiter für mühelose Prämien.",
+      "variantIds": [
+        "dad4eafd-7aeb-4c84-9901-207a1977fc87"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "dad4eafd-7aeb-4c84-9901-207a1977fc87"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "dad4eafd-7aeb-4c84-9901-207a1977fc87"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurück.",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "de-DE",
+      "text": "Tägliche Ausgaben. Mehr zurückbekommen.",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "de-DE",
+      "text": "5% auf Einkäufe, Transport & Kaffee.",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "de-DE",
+      "text": "5% zurück auf Einkäufe, Transport und Kaffee.",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "de-DE",
+      "text": "Ihr täglicher Begleiter.",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "de-DE",
+      "text": "Kite, Ihr täglicher Begleiter für mühelose Prämien.",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "de-DE",
+      "text": "Immer lohnenswert.",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "de-DE",
+      "text": "Jeden Tag lohnenswerter machen.",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "de-DE",
+      "text": "Jetzt auszahlen lassen!",
+      "variantIds": [
+        "1998bfeb-3032-4196-b807-f1226ad9fee7"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "a040a35a-4a16-4829-acae-6f41a62951d8"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "a040a35a-4a16-4829-acae-6f41a62951d8"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado.",
+      "variantIds": [
+        "a040a35a-4a16-4829-acae-6f41a62951d8"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Obtenga un 5% de reembolso en supermercado.",
+      "variantIds": [
+        "a040a35a-4a16-4829-acae-6f41a62951d8"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "a040a35a-4a16-4829-acae-6f41a62951d8"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "a040a35a-4a16-4829-acae-6f41a62951d8"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "b36bcf54-5a10-44e8-b344-de782fb3fb84"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "b36bcf54-5a10-44e8-b344-de782fb3fb84"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado.",
+      "variantIds": [
+        "b36bcf54-5a10-44e8-b344-de782fb3fb84"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Obtenga un 5% de reembolso en supermercado.",
+      "variantIds": [
+        "b36bcf54-5a10-44e8-b344-de782fb3fb84"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "5% en transporte y café.",
+      "variantIds": [
+        "b36bcf54-5a10-44e8-b344-de782fb3fb84"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Además, 5% en transporte y café.",
+      "variantIds": [
+        "b36bcf54-5a10-44e8-b344-de782fb3fb84"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "b36bcf54-5a10-44e8-b344-de782fb3fb84"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "b36bcf54-5a10-44e8-b344-de782fb3fb84"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado.",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Obtenga un 5% de reembolso en supermercado.",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "5% en transporte y café.",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Además, 5% en transporte y café.",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "Gane recompensas sin esfuerzo.",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "Gane recompensas sin esfuerzo cada día.",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "f1e454c7-d201-40a2-ae6e-385d747e8ca0"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "e0f7bf0d-6fb8-40a2-a39c-c14a49a0115b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "e0f7bf0d-6fb8-40a2-a39c-c14a49a0115b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado.",
+      "variantIds": [
+        "e0f7bf0d-6fb8-40a2-a39c-c14a49a0115b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Obtenga un 5% de reembolso en supermercado.",
+      "variantIds": [
+        "e0f7bf0d-6fb8-40a2-a39c-c14a49a0115b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "e0f7bf0d-6fb8-40a2-a39c-c14a49a0115b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "e0f7bf0d-6fb8-40a2-a39c-c14a49a0115b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "893edbb2-3565-4e0d-8744-95d98282540a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "893edbb2-3565-4e0d-8744-95d98282540a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado.",
+      "variantIds": [
+        "893edbb2-3565-4e0d-8744-95d98282540a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Obtenga un 5% de reembolso en supermercado.",
+      "variantIds": [
+        "893edbb2-3565-4e0d-8744-95d98282540a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "5% en transporte y café.",
+      "variantIds": [
+        "893edbb2-3565-4e0d-8744-95d98282540a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Además, 5% en transporte y café.",
+      "variantIds": [
+        "893edbb2-3565-4e0d-8744-95d98282540a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "893edbb2-3565-4e0d-8744-95d98282540a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "893edbb2-3565-4e0d-8744-95d98282540a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado.",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Obtenga un 5% de reembolso en supermercado.",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "5% en transporte y café.",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Además, 5% en transporte y café.",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "Gane recompensas sin esfuerzo.",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "Gane recompensas sin esfuerzo cada día.",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "32965a2e-7fde-44f9-8e43-af997d9de17d"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "ec63e38a-4699-4ffb-a670-689b99d858f6"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "ec63e38a-4699-4ffb-a670-689b99d858f6"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado.",
+      "variantIds": [
+        "ec63e38a-4699-4ffb-a670-689b99d858f6"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Obtenga un 5% de reembolso en supermercado.",
+      "variantIds": [
+        "ec63e38a-4699-4ffb-a670-689b99d858f6"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "ec63e38a-4699-4ffb-a670-689b99d858f6"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "ec63e38a-4699-4ffb-a670-689b99d858f6"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "f68c0734-66a2-4265-8ccb-208f2567c584"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "f68c0734-66a2-4265-8ccb-208f2567c584"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado.",
+      "variantIds": [
+        "f68c0734-66a2-4265-8ccb-208f2567c584"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Obtenga un 5% de reembolso en supermercado.",
+      "variantIds": [
+        "f68c0734-66a2-4265-8ccb-208f2567c584"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "5% en transporte y café.",
+      "variantIds": [
+        "f68c0734-66a2-4265-8ccb-208f2567c584"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Además, 5% en transporte y café.",
+      "variantIds": [
+        "f68c0734-66a2-4265-8ccb-208f2567c584"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "f68c0734-66a2-4265-8ccb-208f2567c584"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "f68c0734-66a2-4265-8ccb-208f2567c584"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Kite: Sus recompensas diarias.",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado.",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Obtenga un 5% de reembolso en supermercado.",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "5% en transporte y café.",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Además, 5% en transporte y café.",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "Gane recompensas sin esfuerzo.",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "Gane recompensas sin esfuerzo cada día.",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "7394384f-a1e2-437c-b3e1-4d8081d26c0b"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "db52e26b-df92-4874-a582-ee4f459e3388"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "db52e26b-df92-4874-a582-ee4f459e3388"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "db52e26b-df92-4874-a582-ee4f459e3388"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "db52e26b-df92-4874-a582-ee4f459e3388"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "db52e26b-df92-4874-a582-ee4f459e3388"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "db52e26b-df92-4874-a582-ee4f459e3388"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "6b361fea-f804-4b54-ab68-5b80c70eda6f"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "6b361fea-f804-4b54-ab68-5b80c70eda6f"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "6b361fea-f804-4b54-ab68-5b80c70eda6f"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "6b361fea-f804-4b54-ab68-5b80c70eda6f"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Supermercado. 5% de reembolso.",
+      "variantIds": [
+        "6b361fea-f804-4b54-ab68-5b80c70eda6f"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Y supermercado. 5% de reembolso.",
+      "variantIds": [
+        "6b361fea-f804-4b54-ab68-5b80c70eda6f"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "6b361fea-f804-4b54-ab68-5b80c70eda6f"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "6b361fea-f804-4b54-ab68-5b80c70eda6f"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Supermercado. 5% de reembolso.",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Y supermercado. 5% de reembolso.",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "Recompensas para su día a día.",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "Recompensas para sus gastos diarios.",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "857c367b-956f-4b63-b889-e5ba088b34bc"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "11fd53c7-1280-4d6e-9365-670bc112e068"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "11fd53c7-1280-4d6e-9365-670bc112e068"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "11fd53c7-1280-4d6e-9365-670bc112e068"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "11fd53c7-1280-4d6e-9365-670bc112e068"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "11fd53c7-1280-4d6e-9365-670bc112e068"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "11fd53c7-1280-4d6e-9365-670bc112e068"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "49272704-e79a-4c06-b1eb-aa6438e3bf75"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "49272704-e79a-4c06-b1eb-aa6438e3bf75"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "49272704-e79a-4c06-b1eb-aa6438e3bf75"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "49272704-e79a-4c06-b1eb-aa6438e3bf75"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Supermercado. 5% de reembolso.",
+      "variantIds": [
+        "49272704-e79a-4c06-b1eb-aa6438e3bf75"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Y supermercado. 5% de reembolso.",
+      "variantIds": [
+        "49272704-e79a-4c06-b1eb-aa6438e3bf75"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "49272704-e79a-4c06-b1eb-aa6438e3bf75"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "49272704-e79a-4c06-b1eb-aa6438e3bf75"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Supermercado. 5% de reembolso.",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Y supermercado. 5% de reembolso.",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "Recompensas para su día a día.",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "Recompensas para sus gastos diarios.",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "9b9d5619-a427-4c3a-aa9a-8a9d43b552e4"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "24c9e7b3-3f05-48bb-addb-54bf77ddb2ac"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "24c9e7b3-3f05-48bb-addb-54bf77ddb2ac"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "24c9e7b3-3f05-48bb-addb-54bf77ddb2ac"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "24c9e7b3-3f05-48bb-addb-54bf77ddb2ac"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "24c9e7b3-3f05-48bb-addb-54bf77ddb2ac"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "24c9e7b3-3f05-48bb-addb-54bf77ddb2ac"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "6aeedfe9-1750-44bf-8315-143a9b37b32f"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "6aeedfe9-1750-44bf-8315-143a9b37b32f"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "6aeedfe9-1750-44bf-8315-143a9b37b32f"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "6aeedfe9-1750-44bf-8315-143a9b37b32f"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Supermercado. 5% de reembolso.",
+      "variantIds": [
+        "6aeedfe9-1750-44bf-8315-143a9b37b32f"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Y supermercado. 5% de reembolso.",
+      "variantIds": [
+        "6aeedfe9-1750-44bf-8315-143a9b37b32f"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "6aeedfe9-1750-44bf-8315-143a9b37b32f"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "6aeedfe9-1750-44bf-8315-143a9b37b32f"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Café por la mañana. 5% de reembolso.",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "Transporte diario. 5% de reembolso.",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Supermercado. 5% de reembolso.",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Y supermercado. 5% de reembolso.",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "Recompensas para su día a día.",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "Recompensas para sus gastos diarios.",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "30ff3761-bf90-412b-8cef-e46a4a0970c5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Más reembolso.",
+      "variantIds": [
+        "528af7af-fe13-454f-9f11-be1ec0df8463"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Obtenga más reembolso.",
+      "variantIds": [
+        "528af7af-fe13-454f-9f11-be1ec0df8463"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% en supermercado, transporte y café.",
+      "variantIds": [
+        "528af7af-fe13-454f-9f11-be1ec0df8463"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado, transporte y café.",
+      "variantIds": [
+        "528af7af-fe13-454f-9f11-be1ec0df8463"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "528af7af-fe13-454f-9f11-be1ec0df8463"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "528af7af-fe13-454f-9f11-be1ec0df8463"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Más reembolso.",
+      "variantIds": [
+        "445bd2ef-bbeb-487b-9be9-ad2851731969"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Obtenga más reembolso.",
+      "variantIds": [
+        "445bd2ef-bbeb-487b-9be9-ad2851731969"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% en supermercado, transporte y café.",
+      "variantIds": [
+        "445bd2ef-bbeb-487b-9be9-ad2851731969"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado, transporte y café.",
+      "variantIds": [
+        "445bd2ef-bbeb-487b-9be9-ad2851731969"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Su compañero diario.",
+      "variantIds": [
+        "445bd2ef-bbeb-487b-9be9-ad2851731969"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Kite, su compañero diario para recompensas sin esfuerzo.",
+      "variantIds": [
+        "445bd2ef-bbeb-487b-9be9-ad2851731969"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "445bd2ef-bbeb-487b-9be9-ad2851731969"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "445bd2ef-bbeb-487b-9be9-ad2851731969"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Más reembolso.",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Obtenga más reembolso.",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% en supermercado, transporte y café.",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado, transporte y café.",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Su compañero diario.",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Kite, su compañero diario para recompensas sin esfuerzo.",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "Siempre recompensando.",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "Haciendo cada día más gratificante.",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "6338c321-3e27-4aa6-bea8-b2a0e3729a88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Más reembolso.",
+      "variantIds": [
+        "19feb468-2094-4fed-80f7-d8dbc5ee7fcf"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Obtenga más reembolso.",
+      "variantIds": [
+        "19feb468-2094-4fed-80f7-d8dbc5ee7fcf"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% en supermercado, transporte y café.",
+      "variantIds": [
+        "19feb468-2094-4fed-80f7-d8dbc5ee7fcf"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado, transporte y café.",
+      "variantIds": [
+        "19feb468-2094-4fed-80f7-d8dbc5ee7fcf"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "19feb468-2094-4fed-80f7-d8dbc5ee7fcf"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "19feb468-2094-4fed-80f7-d8dbc5ee7fcf"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Más reembolso.",
+      "variantIds": [
+        "27a55938-9636-4238-8b9e-ef5bb5cc4451"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Obtenga más reembolso.",
+      "variantIds": [
+        "27a55938-9636-4238-8b9e-ef5bb5cc4451"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% en supermercado, transporte y café.",
+      "variantIds": [
+        "27a55938-9636-4238-8b9e-ef5bb5cc4451"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado, transporte y café.",
+      "variantIds": [
+        "27a55938-9636-4238-8b9e-ef5bb5cc4451"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Su compañero diario.",
+      "variantIds": [
+        "27a55938-9636-4238-8b9e-ef5bb5cc4451"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Kite, su compañero diario para recompensas sin esfuerzo.",
+      "variantIds": [
+        "27a55938-9636-4238-8b9e-ef5bb5cc4451"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "27a55938-9636-4238-8b9e-ef5bb5cc4451"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "27a55938-9636-4238-8b9e-ef5bb5cc4451"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Más reembolso.",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Obtenga más reembolso.",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% en supermercado, transporte y café.",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado, transporte y café.",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Su compañero diario.",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Kite, su compañero diario para recompensas sin esfuerzo.",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "Siempre recompensando.",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "Haciendo cada día más gratificante.",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "e82f144d-10e9-4629-8fe7-518654e6fa88"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Más reembolso.",
+      "variantIds": [
+        "9e4234a5-1473-4947-a146-a9ac2d8e665a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Obtenga más reembolso.",
+      "variantIds": [
+        "9e4234a5-1473-4947-a146-a9ac2d8e665a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% en supermercado, transporte y café.",
+      "variantIds": [
+        "9e4234a5-1473-4947-a146-a9ac2d8e665a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado, transporte y café.",
+      "variantIds": [
+        "9e4234a5-1473-4947-a146-a9ac2d8e665a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "9e4234a5-1473-4947-a146-a9ac2d8e665a"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "9e4234a5-1473-4947-a146-a9ac2d8e665a"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Más reembolso.",
+      "variantIds": [
+        "894fae7c-800d-44e7-ae7e-e0a5ea12564c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Obtenga más reembolso.",
+      "variantIds": [
+        "894fae7c-800d-44e7-ae7e-e0a5ea12564c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% en supermercado, transporte y café.",
+      "variantIds": [
+        "894fae7c-800d-44e7-ae7e-e0a5ea12564c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado, transporte y café.",
+      "variantIds": [
+        "894fae7c-800d-44e7-ae7e-e0a5ea12564c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Su compañero diario.",
+      "variantIds": [
+        "894fae7c-800d-44e7-ae7e-e0a5ea12564c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Kite, su compañero diario para recompensas sin esfuerzo.",
+      "variantIds": [
+        "894fae7c-800d-44e7-ae7e-e0a5ea12564c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "894fae7c-800d-44e7-ae7e-e0a5ea12564c"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "894fae7c-800d-44e7-ae7e-e0a5ea12564c"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Más reembolso.",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-1",
+      "locale": "es-ES",
+      "text": "Gastos diarios. Obtenga más reembolso.",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-2",
+      "locale": "es-ES",
+      "text": "5% en supermercado, transporte y café.",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-2",
+      "locale": "es-ES",
+      "text": "5% de reembolso en supermercado, transporte y café.",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-3",
+      "locale": "es-ES",
+      "text": "Su compañero diario.",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-3",
+      "locale": "es-ES",
+      "text": "Kite, su compañero diario para recompensas sin esfuerzo.",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-4",
+      "locale": "es-ES",
+      "text": "Siempre recompensando.",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-4",
+      "locale": "es-ES",
+      "text": "Haciendo cada día más gratificante.",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    },
+    {
+      "copySlot": "onScreenCopy_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    },
+    {
+      "copySlot": "narration_scene-5",
+      "locale": "es-ES",
+      "text": "¡Reciba su pago ahora!",
+      "variantIds": [
+        "28f6e89c-c35c-4ef7-a1b0-190bea741fa5"
+      ]
+    }
+  ]
+}

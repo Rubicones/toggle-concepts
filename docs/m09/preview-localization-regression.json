@@ -1,0 +1,33 @@
+{
+  "case": "saved preview and localized source scene bindings",
+  "liveRenderEvents": 202,
+  "liveCheckPasses": 5,
+  "liveFormats": 4,
+  "liveScenes": 5,
+  "liveMomentsPerScene": 2,
+  "latestSavedPreviewFrames": 40,
+  "newDraftMomentsPerSceneDefault": 1,
+  "savedPreviewStartsWork": false,
+  "unchangedSourceChecksReuseResults": true,
+  "staleBundleChecksRejected": true,
+  "localizedVariantsBound": 81,
+  "localizedScenes": 3,
+  "locales": [
+    "en-GB",
+    "de-DE",
+    "es-ES"
+  ],
+  "localizedTextChanged": false,
+  "paidRequestsStartedByVerification": 0,
+  "liveQuoteVerified": false,
+  "liveQuoteProbe": "ECONNREFUSED 127.0.0.1:3100",
+  "visualVerification": false,
+  "newMigrationRequired": false,
+  "testsPassed": 368,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "build": true
+  }
+}

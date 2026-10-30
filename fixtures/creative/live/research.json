@@ -1,0 +1,410 @@
+{
+  "provenance": {
+    "kind": "recorded-provider-output",
+    "workflowJobId": "a6f3e613-133b-4616-91d4-2e54aa6a5315",
+    "capturedAt": "2026-10-25T23:04:47.523796+00:00",
+    "sha256": "1e6e94780b7ec268bb829cab6b55c25b5cc9a3cf04ff1165d7f74939d32dac3c"
+  },
+  "output": {
+    "assumptions": [],
+    "blockingQuestions": [],
+    "deliverable": {
+      "contradictions": [],
+      "evidenceLedger": [
+        {
+          "claim": "sonicdesk is a web workspace for bands.",
+          "claimId": "CL001",
+          "limitations": "None.",
+          "relevance": "Core product identity, confirmed product fact.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product",
+          "supportingExcerpt": "sonicdesk — a web workspace for bands (\"version control for music\")."
+        },
+        {
+          "claim": "sonicdesk has a Snippet feature.",
+          "claimId": "CL002",
+          "limitations": "None.",
+          "relevance": "Key feature being promoted, confirmed product fact.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product",
+          "supportingExcerpt": "This campaign promotes the Snippet feature: inside a song's mixer..."
+        },
+        {
+          "claim": "Snippet allows selecting a 5–30 second part of a mix.",
+          "claimId": "CL003",
+          "limitations": "None.",
+          "relevance": "Detailed feature capability, confirmed product fact. Specific timeframes and drag functionality.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product",
+          "supportingExcerpt": "...you select a 5–30 second part of the mix (presets 5/10/15/20/25/30 s or free drag)..."
+        },
+        {
+          "claim": "Snippet snaps to section starts (Verse, Chorus, etc.).",
+          "claimId": "CL004",
+          "limitations": "None.",
+          "relevance": "Specific UX detail, confirmed product fact.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product",
+          "supportingExcerpt": "...it snaps to section starts (Verse, Chorus, etc.)..."
+        },
+        {
+          "claim": "Snippet loops for listening.",
+          "claimId": "CL005",
+          "limitations": "None.",
+          "relevance": "Feature functionality, confirmed product fact.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product",
+          "supportingExcerpt": "...loops for listening..."
+        },
+        {
+          "claim": "Snippet exports as an audio file.",
+          "claimId": "CL006",
+          "limitations": "None.",
+          "relevance": "Output capability, confirmed product fact.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product",
+          "supportingExcerpt": "...and exports as an audio file..."
+        },
+        {
+          "claim": "Snippet exports audio only, not video.",
+          "claimId": "CL007",
+          "limitations": "Must explicitly avoid claiming video export.",
+          "relevance": "Crucial limitation for advertising, confirmed restriction.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: offer",
+          "supportingExcerpt": "Do not promise video export (Snippet exports audio only)."
+        },
+        {
+          "claim": "Snippet exports WAV only.",
+          "claimId": "CL008",
+          "limitations": "Must explicitly state WAV only and avoid MP3 claims.",
+          "relevance": "Specific export format, confirmed restriction. Blocks MP3 claims.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: offer",
+          "supportingExcerpt": "Do not claim MP3 export (not confirmed); WAV only."
+        },
+        {
+          "claim": "The exported audio can be used to test hooks in Reels/TikTok.",
+          "claimId": "CL009",
+          "limitations": "None.",
+          "relevance": "Primary use case for the feature, confirmed product benefit.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product",
+          "supportingExcerpt": "...you can use to test the hook in Reels/TikTok before release."
+        },
+        {
+          "claim": "The campaign targets independent musicians, songwriters, and small bands (18–40).",
+          "claimId": "CL010",
+          "limitations": "None.",
+          "relevance": "Audience definition, confirmed campaign targeting.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: audience",
+          "supportingExcerpt": "Independent musicians, songwriters and small bands (roughly 18–40) who are working on unreleased songs..."
+        },
+        {
+          "claim": "The target audience posts short-form videos to promote their music.",
+          "claimId": "CL011",
+          "limitations": "None.",
+          "relevance": "Audience behavior, confirmed campaign targeting.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: audience",
+          "supportingExcerpt": "...post short-form videos to promote their music..."
+        },
+        {
+          "claim": "The audience wants to find out which part of a song catches attention before release.",
+          "claimId": "CL012",
+          "limitations": "None.",
+          "relevance": "Audience need, confirmed campaign targeting.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: audience",
+          "supportingExcerpt": "...and want to find out which part of a song catches attention before they release it."
+        },
+        {
+          "claim": "The product helps get a quick clean clip of the best 15 seconds without opening a DAW.",
+          "claimId": "CL013",
+          "limitations": "None. The mention of '15 seconds' is an example, not a strict limit on snippet length, which is 5-30 seconds (CL003).",
+          "relevance": "Problem/solution statement, confirmed product benefit and audience pain point.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: audience",
+          "supportingExcerpt": "Situation: they have a mix in progress and need a quick clean clip of the best 15 seconds without opening a DAW and bouncing manually."
+        },
+        {
+          "claim": "No discount or special offer is available.",
+          "claimId": "CL014",
+          "limitations": "Must not mention prices, free plans, or trials.",
+          "relevance": "Offer constraint, confirmed marketing rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: offer",
+          "supportingExcerpt": "No discount or special offer. Do not mention prices, free plans or trials."
+        },
+        {
+          "claim": "No competitor names or DAW trademarks/logos.",
+          "claimId": "CL015",
+          "limitations": "Strict prohibition on competitor and DAW mentions/logos.",
+          "relevance": "Marketing constraint, confirmed legal/brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: offer; acceptedBrandKit.payload.kit.rules.faf73cc1-3652-4999-8912-c186184f008c",
+          "supportingExcerpt": "No competitor names or DAW trademarks/logos. (Brief); No competitor names, DAW trademarks/logos. (Brand Kit policy)"
+        },
+        {
+          "claim": "Background/environment photos and people (musicians, rooms) may be generated.",
+          "claimId": "CL016",
+          "limitations": "Generated content must not include real people, brands, instrument logos, or DAW interfaces.",
+          "relevance": "Asset generation rule, confirmed creative guideline.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: synthesis",
+          "supportingExcerpt": "Background/environment photos and people (musicians, rooms) may be generated, as long as no real person, brand, instrument logo or DAW interface appears."
+        },
+        {
+          "claim": "The product UI itself must not be AI-generated or altered.",
+          "claimId": "CL017",
+          "limitations": "Product UI must be authentic.",
+          "relevance": "Asset generation rule, confirmed creative guideline for authenticity.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: synthesis",
+          "supportingExcerpt": "The product UI itself must not be AI-generated or altered."
+        },
+        {
+          "claim": "sonicdesk logo and wordmark (sonicdesk. with lime dot) are immutable.",
+          "claimId": "CL018",
+          "limitations": "Must be used exactly as specified.",
+          "relevance": "Brand identity immutable, confirmed brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables",
+          "supportingExcerpt": "sonicdesk logo and wordmark (\"sonicdesk.\" with lime dot)"
+        },
+        {
+          "claim": "Brand colours are lime #DFFF00 on near-black.",
+          "claimId": "CL019",
+          "limitations": "Strict adherence to specified colors.",
+          "relevance": "Core brand identity, confirmed brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables; acceptedBrandKit.payload.kit.rules.ea1fb71a-11b1-4c77-a01a-0537084943cc; acceptedBrandKit.payload.kit.rules.06157835-4c97-4cee-8027-524d8f9c2c56",
+          "supportingExcerpt": "brand colours (lime #DFFF00 on near-black) (Brief); ink #DFFF00 (Brand Kit); paper #000000 (Brand Kit)"
+        },
+        {
+          "claim": "Typefaces are Archivo and JetBrains Mono.",
+          "claimId": "CL020",
+          "limitations": "Strict adherence to specified typefaces.",
+          "relevance": "Core brand identity, confirmed brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables; acceptedBrandKit.payload.kit.rules.0369c7d0-5354-4a9a-8fec-82a64fc1d5e4; acceptedBrandKit.payload.kit.rules.b75d678b-24de-4c05-bebe-d0daeeeb58be",
+          "supportingExcerpt": "typefaces (Archivo, JetBrains Mono) (Brief); headlineFamily Archivo (Brand Kit); bodyFamily JetBrains Mono (Brand Kit)"
+        },
+        {
+          "claim": "Product UI layout and labels (snippet window, section ribbon, length chips 5–30s, Export snippet button) are immutable.",
+          "claimId": "CL021",
+          "limitations": "Must be presented exactly as in the product UI.",
+          "relevance": "Specific UI elements are immutable, confirmed brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables",
+          "supportingExcerpt": "product UI layout and labels (snippet window, section ribbon, length chips 5–30s, Export snippet button)"
+        },
+        {
+          "claim": "Feature behavior as described in the claims is immutable.",
+          "claimId": "CL022",
+          "limitations": "No deviation from described feature behavior.",
+          "relevance": "Ensures consistency with product functionality, confirmed brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables",
+          "supportingExcerpt": "feature behaviour as described in the claims."
+        },
+        {
+          "claim": "The song 'Night Drive' and its waveforms are fictional demo content.",
+          "claimId": "CL023",
+          "limitations": "Cannot use other fictional or real music unless confirmed.",
+          "relevance": "Content sourcing rule, confirmed legal/brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: rightsNotes",
+          "supportingExcerpt": "The song \"Night Drive\" and its waveforms are fictional demo content."
+        },
+        {
+          "claim": "No third-party music, logos, trademarks, testimonials or real people's likenesses are used.",
+          "claimId": "CL024",
+          "limitations": "Strict prohibition on using third-party content and real likenesses.",
+          "relevance": "Content sourcing rule, confirmed legal/brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: rightsNotes",
+          "supportingExcerpt": "No third-party music, logos, trademarks, testimonials or real people's likenesses are used."
+        },
+        {
+          "claim": "Brand tone is Direct, mechanical-confident, specific. Built by musicians, for musicians.",
+          "claimId": "CL025",
+          "limitations": "Must adhere to specified tone; avoid 'marketing-soft', 'developer-speak', 'alarmed', 'cute' tones, and unverified promises.",
+          "relevance": "Voice and tone guidelines, confirmed brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "acceptedBrandKit.payload.kit.rules.2a5c6014-f1f7-46a2-9a24-64f738daa184",
+          "supportingExcerpt": "Direct, mechanical-confident, specific. Built by musicians, for musicians. Avoid marketing-soft, developer-speak, alarmed, or cute tones. Never promise what product can't do."
+        },
+        {
+          "claim": "No shadows in page flow.",
+          "claimId": "CL026",
+          "limitations": "Strict visual guideline.",
+          "relevance": "UI design constraint, confirmed brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "acceptedBrandKit.payload.kit.rules.faf73cc1-3652-4999-8912-c186184f008c",
+          "supportingExcerpt": "No shadows in page flow."
+        },
+        {
+          "claim": "No emoji in UI.",
+          "claimId": "CL027",
+          "limitations": "Strict visual guideline.",
+          "relevance": "UI design constraint, confirmed brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "acceptedBrandKit.payload.kit.rules.faf73cc1-3652-4999-8912-c186184f008c",
+          "supportingExcerpt": "No emoji in UI."
+        },
+        {
+          "claim": "No literal px values in styling (use named styles).",
+          "claimId": "CL028",
+          "limitations": "Technical guideline for implementation.",
+          "relevance": "Technical styling constraint, confirmed brand rule.",
+          "status": "confirmed",
+          "suppliedSourceRef": "acceptedBrandKit.payload.kit.rules.faf73cc1-3652-4999-8912-c186184f008c",
+          "supportingExcerpt": "No literal px values in styling (use named styles)."
+        }
+      ],
+      "prioritizedQuestions": [],
+      "researchNeeded": [],
+      "safeAlternatives": [],
+      "supportedClaims": [
+        {
+          "claim": "sonicdesk is a web workspace for bands.",
+          "claimId": "CL001"
+        },
+        {
+          "claim": "sonicdesk has a Snippet feature.",
+          "claimId": "CL002"
+        },
+        {
+          "claim": "Snippet allows selecting a 5–30 second part of a mix.",
+          "claimId": "CL003"
+        },
+        {
+          "claim": "Snippet snaps to section starts (Verse, Chorus, etc.).",
+          "claimId": "CL004"
+        },
+        {
+          "claim": "Snippet loops for listening.",
+          "claimId": "CL005"
+        },
+        {
+          "claim": "Snippet exports as an audio file.",
+          "claimId": "CL006"
+        },
+        {
+          "claim": "Snippet exports audio only, not video.",
+          "claimId": "CL007"
+        },
+        {
+          "claim": "Snippet exports WAV only.",
+          "claimId": "CL008"
+        },
+        {
+          "claim": "The exported audio can be used to test hooks in Reels/TikTok.",
+          "claimId": "CL009"
+        },
+        {
+          "claim": "The campaign targets independent musicians, songwriters, and small bands (18–40).",
+          "claimId": "CL010"
+        },
+        {
+          "claim": "The target audience posts short-form videos to promote their music.",
+          "claimId": "CL011"
+        },
+        {
+          "claim": "The audience wants to find out which part of a song catches attention before release.",
+          "claimId": "CL012"
+        },
+        {
+          "claim": "The product helps get a quick clean clip of the best 15 seconds without opening a DAW.",
+          "claimId": "CL013"
+        },
+        {
+          "claim": "No discount or special offer is available.",
+          "claimId": "CL014"
+        },
+        {
+          "claim": "No competitor names or DAW trademarks/logos.",
+          "claimId": "CL015"
+        },
+        {
+          "claim": "Background/environment photos and people (musicians, rooms) may be generated.",
+          "claimId": "CL016"
+        },
+        {
+          "claim": "The product UI itself must not be AI-generated or altered.",
+          "claimId": "CL017"
+        },
+        {
+          "claim": "sonicdesk logo and wordmark (sonicdesk. with lime dot) are immutable.",
+          "claimId": "CL018"
+        },
+        {
+          "claim": "Brand colours are lime #DFFF00 on near-black.",
+          "claimId": "CL019"
+        },
+        {
+          "claim": "Typefaces are Archivo and JetBrains Mono.",
+          "claimId": "CL020"
+        },
+        {
+          "claim": "Product UI layout and labels (snippet window, section ribbon, length chips 5–30s, Export snippet button) are immutable.",
+          "claimId": "CL021"
+        },
+        {
+          "claim": "Feature behavior as described in the claims is immutable.",
+          "claimId": "CL022"
+        },
+        {
+          "claim": "The song 'Night Drive' and its waveforms are fictional demo content.",
+          "claimId": "CL023"
+        },
+        {
+          "claim": "No third-party music, logos, trademarks, testimonials or real people's likenesses are used.",
+          "claimId": "CL024"
+        },
+        {
+          "claim": "Brand tone is Direct, mechanical-confident, specific. Built by musicians, for musicians.",
+          "claimId": "CL025"
+        },
+        {
+          "claim": "No shadows in page flow.",
+          "claimId": "CL026"
+        },
+        {
+          "claim": "No emoji in UI.",
+          "claimId": "CL027"
+        },
+        {
+          "claim": "No literal px values in styling (use named styles).",
+          "claimId": "CL028"
+        }
+      ],
+      "unsupportedClaims": []
+    },
+    "handoff": {
+      "checks": [
+        "All claims are directly supported by the supplied brief or accepted brand kit rules.",
+        "No unsupported claims or creative hypotheses have been included as facts.",
+        "Limitations and prohibitions are clearly stated for relevant claims."
+      ],
+      "nextRole": "Intake/strategy/script/localization",
+      "requiredInputs": []
+    },
+    "inputRefs": [
+      "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665",
+      "acceptedBrandKit.payload.kit.rules.2a5c6014-f1f7-46a2-9a24-64f738daa184",
+      "acceptedBrandKit.payload.kit.rules.faf73cc1-3652-4999-8912-c186184f008c",
+      "acceptedBrandKit.payload.kit.rules.ea1fb71a-11b1-4c77-a01a-0537084943cc",
+      "acceptedBrandKit.payload.kit.rules.06157835-4c97-4cee-8027-524d8f9c2c56",
+      "acceptedBrandKit.payload.kit.rules.0369c7d0-5354-4a9a-8fec-82a64fc1d5e4",
+      "acceptedBrandKit.payload.kit.rules.b75d678b-24de-4c05-bebe-d0daeeeb58be"
+    ],
+    "role": "research",
+    "schemaVersion": "1.0",
+    "status": "draft",
+    "summary": "Evidence ledger for sonicdesk campaign claims, based on C1 brief and brand kit rules.",
+    "warnings": []
+  }
+}

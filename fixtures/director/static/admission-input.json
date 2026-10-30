@@ -1,0 +1,2466 @@
+{
+  "brand": {
+    "copy": {
+      "cta": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "hook": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "offer": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "010c5b86-a629-4eb2-a55d-44885d1bde89": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "01344f3b-0c76-42e3-a913-8e2afbbde4c3": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "01536b99-35cc-4e6a-aa10-b780d7549a1f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "05cae444-a59c-40c9-aa29-1b977ee4d1c1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "07f68281-a90a-416a-a1a3-ecb1ffdd0047": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "081df20e-35c6-41ce-a16b-94ff0d904cec": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "0825c2ca-36e8-436a-ae30-3c16c71c8499": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "092c2390-3289-4731-abff-b553ef993f12": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "095f52af-e9aa-4cf1-af2d-5df59df28367": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "0a135214-b299-45c4-af0f-d3f8b1a8da43": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "0bf13f06-6137-445f-ae6e-44dfc3c02526": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "0d195d16-e4e0-4446-ab18-8b6801d04d51": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "0d76c005-866b-4665-a2a9-f31aa7c194fd": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "0e905973-e247-4dd8-aeda-a24b22c00977": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "0f023ed4-ea44-4265-adb2-8e53c1cbf39b": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "0f8b4ef7-b2b6-4e3b-a62d-2a2b5189de07": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "110c0fed-54a8-44f6-ab81-6f2dfc12c54a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "12ed09a1-ee25-4f79-afae-21de3f4222d1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "138ecf9c-0f76-4661-a0a7-4838a28d8443": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "140900cf-d83a-405f-a696-b12dacf1fc45": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "14cc6a4c-62ed-4ab7-aa83-e69ff3ae4d14": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "14e03b58-f9f6-40f1-a24b-3e65b083aa7a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "152e1af2-56cc-4fe9-a699-5497b3f53644": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "15d90d35-e099-49ca-a15f-73c65de6e3cd": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "160a0553-8422-4e30-ad10-e9778f485c8d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "1a55c9b4-5584-452f-a94a-85c3c742e893": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "1b62cfba-12ce-4ccb-a51c-82fe47a3dc67": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "1c369345-0583-47cc-a345-4d6528ca2a4e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "1db09c49-8a76-4353-ae6d-c16deb68c19a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "1e5b9421-05d1-4d12-a76f-1289775d05c9": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "1f92524a-a2cd-4b6b-a7c0-8cad61a9f1ae": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "207b64ab-5065-4994-a9dc-c7352cefd873": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "2142d536-49fb-49d2-a063-e8643b772959": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "21790f38-b83e-4c11-a237-6ed59f8ff3d1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "2264ed54-a024-48cb-a799-e05eb6fde452": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "23338e59-7a3b-4c18-a054-72486fc0f825": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "24e6fa1b-b79e-463e-a5ac-898b2740925c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "24ebe4a4-a73d-49b3-a0b9-c251c01fc393": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "24f5398a-152d-4fe8-a811-187a729dcd29": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "25b4dfe1-164a-4926-a0d7-7370a5253f15": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "269cc47e-3943-461e-a8b6-8ee4e4a9507e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "26b5a1b4-628a-406a-a8a0-68d55f4a11bb": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "26fea536-06de-46e3-a16c-4a15716d76bd": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "27086417-9be8-4161-a81f-e7ee882031c9": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "27b1a140-0d7b-4651-afe8-9d8aa56d5a0f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "2ad11196-8e23-4aff-a416-84fa782bf503": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "2be31920-24e6-43c5-ac6d-9e354ef618de": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "2bf35caf-f109-4423-a1a1-11fe14ed4f5f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "2f01feba-6063-4440-a4a0-657fae618140": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "2f8d90aa-1d89-47bc-ab9c-c54aa8aac1e1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "307baa8a-0cd7-49da-ae9b-3b103147b8d5": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "31dcbfcd-6022-46e3-a561-10a1d2ad2099": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3376c627-aa7a-46df-aca1-4339252ef679": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3423cb34-ea44-401f-ac82-dba055af1f4f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "342c96a2-5a75-4850-ae08-a0bd43c72015": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3561d589-6a6f-4d37-a5d6-01171aab85a6": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "36223fc5-0750-42d4-affd-3119a18e9ead": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "36c35ef7-faee-4093-aef2-2959edffde17": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "37e9dec9-26e9-4612-a1e3-13a83d9231ff": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "38b0ea57-6155-4984-a64f-60144d95eca8": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3959c251-49c9-42bc-a35b-3c7d4b01b7d0": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3a9dc5f4-be5c-4f7f-aa8f-d98821697606": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3ac36c67-2271-472a-a67b-846fe47db86e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3aef9692-eb93-4f22-a117-608d4ff76064": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3b06f7d9-859a-4891-ab0f-7ff225e1be25": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3b4a7e5d-0ae2-47fd-a4d1-0134f3385ebf": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3cee4a7d-5b3a-47b8-a3ab-b79c88b16e9a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3cf41b8d-e050-4418-a9d9-bd8e3d669e78": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3d7cfa8b-58aa-481a-a90b-97c73221ba13": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "3f5bb57d-9a6f-4719-ac03-19256039a0a3": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "4059fc9e-8fdb-4de5-adbb-d1c69ed71768": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "40bd2c44-c3ef-4aba-a9bf-9d7ba8fbd443": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "429e1021-62d2-4df5-ae35-cc80186e5ee6": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "445c9e71-9a2b-4eeb-ac33-ae791d5d9ec3": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "44982853-fed6-482f-a285-408688fab396": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "45fd8027-3100-48e0-a724-3fc6194095d6": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "47b4bb6d-f45f-4de9-a2eb-8918d90a5e3e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "485ac652-b435-4770-ad50-124b2c891f7d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "4a869f61-8f2d-4703-acaf-9b35b60f9b06": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "4b49fac3-600d-49e0-a02d-8d44cbdf7de3": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "4d026ece-fd79-4a61-ae52-5837497eedb9": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "4d5e3df9-d92d-491d-a8d5-3156224f3704": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "4dd73ded-3026-4291-a3f0-61017a0b7e10": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "4eee8ded-8a47-4578-a477-772d4f4fe83b": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "505369af-8375-466c-a2c1-c5e9bd07e7ca": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "50690d73-0f1d-4d34-a7da-85d4d457e988": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "50b990c3-4618-45da-ab3a-95c46931380b": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "52223ef9-9557-48a5-adc5-e6fc2394806e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "537b085a-ddde-4e74-a7fa-701d81936998": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "55cf825c-2842-4e01-afe9-ef5703b55442": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "562a95ce-bf2c-49b4-a337-731c006320d4": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "57e7bb31-c40f-4824-a293-07ef52f91cca": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "583c6f13-0632-432f-afac-2007ab675f55": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "594ab050-e24d-4f36-a545-6e64371b5a39": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "59574c14-7fbd-4d67-a201-9e9d3ef194eb": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "5994cbc4-46b7-470a-ac41-83f12fff1c66": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "59bf7454-cc9c-4cc0-a111-2b7bce242527": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "59f01229-b4be-45b5-a539-af780c70a697": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "5a5fe43e-b8d9-435f-a8ca-3762afcd403e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "5c613bc9-513d-4bb4-a3d8-4d1ae6ba1843": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "5cdf1906-c8ec-40c0-ad7a-2b21ee63db64": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "5d970d1d-667a-436f-a699-efa52c919e86": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "5ddbfda2-8160-4471-ab1b-eb1e0a15f314": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "5ddeee5c-eab0-43cb-a2f4-02282d0039df": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "5e93df41-30b1-4569-a60e-d88646107cb1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "5ebb11b8-766b-4056-abc8-9906b56a23ec": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "624d5f26-00c7-4f5d-a1f0-7a4ac59c011a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "63514365-07f0-46bd-a565-d8ac9bde8cdf": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "636f5ee3-454e-4e32-a634-84dfe1e7eff8": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "639d356c-c738-492b-a82f-a10f1f080819": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "64850605-37ec-416f-a164-7d03ed8d8cbb": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "65130474-7b90-479d-a24c-fcf88a258a26": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "67caf6c5-f00b-402b-ab77-0977b1fe4b73": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "680ed3eb-fff1-415e-ac1f-d69a53e59d84": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "68661c59-4d6c-474a-a58a-4d86f8981be9": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "68f62f5e-5a4b-426b-a1df-74b47987ce00": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "69186997-4f63-4575-a0e3-d907a4967f48": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "69e8ae9f-0d06-4e7d-aee8-94c4d79a9d9f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "6cd247e9-36ac-42d6-a72d-22f8fe9b0669": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "6d239837-5279-49ce-abb2-ac5a3708254a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "6da32a31-125c-4fe2-a8be-50339bbbc603": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "6df9882e-dbee-43a6-a86c-9d0b33068cf3": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "6e6cc9ae-d72b-4551-afe5-5fda82e17a9e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "6e8996d5-e239-4dc4-a440-14208e4fbb26": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "6efed632-ed05-4dc6-a49e-59d855dc702e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "6f899470-c9ba-4ab1-af00-dc66f120160d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "70404cd9-6ef2-4ef4-a578-3077381ce49a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "729c4d79-89db-4fde-a63d-fc05d862d689": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "733a1f5f-ce4d-4a13-ad3e-5d1f713b5fd7": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "742156ad-6766-4c10-a39c-a30c3f58d1d1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7464e595-bf7a-49d5-ad28-4c17e7119ce6": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "75b6f00d-0423-4799-a135-0c515a50b6b2": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "765e6762-17de-49f6-a0fc-bdb7973fd444": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "773a7e74-1a47-4493-a61a-01bad0604ac4": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "77be9cd3-32ce-4e46-a09c-d05128405216": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "78db6f34-2313-42e8-aefc-f00333a6cada": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "79082c15-bb13-497d-a5cb-a291234d3b8d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7acfcb62-39dd-417e-a824-6c72e9536d48": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7ae55cb0-b8e8-4395-a068-0843448cf225": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7b3ff934-6a71-4e27-a7e8-49869739f4ca": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7c568699-abeb-4ee8-a389-5b7ae32f1f80": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7c70b547-6ed3-4c5e-a37b-2a80896d635e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7d223b13-f012-4cfb-a7de-4b6bac82c1dc": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7e0606b9-fd4f-4dcc-a0b2-ee7e95369ccd": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7e9cce3a-c553-4014-a54d-7136675bcf35": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7ebb1d48-e401-4967-aa00-fbef0d28abe9": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7f9ef4b0-6a28-49be-a180-30dd028db19b": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "7fe6a151-7d7d-4376-ad39-e1748642376d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "801a97e2-dda5-448a-a354-0f56e664c736": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "80706ea2-eb8d-4d38-a02b-61e8cc8f4331": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "81a43c38-3a4d-4c49-ad92-8bec04e94837": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8326e834-1869-46d8-ab9b-d88898dba4ad": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "83d35851-bb70-4400-a49e-ff0b689378be": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8496e338-9c2f-417d-a802-269563d6d66c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "84c88037-d5b0-45d5-a1e8-3496aba433db": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8793b2db-50e3-4d0d-a065-c512d8ea59b6": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "87ab93a5-147d-42d5-a322-2ebb3e81389f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8881286a-2268-42df-aeb1-6f71f652e863": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "892ca8f4-9d07-4eef-abb6-a2defb5e3603": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "897a32f0-ac6a-46bd-ab6d-b2130f33b91f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8a9dfd0d-d355-4a66-a7cd-6f63a323e81c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8aadea23-7ea1-422b-acc7-7976b38c7587": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8ab17f54-bc07-4b43-afe8-44767821be82": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8b70ecd5-d605-411e-a745-5b11d95fb3d7": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8ccbfce2-0e4b-4286-a886-0c2deebd29e1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8d53b782-0e5f-4074-a641-4ea60ee1bb58": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8d99ce11-7537-40d3-a028-6880a63f6761": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "8f684ed2-fd76-4216-a9b1-744b9b68f121": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "90f6d5a2-076d-4204-a864-5e11e95974bf": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "92000f45-cf12-400a-a0c0-d8be69cd57a3": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "92bf97dd-cd10-4c5c-aa66-d5e6cfbc286f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "94af8310-f024-4d36-a110-d7c7f6fb8800": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "94c6931b-519d-47cf-adc6-a0f76b0ab351": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "956f9547-444f-4fc0-a102-fe60daa58830": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "96860fa5-853a-404d-ac69-a03b8b19efe5": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "9769bcf3-c2f8-4720-a81a-865777185b4d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "98f3ff6d-cb9b-4c46-aedd-5bef1da0af7f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "998eb49b-cd9a-498b-a4c4-7d92630dfeab": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "9a75f234-330b-4083-a02b-890228b807ef": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "9b105722-65fc-472e-a051-126c05cf81e7": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "9b14ade8-31cd-4696-aa61-ffca9f562c64": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "9b9e5b3c-7aae-4b37-aa22-b1aa3af38c81": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "9d08e6b4-c097-4af1-a89c-762c56a5a207": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "9e6ed49d-75b4-4664-a305-8de0ae711f84": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "9f468341-24a8-46c4-aee7-05ceeba01437": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "a1bc5738-8145-4db9-a873-1363859bf25b": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "a4092e8f-5f32-418f-a3f9-4564df531273": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "a5be4841-1100-4c05-aa6d-0469574a7a2a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "a6ddeeb7-903c-41c5-ac8c-c5ec65b1e1b3": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "a778b211-1066-4819-ad8f-b369959118d7": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "a835de14-2310-41a6-aaec-88f587e36819": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "a9131bff-23a2-4576-a74e-7da0c7db1931": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "a9954742-2b8a-4277-ad43-f78bfef12f9f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "aa027b20-13d4-4dca-abd6-6039e1ec8b05": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "aac0350c-06e3-4b2a-abb5-54f7888756bb": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ac98034e-6c75-42c5-a2f4-248c3e8b9adc": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "aca2b15e-381d-45ed-a640-25373def1cab": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ad6e0bf0-d59d-4843-a076-c081e04d471c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ada84d99-06bd-45ad-af52-49d8f325928d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "adc5b463-4bab-458d-a13f-0e5bdc7d28c3": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ae83cbb1-729d-49a8-a5ad-0a0aafa0fe4f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "aeb857ea-2f3c-443f-a4ab-9a757cd31b59": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "aee77ad1-1600-4e52-aacc-ee3d53ad9a48": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "af5ec0ed-c8b9-48af-a028-e85e99699a19": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "afae2174-5f91-474c-a6fa-9fe0d0fceefc": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "b0904809-9523-429a-af7e-63a8ca0c09f5": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "b0aad3d1-ab9f-4da0-a15a-286a52eef2ce": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "b126c67f-e374-4adb-a375-2430a6eaadda": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "b437b5ec-0a3d-4f6c-af7d-213cad82ada8": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "b508a265-9f26-4cd6-a6d3-f742e006468d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "b7aafcda-8a71-493f-a167-f14344d4fe34": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "b814aafa-ec9a-4eb8-a959-613c7758827f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "b9a63f18-a44e-464b-a4dd-ff3cb8ee4c3f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ba7ea23d-2dbf-40b8-addf-3bc878ebf50d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bb40e3a2-b767-4dfb-a0d4-be4f1a0186c2": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bb77ebb4-b6f7-42f7-ad50-78914dc7b603": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bb8389b2-f471-44c9-acdd-0deb0ea62df2": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bc58a966-cbf0-49ec-a3c6-4b977934227f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bcc3bc6a-47cd-446b-a17f-a2b613a29c78": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bd86f691-da57-406c-a512-deb770aa21ba": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "be7281c1-caf1-4abd-aa0a-2978483220f4": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bed3302f-5797-4f01-a311-975d5754b8d4": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "beee74ec-1df7-4dc5-a094-b22c4656584d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bf028af8-7e74-4b15-a6ee-9f5f45d2398e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bfb84d9e-2b24-442d-adb6-e7d5911bb441": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "bfd5ab9e-a3b6-4144-a0b6-e083e664ff84": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "c0870149-de68-45b6-a5bf-3fab11f07203": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "c0de46e4-62f2-4517-a490-551230356b34": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "c1682d2c-8700-4b26-ab6d-69dc08218ed2": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "c1b957a6-d53c-4c5f-a853-87b7da9ba898": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "c21dcfa4-c134-4cd2-a718-7f363aca71a2": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "c5d1ad43-c23b-477e-a22c-06548bdfd5c9": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "c7943c84-62f0-4bb4-a161-9ebecd61eae5": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "c93977a8-7bf1-4e4c-aba7-7d3000a2eb6e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "c979bd60-c5a9-4457-a675-b18bd11c5d3c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ca6c5a74-4c44-4080-a6c1-d32e9ea81971": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "caf054ae-1778-4816-a022-349deda1b92a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "cb946032-bb41-461e-a9e0-4677dab7d915": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "cbbb728d-ccc8-4c02-ab8f-dc43b54fc744": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "cc8a6f32-651b-4bf3-ac4e-23f3a02521c1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "cd55329c-867b-4da9-ae8f-ce547133e63e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "cd5f2eaf-a01a-40a5-a506-959d90e287cf": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ce7d29e5-e3ca-49fd-abae-793c43e79edf": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ce94f8e5-fae9-4558-a18a-89f4fb8a4bd5": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "cecf4b86-0e06-4fe9-ae8b-ffc9dedd9e4e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "cf2a8b6f-06f0-4db4-aea1-7827e83f41e1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "cfba3834-3f30-4e86-a232-e6d3a27cc86a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d0805710-08a0-45d1-a08d-fa1c475db91c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d3ea2087-dbb2-4139-a033-39f1f2a31642": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d51f31d8-e7db-480a-ad5c-88dc9c049523": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d557601c-b152-4583-a170-b7ba959e2101": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d5efbe66-13d4-49ae-ab90-6183f8b11180": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d63aa3af-dd40-4ddb-a4e8-a6b81cba7e91": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d6f4e649-d6a5-4a42-a510-cba2f2f73e52": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d705c20b-d772-408f-a025-d533e4ffce1b": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d778ad7e-8335-4da0-add8-6d350172f572": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d80ed14b-e039-4a19-a17c-55e9383b8fa3": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d84436b6-9fed-4a26-a52a-64c70f576b01": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d8f80ac6-2d72-4309-a105-b7a03f62fc10": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d901950c-7c38-43af-adf8-99495da78c54": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "d9c5f8ba-1d9f-415b-accf-56a9600b77ae": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "da389f0e-5ca4-4110-ac1d-ac8c5b530c88": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "da67051d-08d3-40b1-a72b-89408916bddd": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "db39ef1e-e0b4-406b-aebb-af3be688c189": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "db3c5546-e803-498e-a68a-793eb957858c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "dd58da05-3e3c-4890-aaab-296211a01739": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ddf549f2-23c3-4d1a-a9f3-f847179962fb": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "de5b1a31-f1ac-4b22-af28-5b617cc5b895": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "de7cbdfa-36e4-471a-a6e1-efcc28444eb2": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "de99f165-042e-46bd-adff-16c3e2387f01": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ded1071c-6991-43e0-aa61-43342d824961": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ded30caf-0603-4c9a-ae17-af003d6edea4": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "dfce7a30-7de6-49dd-aa57-a1830c6b24df": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e0788647-e030-4554-abc9-c3997f9fd17e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e0c14905-0f48-408e-a64c-41f65dfbbab4": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e0d53d30-f487-464a-a6ae-ef393818d8ae": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e12c380f-d5a9-4822-a307-b9a9307b0a8e": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e201d701-b7d4-4830-a4fa-ec11de3d58e0": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e230b0a9-0f74-4e63-a63c-677c815a2873": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e23f099e-ffe7-490c-a6f5-b17d20a207d7": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e330d833-09c1-4d2a-a2d7-e6d8329fcdd1": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e3363b91-a5c3-45f8-ab79-68593a99900c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e376735b-ba86-429b-a99a-fa0347f0751f": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e4ef48c3-87b0-4c6a-a76f-126c18077f57": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e5775896-439a-4cd6-a7c4-eff01af57d46": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e5933ed9-99a7-4598-a952-f9b9e8b4aa58": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e76513e1-e887-4b0e-a8f4-908dab7f9d9a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e7a48452-5140-4c14-ab46-68b22fa068e9": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e808acdd-4ea5-4454-a0cc-81e923140e39": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e8331bef-9df7-4b5a-a40f-f8d0eee50842": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "e8b54997-e0a0-492e-a000-9b139f15f756": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "eae5f93a-078c-4b8a-ada8-98c930db0910": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ec78f7b5-f001-4d08-a8d3-fc558b901ea8": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ecba165b-05f0-4c4a-a3bb-f38d7f499c66": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ed1ea2a0-c45d-46a0-a30d-4e1c9a158148": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ee59ce18-d40f-48e7-a12b-5ca96c96b4ef": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ef760532-eff9-4d26-a839-80cd2dff0c0a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f0636147-e5c2-4444-afa5-557aeea406a5": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f165656e-8fdd-4465-a4b6-fd54bd2f0b11": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f188bc36-1a49-4806-ae86-f7918489af21": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f1b5ebcd-7b08-41cd-a496-1f8d573ec745": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f2b8b199-4018-4bca-aab4-2e5adc2a7447": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f32be4c5-55e0-4489-ad0f-eb0e137ce0db": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f39d49ef-dee3-4011-a42d-9fac50749c6c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f4d4a187-9761-4cb6-ab7e-5efe55d58f56": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f68b1279-d8d4-4033-a721-3e8cdc18977b": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f6f5264c-5399-4392-a690-8b878443efab": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f6f9de12-ff81-4fab-a023-6068a02a130c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f8de4916-6eda-46d1-aa29-dcca0a9d6477": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f962eff3-397f-4af0-a3f1-3b3dec62fdc6": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "f9eb330b-0106-4060-a7a2-b49ae69c197d": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "fa709df0-4c9f-4a36-a61e-3b63437059b9": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "fba5848f-a710-40e6-aef3-ff26380d0a4a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "fc3a9cdb-a877-4bba-a164-a42e7f080e28": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "fca525f4-de8f-4e4f-adc9-83bf86adec5a": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "fd43d99d-7010-4b91-a60f-95c62fe512d2": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "fdddf764-1122-44de-a302-29ea40d82247": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "fe28e104-2440-4308-aab6-7a4b0d98a1cc": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "febd4009-c1a3-4680-a29e-9e2e5f4d6c92": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      },
+      "ff5f7ba0-f4a8-4326-a25c-e1805163436c": {
+        "en-GB": "NON_REFERENCE_COPY_STAYS_IN_GENERATED_MODULE"
+      }
+    },
+    "facts": {
+      "product": "sonicdesk — a web workspace for bands (\"version control for music\"). This campaign promotes the Snippet feature: inside a song's mixer you select a 5–30 second part of the mix (presets 5/10/15/20/25/30 s or free drag), it snaps to section starts (Verse, Chorus, etc.), loops for listening, and exports as an audio file you can use to test the hook in Reels/TikTok before release.",
+      "immutables": "sonicdesk logo and wordmark (\"sonicdesk.\" with a lime dot), brand colours (lime #DFFF00 on near-black #060805), typefaces (Archivo for headlines, JetBrains Mono for body), the look of the product UI (square corners, thin hairline borders, pill-shaped waveforms), and the feature behaviour described in the claims."
+    },
+    "fonts": [
+      {
+        "url": "07f9160163da2ec0f6376ef9d27a2bb8163f98019ba798da4baafb154e30056e.woff2",
+        "style": "normal",
+        "family": "Archivo SemiBold",
+        "weight": "400"
+      },
+      {
+        "url": "09aee8065d25508f23a4c3d92cd777ac869c52d93fd868a88f025d888a7937d6.woff2",
+        "style": "normal",
+        "family": "Noto Sans",
+        "weight": "400"
+      },
+      {
+        "url": "05af9e705d3b63aedba67197d19fb448b97353e1386930716c7e835b08f126ba.woff2",
+        "style": "normal",
+        "family": "Noto Sans",
+        "weight": "400"
+      }
+    ],
+    "logos": [
+      {
+        "id": "745244ea-01f4-4842-b7c5-ce5ff37eb268",
+        "url": "0c3d221c8a8d091d2a3e3a1661b763b7bc3bf14ab424171a81a2e8a3829982e2.svg",
+        "clearSpacePx": 0
+      },
+      {
+        "id": "93111854-f61f-4bb0-81e4-0003f0af9e0f",
+        "url": "3938687d12d0311b641fe064d747353a4900b1f66a9becb6fc8ce6bd3a442459.svg",
+        "clearSpacePx": 0
+      }
+    ],
+    "rules": {
+      "allowedFonts": [
+        "Archivo SemiBold",
+        "Noto Sans"
+      ],
+      "logoRequired": true,
+      "minimumContrast": 4.5,
+      "forbiddenColours": []
+    },
+    "rawKit": {
+      "instructions": "sonicdesk.\n\nSonicdesk Design System\n\nsonicdesk\n\nsonicdesk.\n\na workspace where a band keeps its songs: every take lossless, every version kept, comments on the exact bars.\n\nDirect, never decorative. Built by musicians, for musicians. Mechanical-confident, like good studio gear. Specific — bars, takes, versions, not \"items\". Never marketing-soft (\"Unleash your creativity!\"), never developer-speak, never alarmed (a slow song is not an error), never cute or promising what the product can't do.\n\nMechanical-confident, like good studio gear.\n\nSpecific — bars, takes, versions, not \"items\".\n\nNever marketing-soft (\"Unleash your creativity!\"), never developer-speak, never alarmed (a slow song is not an error), never cute or promising what the product can't do.\n\nMechanical-confident, like good studio gear. Specific — bars, takes, versions, not \"items\". Never marketing-soft (\"Unleash your creativity!\"), never developer-speak, never alarmed (a slow song is not an error), never cute or promising what the product can't do.\n\nWaveforms a drawn as pills, never rectangles: full-round bars with a 2px gap (3px on phones), height from the audio peaks with a 14–15% floor. Unplayed pills are the track colour (or `foreground`) at 15–25%; played pills turn `lime`. The playhead is a 1px `lime` line with a soft glow (`shadow-playhead`) and a small triangle on the ruler.\n\nHover-revealed controls exist only on devices with a real pointer (`can-hover`); on touch they are always shown.",
+      "boundaries": "radius-none: 0px, Usage: Default for everything: cards, buttons, inputs, avatars, dialogs. The system is square.\n\nradius-sm: 2px, Usage: The base --radius (0.125rem); barely softens a corner where a component library needs one.\n\nradius-md: 6px, Usage: Listed in the kit; not used by product components.\n\nThe interface is built like studio gear — black canvas, square corners, hairlines, mono labels, and one lime light that says what is happening now. Everything here mirrors the product's own UI kit (`/uikit`); when a component and a rule disagree, the rule wins.\n\nNo competitor names anywhere — copy, metadata or keywords. No numbers or promises the product can't back. No emoji in the UI.\n\nNo emoji anywhere in the UI.\n\nNever set it in capitals, never colour the whole word lime, never place it on a lime surface.\n\nThe app icon (`assets/Logos/app-icon.svg`) is a lime pill (`#dfff00`) on a near-black square (`#0d0d0d`) — the waveform pill as a mark.",
+      "rules": [
+        {
+          "category": "logo",
+          "key": "usage",
+          "value": "[SVG artwork rasterized locally without scripts or external resources]\n\nSVG artwork rasterized locally without scripts or external resources\n\nThe wordmark is type, not a drawing: **sonicdesk** in Archivo bold, tight tracking, `foreground`, closed by a `lime` full stop — see the SonicdeskWordmark card."
+        },
+        {
+          "category": "product",
+          "key": "immutables",
+          "value": "The interface is built like studio gear — black canvas, square corners, hairlines, mono labels, and one lime light that says what is happening now. Everything here mirrors the product's own UI kit (`/uikit`); when a component and a rule disagree, the rule wins."
+        },
+        {
+          "category": "color",
+          "key": "ink",
+          "value": "#F8F8F8"
+        },
+        {
+          "category": "color",
+          "key": "paper",
+          "value": "#070707"
+        },
+        {
+          "category": "typography",
+          "key": "headlineFamily",
+          "value": "Archivo /"
+        },
+        {
+          "category": "typography",
+          "key": "bodyFamily",
+          "value": "JetBrains Mono"
+        },
+        {
+          "category": "layout",
+          "key": "safeAreaRule",
+          "value": "touch-target: 40px. Usage: Minimum size of anything tapped on a phone: play, Quick peek, the menu button, M/S."
+        },
+        {
+          "category": "motion",
+          "key": "motionSystem",
+          "value": "Physical and quick: entrances use cubic-bezier(0.32, 0.72, 0, 1) — cards and rows slide in over 0.6s, staggered 40–50ms; waveform pills grow in over 0.7s, 3–6ms apart; drawers slide from the right in 0.25s over a 0.25s fade."
+        },
+        {
+          "category": "imagery",
+          "key": "treatment",
+          "value": "Waveforms a drawn as pills, never rectangles: full-round bars with a 2px gap (3px on phones), height from the audio peaks with a 14–15% floor. Unplayed pills are the track colour (or `foreground`) at 15–25%; played pills turn `lime`. The playhead is a 1px `lime` line with a soft glow (`shadow-playhead`) and a small triangle on the ruler."
+        },
+        {
+          "category": "voice",
+          "key": "tone",
+          "value": "Direct, never decorative. Built by musicians, for musicians. Mechanical-confident, like good studio gear. Specific — bars, takes, versions, not \"items\". Never marketing-soft (\"Unleash your creativity!\"), never developer-speak, never alarmed (a slow song is not an error), never cute or promising what the product can't do.\n\nMechanical-confident, like good studio gear.\n\nSpecific — bars, takes, versions, not \"items\".\n\nNever marketing-soft (\"Unleash your creativity!\"), never developer-speak, never alarmed (a slow song is not an error), never cute or promising what the product can't do.\n\nMechanical-confident, like good studio gear. Specific — bars, takes, versions, not \"items\". Never marketing-soft (\"Unleash your creativity!\"), never developer-speak, never alarmed (a slow song is not an error), never cute or promising what the product can't do."
+        },
+        {
+          "category": "prohibition",
+          "key": "policy",
+          "value": "radius-none: 0px, Usage: Default for everything: cards, buttons, inputs, avatars, dialogs. The system is square.\n\nradius-sm: 2px, Usage: The base --radius (0.125rem); barely softens a corner where a component library needs one.\n\nradius-md: 6px, Usage: Listed in the kit; not used by product components.\n\nNo competitor names anywhere — copy, metadata or keywords. No numbers or promises the product can't back. No emoji in the UI.\n\nNo emoji anywhere in the UI.\n\nNever set it in capitals, never colour the whole word lime, never place it on a lime surface."
+        },
+        {
+          "category": "typography",
+          "key": "monospaceFamily",
+          "value": "JetBrains Mono / /"
+        },
+        {
+          "category": "typography",
+          "key": "rules",
+          "value": "Mono: body, meta, keys and values, timecodes.\n\ngreeting: Spaces hero greeting. Uppercase except the user name; 36px on phones. Class: tb-type-name text-4xl sm:text-6xl uppercase tracking-tighter leading-none.\n\npage-name: Space hero and mixer title, as typed (never uppercased). 30px phones, 48px tablet. Class: tb-type-name text-3xl sm:text-5xl lg:text-6xl tracking-tighter leading-none.\n\ncard-name: Space card name. Turns lime when the card is hovered.\n\nrow-name: Project row name; Quick peek drawer title uses 18px.\n\nsmall-name: Member names, track headers, the latest project inside a space card.\n\ndialog-title: TbModal heading and error-screen title, uppercase. Class: font-display text-lg uppercase tracking-tight.\n\nbig-number: StatGrid values, tabular figures; 24px on phones.\n\nbody: Body text, inputs, lyrics.\n\nActivity lines and descriptions use small-body, in muted-foreground with the actor in foreground bold.\n\nUppercase meta under names, toolbars and every button label. The floor for any text a person reads. (meta)\n\nSectionLabel above lists and panels, uppercase, muted-foreground. (section-label)\n\nOnly for a label under a number or a marker (stat captions, roadmap stage). Nothing goes below 9px. (micro)\n\nLanding and ad headlines: Archivo 800, uppercase, clamp(3rem, 10vw, 7rem); a lime full stop may close the line. (landing-hero)\n\nPromo display, uppercase. Not used inside the app. (display-xl)\n\nPromo display, uppercase. (display-l)\n\nPromo display, uppercase; also the four version verbs. (display-m)\n\nLanding lede, sentence case, clamp(1.4rem, 2.5vw, 2.5rem). (lede)\n\n.sd-k: uppercase key label in sd-mute. (landing-key)\n\n.sd-v: the value beside a key, in sd-fg. (landing-value)\n\nUse the named styles; no literal px.\n\nfont: var(--text-greeting);            /* with tokens.css */\n\nfont-family: var(--font-display);   /* the family alone */\n\ngreeting: 60px / 1, 700, display family. Usage: Spaces hero greeting. Uppercase except the user name; 36px on phones. Class: tb-type-name …"
+        },
+        {
+          "category": "spacing",
+          "key": "system",
+          "value": "space-0-5: 2px, Usage: Gap between waveform pills (gap-[2px]); 3px on phones.\n\nspace-1: 4px, Usage: Icon-to-label gaps in toggles, row action gaps.\n\nspace-2: 8px, Usage: Inline gaps, meta gaps, menu item padding (py-2).\n\nspace-3: 12px, Usage: Button horizontal padding (px-3), row vertical padding (py-3), stat cell padding on phones.\n\nspace-4: 16px, Usage: Row horizontal padding (px-4); the 16px micro grid and the landing phone gutter.\n\nspace-5: 20px, Usage: Space card padding (p-5) and its block gaps (mb-5, mt-5).\n\nspace-6: 24px, Usage: Header and footer side padding (px-6), dialog padding (p-6), stat cell padding on desktop.\n\nspace-8: 32px, Usage: Error-screen card padding; the landing desktop gutter.\n\ngrid-master: 40px, Usage: Master grid of brand backgrounds.\n\nheader-h: 56px, Usage: App header height (h-14); landing header is 48px on phones, 56px from 992px.\n\ntouch-target: 40px, Usage: Minimum size of anything tapped on a phone: play, Quick peek, the menu button, M/S.\n\nradius-lg: 10px (Listed in the kit; not used by product components.)\n\nradius-pill: 9999px (Only waveform pills, status dots and the volume knob.)\n\nUse: padding: var(--space-0-5);\n\nspace-0-5: 2px. Usage: Gap between waveform pills (gap-[2px]); 3px on phones.\n\nspace-1: 4px. Usage: Icon-to-label gaps in toggles, row action gaps.\n\nspace-2: 8px. Usage: Inline gaps, meta gaps, menu item padding (py-2).\n\nspace-3: 12px. Usage: Button horizontal padding (px-3), row vertical padding (py-3), stat cell padding on phones.\n\nspace-4: 16px. Usage: Row horizontal padding (px-4); the 16px micro grid and the landing phone gutter.\n\nspace-5: 20px. Usage: Space card padding (p-5) and its block gaps (mb-5, mt-5).\n\nspace-6: 24px. Usage: Header and footer side padding (px-6), dialog padding (p-6), stat cell padding on desktop.\n\nspace-8: 32px. Usage: Error-screen card padding; the landing desktop gutter.\n\nradius-pill: 9999px. Only waveform pills, status dots and the volume knob.\n\nshadow-overlay: 0 25px 50px -12px rgb(0 0 0…"
+        },
+        {
+          "category": "layout",
+          "key": "grid",
+          "value": "shadow-overlay: 0 25px 50px -12px rgb(0 0 0 / 0.25) (shadow-2xl: menus, popovers, dialogs, drawers, toasts. Nothing that sits in the page flow casts a shadow.)\n\nshadow-playhead: 0 0 6px #dfff00 (The playhead hairline glow (in themes: the theme lime).)\n\nz-footer: 40 (StatusFooter.)\n\nz-header: 50 (AppHeader and in-card menus.)\n\nz-drawer: 200 (SideDrawer (Quick peek, Plan).)\n\nz-popover: 6000 (FloatingPopover and TbSelect lists.)\n\nz-modal: 8000 (TbModal.)\n\nz-toast: 9000 (Toast.)\n\nz-tooltip: 9999 (HoverTooltip.)\n\ngrid-master: 40px. Usage: Master grid of brand backgrounds.\n\nheader-h: 56px. Usage: App header height (h-14); landing header is 48px on phones, 56px from 992px.\n\nradius-none: 0px. Usage: Default for everything: cards, buttons, inputs, avatars, dialogs. The system is square.\n\nradius-sm: 2px. Usage: The base --radius (0.125rem); barely softens a corner where a component library needs one.\n\nThe interface is built like studio gear — black canvas, square corners, hairlines, mono labels, and one lime light that says what is happening now.\n\nWhen two things are lime, neither is.\n\nOne filled button. `primary` (lime fill, `primary-foreground` text) is the one thing the screen is for. `solid` (foreground fill) is for Export only. Everything else is `ghost` (a `border` outline). `link` is for secondary actions inside dialogs. A whole row that opens something is clickable itself; it gets no \"Open\" button.\n\nToggles are outlined, not filled. A mode that is on gets a `foreground` outline at 50%, a `surface` fill and a pulsing lime dot — never a lime fill, so it cannot compete with the primary action.\n\nThe landing has its own always-dark set (`sd-bg`, `sd-fg`, `sd-mute`, `sd-line`, `sd-accent`, `sd-on-accent`); the two sets are never mixed.\n\nhover-only controls stay visible on touch; touch targets ≥ 40px (`touch-target`);\n\nRows pad 12×16px, cards 20px, dialogs 24px; the header is 56px.\n\nNothing in the page flow casts a shadow. Overlays — menus, popovers, dialogs, drawers, toast…"
+        },
+        {
+          "category": "layout",
+          "key": "accessibility",
+          "value": "hover-only controls stay visible on touch; touch targets ≥ 40px (`touch-target`); no text under 10px (9px only under numbers);"
+        },
+        {
+          "category": "voice",
+          "key": "copyRules",
+          "value": "Product labels, meta and buttons are UPPERCASE mono with wide tracking (`meta`, `section-label`). Names, sentences, toasts and empty states are sentence case. The wordmark is always lowercase.\n\nKeys short: C, Em, F#m — spelled by the song's key (flats in flat keys: Bb, Eb; sharps in sharp keys: F#, C#). Positions as bar.beat (41.3), durations m:ss (3:47), relative time \"10d ago · yesterday · just now\", older dates \"Oct 4\", sizes \"112.3 MB · 50 GB\"."
+        },
+        {
+          "category": "color",
+          "key": "accent",
+          "value": "#DFFF00"
+        },
+        {
+          "category": "logo",
+          "key": "wordmark",
+          "value": "Supplied wordmark artwork (93111854-f61f-4bb0-81e4-0003f0af9e0f). Place exactly as drawn."
+        },
+        {
+          "category": "logo",
+          "key": "icon2",
+          "value": "Supplied icon artwork (745244ea-01f4-4842-b7c5-ce5ff37eb268). Place exactly as drawn."
+        },
+        {
+          "category": "logo",
+          "key": "wordmark3",
+          "value": "Supplied wordmark artwork (b0bc4c79-42cb-48ef-99ab-8b7a747eb940). Place exactly as drawn."
+        },
+        {
+          "category": "sound",
+          "key": "policy",
+          "value": "Campaign sound design should align with the 'mechanical-confident' tone. Use clean, precise audio cues; avoid overly theatrical or 'cutesy' sound effects."
+        },
+        {
+          "category": "typography",
+          "key": "draftFallback",
+          "value": "Noto Sans"
+        }
+      ]
+    },
+    "tokens": {
+      "color.ink": "#F8F8F8",
+      "logo.icon2": "Supplied icon artwork (745244ea-01f4-4842-b7c5-ce5ff37eb268). Place exactly as drawn.",
+      "logo.usage": "[SVG artwork rasterized locally without scripts or external resources]\n\nSVG artwork rasterized locally without scripts or external resources\n\nThe wordmark is type, not a drawing: **sonicdesk** in Archivo bold, tight tracking, `foreground`, closed by a `lime` full stop — see the SonicdeskWordmark card.",
+      "voice.tone": "Direct, never decorative. Built by musicians, for musicians. Mechanical-confident, like good studio gear. Specific — bars, takes, versions, not \"items\". Never marketing-soft (\"Unleash your creativity!\"), never developer-speak, never alarmed (a slow song is not an error), never cute or promising what the product can't do.\n\nMechanical-confident, like good studio gear.\n\nSpecific — bars, takes, versions, not \"items\".\n\nNever marketing-soft (\"Unleash your creativity!\"), never developer-speak, never alarmed (a slow song is not an error), never cute or promising what the product can't do.\n\nMechanical-confident, like good studio gear. Specific — bars, takes, versions, not \"items\". Never marketing-soft (\"Unleash your creativity!\"), never developer-speak, never alarmed (a slow song is not an error), never cute or promising what the product can't do.",
+      "color.paper": "#070707",
+      "layout.grid": "shadow-overlay: 0 25px 50px -12px rgb(0 0 0 / 0.25) (shadow-2xl: menus, popovers, dialogs, drawers, toasts. Nothing that sits in the page flow casts a shadow.)\n\nshadow-playhead: 0 0 6px #dfff00 (The playhead hairline glow (in themes: the theme lime).)\n\nz-footer: 40 (StatusFooter.)\n\nz-header: 50 (AppHeader and in-card menus.)\n\nz-drawer: 200 (SideDrawer (Quick peek, Plan).)\n\nz-popover: 6000 (FloatingPopover and TbSelect lists.)\n\nz-modal: 8000 (TbModal.)\n\nz-toast: 9000 (Toast.)\n\nz-tooltip: 9999 (HoverTooltip.)\n\ngrid-master: 40px. Usage: Master grid of brand backgrounds.\n\nheader-h: 56px. Usage: App header height (h-14); landing header is 48px on phones, 56px from 992px.\n\nradius-none: 0px. Usage: Default for everything: cards, buttons, inputs, avatars, dialogs. The system is square.\n\nradius-sm: 2px. Usage: The base --radius (0.125rem); barely softens a corner where a component library needs one.\n\nThe interface is built like studio gear — black canvas, square corners, hairlines, mono labels, and one lime light that says what is happening now.\n\nWhen two things are lime, neither is.\n\nOne filled button. `primary` (lime fill, `primary-foreground` text) is the one thing the screen is for. `solid` (foreground fill) is for Export only. Everything else is `ghost` (a `border` outline). `link` is for secondary actions inside dialogs. A whole row that opens something is clickable itself; it gets no \"Open\" button.\n\nToggles are outlined, not filled. A mode that is on gets a `foreground` outline at 50%, a `surface` fill and a pulsing lime dot — never a lime fill, so it cannot compete with the primary action.\n\nThe landing has its own always-dark set (`sd-bg`, `sd-fg`, `sd-mute`, `sd-line`, `sd-accent`, `sd-on-accent`); the two sets are never mixed.\n\nhover-only controls stay visible on touch; touch targets ≥ 40px (`touch-target`);\n\nRows pad 12×16px, cards 20px, dialogs 24px; the header is 56px.\n\nNothing in the page flow casts a shadow. Overlays — menus, popovers, dialogs, drawers, toast…",
+      "color.accent": "#DFFF00",
+      "sound.policy": "Campaign sound design should align with the 'mechanical-confident' tone. Use clean, precise audio cues; avoid overly theatrical or 'cutesy' sound effects.",
+      "logo.wordmark": "Supplied wordmark artwork (93111854-f61f-4bb0-81e4-0003f0af9e0f). Place exactly as drawn.",
+      "logo.wordmark3": "Supplied wordmark artwork (b0bc4c79-42cb-48ef-99ab-8b7a747eb940). Place exactly as drawn.",
+      "spacing.system": "space-0-5: 2px, Usage: Gap between waveform pills (gap-[2px]); 3px on phones.\n\nspace-1: 4px, Usage: Icon-to-label gaps in toggles, row action gaps.\n\nspace-2: 8px, Usage: Inline gaps, meta gaps, menu item padding (py-2).\n\nspace-3: 12px, Usage: Button horizontal padding (px-3), row vertical padding (py-3), stat cell padding on phones.\n\nspace-4: 16px, Usage: Row horizontal padding (px-4); the 16px micro grid and the landing phone gutter.\n\nspace-5: 20px, Usage: Space card padding (p-5) and its block gaps (mb-5, mt-5).\n\nspace-6: 24px, Usage: Header and footer side padding (px-6), dialog padding (p-6), stat cell padding on desktop.\n\nspace-8: 32px, Usage: Error-screen card padding; the landing desktop gutter.\n\ngrid-master: 40px, Usage: Master grid of brand backgrounds.\n\nheader-h: 56px, Usage: App header height (h-14); landing header is 48px on phones, 56px from 992px.\n\ntouch-target: 40px, Usage: Minimum size of anything tapped on a phone: play, Quick peek, the menu button, M/S.\n\nradius-lg: 10px (Listed in the kit; not used by product components.)\n\nradius-pill: 9999px (Only waveform pills, status dots and the volume knob.)\n\nUse: padding: var(--space-0-5);\n\nspace-0-5: 2px. Usage: Gap between waveform pills (gap-[2px]); 3px on phones.\n\nspace-1: 4px. Usage: Icon-to-label gaps in toggles, row action gaps.\n\nspace-2: 8px. Usage: Inline gaps, meta gaps, menu item padding (py-2).\n\nspace-3: 12px. Usage: Button horizontal padding (px-3), row vertical padding (py-3), stat cell padding on phones.\n\nspace-4: 16px. Usage: Row horizontal padding (px-4); the 16px micro grid and the landing phone gutter.\n\nspace-5: 20px. Usage: Space card padding (p-5) and its block gaps (mb-5, mt-5).\n\nspace-6: 24px. Usage: Header and footer side padding (px-6), dialog padding (p-6), stat cell padding on desktop.\n\nspace-8: 32px. Usage: Error-screen card padding; the landing desktop gutter.\n\nradius-pill: 9999px. Only waveform pills, status dots and the volume knob.\n\nshadow-overlay: 0 25px 50px -12px rgb(0 0 0…",
+      "voice.copyRules": "Product labels, meta and buttons are UPPERCASE mono with wide tracking (`meta`, `section-label`). Names, sentences, toasts and empty states are sentence case. The wordmark is always lowercase.\n\nKeys short: C, Em, F#m — spelled by the song's key (flats in flat keys: Bb, Eb; sharps in sharp keys: F#, C#). Positions as bar.beat (41.3), durations m:ss (3:47), relative time \"10d ago · yesterday · just now\", older dates \"Oct 4\", sizes \"112.3 MB · 50 GB\".",
+      "typography.rules": "Mono: body, meta, keys and values, timecodes.\n\ngreeting: Spaces hero greeting. Uppercase except the user name; 36px on phones. Class: tb-type-name text-4xl sm:text-6xl uppercase tracking-tighter leading-none.\n\npage-name: Space hero and mixer title, as typed (never uppercased). 30px phones, 48px tablet. Class: tb-type-name text-3xl sm:text-5xl lg:text-6xl tracking-tighter leading-none.\n\ncard-name: Space card name. Turns lime when the card is hovered.\n\nrow-name: Project row name; Quick peek drawer title uses 18px.\n\nsmall-name: Member names, track headers, the latest project inside a space card.\n\ndialog-title: TbModal heading and error-screen title, uppercase. Class: font-display text-lg uppercase tracking-tight.\n\nbig-number: StatGrid values, tabular figures; 24px on phones.\n\nbody: Body text, inputs, lyrics.\n\nActivity lines and descriptions use small-body, in muted-foreground with the actor in foreground bold.\n\nUppercase meta under names, toolbars and every button label. The floor for any text a person reads. (meta)\n\nSectionLabel above lists and panels, uppercase, muted-foreground. (section-label)\n\nOnly for a label under a number or a marker (stat captions, roadmap stage). Nothing goes below 9px. (micro)\n\nLanding and ad headlines: Archivo 800, uppercase, clamp(3rem, 10vw, 7rem); a lime full stop may close the line. (landing-hero)\n\nPromo display, uppercase. Not used inside the app. (display-xl)\n\nPromo display, uppercase. (display-l)\n\nPromo display, uppercase; also the four version verbs. (display-m)\n\nLanding lede, sentence case, clamp(1.4rem, 2.5vw, 2.5rem). (lede)\n\n.sd-k: uppercase key label in sd-mute. (landing-key)\n\n.sd-v: the value beside a key, in sd-fg. (landing-value)\n\nUse the named styles; no literal px.\n\nfont: var(--text-greeting);            /* with tokens.css */\n\nfont-family: var(--font-display);   /* the family alone */\n\ngreeting: 60px / 1, 700, display family. Usage: Spaces hero greeting. Uppercase except the user name; 36px on phones. Class: tb-type-name …",
+      "imagery.treatment": "Waveforms a drawn as pills, never rectangles: full-round bars with a 2px gap (3px on phones), height from the audio peaks with a 14–15% floor. Unplayed pills are the track colour (or `foreground`) at 15–25%; played pills turn `lime`. The playhead is a 1px `lime` line with a soft glow (`shadow-playhead`) and a small triangle on the ruler.",
+      "product.immutables": "The interface is built like studio gear — black canvas, square corners, hairlines, mono labels, and one lime light that says what is happening now. Everything here mirrors the product's own UI kit (`/uikit`); when a component and a rule disagree, the rule wins.",
+      "prohibition.policy": "radius-none: 0px, Usage: Default for everything: cards, buttons, inputs, avatars, dialogs. The system is square.\n\nradius-sm: 2px, Usage: The base --radius (0.125rem); barely softens a corner where a component library needs one.\n\nradius-md: 6px, Usage: Listed in the kit; not used by product components.\n\nNo competitor names anywhere — copy, metadata or keywords. No numbers or promises the product can't back. No emoji in the UI.\n\nNo emoji anywhere in the UI.\n\nNever set it in capitals, never colour the whole word lime, never place it on a lime surface.",
+      "layout.safeAreaRule": "touch-target: 40px. Usage: Minimum size of anything tapped on a phone: play, Quick peek, the menu button, M/S.",
+      "motion.motionSystem": "Physical and quick: entrances use cubic-bezier(0.32, 0.72, 0, 1) — cards and rows slide in over 0.6s, staggered 40–50ms; waveform pills grow in over 0.7s, 3–6ms apart; drawers slide from the right in 0.25s over a 0.25s fade.",
+      "layout.accessibility": "hover-only controls stay visible on touch; touch targets ≥ 40px (`touch-target`); no text under 10px (9px only under numbers);",
+      "typography.bodyFamily": "JetBrains Mono",
+      "typography.draftFallback": "Noto Sans",
+      "typography.headlineFamily": "Archivo /",
+      "typography.monospaceFamily": "JetBrains Mono / /"
+    },
+    "references": []
+  },
+  "brief": {
+    "cta": "Sign up",
+    "offer": "Free 1st month band-plan this month",
+    "product": "sonicdesk — a web workspace for bands (\"version control for music\"). This campaign promotes the Snippet feature: inside a song's mixer you select a 5–30 second part of the mix (presets 5/10/15/20/25/30 s or free drag), it snaps to section starts (Verse, Chorus, etc.), loops for listening, and exports as an audio file you can use to test the hook in Reels/TikTok before release.",
+    "immutables": "sonicdesk logo and wordmark (\"sonicdesk.\" with a lime dot), brand colours (lime #DFFF00 on near-black #060805), typefaces (Archivo for headlines, JetBrains Mono for body), the look of the product UI (square corners, thin hairline borders, pill-shaped waveforms), and the feature behaviour described in the claims.",
+    "synthesisAllowed": true,
+    "synthesisPermission": "Lifestyle scenes may be generated: musicians at home, rehearsal rooms, desks with instruments. Any motion or flat graphics. The product UI must not be AI-generated; use simplified mockups."
+  },
+  "runId": "3bf730ca-abb3-4a17-9baa-4761b8d3e3b3",
+  "assets": [
+    {
+      "id": "d5dc9f30-340d-41b8-b183-7cd258a062d8",
+      "url": "4d46b68e3efab1a64d2ab806a20bb27de02bed92d6429bf7449499d435739a3a.png",
+      "mime": "image/png",
+      "width": 200,
+      "height": 200,
+      "sha256": "4d46b68e3efab1a64d2ab806a20bb27de02bed92d6429bf7449499d435739a3a",
+      "thumbnail": "4d46b68e3efab1a64d2ab806a20bb27de02bed92d6429bf7449499d435739a3a.png",
+      "revisionId": "d5dc9f30-340d-41b8-b183-7cd258a062d8"
+    },
+    {
+      "id": "2c53ff69-8766-42a6-aca0-8aadbbaf447f",
+      "url": "96d06803aad13b395b768aaccc3a2b47ae15e0ea45f55c46fbde52356b0648d1.png",
+      "mime": "image/png",
+      "width": 478,
+      "height": 1009,
+      "sha256": "96d06803aad13b395b768aaccc3a2b47ae15e0ea45f55c46fbde52356b0648d1",
+      "thumbnail": "96d06803aad13b395b768aaccc3a2b47ae15e0ea45f55c46fbde52356b0648d1.png",
+      "revisionId": "2c53ff69-8766-42a6-aca0-8aadbbaf447f"
+    },
+    {
+      "id": "4ae92acb-72cb-41a7-affa-5c93dfdc5664",
+      "url": "ef5cfbd6865dbec3da0167d97080f41286f27f27657d5a973ce694ea5a81efd2.png",
+      "mime": "image/png",
+      "width": 2318,
+      "height": 1400,
+      "sha256": "ef5cfbd6865dbec3da0167d97080f41286f27f27657d5a973ce694ea5a81efd2",
+      "thumbnail": "ef5cfbd6865dbec3da0167d97080f41286f27f27657d5a973ce694ea5a81efd2.png",
+      "revisionId": "4ae92acb-72cb-41a7-affa-5c93dfdc5664"
+    },
+    {
+      "id": "27ea4266-25c8-445e-970f-6e8b502fa11a",
+      "url": "d5aaa8229b37b9348ff264f52e737121a9611c99a053b88fcd31cc7a44c2757e.png",
+      "mime": "image/png",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "d5aaa8229b37b9348ff264f52e737121a9611c99a053b88fcd31cc7a44c2757e",
+      "thumbnail": "d5aaa8229b37b9348ff264f52e737121a9611c99a053b88fcd31cc7a44c2757e.png",
+      "revisionId": "27ea4266-25c8-445e-970f-6e8b502fa11a"
+    },
+    {
+      "id": "ad476ab7-0180-44f4-8b8f-ef7a79fbbef2",
+      "url": "572f5f7a5f87d4b49e1f7b2bd6ded35b21d3ead8d4fb192a1e2f80feb9f1164e.png",
+      "mime": "image/png",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "572f5f7a5f87d4b49e1f7b2bd6ded35b21d3ead8d4fb192a1e2f80feb9f1164e",
+      "thumbnail": "572f5f7a5f87d4b49e1f7b2bd6ded35b21d3ead8d4fb192a1e2f80feb9f1164e.png",
+      "revisionId": "ad476ab7-0180-44f4-8b8f-ef7a79fbbef2"
+    },
+    {
+      "id": "2dcecc57-1706-4e33-99da-f9f9eb2fdb94",
+      "url": "1b7eed8eb227ad82d7ebcebddf65e688ad5f108e2019967d50fde3fe3f55176a.png",
+      "mime": "image/png",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "1b7eed8eb227ad82d7ebcebddf65e688ad5f108e2019967d50fde3fe3f55176a",
+      "thumbnail": "1b7eed8eb227ad82d7ebcebddf65e688ad5f108e2019967d50fde3fe3f55176a.png",
+      "revisionId": "2dcecc57-1706-4e33-99da-f9f9eb2fdb94"
+    },
+    {
+      "id": "7b4d4067-c936-4585-81db-67db4200cb43",
+      "url": "944de0f0242cda5cf061cddeab3f08466303666da8d2b5788c23265d11fc347a.png",
+      "mime": "image/png",
+      "width": 896,
+      "height": 1152,
+      "sha256": "944de0f0242cda5cf061cddeab3f08466303666da8d2b5788c23265d11fc347a",
+      "thumbnail": "944de0f0242cda5cf061cddeab3f08466303666da8d2b5788c23265d11fc347a.png",
+      "revisionId": "7b4d4067-c936-4585-81db-67db4200cb43"
+    },
+    {
+      "id": "b9ddd884-977b-461d-a846-9ad0395d9809",
+      "url": "35dc31b08d0adf42732c36e1b9e048d912a84618c563096bcd0e636c152c32d5.png",
+      "mime": "image/png",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "35dc31b08d0adf42732c36e1b9e048d912a84618c563096bcd0e636c152c32d5",
+      "thumbnail": "35dc31b08d0adf42732c36e1b9e048d912a84618c563096bcd0e636c152c32d5.png",
+      "revisionId": "b9ddd884-977b-461d-a846-9ad0395d9809"
+    },
+    {
+      "id": "a847fc5a-7eee-460d-b03a-ec70955acb08",
+      "url": "f65902e4200e62d27f83e7b3af7b4bdf45d88b78c8be631dbc7edd80ebba05da.png",
+      "mime": "image/png",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "f65902e4200e62d27f83e7b3af7b4bdf45d88b78c8be631dbc7edd80ebba05da",
+      "thumbnail": "f65902e4200e62d27f83e7b3af7b4bdf45d88b78c8be631dbc7edd80ebba05da.png",
+      "revisionId": "a847fc5a-7eee-460d-b03a-ec70955acb08"
+    },
+    {
+      "id": "e89059f8-9e2c-46cc-a744-0a440902c527",
+      "url": "b8d4941fc8a5872f499bc8d1623544a3f3aa2580b22b8070a0931cd9ea6cb184.png",
+      "mime": "image/png",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "b8d4941fc8a5872f499bc8d1623544a3f3aa2580b22b8070a0931cd9ea6cb184",
+      "thumbnail": "b8d4941fc8a5872f499bc8d1623544a3f3aa2580b22b8070a0931cd9ea6cb184.png",
+      "revisionId": "e89059f8-9e2c-46cc-a744-0a440902c527"
+    },
+    {
+      "id": "0385feba-4d17-4603-b969-2abf0117f895",
+      "url": "52fbada327470a6cd6634127353b3599898537af0e5cea73878050111b7ee647.png",
+      "mime": "image/png",
+      "width": 896,
+      "height": 1152,
+      "sha256": "52fbada327470a6cd6634127353b3599898537af0e5cea73878050111b7ee647",
+      "thumbnail": "52fbada327470a6cd6634127353b3599898537af0e5cea73878050111b7ee647.png",
+      "revisionId": "0385feba-4d17-4603-b969-2abf0117f895"
+    }
+  ],
+  "formats": [
+    {
+      "id": "vertical",
+      "fps": 30,
+      "safe": {
+        "top": 192,
+        "left": 64.8,
+        "right": 64.8,
+        "bottom": 345.59999999999997
+      },
+      "width": 1080,
+      "height": 1920,
+      "minTextPx": 32
+    },
+    {
+      "id": "square",
+      "fps": 30,
+      "safe": {
+        "top": 54,
+        "left": 54,
+        "right": 54,
+        "bottom": 54
+      },
+      "width": 1080,
+      "height": 1080,
+      "minTextPx": 32
+    },
+    {
+      "id": "portrait",
+      "fps": 30,
+      "safe": {
+        "top": 67.5,
+        "left": 54,
+        "right": 54,
+        "bottom": 67.5
+      },
+      "width": 1080,
+      "height": 1350,
+      "minTextPx": 32
+    },
+    {
+      "id": "wide",
+      "fps": 30,
+      "safe": {
+        "top": 54,
+        "left": 96,
+        "right": 96,
+        "bottom": 54
+      },
+      "width": 1920,
+      "height": 1080,
+      "minTextPx": 32
+    }
+  ],
+  "roundId": "a821152e-5a98-4d69-bf98-623bd1cfa68d",
+  "protocol": "director@1",
+  "variants": [
+    {
+      "id": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "721a69ef-20d0-4c68-bce7-f340e9499b3e",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5cc67e64-3c2b-457e-b0f7-fb1b5df6ea3c",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "38020d70-5978-4845-b77f-dd7671364d33",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "21f7467d-8673-4e1e-a09d-60ef43dfd44e",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "85a0d7ac-9672-4dcd-9838-83370c7d2965",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5401c51e-3953-4f32-ab42-c07db17fb24d",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "378e7cec-cd02-4098-9c8f-cb93b24dfa53",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "65eee105-4cf2-4acb-9397-69ff9375a415",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "efcb6c23-67f7-4700-b0c2-72d74a6973a6",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "acca20ad-325d-4932-a0c6-32e9e8e8bb98",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "702d1bbb-b3ec-4b50-82fa-15735c32f9ef",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "9cdc0e2c-69a5-4c45-8c8b-90e36d120e5c",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "eb0c3e5c-c5aa-4075-8c0b-3fa8d895b3f4",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e6b3708c-c2b5-4f0d-9267-5e667be447d8",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "649be2a0-8b05-4ef3-8b03-d922291f432e",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8452a067-be9b-4188-9f3e-0b7ef015aacf",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "233cd175-cb19-452b-bb8e-04e85d717b9c",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "164d7a3f-823f-4b72-baf0-d064289486d4",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3c7bd0bf-3662-4f15-bd22-2c8726e9afef",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "c7aca9d6-9b36-43ef-b0bc-2e4af4e5ae17",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5d35a642-837f-40f1-aab8-7d689742755e",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "6172d63f-fa88-4ecb-b1ed-d519385dd35a",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "dee7e492-1f05-4e7e-bfac-ea43cd75fa85",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4c803f4c-33ee-465b-ad78-a68c3c2c8b28",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "42d897af-a5bb-44e3-be9f-61c2518561b7",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e6c0312d-0b1c-4cbb-98b8-57f629aa794a",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "cbebd18d-bd10-43f1-af42-6e17407a39f7",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "02d9fb0f-8664-4618-9c2e-a3ce20ba087f",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5ac90804-e6e9-41a5-af6b-f16445178eac",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "44f34c88-6e15-48ee-a4df-01823e7f603a",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "aea51cf2-f119-4a62-8d0e-cad0e2acab25",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "95529e8a-e674-4449-8a8d-d97afdf89e48",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "c29986af-d0a4-4efc-869a-36a8e80a3159",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4ff96028-ec57-4418-8e19-ffd4575b6337",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5da3ba44-5de5-40bc-9e6e-2bcb7195bb4b",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "9be4bdb6-97fc-4801-90c8-ad9de848cacb",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "af19daba-0362-44f9-a6f5-d3cd33d64b89",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a29c77fb-22a5-454b-a384-6e2712910287",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "dc0243bf-1bc8-4d66-9890-c57be2b55e8a",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4c190853-bdd6-4729-8799-c7d3e9c73560",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "445b5e00-3a93-498d-82a4-d9fb1979e884",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f826c603-0d6e-48df-836d-8e54e241eee3",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "1ae0fbb0-b6e1-486c-a74f-277352d00588",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a32c65b0-a79e-4c23-b499-36995c9a8ace",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4b39dce8-fd5c-4601-9654-df09090fa8a0",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "ab9a053b-5a7a-43d3-bca9-2b4db6b23961",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "768c3aff-01be-4fc9-983f-541f4b346a45",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "593194c7-bf79-42a3-b764-fc62fdfbb11b",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "c4674b54-287d-4ca1-bec9-44a7996bace4",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "44efb005-7014-4e28-9126-91459b1ac1aa",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "2143da0c-27aa-4d7d-8dc0-e736ded14ee9",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "403017e2-ac70-4a8b-b73f-a106af2ae490",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0680b018-a9bc-445f-9794-108c36e5fbfc",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "d131248e-31bf-4b7e-9fee-8e15e8d8dd7b",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f4247ccb-cb88-415c-8a58-5dbc624052aa",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3d5fe1b8-f7e9-4a76-a27a-81f9c422b3f2",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "03d9311e-90a7-4bd8-a390-49e0917ae4b3",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "9d453aae-577c-441d-a36b-423088959e4e",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "6afa00ff-25e9-417f-a2a3-52f4cd6023f7",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "674ca490-c977-40d6-9fcc-0ef0ea918fce",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8d8ba359-2853-4e7d-934c-a6e86c74053a",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f9e52b9d-7fa5-4121-b912-aca1700dc48a",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "cf131fe4-a730-49e9-ba25-3f9ed2c25d57",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "ca5c6080-7502-49ba-967a-1a2ee31963ab",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3e6218c5-42c6-43d9-8cd1-85e9a18a1445",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e174d149-0cc6-4301-9162-845eb0e2147e",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "bf2c1cbd-71f5-49e6-8ea3-71c3940a0671",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3d4c113c-6709-4beb-a1cd-2e0b0be56baf",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "b0f50b17-6bc8-49ce-bb85-5aaf5b711cc3",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "1a068fcd-3e0b-4839-bc87-e1ae0e756739",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0e615163-045c-46ab-ac8c-7a8dcec22b23",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "dd79717b-3f22-4b56-8155-0ac7adca42e2",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "6e8073d5-2a82-4ab9-ae43-79b88da71710",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a72cf329-9254-4790-bdfe-ad70c3a7f913",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "7793f150-c9ba-4ad0-b3cb-356a2f154c81",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4d627eb8-488c-4b87-821f-c00df7b589c9",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8256468b-897d-43fd-b699-ba2bb40bbf66",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5a46c0c6-510e-41ba-ada1-f55b56800bc6",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0c5cb18d-fdef-45fc-a805-0b1959b38a46",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "848f7c0b-108f-45bf-beea-5834af4ce0ae",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a50d90fd-2642-4013-85ef-dd26faa88919",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5eab14ac-c086-4e2c-aa3f-51e0887c8731",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a7c9c728-ecde-4fa2-8bb8-c153f665dddf",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "7086bf63-2fcd-411b-bc1f-83bc008d1684",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3ec24dc9-e2ca-4b7c-813d-0c7892c46323",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0bc66731-f74b-4bdd-b9eb-48287b6d0b9a",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "921f4361-5ffc-4a15-b7bf-c69ca2809d69",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "cdd6c09d-c9e4-4364-91fd-9e42e41cc5cf",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f38566d2-2d88-45c5-a5c6-a9aae16a14aa",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "321d78f3-c681-4b2d-8a70-b9eec5fce2ff",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "69edcc77-a486-43a1-9e43-9c511c91d36e",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "1b75f0ad-1fb6-4680-b147-34cf648b56c9",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "fb04d225-8443-4081-ae6b-1b1d65474065",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "309260d8-3b61-4f7d-adc8-cedcc3569540",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "75a17227-14fb-4095-b38e-b0441342212c",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "cfa86b71-d374-4d14-8c11-91acbc8c3b86",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e404dacd-2531-4568-abd3-e198044dc52a",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f80e065e-e384-4131-92bf-28dfa3e48703",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "50615f60-c824-4d84-82b5-58ca0a09f5c5",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "dc0d8a92-6f4f-4713-a47e-6e8fe398d0d4",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "da294421-2425-4bb1-9c91-2f2752a4976f",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "10d7e29b-d694-4c34-820b-76fcd70d5f20",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "81ec3b7e-2178-46d8-96fa-590f9a678861",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "2dfee53d-ed24-431b-9101-87e17f25d94f",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a0197a82-2a80-44fd-860e-def6e375061e",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f246d304-2643-4345-9000-151d5e314213",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0d4036b3-9caf-4ded-83e9-c7165137ec0d",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "57a5a997-d248-40b8-a716-b3d99e2d3918",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "67d54d96-b3c0-45f1-97bc-8d7e39dd6cf2",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8e909814-f32f-4ee2-ac94-7f852ecaa017",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0169c6cd-4a62-41df-b57d-ee633e15005e",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4248bb03-7dd1-4cad-b165-a832b74db3b9",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "490818ca-7f02-4c2c-8fef-4ff2dbdbb844",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "2f3e4893-faf5-45fe-83ee-8f39d805e86f",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e22bc71b-e84c-4aac-b441-d2cce5a1b96a",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "fe425e54-011d-4313-bae7-2a82d0fb32a0",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3c1c4998-6f30-427c-ae12-f11edf628f9d",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5b879f8f-e067-4419-90a1-d316f3070926",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "d3d1a477-aecc-451c-9639-131b1688b5da",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3f88123f-8a62-4ac5-8b41-f1bb3e6553da",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8c4c3dfa-86c7-4a12-84cc-034660c981fd",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "677ba23d-2eef-4a70-bf30-0850b22b1337",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "1d192336-10f5-49ec-be37-f80c2f30a5ef",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "7e66cf32-3898-421a-8430-cc5f9b21ab68",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "911a12f2-75de-46d8-af3c-a29b08d0d9e6",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "d80d6f72-d137-4d98-b6c7-ad9ada1c29db",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    }
+  ],
+  "storyboard": [
+    {
+      "id": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+      "end": 1.5,
+      "copy": [
+        "LOST TRACK OF YOUR BEST TAKE?"
+      ],
+      "start": 0,
+      "motionNotes": "Opening Hook",
+      "visualNotes": "Opening Hook",
+      "maxStaticSeconds": 0.75
+    },
+    {
+      "id": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b",
+      "end": 3,
+      "copy": [
+        "END THE CHAOS. KEEP EVERY VERSION."
+      ],
+      "start": 1.5,
+      "motionNotes": "Problem Introduction",
+      "visualNotes": "Problem Introduction",
+      "maxStaticSeconds": 0.75
+    },
+    {
+      "id": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d",
+      "end": 4.5,
+      "copy": [
+        "SAVE. REVERT. COMPARE. INSTANTLY."
+      ],
+      "start": 3,
+      "motionNotes": "Abstract waveform pills sliding in, representing different versions. Playhead scrubbing across them.",
+      "visualNotes": "Solution - Versioning Visual",
+      "maxStaticSeconds": 0.75
+    },
+    {
+      "id": "3848f442-c894-45fe-a298-0dc6a442f54f",
+      "end": 6,
+      "copy": [
+        "FOCUS ON THE MUSIC. WE HANDLE THE FILES."
+      ],
+      "start": 4.5,
+      "motionNotes": "Benefit - No More Manual Bounces",
+      "visualNotes": "Benefit - No More Manual Bounces",
+      "maxStaticSeconds": 0.75
+    },
+    {
+      "id": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e",
+      "end": 9,
+      "copy": [
+        "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP."
+      ],
+      "start": 6,
+      "motionNotes": "Sonicdesk logo appears. Text slides in. Offer and CTA highlighted in lime. Full stop is lime.",
+      "visualNotes": "Call to Action/Offer",
+      "maxStaticSeconds": 0.75
+    }
+  ],
+  "directionId": "ea416b05-e531-4403-a1ad-2de5b684174f",
+  "iterationId": "45338186-6cf6-4d31-9f12-620a25f2b2c9",
+  "resourceIds": [
+    "fcdcbd96-278b-42d4-a10d-12a675d80444",
+    "6ca06254-f165-45f0-aaaf-a0cd2da41edb",
+    "346db6d2-aeb1-471a-a24d-d77939bdefd6",
+    "54f6be45-687d-411d-ab5c-76920ae370e1"
+  ],
+  "variantFacts": {
+    "dd6dd1e2-73b9-4070-9a17-db193c2d9f06": {
+      "required": [
+        "LOST TRACK OF YOUR BEST TAKE?",
+        "END THE CHAOS. KEEP EVERY VERSION.",
+        "SAVE. REVERT. COMPARE. INSTANTLY.",
+        "FOCUS ON THE MUSIC. WE HANDLE THE FILES.",
+        "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.",
+        "Sign up",
+        "Free 1st month band-plan this month"
+      ],
+      "sceneCopy": {
+        "3848f442-c894-45fe-a298-0dc6a442f54f": [
+          "FOCUS ON THE MUSIC. WE HANDLE THE FILES."
+        ],
+        "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d": [
+          "SAVE. REVERT. COMPARE. INSTANTLY."
+        ],
+        "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b": [
+          "END THE CHAOS. KEEP EVERY VERSION."
+        ],
+        "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e": [
+          "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP."
+        ],
+        "f0175d7f-163d-4e99-ae8e-66011730fa11": [
+          "LOST TRACK OF YOUR BEST TAKE?"
+        ]
+      }
+    }
+  },
+  "stage": "draft"
+}

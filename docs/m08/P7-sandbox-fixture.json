@@ -1,0 +1,5 @@
+{
+  "ownServer": true,
+  "otherLoopbackDenied": true,
+  "outsideWriteDenied": true
+}

@@ -1,0 +1,44 @@
+{
+  "step": "E",
+  "date": "2026-10-29",
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "tests": { "passed": 415, "failed": 0 },
+    "nextBuild": "passed",
+    "diffWhitespace": "passed"
+  },
+  "review": {
+    "target": ["block", "direction", "iteration", "sourceRevision", "assetRevision", "scene", "moment", "width", "height", "format", "locale", "hook", "cta", "length", "pendingAssets"],
+    "appendOnly": true,
+    "explicitAdMark": true,
+    "staleAcknowledgementRejected": true,
+    "capturedViewSurvivesSourceChange": true,
+    "noteRetryUsesSameRequestId": true,
+    "sourceChecksSeparateFromReview": true,
+    "pausedNotesResumeWork": false,
+    "unsealedSourceRestored": true,
+    "frameExports": 0
+  },
+  "databaseFixture": {
+    "engine": "PostgreSQL 18.1",
+    "isolatedPrivateUnixSocket": true,
+    "migrationsAppliedInTemporaryCluster": 54,
+    "rollbackFixture": "supabase/tests/director-scoped-review.sql",
+    "passed": true,
+    "sharedDatabaseAccessed": false,
+    "temporaryClusterRemoved": true
+  },
+  "admission": [
+    { "fixture": "scoped-review large coder", "inputBound": 32266, "cap": 32768, "variants": 128, "copyKeys": 323, "designChars": 8000, "fontPayloads": 3, "scopedNotes": 1, "historicalSourcePointer": true },
+    { "fixture": "scoped-review shared-view notes", "inputBound": 32391, "cap": 32768, "scopedNotes": 2 }
+  ],
+  "providerCalls": 0,
+  "providerCostMicroUsd": 0,
+  "cachedTokenShare": null,
+  "billingNote": "Fixture replays only. Admission bounds are not billed tokenizer measurements.",
+  "migrationRequired": "20261029005400_director_scoped_review.sql",
+  "sharedMigrationApplied": false,
+  "visualVerification": false,
+  "pushed": false
+}

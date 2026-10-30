@@ -1,0 +1,63 @@
+{
+  "passed": false,
+  "findings": [
+    {
+      "check": "determinism",
+      "message": "Pixels changed when this frame was rendered again out of order.",
+      "frame": 0
+    },
+    {
+      "check": "determinism",
+      "message": "Pixels changed when this frame was rendered again out of order.",
+      "frame": 3
+    },
+    {
+      "check": "determinism",
+      "message": "Pixels changed when this frame was rendered again out of order.",
+      "frame": 7
+    },
+    {
+      "check": "determinism",
+      "message": "Pixels changed when this frame was rendered again out of order.",
+      "frame": 11
+    },
+    {
+      "check": "determinism",
+      "message": "Pixels changed when this frame was rendered again out of order.",
+      "frame": 15
+    },
+    {
+      "check": "determinism",
+      "message": "Pixels changed when this frame was rendered again out of order.",
+      "frame": 18
+    },
+    {
+      "check": "determinism",
+      "message": "Pixels changed when this frame was rendered again out of order.",
+      "frame": 22
+    },
+    {
+      "check": "determinism",
+      "message": "Pixels changed when this frame was rendered again out of order.",
+      "frame": 26
+    },
+    {
+      "check": "determinism",
+      "message": "Pixels changed when this frame was rendered again out of order.",
+      "frame": 29
+    }
+  ],
+  "sampledFrames": [
+    0,
+    3,
+    7,
+    11,
+    15,
+    18,
+    22,
+    26,
+    29
+  ],
+  "durationFrames": 30,
+  "renderMs": 7577
+}

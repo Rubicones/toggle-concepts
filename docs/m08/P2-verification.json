@@ -1,0 +1,26 @@
+[
+  {
+    "check": "typecheck",
+    "passed": true,
+    "ms": 2628,
+    "exit": 0
+  },
+  {
+    "check": "lint",
+    "passed": true,
+    "ms": 7364,
+    "exit": 0
+  },
+  {
+    "check": "test",
+    "passed": true,
+    "ms": 24354,
+    "exit": 0
+  },
+  {
+    "check": "next build",
+    "passed": true,
+    "ms": 6587,
+    "exit": 0
+  }
+]

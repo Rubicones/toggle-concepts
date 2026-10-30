@@ -1,0 +1,13 @@
+.m00-preview { margin-top: 28px; }
+.m00-preview p { margin: 14px 0; line-height: 1.6; }
+.m00-preview button, .m00-preview a { border: 1px solid #68725c; padding: 10px 14px; border-radius: 6px; cursor: pointer; }
+.m00-preview button:disabled { opacity: .5; cursor: wait; }
+.m00-preview button:focus-visible, .m00-preview a:focus-visible { outline: 3px solid #8aaf4d; outline-offset: 3px; }
+.m00-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.m00-three { margin-top: 20px; }
+.render-lab-page { max-width: 1000px; margin: 0 auto; }
+.m00-preview p { color: #6f8998; font-size: 12px; }
+.m00-preview button, .m00-preview a { border-color: #d2e0e8; border-radius: 999px; font-size: 12px; padding: 11px 17px; }
+.m00-preview button:hover, .m00-preview a:hover { background: #eff7fc; }
+.m00-preview button:focus-visible, .m00-preview a:focus-visible { outline-color: #4398c0; }
+.m00-actions { align-items: center; font-size: 12px; color: #7893a3; }

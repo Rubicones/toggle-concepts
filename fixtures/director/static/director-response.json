@@ -1,0 +1,42 @@
+{
+  "designDocument": "Sonicdesk: final-looking black and lime key frames with Noto Sans, bold editorial hierarchy, supplied logo and independently composed four formats. Each scene makes its approved words the focal point. Motion intent for later: the mixer grows into the cut, then the camera follows the waveform into the next scene; hold the closing offer. Draft frames remain entirely static.",
+  "keyFrames": [
+    {
+      "sceneId": "scene-1",
+      "moments": [
+        {
+          "id": "hero",
+          "description": "Show the final composed hero state with all approved scene words and the supplied brand mark."
+        }
+      ]
+    },
+    {
+      "sceneId": "scene-2",
+      "moments": [
+        {
+          "id": "hero",
+          "description": "Show the final composed hero state with all approved scene words and the supplied brand mark."
+        }
+      ]
+    },
+    {
+      "sceneId": "scene-3",
+      "moments": [
+        {
+          "id": "hero",
+          "description": "Show the final composed hero state with all approved scene words and the supplied brand mark."
+        }
+      ]
+    },
+    {
+      "sceneId": "scene-4",
+      "moments": [
+        {
+          "id": "hero",
+          "description": "Show the final composed hero state with all approved scene words and the supplied brand mark."
+        }
+      ]
+    }
+  ],
+  "resources": []
+}

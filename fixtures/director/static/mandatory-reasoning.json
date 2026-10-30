@@ -1,0 +1,15 @@
+{
+  "description": "Recorded free Sonnet 5.5 catalog metadata and the observed uncharged rejection; no generated answer.",
+  "model": {
+    "id": "anthropic/claude-sonnet-5.5",
+    "name": "Anthropic: Claude Sonnet 5.5",
+    "architecture": {"input_modalities": ["text", "image"], "output_modalities": ["text"]},
+    "pricing": {"prompt": "0.000002", "completion": "0.00001", "request": "0"},
+    "context_length": 1000000,
+    "top_provider": {"max_completion_tokens": 128000},
+    "supported_parameters": ["include_reasoning", "max_completion_tokens", "max_tokens", "reasoning", "reasoning_effort", "response_format", "stop", "structured_outputs", "tool_choice", "tools", "verbosity"],
+    "reasoning": {"mandatory": true, "supported_efforts": ["max", "xhigh", "high", "medium", "low"], "default_effort": "high"}
+  },
+  "rejection": {"error": {"code": 400, "message": "Reasoning is mandatory for this endpoint and cannot be disabled."}},
+  "costMicroUsd": 0
+}

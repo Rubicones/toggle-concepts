@@ -1,0 +1,2989 @@
+{
+  "provenance": {
+    "kind": "recorded-campaign-build",
+    "campaignId": "1b42a083-7432-4225-ab92-817a7e173e28",
+    "roundId": "a821152e-5a98-4d69-bf98-623bd1cfa68d",
+    "sha256": "2c76fc2b3de4622bccfb2a7b1a2a37c3d494945465741a507d8dddb1277370a5"
+  },
+  "scenario": {
+    "conceptId": "concept-1",
+    "premise": "This concept highlights sonicdesk as the ultimate collaborative workspace for bands, emphasizing version control and precise feedback.",
+    "hook": "Stop losing track. Start building.",
+    "timedStoryboard": [
+      {
+        "sceneId": "scene-1",
+        "startTime": 0,
+        "endTime": 1.5,
+        "visualNotes": "Energetic montage: Musicians (guitarist, drummer, vocalist) in various settings (home studio, rehearsal space) captured in dynamic, quick cuts. Focus on passion and collaboration.",
+        "onScreenCopy": "YOUR BAND. YOUR TRACKS.",
+        "narration": "Every band knows the struggle. Keeping your music organised. Tracking changes. Giving feedback."
+      },
+      {
+        "sceneId": "scene-2",
+        "startTime": 1.5,
+        "endTime": 3.5,
+        "visualNotes": "Seamless transition to a clean, dark sonicdesk UI mockup, showing a song project with multiple versions/takes. Highlight waveform pills and subtle lime accents moving to indicate different versions.",
+        "onScreenCopy": "VERSION CONTROL FOR MUSIC.",
+        "narration": "sonicdesk offers version control for your music, ensuring every take, every idea, is saved and accessible."
+      },
+      {
+        "sceneId": "scene-3",
+        "startTime": 3.5,
+        "endTime": 5,
+        "visualNotes": "Zoom in on a specific part of the sonicdesk UI, showing a comment bubble tied to a specific bar/section of a waveform.",
+        "onScreenCopy": "COMMENT ON BARS.",
+        "narration": "Leave precise comments on specific bars, so your bandmates know exactly what you mean."
+      },
+      {
+        "sceneId": "scene-4",
+        "startTime": 5,
+        "endTime": 6,
+        "visualNotes": "Fast cut back to musicians nodding in agreement, then a final shot of the sonicdesk logo and offer.",
+        "onScreenCopy": "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.",
+        "narration": "Collaborate effortlessly. Get your free first month band-plan this month."
+      }
+    ],
+    "completeCopy": {
+      "onScreen": [
+        "YOUR BAND. YOUR TRACKS.",
+        "VERSION CONTROL FOR MUSIC.",
+        "COMMENT ON BARS.",
+        "FREE 1ST MONTH BAND-PLAN THIS MONTH.",
+        "SIGN UP."
+      ],
+      "narration": [
+        "Every band knows the struggle. Keeping your music organised. Tracking changes. Giving feedback.",
+        "sonicdesk offers version control for your music, ensuring every take, every idea, is saved and accessible.",
+        "Leave precise comments on specific bars, so your bandmates know exactly what you mean.",
+        "Collaborate effortlessly. Get your free first month band-plan this month."
+      ]
+    },
+    "cta": "Sign up",
+    "assetNeeds": [
+      {
+        "slotId": "musicians_montage",
+        "type": "video_clip",
+        "description": "Dynamic, passionate musicians in rehearsal/studio settings.",
+        "duration": 1.5,
+        "aspectRatio": "any"
+      },
+      {
+        "slotId": "sonicdesk_version_ui",
+        "type": "ui_mockup",
+        "description": "Simplified sonicdesk UI showing version control/multiple takes.",
+        "duration": 2,
+        "aspectRatio": "any"
+      },
+      {
+        "slotId": "sonicdesk_comment_ui",
+        "type": "ui_mockup",
+        "description": "Simplified sonicdesk UI showing comment linked to specific bar.",
+        "duration": 1.5,
+        "aspectRatio": "any"
+      },
+      {
+        "slotId": "sonicdesk_logo_offer",
+        "type": "graphic",
+        "description": "sonicdesk logo with 'Free 1st month band-plan this month' and 'Sign up'.",
+        "duration": 1,
+        "aspectRatio": "any"
+      }
+    ],
+    "proxyContracts": [
+      {
+        "slotId": "musicians_montage",
+        "description": "Low-res video proxy of diverse musicians, quick cuts.",
+        "params": []
+      },
+      {
+        "slotId": "sonicdesk_version_ui",
+        "description": "Still image of dark UI with waveform and version selector.",
+        "params": []
+      },
+      {
+        "slotId": "sonicdesk_comment_ui",
+        "description": "Still image of dark UI with waveform and pop-up comment.",
+        "params": []
+      },
+      {
+        "slotId": "sonicdesk_logo_offer",
+        "description": "Static graphic of logo and offer text.",
+        "params": []
+      }
+    ],
+    "variantBindings": [
+      {
+        "hookId": "primary",
+        "beatSequenceId": "primary",
+        "offerId": "primary",
+        "locale": "en-GB",
+        "durationSeconds": 6,
+        "placementId": "vertical",
+        "id": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      {
+        "hookId": "primary",
+        "beatSequenceId": "primary",
+        "offerId": "primary",
+        "locale": "en-GB",
+        "durationSeconds": 6,
+        "placementId": "square",
+        "id": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      {
+        "hookId": "primary",
+        "beatSequenceId": "primary",
+        "offerId": "primary",
+        "locale": "en-GB",
+        "durationSeconds": 6,
+        "placementId": "portrait",
+        "id": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      {
+        "hookId": "primary",
+        "beatSequenceId": "primary",
+        "offerId": "primary",
+        "locale": "en-GB",
+        "durationSeconds": 6,
+        "placementId": "wide",
+        "id": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      }
+    ],
+    "durationChecks": {
+      "maxDuration": 6,
+      "minDuration": 6,
+      "narrationDuration": 5.9,
+      "onScreenCopyDuration": 5
+    }
+  },
+  "direction": {
+    "id": "3a418785-3c0f-4d09-bcf2-fa25bc8deed2",
+    "media": {
+      "elements": [
+        {
+          "contract": null,
+          "element": "e13",
+          "fit": "cover",
+          "ground": "paper",
+          "promptPack": null,
+          "reference": "logo0",
+          "source": "logo",
+          "ui": null
+        },
+        {
+          "contract": null,
+          "element": "e1",
+          "fit": "cover",
+          "ground": "paper",
+          "promptPack": null,
+          "reference": "2c53ff69-8766-42a6-aca0-8aadbbaf447f",
+          "source": "asset",
+          "ui": null
+        },
+        {
+          "contract": null,
+          "element": "e3",
+          "fit": "contain",
+          "ground": "paper",
+          "promptPack": null,
+          "reference": "2c53ff69-8766-42a6-aca0-8aadbbaf447f",
+          "source": "asset",
+          "ui": null
+        },
+        {
+          "contract": null,
+          "element": "e5",
+          "fit": "contain",
+          "ground": "paper",
+          "promptPack": null,
+          "reference": "e5",
+          "source": "ui",
+          "ui": {
+            "aspect": 0.47373637264618434,
+            "device": "phone",
+            "panels": [],
+            "referenceRevisionId": "2c53ff69-8766-42a6-aca0-8aadbbaf447f"
+          }
+        },
+        {
+          "contract": null,
+          "element": "e14",
+          "fit": "cover",
+          "ground": "paper",
+          "promptPack": null,
+          "reference": "logo0",
+          "source": "logo",
+          "ui": null
+        },
+        {
+          "contract": null,
+          "element": "e10",
+          "fit": "cover",
+          "ground": "paper",
+          "promptPack": null,
+          "reference": "2c53ff69-8766-42a6-aca0-8aadbbaf447f",
+          "source": "asset",
+          "ui": null
+        },
+        {
+          "contract": null,
+          "element": "e11",
+          "fit": "contain",
+          "ground": "paper",
+          "promptPack": null,
+          "reference": "e11",
+          "source": "ui",
+          "ui": {
+            "aspect": 0.47373637264618434,
+            "device": "phone",
+            "panels": [],
+            "referenceRevisionId": "2c53ff69-8766-42a6-aca0-8aadbbaf447f"
+          }
+        }
+      ],
+      "version": "media@1"
+    },
+    "scenes": {
+      "beats": [
+        {
+          "composition": "intake_window",
+          "cues": [],
+          "key": "b0",
+          "layers": [
+            {
+              "color": "paper",
+              "element": "e0",
+              "key": "l0",
+              "kind": "text",
+              "order": 0,
+              "registryId": "",
+              "source": "c0",
+              "style": "headline",
+              "zone": "text"
+            },
+            {
+              "color": "accent",
+              "element": "e13",
+              "key": "l1",
+              "kind": "logo",
+              "order": 1,
+              "registryId": "",
+              "source": "e13",
+              "style": "headline",
+              "zone": "logo"
+            }
+          ],
+          "never": [],
+          "regions": [
+            {
+              "area": "full",
+              "id": "ground",
+              "paint": "paper"
+            },
+            {
+              "area": "edge",
+              "id": "band",
+              "paint": "ink"
+            }
+          ]
+        },
+        {
+          "composition": "intake_window",
+          "cues": [
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l0",
+              "type": "fade"
+            },
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l1",
+              "type": "fade"
+            }
+          ],
+          "key": "b1",
+          "layers": [
+            {
+              "color": "accent",
+              "element": "e1",
+              "key": "l0",
+              "kind": "image",
+              "order": 0,
+              "registryId": "",
+              "source": "e1",
+              "style": "body",
+              "zone": "hero"
+            },
+            {
+              "color": "paper",
+              "element": "e2",
+              "key": "l1",
+              "kind": "text",
+              "order": 1,
+              "registryId": "",
+              "source": "c1",
+              "style": "body",
+              "zone": "text"
+            }
+          ],
+          "never": [],
+          "regions": [
+            {
+              "area": "full",
+              "id": "ground",
+              "paint": "paper"
+            },
+            {
+              "area": "edge",
+              "id": "band",
+              "paint": "ink"
+            }
+          ]
+        },
+        {
+          "composition": "intake_window",
+          "cues": [
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l0",
+              "type": "fade"
+            },
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l1",
+              "type": "fade"
+            }
+          ],
+          "key": "b2",
+          "layers": [
+            {
+              "color": "accent",
+              "element": "e3",
+              "key": "l0",
+              "kind": "image",
+              "order": 0,
+              "registryId": "",
+              "source": "e3",
+              "style": "body",
+              "zone": "hero"
+            },
+            {
+              "color": "paper",
+              "element": "e4",
+              "key": "l1",
+              "kind": "text",
+              "order": 1,
+              "registryId": "",
+              "source": "c3",
+              "style": "body",
+              "zone": "text"
+            }
+          ],
+          "never": [],
+          "regions": [
+            {
+              "area": "full",
+              "id": "ground",
+              "paint": "paper"
+            },
+            {
+              "area": "edge",
+              "id": "band",
+              "paint": "ink"
+            }
+          ]
+        },
+        {
+          "composition": "intake_window",
+          "cues": [
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l0",
+              "type": "fade"
+            },
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l1",
+              "type": "fade"
+            }
+          ],
+          "key": "b3",
+          "layers": [
+            {
+              "color": "accent",
+              "element": "e5",
+              "key": "l0",
+              "kind": "ui",
+              "order": 0,
+              "registryId": "",
+              "source": "e5",
+              "style": "body",
+              "zone": "hero"
+            },
+            {
+              "color": "paper",
+              "element": "e6",
+              "key": "l1",
+              "kind": "text",
+              "order": 1,
+              "registryId": "",
+              "source": "c5",
+              "style": "body",
+              "zone": "text"
+            }
+          ],
+          "never": [],
+          "regions": [
+            {
+              "area": "full",
+              "id": "ground",
+              "paint": "paper"
+            },
+            {
+              "area": "edge",
+              "id": "band",
+              "paint": "ink"
+            }
+          ]
+        },
+        {
+          "composition": "intake_window",
+          "cues": [
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l0",
+              "type": "fade"
+            }
+          ],
+          "key": "b4",
+          "layers": [
+            {
+              "color": "paper",
+              "element": "e7",
+              "key": "l0",
+              "kind": "text",
+              "order": 0,
+              "registryId": "",
+              "source": "c8",
+              "style": "body",
+              "zone": "text"
+            }
+          ],
+          "never": [],
+          "regions": [
+            {
+              "area": "full",
+              "id": "ground",
+              "paint": "paper"
+            },
+            {
+              "area": "edge",
+              "id": "band",
+              "paint": "ink"
+            }
+          ]
+        },
+        {
+          "composition": "intake_window",
+          "cues": [
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l1",
+              "type": "fade"
+            },
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l2",
+              "type": "fade"
+            }
+          ],
+          "key": "b5",
+          "layers": [
+            {
+              "color": "paper",
+              "element": "e9",
+              "key": "l1",
+              "kind": "text",
+              "order": 1,
+              "registryId": "",
+              "source": "c9",
+              "style": "cta",
+              "zone": "cta"
+            },
+            {
+              "color": "accent",
+              "element": "e14",
+              "key": "l2",
+              "kind": "logo",
+              "order": 2,
+              "registryId": "",
+              "source": "e14",
+              "style": "cta",
+              "zone": "logo"
+            }
+          ],
+          "never": [],
+          "regions": [
+            {
+              "area": "full",
+              "id": "ground",
+              "paint": "paper"
+            },
+            {
+              "area": "edge",
+              "id": "band",
+              "paint": "ink"
+            }
+          ]
+        },
+        {
+          "composition": "intake_window",
+          "cues": [
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l0",
+              "type": "fade"
+            }
+          ],
+          "key": "b6",
+          "layers": [
+            {
+              "color": "accent",
+              "element": "e10",
+              "key": "l0",
+              "kind": "image",
+              "order": 0,
+              "registryId": "",
+              "source": "e10",
+              "style": "body",
+              "zone": "hero"
+            }
+          ],
+          "never": [],
+          "regions": [
+            {
+              "area": "full",
+              "id": "ground",
+              "paint": "paper"
+            },
+            {
+              "area": "edge",
+              "id": "band",
+              "paint": "ink"
+            }
+          ]
+        },
+        {
+          "composition": "intake_window",
+          "cues": [
+            {
+              "amount": 1,
+              "at": 0,
+              "duration": "fast",
+              "period": 0.01,
+              "target": "l0",
+              "type": "fade"
+            }
+          ],
+          "key": "b7",
+          "layers": [
+            {
+              "color": "accent",
+              "element": "e11",
+              "key": "l0",
+              "kind": "ui",
+              "order": 0,
+              "registryId": "",
+              "source": "e11",
+              "style": "body",
+              "zone": "hero"
+            }
+          ],
+          "never": [],
+          "regions": [
+            {
+              "area": "full",
+              "id": "ground",
+              "paint": "paper"
+            },
+            {
+              "area": "edge",
+              "id": "band",
+              "paint": "ink"
+            }
+          ]
+        }
+      ],
+      "direction": 0,
+      "resourceContracts": [],
+      "stage": "draft",
+      "version": "scene@2"
+    },
+    "script": {
+      "beats": [
+        {
+          "elements": [
+            {
+              "key": "e0",
+              "kind": "text",
+              "what": "Stop losing track. Start building."
+            },
+            {
+              "key": "e13",
+              "kind": "logo",
+              "what": "Kit logo, exactly as drawn"
+            }
+          ],
+          "focal": "e0",
+          "key": "b0",
+          "objective": "Introduce the problem of managing music and present sonicdesk as the solution.",
+          "role": "hook"
+        },
+        {
+          "elements": [
+            {
+              "key": "e1",
+              "kind": "media",
+              "what": "Dynamic montage of musicians"
+            },
+            {
+              "key": "e2",
+              "kind": "text",
+              "what": "YOUR BAND. YOUR TRACKS."
+            }
+          ],
+          "focal": "e1",
+          "key": "b1",
+          "objective": "Showcase the core functionality of version control.",
+          "role": "demo"
+        },
+        {
+          "elements": [
+            {
+              "key": "e3",
+              "kind": "product",
+              "what": "Simplified sonicdesk UI showing version control"
+            },
+            {
+              "key": "e4",
+              "kind": "text",
+              "what": "VERSION CONTROL FOR MUSIC."
+            }
+          ],
+          "focal": "e3",
+          "key": "b2",
+          "objective": "Demonstrate how sonicdesk manages different versions of music.",
+          "role": "proof"
+        },
+        {
+          "elements": [
+            {
+              "key": "e5",
+              "kind": "ui",
+              "what": "Simplified sonicdesk UI showing comment linked to specific bar"
+            },
+            {
+              "key": "e6",
+              "kind": "text",
+              "what": "COMMENT ON BARS."
+            }
+          ],
+          "focal": "e5",
+          "key": "b3",
+          "objective": "Highlight the collaborative feature of commenting on specific parts of a song.",
+          "role": "proof"
+        },
+        {
+          "elements": [
+            {
+              "key": "e7",
+              "kind": "text",
+              "what": "Free 1st month band-plan this month"
+            }
+          ],
+          "focal": "e7",
+          "key": "b4",
+          "objective": "Present the introductory offer to encourage sign-ups.",
+          "role": "offer"
+        },
+        {
+          "elements": [
+            {
+              "key": "e8",
+              "kind": "graphic",
+              "what": "sonicdesk logo and offer"
+            },
+            {
+              "key": "e9",
+              "kind": "text",
+              "what": "Sign up"
+            },
+            {
+              "key": "e14",
+              "kind": "logo",
+              "what": "Kit logo, exactly as drawn"
+            }
+          ],
+          "focal": "e8",
+          "key": "b5",
+          "objective": "Direct the user to sign up.",
+          "role": "cta"
+        },
+        {
+          "elements": [
+            {
+              "key": "e10",
+              "kind": "media",
+              "what": "More dynamic musician shots, showing collaboration"
+            }
+          ],
+          "focal": "e10",
+          "key": "b6",
+          "objective": "Show more musicians collaborating and enjoying the process.",
+          "role": "proof"
+        },
+        {
+          "elements": [
+            {
+              "key": "e11",
+              "kind": "ui",
+              "what": "Seamless navigation through sonicdesk UI"
+            }
+          ],
+          "focal": "e11",
+          "key": "b7",
+          "objective": "Visually reinforce the ease of use of sonicdesk.",
+          "role": "proof"
+        }
+      ],
+      "bindings": [
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9"
+          ],
+          "durationSeconds": 6,
+          "hookAxisId": "primary",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11"
+          ],
+          "durationSeconds": 9,
+          "hookAxisId": "primary",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 12,
+          "hookAxisId": "primary",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 15,
+          "hookAxisId": "primary",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9"
+          ],
+          "durationSeconds": 6,
+          "hookAxisId": "primary",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11"
+          ],
+          "durationSeconds": 9,
+          "hookAxisId": "primary",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 12,
+          "hookAxisId": "primary",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 15,
+          "hookAxisId": "primary",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9"
+          ],
+          "durationSeconds": 6,
+          "hookAxisId": "hook-1",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11"
+          ],
+          "durationSeconds": 9,
+          "hookAxisId": "hook-1",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 12,
+          "hookAxisId": "hook-1",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 15,
+          "hookAxisId": "hook-1",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9"
+          ],
+          "durationSeconds": 6,
+          "hookAxisId": "hook-1",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11"
+          ],
+          "durationSeconds": 9,
+          "hookAxisId": "hook-1",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 12,
+          "hookAxisId": "hook-1",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 15,
+          "hookAxisId": "hook-1",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9"
+          ],
+          "durationSeconds": 6,
+          "hookAxisId": "hook-2",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11"
+          ],
+          "durationSeconds": 9,
+          "hookAxisId": "hook-2",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 12,
+          "hookAxisId": "hook-2",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 15,
+          "hookAxisId": "hook-2",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9"
+          ],
+          "durationSeconds": 6,
+          "hookAxisId": "hook-2",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11"
+          ],
+          "durationSeconds": 9,
+          "hookAxisId": "hook-2",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 12,
+          "hookAxisId": "hook-2",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 15,
+          "hookAxisId": "hook-2",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9"
+          ],
+          "durationSeconds": 6,
+          "hookAxisId": "hook-3",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11"
+          ],
+          "durationSeconds": 9,
+          "hookAxisId": "hook-3",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 12,
+          "hookAxisId": "hook-3",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "primary",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 15,
+          "hookAxisId": "hook-3",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9"
+          ],
+          "durationSeconds": 6,
+          "hookAxisId": "hook-3",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11"
+          ],
+          "durationSeconds": 9,
+          "hookAxisId": "hook-3",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 12,
+          "hookAxisId": "hook-3",
+          "offerAxisId": "primary"
+        },
+        {
+          "beatSequenceId": "beats-1",
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b3",
+            "b4",
+            "b5",
+            "b6",
+            "b7"
+          ],
+          "copyKeys": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4",
+            "c5",
+            "c6",
+            "c7",
+            "c8",
+            "c9",
+            "c10",
+            "c11",
+            "c12",
+            "c13"
+          ],
+          "durationSeconds": 15,
+          "hookAxisId": "hook-3",
+          "offerAxisId": "primary"
+        }
+      ],
+      "copy": [
+        {
+          "beat": "b0",
+          "key": "c0",
+          "locale": "en-GB",
+          "short": [
+            "Stop losing track.",
+            "Start building."
+          ],
+          "slot": "hook",
+          "text": "Stop losing track."
+        },
+        {
+          "beat": "b1",
+          "key": "c1",
+          "locale": "en-GB",
+          "short": [
+            "YOUR BAND.",
+            "YOUR TRACKS."
+          ],
+          "slot": "body",
+          "text": "YOUR BAND. YOUR TRACKS."
+        },
+        {
+          "beat": "b1",
+          "key": "c2",
+          "locale": "en-GB",
+          "short": [
+            "Organise your music.",
+            "Track changes, give feedback."
+          ],
+          "slot": "body",
+          "text": "Organise your music."
+        },
+        {
+          "beat": "b2",
+          "key": "c3",
+          "locale": "en-GB",
+          "short": [
+            "VERSION CONTROL.",
+            "MUSIC VERSIONING."
+          ],
+          "slot": "body",
+          "text": "VERSION CONTROL FOR MUSIC."
+        },
+        {
+          "beat": "b2",
+          "key": "c4",
+          "locale": "en-GB",
+          "short": [
+            "Every take, every idea saved.",
+            "Version control for music."
+          ],
+          "slot": "body",
+          "text": "Every take, every idea saved."
+        },
+        {
+          "beat": "b3",
+          "key": "c5",
+          "locale": "en-GB",
+          "short": [
+            "COMMENT.",
+            "ON BARS."
+          ],
+          "slot": "body",
+          "text": "COMMENT ON BARS."
+        },
+        {
+          "beat": "b3",
+          "key": "c6",
+          "locale": "en-GB",
+          "short": [
+            "Precise comments on bars."
+          ],
+          "slot": "body",
+          "text": "Precise comments on bars."
+        },
+        {
+          "beat": "b5",
+          "key": "c7",
+          "locale": "en-GB",
+          "short": [],
+          "slot": "body",
+          "text": "Free 1st month band-plan this month"
+        },
+        {
+          "beat": "b4",
+          "key": "c8",
+          "locale": "en-GB",
+          "short": [
+            "Collaborate effortlessly.",
+            "Free 1st month band-plan."
+          ],
+          "slot": "body",
+          "text": "Collaborate effortlessly."
+        },
+        {
+          "beat": "b5",
+          "key": "c9",
+          "locale": "en-GB",
+          "short": [],
+          "slot": "cta",
+          "text": "Sign up"
+        },
+        {
+          "beat": "b6",
+          "key": "c10",
+          "locale": "en-GB",
+          "short": [
+            "REHEARSE.",
+            "ON THE GO."
+          ],
+          "slot": "body",
+          "text": "REHEARSE ON THE GO."
+        },
+        {
+          "beat": "b6",
+          "key": "c11",
+          "locale": "en-GB",
+          "short": [
+            "Music with you, always.",
+            "Rehearse anywhere."
+          ],
+          "slot": "body",
+          "text": "Music with you, always."
+        },
+        {
+          "beat": "b7",
+          "key": "c12",
+          "locale": "en-GB",
+          "short": [
+            "MOBILE REHEARSAL.",
+            "REHEARSE MOBILE."
+          ],
+          "slot": "body",
+          "text": "MOBILE REHEARSAL MODE."
+        },
+        {
+          "beat": "b7",
+          "key": "c13",
+          "locale": "en-GB",
+          "short": [
+            "Access tracks from device.",
+            "Mobile rehearsal mode."
+          ],
+          "slot": "body",
+          "text": "Access tracks from device."
+        }
+      ],
+      "cutdowns": [
+        {
+          "beats": [
+            "b0",
+            "b5"
+          ],
+          "durationSeconds": 6
+        },
+        {
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b5"
+          ],
+          "durationSeconds": 9
+        },
+        {
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b5"
+          ],
+          "durationSeconds": 12
+        },
+        {
+          "beats": [
+            "b0",
+            "b1",
+            "b2",
+            "b5"
+          ],
+          "durationSeconds": 15
+        }
+      ],
+      "direction": 0,
+      "hooks": [
+        {
+          "angle": "versioning",
+          "beat": "b0",
+          "hookAxisId": "primary"
+        },
+        {
+          "angle": "mobile-rehearsal",
+          "beat": "b0",
+          "hookAxisId": "hook-1"
+        },
+        {
+          "angle": "central-hub",
+          "beat": "b0",
+          "hookAxisId": "hook-2"
+        },
+        {
+          "angle": "central-hub",
+          "beat": "b0",
+          "hookAxisId": "hook-3"
+        }
+      ],
+      "oneLine": "This campaign promotes the Snippet feature: inside a song's mixer you select a 5–30 second part of the mix (presets 5/10/15/20/25/30 s or free drag), it snaps to section starts (Verse, Chorus, etc.), loops for listening, and exports as an audio file you can use to test the hook in Reels/TikTok before release.",
+      "questions": [],
+      "technique": "window",
+      "version": "script@2"
+    },
+    "treatment": {
+      "compositionsByBeat": [
+        "intake_window",
+        "intake_window",
+        "intake_window",
+        "intake_window",
+        "intake_window",
+        "intake_window",
+        "intake_window",
+        "intake_window"
+      ],
+      "imagery": {
+        "crop": "cover",
+        "style": "Dark, minimalist UI with strong contrast for highlighted elements. Lifestyle shots are authentic and slightly moody.",
+        "treatment": "Waveforms are drawn as pill shapes. UI elements are sharp-edged, reflecting a studio gear aesthetic. Live-action musicians are captured with shallow depth of field for intimacy."
+      },
+      "motionCharacter": "Purposeful, precise, and responsive. UI elements animate with a mechanical, confident feel. Live-action transitions are energetic but smooth.",
+      "palette": {
+        "accent": "accent",
+        "field": "paper",
+        "ink": "ink",
+        "surface": "paper"
+      },
+      "signature": {
+        "ids": [],
+        "mode": "none"
+      },
+      "technique": "window",
+      "transitions": [
+        "Fast cuts for scene changes, digital wipe for UI elements. Specific `cubic-bezier(0.22,1,0.36,1)` easing for all motion as per brand kit.",
+        "Elements enter with a subtle pop or slide that aligns with the beat. Waveforms build and shrink in response to sound amplitude."
+      ],
+      "typeRoles": [
+        {
+          "element": "e0",
+          "style": "headline"
+        },
+        {
+          "element": "e2",
+          "style": "body"
+        },
+        {
+          "element": "e4",
+          "style": "body"
+        },
+        {
+          "element": "e6",
+          "style": "body"
+        },
+        {
+          "element": "e7",
+          "style": "body"
+        },
+        {
+          "element": "e9",
+          "style": "cta"
+        }
+      ],
+      "version": "treatment@1"
+    }
+  },
+  "rawMedia": {
+    "version": "media@1",
+    "elements": [
+      {
+        "element": "logo",
+        "source": "logo",
+        "reference": "logo0",
+        "fit": "contain",
+        "ground": "paper",
+        "promptPack": null,
+        "ui": null,
+        "contract": null
+      },
+      {
+        "element": "hero",
+        "source": "ui",
+        "reference": "a0",
+        "fit": "contain",
+        "ground": "paper",
+        "promptPack": null,
+        "ui": {
+          "device": "phone",
+          "aspect": 0.4737363726461843,
+          "referenceRevisionId": "2c53ff69-8766-42a6-aca0-8aadbbaf447f",
+          "panels": [
+            {
+              "key": "bar_status",
+              "label": "REHEARSAL",
+              "value": "REHEARSAL",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "mixer_status",
+              "label": "MIXER",
+              "value": "MIXER",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "song_title",
+              "label": "Taking My Dog",
+              "value": "Taking My Dog",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "bpm_key_time",
+              "label": "116 BPM C major 4/4 3:49",
+              "value": "116 BPM C major 4/4 3:49",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "master_dropdown",
+              "label": "MASTER",
+              "value": "MASTER",
+              "kind": "button",
+              "progress": 0
+            },
+            {
+              "key": "chord_1",
+              "label": "Bbm",
+              "value": "Bbm",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "chord_2",
+              "label": "B",
+              "value": "B",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "breakdown",
+              "label": "BREAKDOWN",
+              "value": "BREAKDOWN",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "chord_3",
+              "label": "Eb",
+              "value": "Eb",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "chord_4",
+              "label": "Bb",
+              "value": "Bb",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "chord_5",
+              "label": "Ab",
+              "value": "Ab",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "chord_6",
+              "label": "Bbm",
+              "value": "Bbm",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "chord_7",
+              "label": "Ebm",
+              "value": "Ebm",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "now_tab",
+              "label": "NOW",
+              "value": "NOW",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "list_tab",
+              "label": "LIST",
+              "value": "LIST",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "pre_chorus_label",
+              "label": "Pre-chorus",
+              "value": "Pre-chorus",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "next_chord_label",
+              "label": "Next · Chorus",
+              "value": "Next · Chorus",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "chord_now",
+              "label": "CHORD NOW",
+              "value": "CHORD NOW",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "next_chord",
+              "label": "NEXT",
+              "value": "NEXT",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "current_chord_value",
+              "label": "B",
+              "value": "B",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "next_chord_value",
+              "label": "Eb",
+              "value": "Eb",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "bar_status",
+              "label": "BAR 8 / 8",
+              "value": "BAR 8 / 8",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "lyrics_label",
+              "label": "LYRICS",
+              "value": "LYRICS",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "lyrics_text",
+              "label": "Keep the words here while you rehearse.",
+              "value": "Keep the words here while you rehearse.",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "add_lyrics_button",
+              "label": "Add lyrics",
+              "value": "Add lyrics",
+              "kind": "button",
+              "progress": 0
+            },
+            {
+              "key": "play_button",
+              "label": "",
+              "value": "",
+              "kind": "button",
+              "progress": 0
+            },
+            {
+              "key": "metro_button",
+              "label": "METRO",
+              "value": "METRO",
+              "kind": "button",
+              "progress": 0
+            },
+            {
+              "key": "count_in_button",
+              "label": "COUNT-IN",
+              "value": "COUNT-IN",
+              "kind": "button",
+              "progress": 0
+            },
+            {
+              "key": "loop_button",
+              "label": "LOOP",
+              "value": "LOOP",
+              "kind": "button",
+              "progress": 0
+            },
+            {
+              "key": "time_start",
+              "label": "1:07",
+              "value": "1:07",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "time_end",
+              "label": "3:49",
+              "value": "3:49",
+              "kind": "label",
+              "progress": 0
+            },
+            {
+              "key": "progress_bar",
+              "label": "",
+              "value": "",
+              "kind": "bar",
+              "progress": 0.58
+            }
+          ]
+        },
+        "contract": null
+      }
+    ]
+  },
+  "rawScenes": {
+    "version": "scene@2",
+    "stage": "draft",
+    "direction": 0,
+    "beats": [
+      {
+        "key": "b0",
+        "composition": "intake_window",
+        "regions": [
+          {
+            "id": "ground",
+            "area": "full",
+            "paint": "paper"
+          },
+          {
+            "id": "band",
+            "area": "edge",
+            "paint": "ink"
+          }
+        ],
+        "layers": [
+          {
+            "key": "e0",
+            "element": "c0",
+            "kind": "text",
+            "zone": "text",
+            "order": 2,
+            "style": "headline",
+            "color": "ink",
+            "source": "c0",
+            "registryId": ""
+          },
+          {
+            "key": "e13",
+            "element": "logo0",
+            "kind": "logo",
+            "zone": "logo",
+            "order": 1,
+            "style": "body",
+            "color": "ink",
+            "source": "logo0",
+            "registryId": ""
+          }
+        ],
+        "cues": [
+          {
+            "target": "e0",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e13",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          }
+        ],
+        "never": []
+      },
+      {
+        "key": "b1",
+        "composition": "intake_window",
+        "regions": [
+          {
+            "id": "ground",
+            "area": "full",
+            "paint": "paper"
+          },
+          {
+            "id": "band",
+            "area": "edge",
+            "paint": "ink"
+          }
+        ],
+        "layers": [
+          {
+            "key": "e1",
+            "element": "a1",
+            "kind": "image",
+            "zone": "hero",
+            "order": 1,
+            "style": "body",
+            "color": "ink",
+            "source": "a1",
+            "registryId": ""
+          },
+          {
+            "key": "e2",
+            "element": "c1",
+            "kind": "text",
+            "zone": "text",
+            "order": 2,
+            "style": "body",
+            "color": "ink",
+            "source": "c1",
+            "registryId": ""
+          },
+          {
+            "key": "e13",
+            "element": "logo0",
+            "kind": "logo",
+            "zone": "logo",
+            "order": 0,
+            "style": "body",
+            "color": "ink",
+            "source": "logo0",
+            "registryId": ""
+          }
+        ],
+        "cues": [
+          {
+            "target": "e1",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e2",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e13",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          }
+        ],
+        "never": []
+      },
+      {
+        "key": "b2",
+        "composition": "intake_window",
+        "regions": [
+          {
+            "id": "ground",
+            "area": "full",
+            "paint": "paper"
+          },
+          {
+            "id": "band",
+            "area": "edge",
+            "paint": "ink"
+          }
+        ],
+        "layers": [
+          {
+            "key": "e3",
+            "element": "a0",
+            "kind": "image",
+            "zone": "hero",
+            "order": 1,
+            "style": "body",
+            "color": "ink",
+            "source": "a0",
+            "registryId": ""
+          },
+          {
+            "key": "e4",
+            "element": "c3",
+            "kind": "text",
+            "zone": "text",
+            "order": 2,
+            "style": "body",
+            "color": "ink",
+            "source": "c3",
+            "registryId": ""
+          },
+          {
+            "key": "e13",
+            "element": "logo0",
+            "kind": "logo",
+            "zone": "logo",
+            "order": 0,
+            "style": "body",
+            "color": "ink",
+            "source": "logo0",
+            "registryId": ""
+          }
+        ],
+        "cues": [
+          {
+            "target": "e3",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e4",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e13",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          }
+        ],
+        "never": []
+      },
+      {
+        "key": "b3",
+        "composition": "intake_window",
+        "regions": [
+          {
+            "id": "ground",
+            "area": "full",
+            "paint": "paper"
+          },
+          {
+            "id": "band",
+            "area": "edge",
+            "paint": "ink"
+          }
+        ],
+        "layers": [
+          {
+            "key": "e5",
+            "element": "a0",
+            "kind": "image",
+            "zone": "hero",
+            "order": 1,
+            "style": "body",
+            "color": "ink",
+            "source": "a0",
+            "registryId": ""
+          },
+          {
+            "key": "e6",
+            "element": "c5",
+            "kind": "text",
+            "zone": "text",
+            "order": 2,
+            "style": "body",
+            "color": "ink",
+            "source": "c5",
+            "registryId": ""
+          },
+          {
+            "key": "e13",
+            "element": "logo0",
+            "kind": "logo",
+            "zone": "logo",
+            "order": 0,
+            "style": "body",
+            "color": "ink",
+            "source": "logo0",
+            "registryId": ""
+          }
+        ],
+        "cues": [
+          {
+            "target": "e5",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e6",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e13",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          }
+        ],
+        "never": []
+      },
+      {
+        "key": "b4",
+        "composition": "intake_window",
+        "regions": [
+          {
+            "id": "ground",
+            "area": "full",
+            "paint": "paper"
+          },
+          {
+            "id": "band",
+            "area": "edge",
+            "paint": "ink"
+          }
+        ],
+        "layers": [
+          {
+            "key": "e7",
+            "element": "c7",
+            "kind": "text",
+            "zone": "text",
+            "order": 2,
+            "style": "body",
+            "color": "ink",
+            "source": "c7",
+            "registryId": ""
+          },
+          {
+            "key": "e13",
+            "element": "logo0",
+            "kind": "logo",
+            "zone": "logo",
+            "order": 0,
+            "style": "body",
+            "color": "ink",
+            "source": "logo0",
+            "registryId": ""
+          }
+        ],
+        "cues": [
+          {
+            "target": "e7",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e13",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          }
+        ],
+        "never": []
+      },
+      {
+        "key": "b5",
+        "composition": "intake_window",
+        "regions": [
+          {
+            "id": "ground",
+            "area": "full",
+            "paint": "paper"
+          },
+          {
+            "id": "band",
+            "area": "edge",
+            "paint": "ink"
+          }
+        ],
+        "layers": [
+          {
+            "key": "e8",
+            "element": "logo1",
+            "kind": "graphic",
+            "zone": "hero",
+            "order": 1,
+            "style": "body",
+            "color": "accent",
+            "source": "logo1",
+            "registryId": ""
+          },
+          {
+            "key": "e9",
+            "element": "c9",
+            "kind": "text",
+            "zone": "cta",
+            "order": 2,
+            "style": "cta",
+            "color": "ink",
+            "source": "c9",
+            "registryId": ""
+          },
+          {
+            "key": "e14",
+            "element": "logo0",
+            "kind": "logo",
+            "zone": "logo",
+            "order": 0,
+            "style": "body",
+            "color": "ink",
+            "source": "logo0",
+            "registryId": ""
+          }
+        ],
+        "cues": [
+          {
+            "target": "e8",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e9",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e14",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          }
+        ],
+        "never": []
+      },
+      {
+        "key": "b6",
+        "composition": "intake_window",
+        "regions": [
+          {
+            "id": "ground",
+            "area": "full",
+            "paint": "paper"
+          },
+          {
+            "id": "band",
+            "area": "edge",
+            "paint": "ink"
+          }
+        ],
+        "layers": [
+          {
+            "key": "e10",
+            "element": "a1",
+            "kind": "image",
+            "zone": "hero",
+            "order": 1,
+            "style": "body",
+            "color": "ink",
+            "source": "a1",
+            "registryId": ""
+          },
+          {
+            "key": "e13",
+            "element": "logo0",
+            "kind": "logo",
+            "zone": "logo",
+            "order": 0,
+            "style": "body",
+            "color": "ink",
+            "source": "logo0",
+            "registryId": ""
+          }
+        ],
+        "cues": [
+          {
+            "target": "e10",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e13",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          }
+        ],
+        "never": []
+      },
+      {
+        "key": "b7",
+        "composition": "intake_window",
+        "regions": [
+          {
+            "id": "ground",
+            "area": "full",
+            "paint": "paper"
+          },
+          {
+            "id": "band",
+            "area": "edge",
+            "paint": "ink"
+          }
+        ],
+        "layers": [
+          {
+            "key": "e11",
+            "element": "a0",
+            "kind": "image",
+            "zone": "hero",
+            "order": 1,
+            "style": "body",
+            "color": "ink",
+            "source": "a0",
+            "registryId": ""
+          },
+          {
+            "key": "e13",
+            "element": "logo0",
+            "kind": "logo",
+            "zone": "logo",
+            "order": 0,
+            "style": "body",
+            "color": "ink",
+            "source": "logo0",
+            "registryId": ""
+          }
+        ],
+        "cues": [
+          {
+            "target": "e11",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          },
+          {
+            "target": "e13",
+            "type": "fade",
+            "at": 0,
+            "duration": "fast",
+            "amount": 1,
+            "period": 0
+          }
+        ],
+        "never": []
+      }
+    ],
+    "resourceContracts": [
+      {
+        "schemaVersion": "1.0",
+        "revisionId": "e0df25d5-b289-4f78-94e8-7e9e8905adc7",
+        "logicalResourceId": "e1",
+        "slotId": "a1",
+        "referenceAssetRevisionId": "4ae92acb-72cb-41a7-affa-5c93dfdc5664",
+        "compositionIntent": "visual metaphor for band collaboration or creativity",
+        "protectedArea": {
+          "x": 0,
+          "y": 0,
+          "w": 1,
+          "h": 1
+        },
+        "aspectRatio": 1.6557142857142857,
+        "aspectTolerance": 0.1,
+        "requirement": {
+          "kind": "video",
+          "requiredDurationSeconds": null,
+          "trimStartSeconds": null,
+          "motionIntent": null,
+          "cameraRecipeId": null,
+          "boundsMeters": null
+        }
+      },
+      {
+        "schemaVersion": "1.0",
+        "revisionId": "e0df25d5-b289-4f78-94e8-7e9e8905adc7",
+        "logicalResourceId": "e3",
+        "slotId": "a0",
+        "referenceAssetRevisionId": "2c53ff69-8766-42a6-aca0-8aadbbaf447f",
+        "compositionIntent": "simplified sonicdesk UI showing version control",
+        "protectedArea": {
+          "x": 0,
+          "y": 0,
+          "w": 1,
+          "h": 1
+        },
+        "aspectRatio": 0.47373637185670864,
+        "aspectTolerance": 0.1,
+        "requirement": {
+          "kind": "video",
+          "requiredDurationSeconds": null,
+          "trimStartSeconds": null,
+          "motionIntent": null,
+          "cameraRecipeId": null,
+          "boundsMeters": null
+        }
+      },
+      {
+        "schemaVersion": "1.0",
+        "revisionId": "e0df25d5-b289-4f78-94e8-7e9e8905adc7",
+        "logicalResourceId": "e5",
+        "slotId": "a0",
+        "referenceAssetRevisionId": "2c53ff69-8766-42a6-aca0-8aadbbaf447f",
+        "compositionIntent": "simplified sonicdesk UI showing comment linked to specific bar",
+        "protectedArea": {
+          "x": 0,
+          "y": 0,
+          "w": 1,
+          "h": 1
+        },
+        "aspectRatio": 0.47373637185670864,
+        "aspectTolerance": 0.1,
+        "requirement": {
+          "kind": "video",
+          "requiredDurationSeconds": null,
+          "trimStartSeconds": null,
+          "motionIntent": null,
+          "cameraRecipeId": null,
+          "boundsMeters": null
+        }
+      },
+      {
+        "schemaVersion": "1.0",
+        "revisionId": "e0df25d5-b289-4f78-94e8-7e9e8905adc7",
+        "logicalResourceId": "e10",
+        "slotId": "a1",
+        "referenceAssetRevisionId": "4ae92acb-72cb-41a7-affa-5c93dfdc5664",
+        "compositionIntent": "more dynamic musician shots, showing collaboration",
+        "protectedArea": {
+          "x": 0,
+          "y": 0,
+          "w": 1,
+          "h": 1
+        },
+        "aspectRatio": 1.6557142857142857,
+        "aspectTolerance": 0.1,
+        "requirement": {
+          "kind": "video",
+          "requiredDurationSeconds": null,
+          "trimStartSeconds": null,
+          "motionIntent": null,
+          "cameraRecipeId": null,
+          "boundsMeters": null
+        }
+      },
+      {
+        "schemaVersion": "1.0",
+        "revisionId": "e0df25d5-b289-4f78-94e8-7e9e8905adc7",
+        "logicalResourceId": "e11",
+        "slotId": "a0",
+        "referenceAssetRevisionId": "2c53ff69-8766-42a6-aca0-8aadbbaf447f",
+        "compositionIntent": "seamless navigation through sonicdesk UI",
+        "protectedArea": {
+          "x": 0,
+          "y": 0,
+          "w": 1,
+          "h": 1
+        },
+        "aspectRatio": 0.47373637185670864,
+        "aspectTolerance": 0.1,
+        "requirement": {
+          "kind": "video",
+          "requiredDurationSeconds": null,
+          "trimStartSeconds": null,
+          "motionIntent": null,
+          "cameraRecipeId": null,
+          "boundsMeters": null
+        }
+      }
+    ]
+  },
+  "rawCritic": {
+    "version": "critic@1",
+    "findings": [
+      {
+        "rule": "Logo is not lime-colored as per brand guidelines.",
+        "path": "$.brand.logos[0]",
+        "owner": "visual",
+        "fix": "The logo should be rendered in lime (#DFFF00) on the black background.",
+        "severity": "block"
+      },
+      {
+        "rule": "No product screenshot is present in the provided frames.",
+        "path": "$.scenes.primary.slots.hero",
+        "owner": "visual",
+        "fix": "Add a simplified mockup of the sonicdesk UI (not AI-generated) to the hero slot.",
+        "severity": "block"
+      },
+      {
+        "rule": "Text size for 'sonicdesk.' in frame 27 appears too small for easy readability, especially as a headline.",
+        "path": "$.scenes.primary.slots.logo.text",
+        "owner": "visual",
+        "fix": "Increase the font size of the 'sonicdesk.' logo text to ensure clear readability based on brand guidelines.",
+        "severity": "warn"
+      },
+      {
+        "rule": "The brand kit specifies that the wordmark is always lowercase, but 'sonicdesk.' is presented with a capital 'S'.",
+        "path": "$.brand.voice.say",
+        "owner": "script",
+        "fix": "Ensure the wordmark 'sonicdesk' is rendered in all lowercase.",
+        "severity": "warn"
+      },
+      {
+        "rule": "The text 'Sign up' in frame 153 is not styled with the accent color as specified for CTA elements in the brand palette.",
+        "path": "$.styles.cta",
+        "owner": "visual",
+        "fix": "Apply the accent color (#DFFF00) to the 'Sign up' CTA text.",
+        "severity": "warn"
+      }
+    ]
+  }
+}

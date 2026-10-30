@@ -1,0 +1,4 @@
+import {z} from 'zod';
+import {flatProviderSchema} from '../../contracts/creative-drafts';
+export const creativePatchSchema=z.strictObject({repairs:z.array(z.strictObject({path:z.string().min(1),valueJson:z.string().min(1)})).min(1).max(12)});
+export const creativeRepairProtocol={responseSchema:{name:'m07b_targeted_repair_v1',schema:flatProviderSchema(creativePatchSchema)},maxOutputTokens:8000,protocolInstructions:'Targeted M07b repair v1 takes precedence over the initial stage output format. Return only {repairs:[{path,valueJson}]}. Each path must be a failing path from repairRequest.issues or a child of it in repairRequest.previous (array items may be addressed by index or by their key). valueJson is the JSON encoding of that replacement value. Change only failing fields, preserve all other content, keys and protected copy. Do not return a whole new direction.'};

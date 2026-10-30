@@ -1,0 +1,1097 @@
+{
+  "provenance": {
+    "kind": "recorded-provider-output",
+    "stepId": "ba77684b-960a-4be0-a65c-b6afbf33e019",
+    "capturedAt": "2026-10-26T00:13:42.276767+00:00",
+    "sha256": "1f96ddac6c7af1881cef85163465a6a865dc43993e8321d467ee16ea6ecc5586"
+  },
+  "output": {
+    "assumptions": [],
+    "blockingQuestions": [],
+    "deliverable": {
+      "localizedCopy": [
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Stop guessing. Start testing your song's best hook, instantly.",
+          "variantIds": [
+            "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+            "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+            "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+            "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_1",
+          "locale": "en-GB",
+          "text": "Tired of guessing your song's best hook?",
+          "variantIds": [
+            "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+            "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+            "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+            "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f"
+          ]
+        },
+        {
+          "copySlot": "narration_1_1",
+          "locale": "en-GB",
+          "text": "Finding that perfect hook shouldn't be a struggle.",
+          "variantIds": [
+            "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+            "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+            "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+            "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_2",
+          "locale": "en-GB",
+          "text": "Simplify your workflow.",
+          "variantIds": [
+            "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+            "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+            "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+            "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f"
+          ]
+        },
+        {
+          "copySlot": "narration_1_2",
+          "locale": "en-GB",
+          "text": "With sonicdesk, pinpoint your track's strongest moment.",
+          "variantIds": [
+            "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+            "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+            "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+            "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+            "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+            "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+            "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f"
+          ]
+        },
+        {
+          "copySlot": "narration_1_3",
+          "locale": "en-GB",
+          "text": "Export your WAV, ready for social.",
+          "variantIds": [
+            "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+            "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+            "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+            "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+            "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+            "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+            "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Stop guessing. Start testing your song's best hook, instantly.",
+          "variantIds": [
+            "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+            "2db2512f-2364-41b1-a19a-60b903669f4b",
+            "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+            "c9f14d96-090a-4363-9041-d8a87ee45d93"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_1",
+          "locale": "en-GB",
+          "text": "Tired of guessing your song's best hook? Endless tweaking?",
+          "variantIds": [
+            "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+            "2db2512f-2364-41b1-a19a-60b903669f4b",
+            "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+            "c9f14d96-090a-4363-9041-d8a87ee45d93"
+          ]
+        },
+        {
+          "copySlot": "narration_1_1",
+          "locale": "en-GB",
+          "text": "Finding that perfect hook shouldn't be a struggle, or take hours of your time.",
+          "variantIds": [
+            "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+            "2db2512f-2364-41b1-a19a-60b903669f4b",
+            "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+            "c9f14d96-090a-4363-9041-d8a87ee45d93"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_2",
+          "locale": "en-GB",
+          "text": "Simplify your workflow. Focus on what works.",
+          "variantIds": [
+            "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+            "2db2512f-2364-41b1-a19a-60b903669f4b",
+            "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+            "c9f14d96-090a-4363-9041-d8a87ee45d93"
+          ]
+        },
+        {
+          "copySlot": "narration_1_2",
+          "locale": "en-GB",
+          "text": "With sonicdesk, you can effortlessly pinpoint your track's strongest moment.",
+          "variantIds": [
+            "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+            "2db2512f-2364-41b1-a19a-60b903669f4b",
+            "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+            "c9f14d96-090a-4363-9041-d8a87ee45d93"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+            "2db2512f-2364-41b1-a19a-60b903669f4b",
+            "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+            "c9f14d96-090a-4363-9041-d8a87ee45d93"
+          ]
+        },
+        {
+          "copySlot": "narration_1_3",
+          "locale": "en-GB",
+          "text": "Export your WAV instantly, perfectly cut and ready for social media.",
+          "variantIds": [
+            "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+            "2db2512f-2364-41b1-a19a-60b903669f4b",
+            "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+            "c9f14d96-090a-4363-9041-d8a87ee45d93"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+            "2db2512f-2364-41b1-a19a-60b903669f4b",
+            "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+            "c9f14d96-090a-4363-9041-d8a87ee45d93"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Stop guessing. Start testing your song's best hook, instantly.",
+          "variantIds": [
+            "dbf53217-7665-43f5-80d7-2e2db7baa631",
+            "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+            "000eff5e-9687-4dc2-90f0-1e373dede745",
+            "e192d8ee-7bff-43f9-9166-17c1ba17bb04"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_1",
+          "locale": "en-GB",
+          "text": "Tired of guessing your song's best hook? Spending too long in your DAW?",
+          "variantIds": [
+            "dbf53217-7665-43f5-80d7-2e2db7baa631",
+            "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+            "000eff5e-9687-4dc2-90f0-1e373dede745",
+            "e192d8ee-7bff-43f9-9166-17c1ba17bb04"
+          ]
+        },
+        {
+          "copySlot": "narration_1_1",
+          "locale": "en-GB",
+          "text": "Finding that perfect hook shouldn't be a struggle, taking up valuable time and creativity.",
+          "variantIds": [
+            "dbf53217-7665-43f5-80d7-2e2db7baa631",
+            "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+            "000eff5e-9687-4dc2-90f0-1e373dede745",
+            "e192d8ee-7bff-43f9-9166-17c1ba17bb04"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_2",
+          "locale": "en-GB",
+          "text": "Simplify your workflow. Identify, refine, and focus on what truly works.",
+          "variantIds": [
+            "dbf53217-7665-43f5-80d7-2e2db7baa631",
+            "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+            "000eff5e-9687-4dc2-90f0-1e373dede745",
+            "e192d8ee-7bff-43f9-9166-17c1ba17bb04"
+          ]
+        },
+        {
+          "copySlot": "narration_1_2",
+          "locale": "en-GB",
+          "text": "With sonicdesk, you can effortlessly pinpoint your track's strongest, most engaging moments in seconds.",
+          "variantIds": [
+            "dbf53217-7665-43f5-80d7-2e2db7baa631",
+            "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+            "000eff5e-9687-4dc2-90f0-1e373dede745",
+            "e192d8ee-7bff-43f9-9166-17c1ba17bb04"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "dbf53217-7665-43f5-80d7-2e2db7baa631",
+            "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+            "000eff5e-9687-4dc2-90f0-1e373dede745",
+            "e192d8ee-7bff-43f9-9166-17c1ba17bb04"
+          ]
+        },
+        {
+          "copySlot": "narration_1_3",
+          "locale": "en-GB",
+          "text": "Export your WAV files instantly, perfectly cut and optimised for rapid social media testing and feedback.",
+          "variantIds": [
+            "dbf53217-7665-43f5-80d7-2e2db7baa631",
+            "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+            "000eff5e-9687-4dc2-90f0-1e373dede745",
+            "e192d8ee-7bff-43f9-9166-17c1ba17bb04"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "dbf53217-7665-43f5-80d7-2e2db7baa631",
+            "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+            "000eff5e-9687-4dc2-90f0-1e373dede745",
+            "e192d8ee-7bff-43f9-9166-17c1ba17bb04"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Stop guessing. Start testing your song's best hook, instantly.",
+          "variantIds": [
+            "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+            "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+            "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+            "c31dbdf5-1471-44de-83ae-1fd65dc45ac0"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_1",
+          "locale": "en-GB",
+          "text": "Tired of guessing your song's best hook? Wasting hours bouncing audio in your DAW?",
+          "variantIds": [
+            "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+            "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+            "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+            "c31dbdf5-1471-44de-83ae-1fd65dc45ac0"
+          ]
+        },
+        {
+          "copySlot": "narration_1_1",
+          "locale": "en-GB",
+          "text": "Finding that perfect hook shouldn't be a struggle that drains your energy and time from creating.",
+          "variantIds": [
+            "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+            "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+            "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+            "c31dbdf5-1471-44de-83ae-1fd65dc45ac0"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_2",
+          "locale": "en-GB",
+          "text": "Simplify your workflow. Identify, refine, and focus on the most impactful parts of your music.",
+          "variantIds": [
+            "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+            "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+            "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+            "c31dbdf5-1471-44de-83ae-1fd65dc45ac0"
+          ]
+        },
+        {
+          "copySlot": "narration_1_2",
+          "locale": "en-GB",
+          "text": "With sonicdesk, you can effortlessly pinpoint your track's strongest, most engaging moments, ready for testing on social media.",
+          "variantIds": [
+            "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+            "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+            "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+            "c31dbdf5-1471-44de-83ae-1fd65dc45ac0"
+          ]
+        },
+        {
+          "copySlot": "onScreen_1_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+            "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+            "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+            "c31dbdf5-1471-44de-83ae-1fd65dc45ac0"
+          ]
+        },
+        {
+          "copySlot": "narration_1_3",
+          "locale": "en-GB",
+          "text": "Export your WAV files instantly, perfectly cut and optimised for rapid social media testing and gathering valuable feedback before release.",
+          "variantIds": [
+            "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+            "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+            "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+            "c31dbdf5-1471-44de-83ae-1fd65dc45ac0"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+            "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+            "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+            "c31dbdf5-1471-44de-83ae-1fd65dc45ac0"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Test your song's viral potential. Discover its strongest hook, fast.",
+          "variantIds": [
+            "4d7f814d-084a-4846-b82c-d680021c996e",
+            "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+            "ba0383fb-42dd-4bf6-94b6-f23568003941",
+            "c064b8ba-04e8-4cf9-a82d-5a50b2e07016"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_1",
+          "locale": "en-GB",
+          "text": "Which part of your song hits hardest?",
+          "variantIds": [
+            "4d7f814d-084a-4846-b82c-d680021c996e",
+            "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+            "ba0383fb-42dd-4bf6-94b6-f23568003941",
+            "c064b8ba-04e8-4cf9-a82d-5a50b2e07016"
+          ]
+        },
+        {
+          "copySlot": "narration_2_1",
+          "locale": "en-GB",
+          "text": "Every artist wants their music to connect.",
+          "variantIds": [
+            "4d7f814d-084a-4846-b82c-d680021c996e",
+            "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+            "ba0383fb-42dd-4bf6-94b6-f23568003941",
+            "c064b8ba-04e8-4cf9-a82d-5a50b2e07016"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_2",
+          "locale": "en-GB",
+          "text": "Test multiple hooks with ease.",
+          "variantIds": [
+            "4d7f814d-084a-4846-b82c-d680021c996e",
+            "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+            "ba0383fb-42dd-4bf6-94b6-f23568003941",
+            "c064b8ba-04e8-4cf9-a82d-5a50b2e07016"
+          ]
+        },
+        {
+          "copySlot": "narration_2_2",
+          "locale": "en-GB",
+          "text": "Easily create and test different hooks from your track.",
+          "variantIds": [
+            "4d7f814d-084a-4846-b82c-d680021c996e",
+            "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+            "ba0383fb-42dd-4bf6-94b6-f23568003941",
+            "c064b8ba-04e8-4cf9-a82d-5a50b2e07016"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "4d7f814d-084a-4846-b82c-d680021c996e",
+            "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+            "ba0383fb-42dd-4bf6-94b6-f23568003941",
+            "c064b8ba-04e8-4cf9-a82d-5a50b2e07016"
+          ]
+        },
+        {
+          "copySlot": "narration_2_3",
+          "locale": "en-GB",
+          "text": "Get it ready for social media feedback.",
+          "variantIds": [
+            "4d7f814d-084a-4846-b82c-d680021c996e",
+            "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+            "ba0383fb-42dd-4bf6-94b6-f23568003941",
+            "c064b8ba-04e8-4cf9-a82d-5a50b2e07016"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "4d7f814d-084a-4846-b82c-d680021c996e",
+            "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+            "ba0383fb-42dd-4bf6-94b6-f23568003941",
+            "c064b8ba-04e8-4cf9-a82d-5a50b2e07016"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Test your song's viral potential. Discover its strongest hook, fast.",
+          "variantIds": [
+            "95d74775-ba4a-4521-9b64-4356281b9624",
+            "987d975b-5685-45c5-b32b-3ddebda00119",
+            "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+            "023e09cc-e6e3-446c-a917-4d99215ddde3"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_1",
+          "locale": "en-GB",
+          "text": "Which part of your song hits hardest? Find out now.",
+          "variantIds": [
+            "95d74775-ba4a-4521-9b64-4356281b9624",
+            "987d975b-5685-45c5-b32b-3ddebda00119",
+            "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+            "023e09cc-e6e3-446c-a917-4d99215ddde3"
+          ]
+        },
+        {
+          "copySlot": "narration_2_1",
+          "locale": "en-GB",
+          "text": "Every artist wants their music to connect and resonate with their audience.",
+          "variantIds": [
+            "95d74775-ba4a-4521-9b64-4356281b9624",
+            "987d975b-5685-45c5-b32b-3ddebda00119",
+            "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+            "023e09cc-e6e3-446c-a917-4d99215ddde3"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_2",
+          "locale": "en-GB",
+          "text": "Test multiple hooks with ease. Optimise for social.",
+          "variantIds": [
+            "95d74775-ba4a-4521-9b64-4356281b9624",
+            "987d975b-5685-45c5-b32b-3ddebda00119",
+            "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+            "023e09cc-e6e3-446c-a917-4d99215ddde3"
+          ]
+        },
+        {
+          "copySlot": "narration_2_2",
+          "locale": "en-GB",
+          "text": "Easily create and test different hooks from your track to see what truly grabs attention.",
+          "variantIds": [
+            "95d74775-ba4a-4521-9b64-4356281b9624",
+            "987d975b-5685-45c5-b32b-3ddebda00119",
+            "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+            "023e09cc-e6e3-446c-a917-4d99215ddde3"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "95d74775-ba4a-4521-9b64-4356281b9624",
+            "987d975b-5685-45c5-b32b-3ddebda00119",
+            "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+            "023e09cc-e6e3-446c-a917-4d99215ddde3"
+          ]
+        },
+        {
+          "copySlot": "narration_2_3",
+          "locale": "en-GB",
+          "text": "Get it ready for social media feedback and discover its viral potential.",
+          "variantIds": [
+            "95d74775-ba4a-4521-9b64-4356281b9624",
+            "987d975b-5685-45c5-b32b-3ddebda00119",
+            "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+            "023e09cc-e6e3-446c-a917-4d99215ddde3"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "95d74775-ba4a-4521-9b64-4356281b9624",
+            "987d975b-5685-45c5-b32b-3ddebda00119",
+            "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+            "023e09cc-e6e3-446c-a917-4d99215ddde3"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Test your song's viral potential. Discover its strongest hook, fast.",
+          "variantIds": [
+            "e56c52e8-2b76-4a55-b302-7d2226edc339",
+            "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+            "b9d78741-8af8-4775-8881-e0c23328a977",
+            "4223af01-36ec-4a60-99e4-d248ba69eeb5"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_1",
+          "locale": "en-GB",
+          "text": "Which part of your song hits hardest? Stop guessing, start knowing.",
+          "variantIds": [
+            "e56c52e8-2b76-4a55-b302-7d2226edc339",
+            "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+            "b9d78741-8af8-4775-8881-e0c23328a977",
+            "4223af01-36ec-4a60-99e4-d248ba69eeb5"
+          ]
+        },
+        {
+          "copySlot": "narration_2_1",
+          "locale": "en-GB",
+          "text": "Every artist wants their music to connect and resonate strongly with their audience.",
+          "variantIds": [
+            "e56c52e8-2b76-4a55-b302-7d2226edc339",
+            "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+            "b9d78741-8af8-4775-8881-e0c23328a977",
+            "4223af01-36ec-4a60-99e4-d248ba69eeb5"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_2",
+          "locale": "en-GB",
+          "text": "Test multiple hooks with ease. Optimise for social media virality.",
+          "variantIds": [
+            "e56c52e8-2b76-4a55-b302-7d2226edc339",
+            "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+            "b9d78741-8af8-4775-8881-e0c23328a977",
+            "4223af01-36ec-4a60-99e4-d248ba69eeb5"
+          ]
+        },
+        {
+          "copySlot": "narration_2_2",
+          "locale": "en-GB",
+          "text": "Easily create and test different hooks from your track to quickly see what truly grabs attention on platforms like TikTok and Reels.",
+          "variantIds": [
+            "e56c52e8-2b76-4a55-b302-7d2226edc339",
+            "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+            "b9d78741-8af8-4775-8881-e0c23328a977",
+            "4223af01-36ec-4a60-99e4-d248ba69eeb5"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "e56c52e8-2b76-4a55-b302-7d2226edc339",
+            "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+            "b9d78741-8af8-4775-8881-e0c23328a977",
+            "4223af01-36ec-4a60-99e4-d248ba69eeb5"
+          ]
+        },
+        {
+          "copySlot": "narration_2_3",
+          "locale": "en-GB",
+          "text": "Get it ready for rapid social media feedback and accurately discover its viral potential before release.",
+          "variantIds": [
+            "e56c52e8-2b76-4a55-b302-7d2226edc339",
+            "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+            "b9d78741-8af8-4775-8881-e0c23328a977",
+            "4223af01-36ec-4a60-99e4-d248ba69eeb5"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "e56c52e8-2b76-4a55-b302-7d2226edc339",
+            "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+            "b9d78741-8af8-4775-8881-e0c23328a977",
+            "4223af01-36ec-4a60-99e4-d248ba69eeb5"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Test your song's viral potential. Discover its strongest hook, fast.",
+          "variantIds": [
+            "eada0afd-acea-44f8-8886-67f6b0e97548",
+            "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+            "8be95604-c289-4429-b240-696fa0b21e07",
+            "3dfa0be4-abc4-4075-8689-eb4c3b7a4199"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_1",
+          "locale": "en-GB",
+          "text": "Which part of your song hits hardest? Stop guessing, start knowing with data.",
+          "variantIds": [
+            "eada0afd-acea-44f8-8886-67f6b0e97548",
+            "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+            "8be95604-c289-4429-b240-696fa0b21e07",
+            "3dfa0be4-abc4-4075-8689-eb4c3b7a4199"
+          ]
+        },
+        {
+          "copySlot": "narration_2_1",
+          "locale": "en-GB",
+          "text": "Every artist wants their music to connect and resonate strongly with their audience across all platforms.",
+          "variantIds": [
+            "eada0afd-acea-44f8-8886-67f6b0e97548",
+            "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+            "8be95604-c289-4429-b240-696fa0b21e07",
+            "3dfa0be4-abc4-4075-8689-eb4c3b7a4199"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_2",
+          "locale": "en-GB",
+          "text": "Test multiple hooks with ease. Optimise your track for maximum social media virality.",
+          "variantIds": [
+            "eada0afd-acea-44f8-8886-67f6b0e97548",
+            "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+            "8be95604-c289-4429-b240-696fa0b21e07",
+            "3dfa0be4-abc4-4075-8689-eb4c3b7a4199"
+          ]
+        },
+        {
+          "copySlot": "narration_2_2",
+          "locale": "en-GB",
+          "text": "Easily create and test different hooks from your track to quickly see what truly grabs attention on platforms like TikTok and Reels, driving engagement.",
+          "variantIds": [
+            "eada0afd-acea-44f8-8886-67f6b0e97548",
+            "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+            "8be95604-c289-4429-b240-696fa0b21e07",
+            "3dfa0be4-abc4-4075-8689-eb4c3b7a4199"
+          ]
+        },
+        {
+          "copySlot": "onScreen_2_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "eada0afd-acea-44f8-8886-67f6b0e97548",
+            "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+            "8be95604-c289-4429-b240-696fa0b21e07",
+            "3dfa0be4-abc4-4075-8689-eb4c3b7a4199"
+          ]
+        },
+        {
+          "copySlot": "narration_2_3",
+          "locale": "en-GB",
+          "text": "Get it ready for rapid social media feedback and accurately discover its viral potential before your official song release.",
+          "variantIds": [
+            "eada0afd-acea-44f8-8886-67f6b0e97548",
+            "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+            "8be95604-c289-4429-b240-696fa0b21e07",
+            "3dfa0be4-abc4-4075-8689-eb4c3b7a4199"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "eada0afd-acea-44f8-8886-67f6b0e97548",
+            "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+            "8be95604-c289-4429-b240-696fa0b21e07",
+            "3dfa0be4-abc4-4075-8689-eb4c3b7a4199"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Stay in the creative zone. Get your song hooks without leaving sonicdesk.",
+          "variantIds": [
+            "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+            "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+            "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+            "e54e8057-b8f8-4013-a878-89814dc2353b"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_1",
+          "locale": "en-GB",
+          "text": "Don't break your flow.",
+          "variantIds": [
+            "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+            "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+            "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+            "e54e8057-b8f8-4013-a878-89814dc2353b"
+          ]
+        },
+        {
+          "copySlot": "narration_3_1",
+          "locale": "en-GB",
+          "text": "Collaboration should be fluid, not interrupted.",
+          "variantIds": [
+            "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+            "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+            "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+            "e54e8057-b8f8-4013-a878-89814dc2353b"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_2",
+          "locale": "en-GB",
+          "text": "Select, loop, export. All in sonicdesk.",
+          "variantIds": [
+            "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+            "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+            "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+            "e54e8057-b8f8-4013-a878-89814dc2353b"
+          ]
+        },
+        {
+          "copySlot": "narration_3_2",
+          "locale": "en-GB",
+          "text": "With sonicdesk, select, loop, and export your snippet – all in one place.",
+          "variantIds": [
+            "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+            "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+            "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+            "e54e8057-b8f8-4013-a878-89814dc2353b"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+            "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+            "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+            "e54e8057-b8f8-4013-a878-89814dc2353b"
+          ]
+        },
+        {
+          "copySlot": "narration_3_3",
+          "locale": "en-GB",
+          "text": "Keep your creative momentum going.",
+          "variantIds": [
+            "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+            "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+            "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+            "e54e8057-b8f8-4013-a878-89814dc2353b"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+            "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+            "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+            "e54e8057-b8f8-4013-a878-89814dc2353b"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Stay in the creative zone. Get your song hooks without leaving sonicdesk.",
+          "variantIds": [
+            "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+            "fd2ce813-572c-497d-92e7-ab3851d5353f",
+            "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+            "0ef16570-4ccd-48a7-862a-a1e623f1c461"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_1",
+          "locale": "en-GB",
+          "text": "Don't break your flow. Stay focused on your music.",
+          "variantIds": [
+            "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+            "fd2ce813-572c-497d-92e7-ab3851d5353f",
+            "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+            "0ef16570-4ccd-48a7-862a-a1e623f1c461"
+          ]
+        },
+        {
+          "copySlot": "narration_3_1",
+          "locale": "en-GB",
+          "text": "Collaboration and creation should be fluid, without constant interruptions.",
+          "variantIds": [
+            "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+            "fd2ce813-572c-497d-92e7-ab3851d5353f",
+            "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+            "0ef16570-4ccd-48a7-862a-a1e623f1c461"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_2",
+          "locale": "en-GB",
+          "text": "Select, loop, export. All in sonicdesk. One seamless workflow.",
+          "variantIds": [
+            "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+            "fd2ce813-572c-497d-92e7-ab3851d5353f",
+            "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+            "0ef16570-4ccd-48a7-862a-a1e623f1c461"
+          ]
+        },
+        {
+          "copySlot": "narration_3_2",
+          "locale": "en-GB",
+          "text": "With sonicdesk, you can select, loop, and export your audio snippet – all within your unified workspace.",
+          "variantIds": [
+            "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+            "fd2ce813-572c-497d-92e7-ab3851d5353f",
+            "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+            "0ef16570-4ccd-48a7-862a-a1e623f1c461"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+            "fd2ce813-572c-497d-92e7-ab3851d5353f",
+            "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+            "0ef16570-4ccd-48a7-862a-a1e623f1c461"
+          ]
+        },
+        {
+          "copySlot": "narration_3_3",
+          "locale": "en-GB",
+          "text": "Keep your creative momentum going and streamline your production.",
+          "variantIds": [
+            "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+            "fd2ce813-572c-497d-92e7-ab3851d5353f",
+            "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+            "0ef16570-4ccd-48a7-862a-a1e623f1c461"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+            "fd2ce813-572c-497d-92e7-ab3851d5353f",
+            "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+            "0ef16570-4ccd-48a7-862a-a1e623f1c461"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Stay in the creative zone. Get your song hooks without leaving sonicdesk.",
+          "variantIds": [
+            "0f2e904e-4430-484c-956d-17575344433d",
+            "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+            "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+            "7b405d45-1237-46a3-b048-cb1eb90fb93e"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_1",
+          "locale": "en-GB",
+          "text": "Don't break your flow. Keep your focus entirely on your music.",
+          "variantIds": [
+            "0f2e904e-4430-484c-956d-17575344433d",
+            "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+            "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+            "7b405d45-1237-46a3-b048-cb1eb90fb93e"
+          ]
+        },
+        {
+          "copySlot": "narration_3_1",
+          "locale": "en-GB",
+          "text": "Collaboration and creation should be a fluid, uninterrupted process, not a series of stops and starts.",
+          "variantIds": [
+            "0f2e904e-4430-484c-956d-17575344433d",
+            "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+            "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+            "7b405d45-1237-46a3-b048-cb1eb90fb93e"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_2",
+          "locale": "en-GB",
+          "text": "Select, loop, export. All in sonicdesk. Maintain a seamless workflow.",
+          "variantIds": [
+            "0f2e904e-4430-484c-956d-17575344433d",
+            "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+            "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+            "7b405d45-1237-46a3-b048-cb1eb90fb93e"
+          ]
+        },
+        {
+          "copySlot": "narration_3_2",
+          "locale": "en-GB",
+          "text": "With sonicdesk, you can effortlessly select, loop, and export your audio snippet – all within your single, unified workspace, saving time.",
+          "variantIds": [
+            "0f2e904e-4430-484c-956d-17575344433d",
+            "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+            "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+            "7b405d45-1237-46a3-b048-cb1eb90fb93e"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "0f2e904e-4430-484c-956d-17575344433d",
+            "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+            "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+            "7b405d45-1237-46a3-b048-cb1eb90fb93e"
+          ]
+        },
+        {
+          "copySlot": "narration_3_3",
+          "locale": "en-GB",
+          "text": "Keep your creative momentum going strong and streamline your entire music production process.",
+          "variantIds": [
+            "0f2e904e-4430-484c-956d-17575344433d",
+            "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+            "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+            "7b405d45-1237-46a3-b048-cb1eb90fb93e"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "0f2e904e-4430-484c-956d-17575344433d",
+            "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+            "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+            "7b405d45-1237-46a3-b048-cb1eb90fb93e"
+          ]
+        },
+        {
+          "copySlot": "hook_primary",
+          "locale": "en-GB",
+          "text": "Stay in the creative zone. Get your song hooks without leaving sonicdesk.",
+          "variantIds": [
+            "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+            "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+            "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+            "e45ca987-8a92-4a57-aad1-598be5095211"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_1",
+          "locale": "en-GB",
+          "text": "Don't break your flow. Keep your focus entirely on your music, not on switching apps.",
+          "variantIds": [
+            "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+            "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+            "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+            "e45ca987-8a92-4a57-aad1-598be5095211"
+          ]
+        },
+        {
+          "copySlot": "narration_3_1",
+          "locale": "en-GB",
+          "text": "Collaboration and creation should be a fluid, uninterrupted process, empowering you, not a series of frustrating stops and starts.",
+          "variantIds": [
+            "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+            "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+            "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+            "e45ca987-8a92-4a57-aad1-598be5095211"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_2",
+          "locale": "en-GB",
+          "text": "Select, loop, export. All in sonicdesk. Maintain a seamless, integrated workflow.",
+          "variantIds": [
+            "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+            "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+            "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+            "e45ca987-8a92-4a57-aad1-598be5095211"
+          ]
+        },
+        {
+          "copySlot": "narration_3_2",
+          "locale": "en-GB",
+          "text": "With sonicdesk, you can effortlessly select, loop, and export your perfect audio snippet – all within your single, unified workspace, saving crucial time.",
+          "variantIds": [
+            "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+            "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+            "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+            "e45ca987-8a92-4a57-aad1-598be5095211"
+          ]
+        },
+        {
+          "copySlot": "onScreen_3_3",
+          "locale": "en-GB",
+          "text": "Export WAV. Sign up.",
+          "variantIds": [
+            "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+            "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+            "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+            "e45ca987-8a92-4a57-aad1-598be5095211"
+          ]
+        },
+        {
+          "copySlot": "narration_3_3",
+          "locale": "en-GB",
+          "text": "Keep your creative momentum going strong and streamline your entire music production process from concept to social media testing.",
+          "variantIds": [
+            "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+            "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+            "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+            "e45ca987-8a92-4a57-aad1-598be5095211"
+          ]
+        },
+        {
+          "copySlot": "CTA",
+          "locale": "en-GB",
+          "text": "Sign up",
+          "variantIds": [
+            "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+            "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+            "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+            "e45ca987-8a92-4a57-aad1-598be5095211"
+          ]
+        }
+      ]
+    },
+    "handoff": {
+      "checks": [
+        "All 48 ordered outputs from the campaign context have corresponding localized copy entries.",
+        "Each localized copy entry has the correct 'binding', 'copySlot', and 'text' fields.",
+        "Copy for each duration is distinct and adapted to the specific length.",
+        "The 'en-GB' locale has been correctly applied, preserving idiom and register.",
+        "Mandatory terms ('Export WAV', 'Sign up', 'sonicdesk') are present and unchanged where required.",
+        "No prices, free plans, trials, video export claims, MP3 export claims, competitor names, or DAW trademarks are present, as per brief constraints."
+      ],
+      "nextRole": "Layout and critic get exact localized strings and constraints for every ordered binding.",
+      "requiredInputs": [
+        "deliverable.localizedCopy"
+      ]
+    },
+    "inputRefs": [
+      {
+        "id": "upstream_script_proposal",
+        "source": "fd3c610a-0ca5-44d9-aff7-e3b2d781edd7"
+      }
+    ],
+    "role": "localization",
+    "schemaVersion": "1.0",
+    "status": "draft",
+    "summary": "Localized copy for all specified bindings (en-GB locale), adapting on-screen text, narration, and CTA for each duration and concept.",
+    "warnings": []
+  }
+}

@@ -1,0 +1,27 @@
+import {propagateExecutionFailure} from '../../../packages/director/execution-failures';
+import {readFile,writeFile,mkdir,realpath} from 'node:fs/promises';
+import {resolve,relative} from 'node:path';
+import {sandboxTool} from './sandbox';
+import {liveSource} from './live-bundle';
+import {snapshotFolder} from './snapshots';
+import {confinedPath,writeSource,lintStaticComposition} from '../../../packages/director/policy.local';
+import {brandModuleGuide} from '../../../packages/director/transcript';
+import type {DirectionInput} from '../../../packages/director/types';
+import type {AssemblerAction} from '../../../packages/agents/prompts/assembler-v1';
+import {draftConstruction} from './construction';
+import {remainingDraftOptions} from '../../../packages/director/construction';
+import {atomicFile} from './atomic-file';
+export function liveTools(folder:string,input:DirectionInput,deadline:number,onPreview?:(info:{revision?:string;options?:unknown;error?:string})=>Promise<void>,dependencies:{sandbox?:typeof sandboxTool}={}){
+ const run=async(operation:'typecheck'|'preview')=>{if(Date.now()>deadline)throw new Error('ASSEMBLER_TIME_LIMIT');return (dependencies.sandbox??sandboxTool)(folder,operation,{},deadline-Date.now());};
+ const publish=async(strict:boolean)=>{let revision:string|undefined;try{revision=(await liveSource(folder)).revision;const built=JSON.parse((await run('preview')).trim().split('\n').at(-1)!),result={...built,construction:await draftConstruction(folder,input,true)};await onPreview?.(result);return result;}catch(error){const message=error instanceof Error?error.message:'Build needs repair';await onPreview?.({revision,error:message.slice(0,600)});if(strict||propagateExecutionFailure(error))throw Object.assign(error instanceof Error?error:new Error(message),{sourceRevision:revision});return {updating:true,issue:message.slice(0,1600),note:'Source is saved. Repair this build issue before finishing; the last working preview remains available.'};}};
+ return {reports:{},async execute(action:AssemblerAction):Promise<unknown>{
+  if(action.tool==='renderStill'||action.tool==='preview'||action.tool==='determinism')throw new Error('IMAGE_EXPORT_DISABLED: Drafts preview Frame.tsx directly. Do not render images.');
+  if(action.tool==='write'){const issues=lintStaticComposition(action.source,action.path);if(issues.length)throw new Error(issues.join('; '));await writeSource(folder,action.path,action.source);const preview=await publish(false);return {written:action.path,bytes:Buffer.byteLength(action.source),preview};}
+  if(action.tool==='read'){const path=await confinedPath(folder,action.path),name=relative(await realpath(folder),path).split('\\').join('/');if(['brand.ts','resources.ts','input.json','entry.tsx','draft.json','catalog.json','toolchain.json'].includes(name))return {api:brandModuleGuide(input),note:'Generated data is not paged through.'};return (await readFile(path,'utf8')).slice(action.offset??0,(action.offset??0)+4096);}
+  if(action.tool==='listResources')return {resources:JSON.parse(await readFile(resolve(folder,'catalog.json'),'utf8')).slice(0,20),note:'Read resources[id] inside Frame; it updates as pictures arrive.'};
+  if(action.tool==='typecheck'){const before=await liveSource(folder);let result:string;try{result=await run('typecheck');if((await liveSource(folder)).revision!==before.revision)throw new Error('Source changed during typecheck. Check again.');}catch(error){throw Object.assign(error instanceof Error?error:new Error('Source typecheck failed'),{sourceRevision:before.revision});}await mkdir(resolve(folder,'.reports'),{recursive:true});await writeFile(resolve(folder,'.reports','live-typed'),before.revision);await atomicFile(resolve(folder,'.reports','live',before.revision,'typecheck.json'),JSON.stringify({revision:before.revision,typecheck:'passed',scope:'source-only'}));const construction=await draftConstruction(folder,input,true);return {message:result.slice(-2048)||'Source typecheck passed.',revision:before.revision,scope:'source-only',...(construction?{construction}:{})};}
+  if(action.tool==='bundle')return publish(true);
+  if(action.tool==='checks'||action.tool==='finish'){const source=await liveSource(folder),typed=await readFile(resolve(folder,'.reports','live-typed'),'utf8').catch(()=>''),built=JSON.parse(await readFile(resolve(folder,'.reports','live',source.revision,'manifest.json'),'utf8').catch(()=>'null'));if(action.tool==='finish'&&built?.legacy)throw new Error('Export literal previewOptions listing implemented hooks, ctas, locales, lengths, scenes and adaptive readiness before finishing.');if(action.tool==='finish'&&built?.options){const missing=remainingDraftOptions(input,built.options);if(missing.length)throw new Error(`Implement the remaining options before finishing: ${missing.slice(0,12).join(', ')}. Publish previewOptions as each becomes ready.`);}if(typed!==source.revision||built?.revision!==source.revision)throw new Error('Typecheck and build the current Frame.tsx before finishing.');const construction=await draftConstruction(folder,input,true);if(action.tool==='finish'&&construction&&construction.stage!=='complete')throw new Error(construction.focus);return action.tool==='finish'?{complete:true,construction,sourceHash:(await snapshotFolder(folder,input.iterationId)).hash,visualChecked:false}:{passed:true,scope:'Source types, static policy and browser build only.',visualChecked:false};}
+  throw new Error('MOTION_TOOL_UNAVAILABLE_IN_DRAFTS');
+ }};
+}

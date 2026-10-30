@@ -1,0 +1,11 @@
+import type {DirectionInput,CatalogEntry,CheckReport} from './types';
+import type {Design} from './contract';
+import type {Estimate,Role} from './money';
+import type {TextSnapshot} from '../agents/text-provider';
+export type ModelConfig={modelId:string;instructions:string;maxOutputTokens:number;modelMaxOutputTokens?:number;pricing:TextSnapshot['pricing'];contextLength:number;vision:boolean};
+export type SourceFile={url:string;objectKey:string;sha256:string;mime:string};
+export type BlockSnapshot={protocol:'director@1';reviewRequestId?:string;seedWork?:Record<string,{iterationId:string;source:{hash:string;files:{id:string;path:string;source:string;sha256:string}[]};design:Design;catalog:CatalogEntry[]}>;resourceModelId?:string;checkpointId:string;a1Id:string;sourceHash:string;inputs:DirectionInput[];estimates:Record<string,Estimate>;models:Record<Exclude<Role,'resources'>,ModelConfig>;files:SourceFile[];planning:{id:string;sha256:string}[];notes?:Record<string,RoutedNote[]>;approvedResourceHashes?:string[];seedIterationIds?:Record<string,string>};
+export type ADQuestion={id:string;directionId:string;reason:'copy'|'permission'|'budget'|'convergence'|'execution'|'receipt';question:string;resourceId?:string;options:{action:string;label:string;priceMicroUsd:number}[];technical?:string};
+export type RoutedNote={recipient:'director'|'assembler';text:string;target?:import('./review').ReviewTarget;sourceFile?:string};
+export type LoopState={turn:number;startedAt:number;transcript:{from:'agent'|'tool';text:string}[];complete:boolean};
+export type WorkState={workingClockVersion?:2;appliedControls?:string[];liveRevision?:'director'|'assembler';reviewStartedAt?:number;pausedAt?:number;retryAt?:number;transientRetries?:number;callRetries?:Record<string,number>;wrapUp?:boolean;activeCall?:{role:string;startedAt:number};events?:{at:number;text:string}[];seedLoaded?:boolean;phase?:'director'|'resources'|'assembler'|'assembled'|'critic'|'complete';iterationId?:string;iteration?:number;design?:Design;previousDesign?:Design;directorFeedback?:string[];roleStartedAt?:Partial<Record<Exclude<Role,'resources'>,number>>;catalog?:CatalogEntry[];assembler?:LoopState;notes?:RoutedNote[];folder?:string;sourceHash?:string;reports?:Record<string,CheckReport>;pendingSource?:string;lastFailure?:string};

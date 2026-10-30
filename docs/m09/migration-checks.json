@@ -1,0 +1,32 @@
+[
+  {
+    "migration": "20261028004900_director_events.sql",
+    "sqlSyntax": true,
+    "plpgsqlSyntax": true,
+    "applied": false
+  },
+  {
+    "migration": "20261028005000_static_delivery.sql",
+    "sqlSyntax": true,
+    "plpgsqlSyntax": true,
+    "applied": false
+  },
+  {
+    "migration": "20261028005100_director_live_controls.sql",
+    "sqlSyntax": true,
+    "plpgsqlSyntax": true,
+    "applied": false
+  },
+  {
+    "migration": "20261028005200_static_admission_and_cache.sql",
+    "sqlSyntax": true,
+    "plpgsqlSyntax": true,
+    "applied": false
+  },
+  {
+    "migration": "20261028005300_static_delivery_events.sql",
+    "sqlSyntax": true,
+    "plpgsqlSyntax": true,
+    "applied": false
+  }
+]

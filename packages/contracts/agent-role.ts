@@ -1,0 +1,7 @@
+/** Known protocol identities. These labels never choose jobs, models, allowances or creative content. */
+export const agentRoleAliases:Record<string,readonly string[]>={intake:['Intake analyst'],'brand-kit':['Brand Kit builder'],research:['Research and evidence analyst'],strategy:['Campaign strategist'],variants:['Variant planner and scope auditor'],script:['Concept, script and storyboard writer'],localization:['Localization and campaign copy specialist'],'visual-direction':['Visual director'],image:['Image producer'],video:['Video producer and heavy-shot planner'],model3d:['3D resource producer and capability planner'],'creative-code':['Creative compositor engineer'],layout:['All-variant layout planner'],critic:['Creative QA assistant, not an approval authority']};
+/** ASCII case/separators and camel-case word boundaries only. No substring, fuzzy or semantic guessing. Mirrors the SQL recovery boundary. */
+export const agentRoleKey=(value:string)=>value.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[A-Z]/g,c=>c.toLowerCase()).replace(/[ \t\r\n_-]+/g,' ').replace(/^ +| +$/g,'');
+const roles=new Map<string,Set<string>>();
+for(const [role,labels]of Object.entries(agentRoleAliases))for(const label of [role,...labels]){const key=agentRoleKey(label),matches=roles.get(key)??new Set<string>();matches.add(role);roles.set(key,matches);}
+export function resolveAgentRole(value:unknown){if(typeof value!=='string'||value.length>256)return null;const matches=roles.get(agentRoleKey(value));return matches?.size===1?[...matches][0]:null;}

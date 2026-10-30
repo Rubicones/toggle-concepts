@@ -1,0 +1,33 @@
+{
+  "recordedCoderRequests": 6,
+  "recordedCoderCostMicroUsd": 557588,
+  "recordedCompletionTokens": 48000,
+  "recordedReasoningTokens": 43963,
+  "recordedOutputAllowance": 48000,
+  "oldFallbackCompaction": {
+    "cap": 32768,
+    "before": 33483,
+    "after": 32877
+  },
+  "newFallbackCompaction": {
+    "before": 30492,
+    "after": 30492,
+    "cap": 32768,
+    "actions": [
+      "Represented 128 ordered variants as compact axes and reference identifiers.",
+      "Omitted the repeated index of 323 copy keys; exact variant copy remains in the generated brand module.",
+      "Omitted storyboard timing and motion notes from static coder context; the complete director design and static visual notes remain.",
+      "Included director-requested pictures and references; listResources retains the complete supplied catalog."
+    ]
+  },
+  "paidRequestsStartedByVerification": 0,
+  "visualVerification": false,
+  "newMigrationRequired": false,
+  "testsPassed": 357,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "build": true
+  }
+}

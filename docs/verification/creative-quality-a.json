@@ -1,0 +1,13 @@
+{
+  "fixture": "128-variant admission with synthetic inspected-font payloads",
+  "variantCount": 128,
+  "copyKeys": 323,
+  "designChars": 8000,
+  "fontPayloads": 3,
+  "inputBound": 32281,
+  "cap": 32768,
+  "providerCalls": 0,
+  "providerCostMicroUsd": 0,
+  "cacheShare": null,
+  "cacheShareReason": "No provider calls; inputBound is a conservative admission bound."
+}

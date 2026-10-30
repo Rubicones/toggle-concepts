@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "findings": [],
+  "sampledFrames": [
+    0,
+    3,
+    7,
+    11,
+    15,
+    18,
+    22,
+    26,
+    29
+  ],
+  "durationFrames": 30,
+  "renderMs": 7115
+}

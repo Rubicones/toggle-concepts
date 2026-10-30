@@ -1,0 +1,77 @@
+{
+  "source": "Recorded failed director receipts; replay never submits providers",
+  "configuredOutputTokens": 6000,
+  "allowance": {
+    "timeMs": 540000,
+    "requests": 6,
+    "inputTokens": 192000,
+    "outputTokens": 30000,
+    "maxCostMicroUsd": 752403
+  },
+  "feedback": [
+    "{\"error\":\"OUTPUT_TOKEN_LIMIT\",\"detail\":\"Your previous answer was longer than the output limit and was cut off. Keep the design document precise (about 2,500 words at most) and the resource list short.\"}",
+    "{\"error\":\"OUTPUT_TOKEN_LIMIT\",\"detail\":\"Your previous answer was longer than the output limit and was cut off. Keep the design document precise (about 2,500 words at most) and the resource list short.\"}"
+  ],
+  "receipts": [
+    {
+      "status": "failed",
+      "error": "OUTPUT_TOKEN_LIMIT",
+      "maxOutputTokens": 6000,
+      "outputCharacters": 12059,
+      "costMicroUsd": 86948,
+      "usage": {
+        "cost": 0.0869475,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.0869475,
+          "upstream_inference_prompt_cost": 0.0269475,
+          "upstream_inference_completions_cost": 0.06
+        },
+        "total_tokens": 16798,
+        "prompt_tokens": 10798,
+        "completion_tokens": 6000,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "video_tokens": 0,
+          "cached_tokens": 0,
+          "cache_write_tokens": 10703
+        },
+        "completion_tokens_details": {
+          "audio_tokens": 0,
+          "image_tokens": 0,
+          "reasoning_tokens": 1279
+        }
+      }
+    },
+    {
+      "status": "failed",
+      "error": "OUTPUT_TOKEN_LIMIT",
+      "maxOutputTokens": 4000,
+      "outputCharacters": 6429,
+      "costMicroUsd": 67010,
+      "usage": {
+        "cost": 0.06701,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0.06701,
+          "upstream_inference_prompt_cost": 0.02701,
+          "upstream_inference_completions_cost": 0.04
+        },
+        "total_tokens": 14823,
+        "prompt_tokens": 10823,
+        "completion_tokens": 4000,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "video_tokens": 0,
+          "cached_tokens": 0,
+          "cache_write_tokens": 10728
+        },
+        "completion_tokens_details": {
+          "audio_tokens": 0,
+          "image_tokens": 0,
+          "reasoning_tokens": 1353
+        }
+      }
+    }
+  ]
+}

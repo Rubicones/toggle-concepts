@@ -1,0 +1,522 @@
+{
+  "provenance": {
+    "kind": "recorded-provider-output",
+    "stepId": "ddc0f93c-ad8f-4e31-b7f0-78eea6b1ead3",
+    "capturedAt": "2026-10-25T23:50:55.745346+00:00",
+    "sha256": "bea9d1ee24b53702a64159b21cab4373ae61f2cd3b349d7af32425b0bf2e6af2"
+  },
+  "output": {
+    "schemaVersion": "1.0",
+    "role": "variants",
+    "status": "draft",
+    "summary": "Audited the C1 VariantManifest to ensure all entries are present and valid according to the brief's specified axes and combinations.",
+    "deliverable": {
+      "manifest": {
+        "entries": [
+          {
+            "id": "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "vertical"
+          },
+          {
+            "id": "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "portrait"
+          },
+          {
+            "id": "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "square"
+          },
+          {
+            "id": "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "wide"
+          },
+          {
+            "id": "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "vertical"
+          },
+          {
+            "id": "2db2512f-2364-41b1-a19a-60b903669f4b",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "portrait"
+          },
+          {
+            "id": "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "square"
+          },
+          {
+            "id": "c9f14d96-090a-4363-9041-d8a87ee45d93",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "wide"
+          },
+          {
+            "id": "dbf53217-7665-43f5-80d7-2e2db7baa631",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "vertical"
+          },
+          {
+            "id": "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "portrait"
+          },
+          {
+            "id": "000eff5e-9687-4dc2-90f0-1e373dede745",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "square"
+          },
+          {
+            "id": "e192d8ee-7bff-43f9-9166-17c1ba17bb04",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "wide"
+          },
+          {
+            "id": "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "vertical"
+          },
+          {
+            "id": "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "portrait"
+          },
+          {
+            "id": "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "square"
+          },
+          {
+            "id": "c31dbdf5-1471-44de-83ae-1fd65dc45ac0",
+            "conceptSlot": 1,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "wide"
+          },
+          {
+            "id": "4d7f814d-084a-4846-b82c-d680021c996e",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "vertical"
+          },
+          {
+            "id": "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "portrait"
+          },
+          {
+            "id": "ba0383fb-42dd-4bf6-94b6-f23568003941",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "square"
+          },
+          {
+            "id": "c064b8ba-04e8-4cf9-a82d-5a50b2e07016",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "wide"
+          },
+          {
+            "id": "95d74775-ba4a-4521-9b64-4356281b9624",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "vertical"
+          },
+          {
+            "id": "987d975b-5685-45c5-b32b-3ddebda00119",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "portrait"
+          },
+          {
+            "id": "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "square"
+          },
+          {
+            "id": "023e09cc-e6e3-446c-a917-4d99215ddde3",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "wide"
+          },
+          {
+            "id": "e56c52e8-2b76-4a55-b302-7d2226edc339",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "vertical"
+          },
+          {
+            "id": "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "portrait"
+          },
+          {
+            "id": "b9d78741-8af8-4775-8881-e0c23328a977",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "square"
+          },
+          {
+            "id": "4223af01-36ec-4a60-99e4-d248ba69eeb5",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "wide"
+          },
+          {
+            "id": "eada0afd-acea-44f8-8886-67f6b0e97548",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "vertical"
+          },
+          {
+            "id": "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "portrait"
+          },
+          {
+            "id": "8be95604-c289-4429-b240-696fa0b21e07",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "square"
+          },
+          {
+            "id": "3dfa0be4-abc4-4075-8689-eb4c3b7a4199",
+            "conceptSlot": 2,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "wide"
+          },
+          {
+            "id": "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "vertical"
+          },
+          {
+            "id": "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "portrait"
+          },
+          {
+            "id": "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "square"
+          },
+          {
+            "id": "e54e8057-b8f8-4013-a878-89814dc2353b",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 4,
+            "placementId": "wide"
+          },
+          {
+            "id": "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "vertical"
+          },
+          {
+            "id": "fd2ce813-572c-497d-92e7-ab3851d5353f",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "portrait"
+          },
+          {
+            "id": "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "square"
+          },
+          {
+            "id": "0ef16570-4ccd-48a7-862a-a1e623f1c461",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 6,
+            "placementId": "wide"
+          },
+          {
+            "id": "0f2e904e-4430-484c-956d-17575344433d",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "vertical"
+          },
+          {
+            "id": "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "portrait"
+          },
+          {
+            "id": "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "square"
+          },
+          {
+            "id": "7b405d45-1237-46a3-b048-cb1eb90fb93e",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 9,
+            "placementId": "wide"
+          },
+          {
+            "id": "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "vertical"
+          },
+          {
+            "id": "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "portrait"
+          },
+          {
+            "id": "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "square"
+          },
+          {
+            "id": "e45ca987-8a92-4a57-aad1-598be5095211",
+            "conceptSlot": 3,
+            "locale": "en-GB",
+            "hook": "primary",
+            "beatSequence": "primary",
+            "offer": "primary",
+            "durationSeconds": 12,
+            "placementId": "wide"
+          }
+        ]
+      },
+      "orderedCount": 48
+    },
+    "inputRefs": [
+      {
+        "source": "Campaign Context: variantManifest"
+      },
+      {
+        "source": "Campaign Context: scope"
+      }
+    ],
+    "assumptions": [],
+    "blockingQuestions": [],
+    "warnings": [],
+    "handoff": {
+      "nextRole": "Application",
+      "requiredInputs": [
+        "deliverable.manifest"
+      ],
+      "checks": [
+        "The generated manifest exactly matches the ordered entries from the C1 VariantManifest.",
+        "The 'orderedCount' correctly reflects the number of entries in the manifest."
+      ]
+    }
+  }
+}

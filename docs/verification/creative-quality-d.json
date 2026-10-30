@@ -1,0 +1,40 @@
+{
+  "step": "D",
+  "date": "2026-10-29",
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "tests": { "passed": 408, "failed": 0 },
+    "nextBuild": "passed",
+    "diffWhitespace": "passed"
+  },
+  "fixtureReplay": {
+    "initialTwoBindingsProducerInvocations": 1,
+    "layoutRevisionAdditionalProducerInvocations": 0,
+    "changedImageBriefAdditionalProducerInvocations": 1,
+    "proxyConversionAdditionalProducerInvocations": 0,
+    "restoreAdditionalProducerInvocations": 0,
+    "historicalReceiptPreserved": true,
+    "legacyKeysPreserved": true
+  },
+  "browser": {
+    "arrivalBeforeSlowSiblingCompletes": true,
+    "replacementDespiteFailedSibling": true,
+    "selectionPreserved": true,
+    "removedBindingCleared": true,
+    "imageOnlyBundleFetches": 0,
+    "controlOrImageUpdatePosts": 0,
+    "frameExports": 0
+  },
+  "admission": [
+    { "fixture": "independent-resource large coder", "inputBound": 32317, "cap": 32768, "variants": 128, "copyKeys": 323, "designChars": 8000, "fontPayloads": 3 },
+    { "fixture": "independent-resource recorded KITE director", "inputBound": 30555, "cap": 32768, "requiredImages": 1 }
+  ],
+  "providerCalls": 0,
+  "providerCostMicroUsd": 0,
+  "cachedTokenShare": null,
+  "billingNote": "Injected receipt values and replay invocations test control flow; no live provider calls or billing measurement.",
+  "migrationRequired": false,
+  "visualVerification": false,
+  "pushed": false
+}

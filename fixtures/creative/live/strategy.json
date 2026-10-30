@@ -1,0 +1,201 @@
+{
+  "provenance": {
+    "kind": "recorded-provider-output",
+    "stepId": "cb0dfd84-3116-4cfe-9527-da52e960fc25",
+    "capturedAt": "2026-10-25T23:50:39.077761+00:00",
+    "sha256": "39e4582ea93fe956f986bdb6e7a117ea0a0c279ad68f98e3ac9145fcc3cf67a7"
+  },
+  "output": {
+    "schemaVersion": "1.0",
+    "role": "strategy",
+    "status": "draft",
+    "summary": "Strategic planning for the sonicdesk Snippet campaign, outlining audience, message hierarchy, proofs, objections, three distinct creative territories, and measurement hypotheses.",
+    "deliverable": {
+      "threeTerritories": [
+        {
+          "conceptSlot": 1,
+          "promise": "Effortless Hook Creation: Quickly isolate and export the most impactful part of your song.",
+          "hook": "Stop guessing. Start testing your song's best hook, instantly.",
+          "story": "An independent musician struggles with identifying a catchy hook from their in-progress mix using traditional DAW methods, highlighting the time and technical effort involved. The narrative then shifts to show the ease and speed of sonicdesk's Snippet feature: they effortlessly select a section, loop it, and export it. The musician is then shown confidently uploading the snippet to a social platform, eager for feedback.",
+          "visualPremise": "Starts with a somewhat frustrated musician at a cluttered desk with a complex DAW interface (generated, not a real DAW). Transitions to a clean, focused shot of the sonicdesk UI (authentic) with the Snippet feature in action, followed by a confident musician engaging with their phone/tablet on a social media app. Visuals maintain the brand's dark, mechanical-confident aesthetic, with lime accents drawing attention to the product UI.",
+          "testableHypothesis": "This approach will resonate with musicians who feel bogged down by complex DAWs for simple tasks, leading to higher engagement (CTR) as they identify with the pain point and see an immediate solution.",
+          "measurementPlan": "Monitor Click-Through Rate (CTR) to the sign-up page for ads deploying this territory. A higher CTR compared to other territories would suggest stronger initial resonance with the core problem. We hypothesize that CTR will be >0.8% for cold audiences and >1.5% for retargeting.",
+          "invalidationCriteria": "If the CTR for this territory is significantly lower than other concepts or below the hypothesized thresholds, it indicates that the pain point isn't as acute or the solution isn't compelling enough to capture immediate attention, or the creative execution fails to clearly convey the ease of use.",
+          "coldAudienceFocus": "Emphasize the problem of manual DAW bouncing and present Snippet as the streamlined, modern alternative.",
+          "retargetingAudienceFocus": "Remind users of the ease they've already experienced within sonicdesk for other features, highlighting Snippet as another valuable tool to simplify their workflow."
+        },
+        {
+          "conceptSlot": 2,
+          "promise": "Data-Driven Songwriting: Validate your song's appeal before release.",
+          "hook": "Test your song's viral potential. Discover its strongest hook, fast.",
+          "story": "A songwriter, having finished a mix, debates which part of their song is most engaging. They consider the effort of preparing multiple versions for social media testing. The story then demonstrates how sonicdesk Snippet allows them to quickly create several different hooks (5-30s presets), listen to them in a loop, and export them as WAV files. The musician is then shown sharing these various snippets to different social platforms, anticipating feedback to inform their final release.",
+          "visualPremise": "Opens with a musician deep in thought, perhaps surrounded by notes or contemplating waveforms. Transitions to the sonicdesk UI showcasing the flexibility of Snippet's length chips and section snapping. This is followed by dynamic cuts showing different snippets being played/shared, suggesting experimentation. The visual tone is analytical yet empowering, focusing on choice and strategic decision-making.",
+          "testableHypothesis": "This territory will appeal to musicians seeking an edge in promoting their music, leading to a higher conversion rate (sign-ups) as they see the direct benefit of pre-release testing for social media success.",
+          "measurementPlan": "Track Conversion Rate (CVR) from ad click to sign-up for ads deploying this territory. We hypothesize that CVR will be >0.5% for cold audiences and >1.0% for retargeting.",
+          "invalidationCriteria": "If the CVR for this territory does not show a statistically significant improvement over a control or other territories, it suggests that the promise of 'viral potential' or 'data-driven insight' isn't a strong enough motivator for sign-ups, or the value proposition isn't clearly communicated.",
+          "coldAudienceFocus": "Introduce the concept of pre-release social testing and how Snippet makes it accessible.",
+          "retargetingAudienceFocus": "Build on existing user engagement by presenting Snippet as a strategic tool for maximizing their song's impact, reinforcing sonicdesk as an essential creative partner."
+        },
+        {
+          "conceptSlot": 3,
+          "promise": "Streamlined Workflow: Keep your creative flow uninterrupted.",
+          "hook": "Stay in the creative zone. Get your song hooks without leaving sonicdesk.",
+          "story": "A band is in a collaborative session, trying to decide which section of their song would make the best social media teaser. The initial thought of opening another application or interrupting their creative flow causes friction. sonicdesk Snippet is then introduced as an integrated solution within their workspace: they fluidly navigate to the mixer, select, listen, and export, all within sonicdesk. The scene concludes with the band members smiling, having solved their problem efficiently and without breaking their collaborative momentum.",
+          "visualPremise": "Begins with a dynamic shot of band members collaborating (generated) in a studio-like environment, showing the natural flow of creativity. A moment of pause or slight frustration as they discuss hooks. The camera then zooms into a screen showing the seamless integration of the Snippet feature within the familiar sonicdesk interface, emphasizing the "
+        }
+      ]
+    },
+    "inputRefs": [
+      {
+        "id": "CL001",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product"
+      },
+      {
+        "id": "CL002",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product"
+      },
+      {
+        "id": "CL003",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product"
+      },
+      {
+        "id": "CL004",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product"
+      },
+      {
+        "id": "CL005",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product"
+      },
+      {
+        "id": "CL006",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product"
+      },
+      {
+        "id": "CL007",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: offer"
+      },
+      {
+        "id": "CL008",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: offer"
+      },
+      {
+        "id": "CL009",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: product"
+      },
+      {
+        "id": "CL010",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: audience"
+      },
+      {
+        "id": "CL011",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: audience"
+      },
+      {
+        "id": "CL012",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: audience"
+      },
+      {
+        "id": "CL013",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: audience"
+      },
+      {
+        "id": "CL014",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: offer"
+      },
+      {
+        "id": "CL015",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: offer; acceptedBrandKit.payload.kit.rules.faf73cc1-3652-4999-8912-c186184f008c"
+      },
+      {
+        "id": "CL016",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: synthesis"
+      },
+      {
+        "id": "CL017",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: synthesis"
+      },
+      {
+        "id": "CL018",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables"
+      },
+      {
+        "id": "CL019",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables; acceptedBrandKit.payload.kit.rules.ea1fb71a-11b1-4c77-a01a-0537084943cc; acceptedBrandKit.payload.kit.rules.06157835-4c97-4cee-8027-524d8f9c2c56"
+      },
+      {
+        "id": "CL020",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables; acceptedBrandKit.payload.kit.rules.0369c7d0-5354-4a9a-8fec-82a64fc1d5e4; acceptedBrandKit.payload.kit.rules.b75d678b-24de-4c05-bebe-d0daeeeb58be"
+      },
+      {
+        "id": "CL021",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables"
+      },
+      {
+        "id": "CL022",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: immutables"
+      },
+      {
+        "id": "CL023",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: rightsNotes"
+      },
+      {
+        "id": "CL024",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: rightsNotes"
+      },
+      {
+        "id": "CL025",
+        "source": "acceptedBrandKit.payload.kit.rules.2a5c6014-f1f7-46a2-9a24-64f738daa184"
+      },
+      {
+        "id": "CL026",
+        "source": "acceptedBrandKit.payload.kit.rules.faf73cc1-3652-4999-8912-c186184f008c"
+      },
+      {
+        "id": "CL027",
+        "source": "acceptedBrandKit.payload.kit.rules.faf73cc1-3652-4999-8912-c186184f008c"
+      },
+      {
+        "id": "CL028",
+        "source": "acceptedBrandKit.payload.kit.rules.faf73cc1-3652-4999-8912-c186184f008c"
+      },
+      {
+        "id": "CL029",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: objective"
+      },
+      {
+        "id": "CL030",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665: audience"
+      }
+    ],
+    "assumptions": [
+      "The target audience is active on social media platforms like Reels and TikTok and values efficiency in their music production workflow (CL011, CL012).",
+      "The pain point of needing a quick, clean audio snippet without a DAW is significant enough to motivate sign-ups (CL013)."
+    ],
+    "blockingQuestions": [],
+    "warnings": [
+      "All strategic territories and associated creative proposals are provisional, awaiting A2/C2 client acceptance (checkpointState: C1 and A1 accepted. A2/C2/A3/C3 are absent)."
+    ],
+    "handoff": {
+      "nextRole": "Variant planner, script writer and visual director",
+      "requiredInputs": [
+        "strategicBrief",
+        "audienceSituation",
+        "messageHierarchy",
+        "supportedProof",
+        "objectionsAndResponses",
+        "threeTerritories",
+        "hypothesesAndMeasurements",
+        "channelRationale",
+        "constraints",
+        "unresolvedFacts"
+      ],
+      "checks": [
+        "Three genuinely distinct strategic territories have been proposed, varying creative mechanism, opening, and story, not just superficial elements.",
+        "Facts, offer, and CTA are consistent across all territories.",
+        "Performance hypotheses are clearly separated from proven results and include invalidation criteria.",
+        "Testable hypotheses and measurement plans are included for each territory, without invented baselines, conversion forecasts, or targeting attributes.",
+        "The proposed strategy adheres to the brand tone and all identified constraints."
+      ]
+    }
+  }
+}

@@ -1,0 +1,946 @@
+/* Loaded with the Brandbook component; scoped to its root. */
+
+.workspace {
+  margin-top: 30px;
+  padding-top: 30px;
+  border-top: 1px solid var(--line);
+  width: 100%;
+  min-width: 0;
+  line-height: 1.6
+}
+
+.workspace :global(.brandbook-heading) {
+  display: grid;
+  justify-content: space-between;
+  align-items: start;
+  gap: 24px;
+  margin-bottom: 24px;
+  grid-template-columns: minmax(0,1fr) auto;
+  column-gap: 24px
+}
+
+.workspace :global(.brandbook-heading h2) {
+  font-size: 30px;
+  letter-spacing: -1px;
+  margin: 9px 0;
+  line-height: 1.2;
+  font-weight: 600
+}
+
+.workspace :global(.brandbook-heading p:not(.eyebrow)) {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6
+}
+
+.workspace :global(.brandbook-total) {
+  text-align: right;
+  white-space: nowrap;
+  display: grid;
+  gap: 7px;
+  padding-top: 3px;
+  font-variant-numeric: tabular-nums
+}
+
+.workspace :global(.brandbook-total strong) {
+  font-size: 38px;
+  letter-spacing: -1.5px;
+  display: block;
+  line-height: 1.1
+}
+
+.workspace :global(.brandbook-total strong span) {
+  font-size: 23px;
+  color: #8da1ac
+}
+
+.workspace :global(.brandbook-total small) {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  line-height: 1.4
+}
+
+.workspace :global(.brandbook-overview) {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1.15fr);
+  gap: 18px;
+  align-items: stretch
+}
+
+.workspace :global(.brandbook-work-card),
+.workspace :global(.brandbook-budget) {
+  padding: 25px;
+  border-radius: 22px;
+  background: #f1f6f8
+}
+
+.workspace :global(.brandbook-work-card) {
+  background: #e9f6fc;
+  min-width: 0
+}
+
+.workspace :global(.brandbook-status) {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4f6c7c
+}
+
+.workspace :global(.brandbook-status-dot) {
+  height: 7px;
+  width: 7px;
+  border-radius: 50%;
+  background: #89a0ad
+}
+
+.workspace :global(.brandbook-status-dot.is-active) {
+  background: #2c9973
+}
+
+.workspace :global(.brandbook-work-card h3) {
+  font-size: 22px;
+  letter-spacing: -.7px;
+  margin: 18px 0 10px;
+  line-height: 1.3;
+  font-weight: 600
+}
+
+.workspace :global(.brandbook-work-card>p) {
+  font-size: 12px;
+  color: #526d7b;
+  line-height: 1.7;
+  max-width: 440px
+}
+
+.workspace :global(.brandbook-work-card>.data-heading-actions) {
+  margin: 20px 0 0;
+  gap: 9px
+}
+
+.workspace :global(.brandbook-settings) {
+  margin-top: 22px;
+  border-top: 1px solid #d3e7f0;
+  padding-top: 14px
+}
+
+.workspace :global(.brandbook-settings>summary) {
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center
+}
+
+.workspace :global(.brandbook-settings .studio-form) {
+  margin-top: 15px;
+  gap: 12px
+}
+
+.workspace :global(.brandbook-settings>p) {
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 12px
+}
+
+.workspace :global(.brandbook-settings .data-heading-actions) {
+  margin-top: 12px
+}
+
+.workspace :global(.brandbook-budget-title) {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 17px 0 21px;
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2
+}
+
+.workspace :global(.brandbook-budget-title>strong) {
+  font-size: 35px;
+  letter-spacing: -1.2px
+}
+
+.workspace :global(.brandbook-budget-title>span) {
+  font-size: 12px;
+  color: var(--muted)
+}
+
+.workspace :global(.brandbook-budget-bar) {
+  display: flex;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #dcebf2
+}
+
+.workspace :global(.brandbook-budget-bar>i) {
+  display: block;
+  transition: width .3s
+}
+
+.workspace :global(.brandbook-budget .is-spent) {
+  background: #123443
+}
+
+.workspace :global(.brandbook-budget .is-reserved) {
+  background: #d9a551
+}
+
+.workspace :global(.brandbook-budget .is-free) {
+  background: #b1e3f6
+}
+
+.workspace :global(.brandbook-budget-legend) {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 13px;
+  margin-top: 20px;
+  font-variant-numeric: tabular-nums;
+  column-gap: 18px
+}
+
+.workspace :global(.brandbook-budget-legend>div) {
+  min-width: 0
+}
+
+.workspace :global(.brandbook-budget-legend span) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted)
+}
+
+.workspace :global(.brandbook-budget-legend i) {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block
+}
+
+.workspace :global(.brandbook-budget-legend strong) {
+  display: block;
+  font-size: 18px;
+  margin: 8px 0 5px;
+  letter-spacing: -.4px;
+  line-height: 1.3
+}
+
+.workspace :global(.brandbook-budget-legend small) {
+  display: block;
+  font-size: 10px;
+  color: #66818f;
+  line-height: 1.5;
+  max-width: 19ch
+}
+
+.workspace :global(.brandbook-budget>p) {
+  font-size: 10px;
+  line-height: 1.65;
+  color: #6b8491;
+  margin-top: 22px
+}
+
+.workspace :global(.brandbook-message) {
+  padding: 14px 18px;
+  background: #ebf7ee;
+  border-radius: 12px;
+  font-size: 12px;
+  margin: 18px 0
+}
+
+.workspace :global(.brandbook-files) {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  margin: 20px 0;
+  overflow: hidden
+}
+
+.workspace :global(.brandbook-files>summary) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 17px 19px;
+  cursor: pointer;
+  font-size: 12px
+}
+
+.workspace :global(.brandbook-files>summary>span) {
+  color: var(--muted);
+  margin-left: auto;
+  font-size: 11px
+}
+
+.workspace :global(.brandbook-files>div) {
+  border-top: 1px solid var(--line);
+  padding: 3px 18px
+}
+
+.workspace :global(.brandbook-file) {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf1f3;
+  font-size: 11px
+}
+
+.workspace :global(.brandbook-file:last-child) {
+  border: 0
+}
+
+.workspace :global(.brandbook-file>span) {
+  overflow-wrap: anywhere;
+  flex: 1
+}
+
+.workspace :global(.brandbook-file>small) {
+  color: var(--muted);
+  white-space: nowrap
+}
+
+.workspace :global(.brandbook-file .ui-badge) {
+  font-size: 9px;
+  min-width: 65px;
+  justify-content: center
+}
+
+.workspace :global(.brandbook-submit) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  border: 1px solid #d5e6ed;
+  border-radius: 20px;
+  padding: 24px;
+  margin: 22px 0 32px;
+  background: linear-gradient(110deg,#fff,#f0f9fd)
+}
+
+.workspace :global(.brandbook-submit h3) {
+  font-size: 21px;
+  letter-spacing: -.6px;
+  margin: 8px 0;
+  line-height: 1.35;
+  font-weight: 600
+}
+
+.workspace :global(.brandbook-submit p) {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 560px
+}
+
+.workspace :global(.brandbook-submit-actions) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  flex-shrink: 0
+}
+
+.workspace :global(.brandbook-submit-actions .text-link) {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px
+}
+
+.workspace :global(.brandbook-submit .brandbook-submitted) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #348065;
+  margin-top: 12px;
+  font-size: 11px
+}
+
+.workspace :global(.brandbook-field-toolbar) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px
+}
+
+.workspace :global(.brandbook-field-toolbar h3) {
+  font-size: 22px;
+  letter-spacing: -.6px;
+  margin: 0
+}
+
+.workspace :global(.brandbook-field-toolbar p) {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 5px
+}
+
+.workspace :global(.brandbook-search) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 13px;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  color: #71909e;
+  min-height: 42px
+}
+
+.workspace :global(.brandbook-search input) {
+  outline: none;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  width: 170px;
+  color: var(--ink)
+}
+
+.workspace :global(.brandbook-filter-row) {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 19px 0 17px;
+  flex-wrap: wrap
+}
+
+.workspace :global(.brandbook-filter-row>button) {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 8px 12px;
+  font-size: 11px;
+  background: white;
+  color: #537080;
+  cursor: pointer
+}
+
+.workspace :global(.brandbook-filter-row>button[aria-pressed=true]) {
+  background: var(--ink);
+  color: white;
+  border-color: var(--ink)
+}
+
+.workspace :global(.brandbook-filter-row>.text-link) {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px
+}
+
+.workspace :global(.brandbook-fields) {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  /* Fill the remaining card cells above a full-width findings drawer. */
+  grid-auto-flow: row dense;
+  gap: 13px
+}
+
+.workspace :global(.brandbook-field) {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  overflow: hidden;
+  background: white
+}
+
+.workspace :global(.brandbook-field.is-open) {
+  border-color: #9dcfe2;
+  box-shadow: 0 5px 24px #12344308;
+  scroll-margin-top: 24px
+}
+
+.workspace :global(.brandbook-field-toggle) {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  padding: 20px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink);
+  min-height: 120px
+}
+
+.workspace :global(.brandbook-field-toggle>span) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px
+}
+
+.workspace :global(.brandbook-field-toggle small) {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #75909f
+}
+
+.workspace :global(.brandbook-field-toggle strong) {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4
+}
+
+.workspace :global(.brandbook-field-toggle span>span) {
+  font-size: 11px;
+  color: var(--muted)
+}
+
+.workspace :global(.brandbook-field-toggle>svg) {
+  color: #7b99a8;
+  transition: transform .15s
+}
+
+.workspace :global(.brandbook-field.is-open>.brandbook-field-toggle) {
+  background: #f0f9fd
+}
+
+.workspace :global(.brandbook-field.is-open>.brandbook-field-toggle>svg) {
+  transform: rotate(180deg)
+}
+
+.workspace :global(.brandbook-field-content) {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #9dcfe2;
+  border-radius: 17px;
+  background: white;
+}
+
+.workspace :global(.brandbook-drawer-heading) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.workspace :global(.brandbook-drawer-heading h4) {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.workspace :global(.brandbook-finding-list>p) {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 16px
+}
+
+.workspace :global(.brandbook-finding-list>details) {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px;
+  margin-bottom: 16px;
+  font-size: 12px
+}
+
+.workspace :global(.brandbook-finding-list>details>div) {
+  margin-top: 14px;
+  line-height: 1.8
+}
+
+.workspace :global(.brandbook-finding) {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  margin: 12px 0;
+  padding: 18px
+}
+
+.workspace :global(.brandbook-finding.is-keep) {
+  border-left: 3px solid #5baf8c
+}
+
+.workspace :global(.brandbook-finding.is-reject) {
+  background: #f8fafb;
+  color: #738a96
+}
+
+.workspace :global(.brandbook-finding-value) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.75;
+  font-size: 13px;
+  margin: 13px 0
+}
+
+.workspace :global(.brandbook-value) {
+  margin: 16px 0;
+  min-width: 0;
+}
+
+.workspace :global(.brandbook-swatches) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 260px));
+  gap: 14px;
+}
+
+.workspace :global(.brandbook-color) {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.workspace :global(.brandbook-color-chip),
+.workspace :global(.brandbook-artwork-stage) {
+  background-color: #fff;
+  background-image: conic-gradient(#eaf0f3 25%, transparent 0 50%, #eaf0f3 0 75%, transparent 0);
+  background-size: 16px 16px;
+}
+
+.workspace :global(.brandbook-color-chip>span) {
+  display: block;
+  height: 100px;
+}
+
+.workspace :global(.brandbook-color figcaption) {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px 15px;
+  overflow-wrap: anywhere;
+}
+
+.workspace :global(.brandbook-color strong) {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.workspace :global(.brandbook-color code) {
+  font-size: 12px;
+}
+
+.workspace :global(.brandbook-color small),
+.workspace :global(.brandbook-artwork small) {
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.workspace :global(.brandbook-artworks) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+}
+
+.workspace :global(.brandbook-artwork) {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+.workspace :global(.brandbook-artwork-stage) {
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.workspace :global(.brandbook-artwork-stage.is-dark) {
+  background-color: #163341;
+  background-image: conic-gradient(#1d3c4b 25%, transparent 0 50%, #1d3c4b 0 75%, transparent 0);
+  color: white;
+}
+
+.workspace :global(.brandbook-artwork-stage img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.workspace :global(.brandbook-artwork-stage p) {
+  max-width: 280px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.workspace :global(.brandbook-artwork figcaption) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 13px 16px;
+}
+
+.workspace :global(.brandbook-artwork figcaption>span) {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.workspace :global(.brandbook-artwork strong) {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.workspace :global(.brandbook-artwork button) {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: white;
+  padding: 7px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.workspace :global(.brandbook-finding-list.is-palette) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.workspace :global(.brandbook-finding-list.is-palette>.brandbook-finding) {
+  margin: 0;
+  min-width: 0;
+}
+
+.workspace :global(.brandbook-finding-list.is-palette>p),
+.workspace :global(.brandbook-finding-list.is-palette>details),
+.workspace :global(.brandbook-finding-list.is-palette>button) {
+  grid-column: 1 / -1;
+}
+
+.workspace :global(.is-palette .brandbook-swatches) {
+  grid-template-columns: 1fr;
+}
+
+.workspace :global(.brandbook-finding>small) {
+  display: block;
+  color: #6a8594;
+  font-size: 10px;
+  line-height: 1.65
+}
+
+.workspace :global(.brandbook-finding>a) {
+  font-size: 10px;
+  text-decoration: underline;
+  display: inline-block;
+  margin-top: 7px
+}
+
+.workspace :global(.brandbook-finding .data-heading-actions) {
+  margin: 14px 0;
+  gap: 8px
+}
+
+.workspace :global(.brandbook-finding .data-heading-actions .ui-button) {
+  font-size: 10px;
+  min-height: 32px;
+  padding: 6px 12px
+}
+
+.workspace :global(.brandbook-finding details) {
+  font-size: 11px;
+  color: #5a7685
+}
+
+.workspace :global(.brandbook-edit-label) {
+  display: block;
+  margin: 15px 0
+}
+
+.workspace :global(.brandbook-edit-label textarea) {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  margin-top: 8px;
+  padding: 12px;
+  font: inherit;
+  line-height: 1.7;
+  color: var(--ink);
+  resize: vertical
+}
+
+.workspace :global(.brandbook-finding details>p) {
+  margin-top: 15px;
+  line-height: 1.7
+}
+
+.workspace :global(.brandbook-empty) {
+  padding: 30px;
+  border: 1px dashed var(--line);
+  border-radius: 15px;
+  font-size: 12px;
+  color: var(--muted)
+}
+
+.workspace :global(.brandbook-empty button) {
+  display: block;
+  margin-top: 12px;
+  text-decoration: underline;
+  color: var(--ink);
+  cursor: pointer
+}
+
+.workspace :global(.brandbook-footnote) {
+  font-size: 10px;
+  color: #8499a5;
+  line-height: 1.7;
+  margin-top: 23px
+}
+@media(max-width:1000px){
+
+.workspace :global(.brandbook-overview) {
+  grid-template-columns: 1fr
+}
+
+.workspace :global(.brandbook-fields) {
+  grid-template-columns: repeat(2,minmax(0,1fr))
+}
+
+.workspace :global(.brandbook-submit) {
+  align-items: flex-start;
+  flex-direction: column
+}
+
+.workspace :global(.brandbook-submit-actions) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center
+}}
+@media(max-width:600px){
+
+.workspace :global(.brandbook-heading h2) {
+  font-size: 25px
+}
+
+.workspace :global(.brandbook-heading>div>p:not(.eyebrow)) {
+  font-size: 12px
+}
+
+.workspace :global(.brandbook-total strong) {
+  font-size: 30px
+}
+
+.workspace :global(.brandbook-total small) {
+  font-size: 9px
+}
+
+.workspace :global(.brandbook-work-card),
+.workspace :global(.brandbook-budget) {
+  padding: 19px
+}
+
+.workspace :global(.brandbook-fields) {
+  grid-template-columns: 1fr
+}
+
+.workspace :global(.brandbook-field-toolbar) {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 14px
+}
+
+.workspace :global(.brandbook-search) {
+  width: 100%
+}
+
+.workspace :global(.brandbook-search input) {
+  width: 100%
+}
+
+.workspace :global(.brandbook-filter-row>.text-link) {
+  margin: 6px 0 0
+}
+
+.workspace :global(.brandbook-files>summary) {
+  flex-wrap: wrap
+}
+
+.workspace :global(.brandbook-files>summary>span) {
+  margin-left: 0
+}
+
+.workspace :global(.brandbook-file) {
+  flex-wrap: wrap;
+  gap: 8px
+}
+
+.workspace :global(.brandbook-file>span) {
+  flex-basis: 100%
+}
+
+.workspace :global(.brandbook-field-content) {
+  padding: 13px
+}
+
+.workspace :global(.brandbook-budget-legend) {
+  gap: 10px
+}
+
+.workspace :global(.brandbook-budget-legend strong) {
+  font-size: 16px
+}
+
+.workspace :global(.brandbook-budget-legend small) {
+  font-size: 9px
+}}
+
+.workspace :global(.brandbook-settings>summary),
+.workspace :global(.brandbook-files>summary) {
+  list-style: none;
+  line-height: 1.5;
+}
+
+.workspace :global(.brandbook-settings>summary::-webkit-details-marker),
+.workspace :global(.brandbook-files>summary::-webkit-details-marker) {
+  display: none;
+}
+
+.workspace :global(.brandbook-settings>summary::marker),
+.workspace :global(.brandbook-files>summary::marker) {
+  content: "";
+}
+
+.workspace :global(.brandbook-files>summary>svg:last-child) {
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.workspace :global(.brandbook-settings>summary>svg),
+.workspace :global(.brandbook-files>summary>svg:last-child) {
+  transition: transform .15s;
+}
+
+.workspace :global(.brandbook-settings[open]>summary>svg),
+.workspace :global(.brandbook-files[open]>summary>svg:last-child) {
+  transform: rotate(180deg);
+}
+
+.workspace :global(.brandbook-budget-bar) {
+  flex-shrink: 0;
+}
+
+.workspace :global(.brandbook-field-toolbar h3) {
+  line-height: 1.4;
+}
+
+.workspace :global(.brandbook-field-toggle>span) {
+  min-width: 0;
+}
+
+.workspace :global(.brandbook-file>small) {
+  font-variant-numeric: tabular-nums;
+}
+@media(prefers-reduced-motion:reduce){
+
+.workspace :global(*) {
+  transition: none;
+}}
+
+

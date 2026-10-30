@@ -1,0 +1,25 @@
+{
+  "case": "Already-approved director continuation stopped at the original default attempt limit",
+  "recordedReceipts": 2,
+  "approvedAttempts": 6,
+  "usedAttempts": 2,
+  "resumeAttemptIndex": 2,
+  "previousAnswerLimits": [
+    6000,
+    4000
+  ],
+  "continuationAnswerLimit": 12000,
+  "recordedSpentMicroUsd": 153958,
+  "recordedDirectorAllowanceMicroUsd": 752403,
+  "remainingDirectorAllowanceMicroUsd": 598445,
+  "newDefaultAggregateDirectorOutputTokens": 12000,
+  "paidRequestsStartedByVerification": 0,
+  "allowanceMutatedByVerification": false,
+  "newMigrationRequired": false,
+  "visualVerification": false,
+  "testsPassed": 353,
+  "typecheck": true,
+  "lint": true,
+  "test": true,
+  "build": true
+}

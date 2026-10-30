@@ -1,0 +1,30 @@
+{
+  "variants": [
+    {
+      "variant": "vertical",
+      "mp4Bytes": 227321,
+      "sha256": "906cb05f1565f8704879a1cd1bf29ce6b494c3dbeb046fc068ec1ff0085786d5",
+      "checksPassed": true
+    },
+    {
+      "variant": "square",
+      "mp4Bytes": 178220,
+      "sha256": "20c55da2601ea912bf27c0d3d29269c1ba0d11e4bb6507443b11a637cc73bea9",
+      "checksPassed": true
+    },
+    {
+      "variant": "portrait",
+      "mp4Bytes": 195673,
+      "sha256": "814d0f27b9527bad0a40e378802489b670f44148f2f462812fb14b9bea1c5eb2",
+      "checksPassed": true
+    },
+    {
+      "variant": "wide",
+      "mp4Bytes": 248451,
+      "sha256": "a3a8626c8b0e59d813199ad61fcd399142e88e738638a9fbd671190d915a756d",
+      "checksPassed": true
+    }
+  ],
+  "contactStrips": 4,
+  "uploaded": false
+}

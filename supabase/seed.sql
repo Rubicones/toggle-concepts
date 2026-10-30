@@ -1,0 +1,3 @@
+-- Identities are created through the local Auth Admin API by npm run seed:demo.
+-- This prevents embedding passwords or relying on auth.users internals here.
+-- Production is never seeded by the application.

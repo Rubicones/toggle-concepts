@@ -1,0 +1,353 @@
+{
+  "provenance": {
+    "kind": "recorded-provider-output",
+    "stepId": "65278638-4f97-4389-9e7c-f226eb1ceef5",
+    "capturedAt": "2026-10-25T23:51:42.306698+00:00",
+    "sha256": "ecb39d4e5d5d4099dc4bb942a39b900e70213beab8dca0339133bb376188a670"
+  },
+  "output": {
+    "schemaVersion": "1.0",
+    "role": "visual-direction",
+    "status": "draft",
+    "summary": "Visual treatment plan for three creative concepts, ensuring brand consistency and adaptability across placements. Includes shot and style guides, typography, motion language, asset prompt briefs, stable slots, crop/protected regions, and proxy-to-final contracts.",
+    "deliverable": {
+      "treatments": [
+        {
+          "conceptID": "1",
+          "shotAndStyleGuide": {
+            "composition": "Dynamic split screen or layered compositions contrasting the 'problem' (generic DAW) with the 'solution' (sonicdesk UI). For initial scenes, a close-up, slightly chaotic feel. For sonicdesk scenes, clean, focused, and centered UI.",
+            "visualHierarchy": "Problem (generic DAW) presented as busy and overwhelming, with focus on dense UI elements. Solution (sonicdesk UI) is clean, with the Snippet feature and 'Export' button clearly highlighted through scale and contrast (lime).",
+            "lighting": "Problem scenes will use cool, slightly desaturated tones with soft, indirect lighting to evoke a sterile or overwhelming environment. Solution scenes will feature high contrast, sharp edges, and a prominent lime glow emanating from active UI elements (playhead, selected pills, button).",
+            "paletteAndLighting": "Brand black (#000000) as background, lime (#DFFF00) for interactive elements and highlights. Generic DAW scenes may introduce muted blues/greys. No shadows in page flow.",
+            "lensAndCameraIntent": "Problem scene: tighter lens, handheld feel, slightly wider aperture for shallow depth of field to emphasize complexity. Solution scene: clean, stable shot, precise camera movements, sharper focus on UI, often a subtle zoom into the interactive elements.",
+            "productScale": "Generic DAW shown at a 'realistic' scale, implying a complex workstation. sonicdesk UI presented larger, dominating the screen, emphasizing its ease of use and importance.",
+            "imagery": "Scene 1.1: Generated musician's hand (realistic, but not a real person) interacting with a screen displaying a generic, busy DAW interface. Emphasize dense, generic controls. Scene 1.2 & 1.3: Authentic, clean sonicdesk UI (no AI generation or alteration) showcasing the Snippet feature and 'Export Snippet' button.",
+            "typographyRelationship": "Headlines (Archivo) are bold, assertive, and large, commanding attention. Body text/UI labels (JetBrains Mono) are clear, monochromatic, and smaller, acting as functional elements within the UI or supporting annotations.",
+            "transitions": "Quick, decisive cuts or a smooth, deliberate wipe/pan transition from the 'problem' scene to the 'solution' scene, symbolizing efficiency. Lime color burst or glow can introduce the sonicdesk UI.",
+            "soundToMotionRelationship": "Frustrated UI foley sounds in scene 1.1 will be short, sharp, and slightly dissonant. Smooth UI clicks and the subtle fade-in of 'Night Drive' music in scene 1.2 will align with controlled camera movements. A crisp confirmation sound paired with the lime highlight on the 'Export' button in scene 1.3. Music swells slightly.",
+            "adaptationAcrossFormats": "Vertical: UI elements central, text overlaid top/bottom with generous safe areas. Portrait: UI centered, potentially slightly scaled down to fit, with text reflowed. Square: UI scaled to fill width, text reflowed for shorter lines, minimal background visible. Wide: UI central, ample negative space (black) on sides, text placed strategically in clear areas. Ensure key UI interactions are always visible and legible. Do not simply crop the vertical; re-compose for each aspect ratio, maintaining product UI integrity and legibility. For instance, in wide format, the UI might be a central 'panel' with surrounding atmospheric generative imagery, while in vertical it fills more of the screen."
+          },
+          "assetPromptBriefs": [
+            {
+              "proxyID": "generatedMusicianHand_genericDAW.mp4",
+              "prompt": "Generated video: Close-up of a musician's hand (realistic, ethnically ambiguous, no visible rings/tattoos) swiping frustratedly through a highly complex, generic music software interface on a dark-grey tablet. The interface should have many small, dense, unreadable buttons and sliders, without resembling any real DAW. Lighting is dim, industrial, cool-toned.",
+              "expectedContent": "Video (hand, generic DAW UI).",
+              "targetResolution": "1080x1920",
+              "styleKeywords": [
+                "frustrated",
+                "complex",
+                "generic DAW",
+                "dim lighting",
+                "cool tones"
+              ]
+            },
+            {
+              "proxyID": "authenticSonicdeskUISnippet.mp4",
+              "prompt": "Authentic sonicdesk UI video: Focus on the Snippet feature. The waveform displays 'Night Drive' audio, section ribbon is visible. A clean, smooth interaction where a user selects a snippet segment. Highlighted elements (playhead, selected waveform pills) are lime.",
+              "expectedContent": "Video (sonicdesk UI).",
+              "targetResolution": "1080x1920",
+              "styleKeywords": [
+                "clean UI",
+                "sonicdesk brand",
+                "lime accents",
+                "functional"
+              ]
+            },
+            {
+              "proxyID": "authenticSonicdeskUIExportButton.mp4",
+              "prompt": "Authentic sonicdesk UI video: Close-up on the 'Export snippet' button within the sonicdesk UI. The button should pulse or briefly flash with the brand's lime color upon interaction.",
+              "expectedContent": "Video (sonicdesk UI, 'Export snippet' button).",
+              "targetResolution": "1080x1920",
+              "styleKeywords": [
+                "clean UI",
+                "sonicdesk brand",
+                "lime highlight",
+                "button interaction"
+              ]
+            }
+          ],
+          "stableSlots": [
+            {
+              "slot": "scene_1_1",
+              "type": "video",
+              "contentConstraint": "generatedMusicianHand_genericDAW.mp4"
+            },
+            {
+              "slot": "scene_1_2",
+              "type": "video",
+              "contentConstraint": "authenticSonicdeskUISnippet.mp4"
+            },
+            {
+              "slot": "scene_1_3",
+              "type": "video",
+              "contentConstraint": "authenticSonicdeskUIExportButton.mp4"
+            }
+          ],
+          "cropAndProtectedRegions": {
+            "scene_1_1": "Ensure musician's hand and generic UI elements are visible. Avoid extreme close-ups that obscure context. Keep the generic DAW visually distinct from sonicdesk.",
+            "scene_1_2": "sonicdesk UI must be fully visible. Snippet waveform, section ribbon, and length chips are critical. Safe area for text overlay.",
+            "scene_1_3": "'Export snippet' button and surrounding UI elements must be clearly visible and centered. Safe area for CTA text."
+          },
+          "proxyToFinalContracts": [
+            {
+              "proxyID": "generatedMusicianHand_genericDAW.mp4",
+              "finalAssetRequirements": "High-quality, generated video matching prompt description. No real brand logos, instrument logos, or human likenesses. Must be clearly generic.",
+              "outputFormat": "video/mp4"
+            },
+            {
+              "proxyID": "authenticSonicdeskUISnippet.mp4",
+              "finalAssetRequirements": "Authentic, recorded or rendered video of sonicdesk UI. Must precisely match brand guidelines for UI elements, colors, and layout. No AI generation of UI.",
+              "outputFormat": "video/mp4"
+            },
+            {
+              "proxyID": "authenticSonicdeskUIExportButton.mp4",
+              "finalAssetRequirements": "Authentic, recorded or rendered video of sonicdesk UI. Must precisely match brand guidelines for UI elements, colors, and layout. No AI generation of UI.",
+              "outputFormat": "video/mp4"
+            }
+          ],
+          "referenceProvenance": {
+            "generatedMusicianHand_genericDAW.mp4": "Inferred from campaign brief's synthesis rule (CL016, CL017) allowing generated backgrounds and people.",
+            "authenticSonicdeskUISnippet.mp4": "Confirmed by brand kit rule (CL018) requiring authentic UI.",
+            "authenticSonicdeskUIExportButton.mp4": "Confirmed by brand kit rule (CL018) requiring authentic UI."
+          },
+          "productionConstraints": "Strict adherence to brand palette (#DFFF00 on #000000), typography (Archivo, JetBrains Mono), and UI immutables. Ensure generated elements are clearly generic and do not infringe on any real-world brands."
+        },
+        {
+          "conceptID": "2",
+          "shotAndStyleGuide": {
+            "composition": "A progression from a reflective human element to focused UI interaction, then a simplified social sharing outcome. Visual flow guides the eye from the musician's thought process to the digital solution.",
+            "visualHierarchy": "Musician is central initially, establishing the problem/need. sonicdesk UI takes primary focus during the solution, emphasizing the selected snippet and length chips. The generic social media screen offers a clean resolution.",
+            "lighting": "Musician scene uses soft, natural, perhaps slightly warmer lighting to convey a thoughtful, creative atmosphere. UI scenes shift to stark, high-contrast lighting with lime highlights on active elements. Social media scene is bright, clean, and forward-facing.",
+            "paletteAndLighting": "Musician scene may introduce subtle, desaturated background colors (e.g., dark wood, muted studio environment) that complement the core black/lime palette. UI and social scenes strictly adhere to black/lime. All lighting effects are to be flat, no shadows in page flow.",
+            "lensAndCameraIntent": "Musician scene: medium shot, slightly shallow depth of field, steady but empathetic camera. UI scenes: direct, sharp focus on screen elements, possibly slight overhead or isometric view for clarity. Social media scene: clean, direct view of a generic screen.",
+            "productScale": "Musician is life-sized. sonicdesk UI fills a significant portion of the screen, making its controls clear. Generic social media UI is presented as a functional overlay or full screen.",
+            "imagery": "Scene 2.1: Generated musician (realistic, but not a real person) in a simple, uncluttered studio setting, wearing headphones, thoughtfully listening. Scene 2.2: Authentic, clean sonicdesk UI (no AI generation or alteration) showing the Snippet feature with various length chips (5s, 15s, 30s) being rapidly selected. Scene 2.3: Generated generic social media sharing interface, clean and minimal, clearly indicating an audio file export.",
+            "typographyRelationship": "Similar to Concept 1: Archivo for high-impact headlines, JetBrains Mono for functional UI text. Maintain clear separation and legibility.",
+            "transitions": "Subtle cross-dissolves or soft wipes between generated scenes. Direct, sharp cuts into and out of the authentic sonicdesk UI.",
+            "soundToMotionRelationship": "Uplifting music (Night Drive, inferred) supports the contemplative musician. Quick, satisfying UI selection sounds accompany the length chip interactions. Positive music builds with the transition to social media sharing, concluding with a sense of accomplishment.",
+            "adaptationAcrossFormats": "Vertical: Musician and UI elements centered. Text overlaid cleanly. Portrait: Musician shot may be closer, UI scaled to fit height, ensuring readability of length chips. Square: Musician's frame tighter, UI centrally positioned, text reflowed for square aspect. Wide: Musician positioned to one side, UI prominent centrally, social media UI potentially in an adjacent panel. Maintain safe areas. Do not crop, re-compose. Use negative space effectively in wider formats, keeping the core visual message clear and unhindered by excessive padding or misplaced elements."
+          },
+          "assetPromptBriefs": [
+            {
+              "proxyID": "generatedMusicianContemplating.mp4",
+              "prompt": "Generated video: A musician (realistic, ethnically ambiguous, no visible rings/tattoos) wearing headphones in a minimalist studio environment, tapping fingers thoughtfully. Soft, warm ambient light. No visible brand logos or instruments.",
+              "expectedContent": "Video (musician, studio environment).",
+              "targetResolution": "1080x1920",
+              "styleKeywords": [
+                "thoughtful",
+                "creative",
+                "minimalist studio",
+                "soft light"
+              ]
+            },
+            {
+              "proxyID": "authenticSonicdeskUILengthChips.mp4",
+              "prompt": "Authentic sonicdesk UI video: Focus on the Snippet feature. Show various length chips (5s, 15s, 30s) within the UI being quickly selected. Active chips illuminate with lime. The waveform displays 'Night Drive' audio.",
+              "expectedContent": "Video (sonicdesk UI, length chips).",
+              "targetResolution": "1080x1920",
+              "styleKeywords": [
+                "clean UI",
+                "sonicdesk brand",
+                "lime accents",
+                "interactive"
+              ]
+            },
+            {
+              "proxyID": "generatedSocialMediaShare.mp4",
+              "prompt": "Generated video: A clean, generic social media sharing interface on a dark screen, showing an 'audio file' or 'WAV' icon being prepared for upload. No specific platform branding. Bright, clean aesthetic.",
+              "expectedContent": "Video (generic social media UI).",
+              "targetResolution": "1080x1920",
+              "styleKeywords": [
+                "generic social UI",
+                "clean",
+                "minimal",
+                "digital sharing"
+              ]
+            }
+          ],
+          "stableSlots": [
+            {
+              "slot": "scene_2_1",
+              "type": "video",
+              "contentConstraint": "generatedMusicianContemplating.mp4"
+            },
+            {
+              "slot": "scene_2_2",
+              "type": "video",
+              "contentConstraint": "authenticSonicdeskUILengthChips.mp4"
+            },
+            {
+              "slot": "scene_2_3",
+              "type": "video",
+              "contentConstraint": "generatedSocialMediaShare.mp4"
+            }
+          ],
+          "cropAndProtectedRegions": {
+            "scene_2_1": "Musician's face and thoughtful gesture should be clear. Background should be simple, non-distracting.",
+            "scene_2_2": "All length chips (5s, 15s, 30s) and the surrounding Snippet UI must be clearly visible and interactive. Safe area for text overlay.",
+            "scene_2_3": "Generic social media sharing interface should be centered and easily recognizable as a sharing screen, avoiding specific platform details. Safe area for CTA text."
+          },
+          "proxyToFinalContracts": [
+            {
+              "proxyID": "generatedMusicianContemplating.mp4",
+              "finalAssetRequirements": "High-quality, generated video matching prompt description. No real brand logos, instrument logos, or human likenesses. Generic studio environment.",
+              "outputFormat": "video/mp4"
+            },
+            {
+              "proxyID": "authenticSonicdeskUILengthChips.mp4",
+              "finalAssetRequirements": "Authentic, recorded or rendered video of sonicdesk UI. Must precisely match brand guidelines for UI elements, colors, and layout. No AI generation of UI.",
+              "outputFormat": "video/mp4"
+            },
+            {
+              "proxyID": "generatedSocialMediaShare.mp4",
+              "finalAssetRequirements": "High-quality, generated video of a generic social media interface. Must avoid real-world platform branding.",
+              "outputFormat": "video/mp4"
+            }
+          ],
+          "referenceProvenance": {
+            "generatedMusicianContemplating.mp4": "Inferred from campaign brief's synthesis rule (CL016, CL017) allowing generated backgrounds and people.",
+            "authenticSonicdeskUILengthChips.mp4": "Confirmed by brand kit rule (CL018) requiring authentic UI.",
+            "generatedSocialMediaShare.mp4": "Inferred from campaign brief's synthesis rule (CL017) allowing generated backgrounds, ensuring generic representation."
+          },
+          "productionConstraints": "Strict adherence to brand palette (#DFFF00 on #000000), typography (Archivo, JetBrains Mono), and UI immutables. Ensure generated elements are clearly generic and do not infringe on any real-world brands."
+        },
+        {
+          "conceptID": "3",
+          "shotAndStyleGuide": {
+            "composition": "Emphasize continuity: from a collaborative, real-world setting to a seamless digital tool integration, and back to renewed collaboration. The UI appears organically within the creative flow.",
+            "visualHierarchy": "The generated band is primary initially, conveying collaboration. The sonicdesk UI is seamlessly integrated into their environment, becoming a focal point. Finally, the satisfied band closes the loop.",
+            "lighting": "Studio scene uses balanced, realistic lighting that enhances the collaborative atmosphere. When sonicdesk UI appears, it introduces a localized lime glow, integrating the digital light into the physical space. Final band scene maintains the positive, collaborative lighting.",
+            "paletteAndLighting": "Studio environment will have desaturated, muted tones (dark walls, subtle instrument textures) with the brand black/lime reserved for the sonicdesk UI and related accents. Ensure the lime glow is localized and not overwhelming, enhancing focus on the UI. No shadows in page flow.",
+            "lensAndCameraIntent": "Band scene: fluid camera movement, smooth pans across band members, dynamic but stable. UI integration: seamless transition, perhaps a subtle push-in or rack focus to the screen. Final band scene: return to fluid camera, wider shot to capture satisfaction.",
+            "productScale": "Generated band members are life-sized. The integrated sonicdesk UI on the screen within the scene appears at a natural, legible scale.",
+            "imagery": "Scene 3.1: Generated band (realistic, diverse, but not real people) in a high-end, clean studio, collaborating. Instruments are generic, no logos. Scene 3.2: Authentic, clean sonicdesk UI (no AI generation or alteration) seamlessly integrated into a screen within the studio environment. The Snippet feature is activated and a section selected. Scene 3.3: Return to the generated band, now smiling and resuming work, conveying satisfaction.",
+            "typographyRelationship": "Archivo for impactful on-screen messages, JetBrains Mono for functional UI details. Text overlays should complement, not distract from, the integrated scenes.",
+            "transitions": "Smooth, flowing transitions within the generated band scenes. A ",
+            "motionLanguage": "Seamless, almost magical integration of the UI into the environment, potentially via a subtle digital overlay effect or a quick, elegant camera pull-back/push-in that reveals the screen.",
+            "soundToMotionRelationship": "Dynamic music (Night Drive, inferred) accompanies the collaborating band. Seamless transition sound as the UI appears, with music focusing slightly on the UI. Satisfied music swell as the band resumes work.",
+            "adaptationAcrossFormats": "Vertical: Band members framed tighter. UI takes central focus. Portrait: More intimate framing of band. UI adapted to taller aspect, perhaps with more of the screen visible if integrated onto a monitor. Square: Central framing of band and UI. Wide: Band members spread across the frame. UI centrally prominent, potentially as a larger screen within the scene. In wide formats, the integration of the UI into the generated environment can be more pronounced, using more of the canvas to establish the scene. Re-compose for each aspect ratio, ensuring readability of UI and emotional impact of the band."
+          },
+          "assetPromptBriefs": [
+            {
+              "proxyID": "generatedBandCollaboration.mp4",
+              "prompt": "Generated video: A diverse band (realistic, ethnically ambiguous, no visible rings/tattoos) collaborating intently in a clean, modern studio. Generic, unbranded instruments. Lighting is balanced and realistic. No real-world brands or people.",
+              "expectedContent": "Video (band, studio environment).",
+              "targetResolution": "1080x1920",
+              "styleKeywords": [
+                "collaborative",
+                "studio",
+                "modern",
+                "realistic lighting"
+              ]
+            },
+            {
+              "proxyID": "authenticSonicdeskUIIntegrated.mp4",
+              "prompt": "Authentic sonicdesk UI video: The sonicdesk Snippet feature (waveform, section ribbon, selection) displayed on a screen that is seamlessly integrated into the generated studio environment from scene 3.1. The UI elements should glow with lime.",
+              "expectedContent": "Video (sonicdesk UI, integrated into environment).",
+              "targetResolution": "1080x1920",
+              "styleKeywords": [
+                "clean UI",
+                "sonicdesk brand",
+                "integrated",
+                "lime accents"
+              ]
+            },
+            {
+              "proxyID": "generatedBandSmiling.mp4",
+              "prompt": "Generated video: The same band from scene 3.1, now smiling and resuming their creative work in the studio. Convey a sense of satisfaction and continued creative flow.",
+              "expectedContent": "Video (band, studio environment).",
+              "targetResolution": "1080x1920",
+              "styleKeywords": [
+                "satisfied",
+                "creative flow",
+                "studio",
+                "positive mood"
+              ]
+            }
+          ],
+          "stableSlots": [
+            {
+              "slot": "scene_3_1",
+              "type": "video",
+              "contentConstraint": "generatedBandCollaboration.mp4"
+            },
+            {
+              "slot": "scene_3_2",
+              "type": "video",
+              "contentConstraint": "authenticSonicdeskUIIntegrated.mp4"
+            },
+            {
+              "slot": "scene_3_3",
+              "type": "video",
+              "contentConstraint": "generatedBandSmiling.mp4"
+            }
+          ],
+          "cropAndProtectedRegions": {
+            "scene_3_1": "Band members should be clearly visible and interacting. Avoid cropping out key gestures or expressions. Background studio elements should be generic.",
+            "scene_3_2": "Integrated sonicdesk UI must be legible and its interaction points clear. Ensure it appears naturally within the generated environment. Safe area for text overlay.",
+            "scene_3_3": "Band members' expressions of satisfaction should be prominent. Safe area for CTA text."
+          },
+          "proxyToFinalContracts": [
+            {
+              "proxyID": "generatedBandCollaboration.mp4",
+              "finalAssetRequirements": "High-quality, generated video matching prompt description. No real brand logos, instrument logos, or human likenesses. Generic studio environment.",
+              "outputFormat": "video/mp4"
+            },
+            {
+              "proxyID": "authenticSonicdeskUIIntegrated.mp4",
+              "finalAssetRequirements": "Authentic, recorded or rendered video of sonicdesk UI, composed into a generated studio environment. Must precisely match brand guidelines for UI elements, colors, and layout. No AI generation of UI.",
+              "outputFormat": "video/mp4"
+            },
+            {
+              "proxyID": "generatedBandSmiling.mp4",
+              "finalAssetRequirements": "High-quality, generated video matching prompt description. No real brand logos, instrument logos, or human likenesses.",
+              "outputFormat": "video/mp4"
+            }
+          ],
+          "referenceProvenance": {
+            "generatedBandCollaboration.mp4": "Inferred from campaign brief's synthesis rule (CL016, CL017) allowing generated backgrounds and people.",
+            "authenticSonicdeskUIIntegrated.mp4": "Confirmed by brand kit rule (CL018) requiring authentic UI, integrated into a generated environment (CL017).",
+            "generatedBandSmiling.mp4": "Inferred from campaign brief's synthesis rule (CL016, CL017) allowing generated backgrounds and people."
+          },
+          "productionConstraints": "Strict adherence to brand palette (#DFFF00 on #000000), typography (Archivo, JetBrains Mono), and UI immutables. Ensure generated elements are clearly generic and do not infringe on any real-world brands."
+        }
+      ]
+    },
+    "inputRefs": [
+      {
+        "id": "brand_kit",
+        "source": "acceptedBrandKit a9c87202-4b49-4de7-ab5a-6ecfee101ea3"
+      },
+      {
+        "id": "script_proposal",
+        "source": "fd3c610a-0ca5-44d9-aff7-e3b2d781edd7"
+      }
+    ],
+    "assumptions": [
+      "The 'Night Drive' audio mentioned in the script proposal (CL023) will be available and used consistently across all concepts for background music and waveform display.",
+      "UI sound effects (clicks, confirmations) will be produced to align with the 'mechanical-confident' brand tone (CL025).",
+      "All generated imagery (musicians, studio environments, generic DAWs, generic social media interfaces) will strictly avoid any resemblance to real people, brands, instrument logos, or DAW interfaces (CL017).",
+      "The authentic sonicdesk UI assets (Snippet feature, export button, length chips) will be provided as high-fidelity video renders or screen recordings, precisely matching the brand's immutable UI guidelines (CL018, CL021, CL022).",
+      "AD judgment will be required for final visual quality and brand alignment of generated assets and UI integration."
+    ],
+    "blockingQuestions": [],
+    "warnings": [
+      "Generating realistic yet generic human figures and complex, generic DAWs/social media interfaces can be challenging. Iterative review and explicit approval of these generated assets will be crucial during A2.",
+      "Ensuring seamless integration of authentic UI into generated environments (Concept 3) without appearing artificial or layered will require precise composition and lighting matching.",
+      "The adaptation across formats details are directional. Precise layout and composition for each specific placement ID (vertical, portrait, square, wide) will require a dedicated layout and animation pass."
+    ],
+    "handoff": {
+      "nextRole": "Image/video/3D planners and creative-code/layout roles",
+      "requiredInputs": [
+        "deliverable.treatments"
+      ],
+      "checks": [
+        "Each concept has a distinct visual treatment that aligns with its narrative.",
+        "All brand guidelines (colors, typography, UI immutables) are respected in the visual direction.",
+        "Proxy contracts clearly define requirements for final assets, distinguishing between generated and authentic UI.",
+        "Adaptation strategies for different placements are outlined for each concept.",
+        "Do/don't examples are clear and actionable."
+      ]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {critiqueDecision,readCritique,routeNotes} from '../packages/director/critic';
+const critique={accepted:false,summary:'The camera staging needs a stronger reveal.',notes:[{recipient:'director' as const,text:'Stage the reveal around the comment.'},{recipient:'assembler' as const,text:'Hold the CTA long enough to read.'}]};
+test('critic routes creative and execution notes without altering source',()=>{const result=critiqueDecision(readCritique(critique),1,{directionId:'issued',iterationIds:['i1']});assert.equal(result.state,'revise');assert.deepEqual(routeNotes(critique.notes).director,[critique.notes[0]]);assert.deepEqual(routeNotes(critique.notes).assembler,[critique.notes[1]]);});
+test('second unresolved round asks AD to compare both immutable iterations; a third is refused',()=>{const result=critiqueDecision(critique,2,{directionId:'issued',iterationIds:['i1','i2']});assert.equal(result.state,'question');if(result.state==='question')assert.deepEqual(result.question.options.slice(0,2).map(o=>o.action),['keep:i1','keep:i2']);assert.throws(()=>critiqueDecision(critique,3,{directionId:'issued',iterationIds:[]}),/ROUND_LIMIT/);assert.throws(()=>readCritique({...critique,notes:[]}),/NOTES_REQUIRED/);});

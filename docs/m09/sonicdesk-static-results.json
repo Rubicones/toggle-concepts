@@ -1,0 +1,114 @@
+{
+  "direction": "d0",
+  "complete": true,
+  "coderRequests": 1,
+  "firstFile": "Frame.tsx",
+  "calls": [
+    {
+      "role": "director",
+      "inputTokenBound": 9003,
+      "outputTokenBound": 1056,
+      "reservationMicroUsd": 136138,
+      "cachedTokens": null
+    },
+    {
+      "role": "assembler",
+      "inputTokenBound": 10578,
+      "outputTokenBound": 2221,
+      "reservationMicroUsd": 175635,
+      "cachedTokens": null
+    },
+    {
+      "role": "critic",
+      "inputTokenBound": 26659,
+      "outputTokenBound": 97,
+      "reservationMicroUsd": 159469,
+      "cachedTokens": null
+    }
+  ],
+  "cachedTokenShare": null,
+  "cachedTokenShareReason": "No live provider request: cache usage cannot be measured. Cache-hit/write accounting is tested separately with explicit synthetic receipts.",
+  "totalCostMicroUsd": 0,
+  "totalReservationMicroUsd": 471242,
+  "costMethod": "No provider billing. Per-call reservations use conservative UTF-8 input bounds including schemas and image bounds, and maximum output. No generated resources are needed by this fixture.",
+  "approvedMaximumMicroUsd": 2076401,
+  "renderMs": 24088,
+  "formats": {
+    "vertical": {
+      "passed": true,
+      "findings": [],
+      "sampledFrames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "durationFrames": 1,
+      "renderMs": 3118,
+      "frames": 4,
+      "checks": [
+        "copy",
+        "safe-area",
+        "legibility",
+        "brand"
+      ]
+    },
+    "square": {
+      "passed": true,
+      "findings": [],
+      "sampledFrames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "durationFrames": 1,
+      "renderMs": 2914,
+      "frames": 4,
+      "checks": [
+        "copy",
+        "safe-area",
+        "legibility",
+        "brand"
+      ]
+    },
+    "portrait": {
+      "passed": true,
+      "findings": [],
+      "sampledFrames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "durationFrames": 1,
+      "renderMs": 2977,
+      "frames": 4,
+      "checks": [
+        "copy",
+        "safe-area",
+        "legibility",
+        "brand"
+      ]
+    },
+    "wide": {
+      "passed": true,
+      "findings": [],
+      "sampledFrames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "durationFrames": 1,
+      "renderMs": 2977,
+      "frames": 4,
+      "checks": [
+        "copy",
+        "safe-area",
+        "legibility",
+        "brand"
+      ]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "formats": [
+    {
+      "format": "vertical",
+      "frames": 33,
+      "previewFrames": 4
+    },
+    {
+      "format": "square",
+      "frames": 33,
+      "previewFrames": 4
+    },
+    {
+      "format": "portrait",
+      "frames": 33,
+      "previewFrames": 4
+    },
+    {
+      "format": "wide",
+      "frames": 33,
+      "previewFrames": 4
+    }
+  ],
+  "imageCount": 20,
+  "recordedDecision": "accepted",
+  "liveVisualAssessment": false
+}

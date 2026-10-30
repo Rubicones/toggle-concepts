@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {sonicdeskFixture} from '../fixtures/creative/sonicdesk';
+import {brandSystemSchema} from '../packages/contracts/creative-drafts';
+import {brandToKit} from '../packages/engine/adapter';
+import {graphicDefaults,resolveGraphics,approvedVector} from '../packages/brand/graphic-vocabulary';
+import {contrastRatio} from '../packages/engine/engine/util';
+test('palette defaults produce contrast-measured button, plaque, marker and brand paints',async()=>{const f=await sonicdeskFixture(),v=graphicDefaults(f.brand.palette),button=v.treatments.button;assert.equal(button.kind,'button');if(button.kind!=='button')throw new Error('button');const hex=(id:string)=>f.brand.palette.find(c=>c.id===id)!.hex;assert.ok(contrastRatio(hex(button.on),hex(button.fill))>=3);assert.equal(v.treatments.plaque.kind,'plaque');assert.equal(v.treatments.marker.kind,'highlight');assert.equal(v.paints.gradient.kind,'gradient');assert.ok(f.brand.compositions.some(c=>c.id==='brand_bottom_band'&&c.zones.legal));});
+test('unsupported SVG, excessive paths and non-palette colours are dropped with warnings',async()=>{const f=await sonicdeskFixture();for(const svg of ['<svg><text>Claim</text></svg>','<svg><rect width="10" height="10" fill="#123456"/></svg>',`<svg>${'<path d="M0 0L1 1"/>'.repeat(41)}</svg>`]){assert.throws(()=>approvedVector(svg,f.brand.palette));const result=resolveGraphics(f.brand.palette,{patternSvg:svg},undefined);assert.ok(result.warnings.length);assert.deepEqual(result.vocabulary.icons,{});}});
+test('historical BrandSystem revisions gain safe graphic defaults on read',async()=>{const f=await sonicdeskFixture(),old={...f.brand} as Partial<typeof f.brand>;delete old.paints;delete old.treatments;delete old.marks;delete old.icons;const parsed=brandSystemSchema.parse(old),kit=brandToKit(parsed);assert.equal(kit.styles.cta.treatment,'button');assert.equal(kit.treatments.button.kind,'button');assert.ok(Object.keys(kit.paints).length);});

@@ -1,0 +1,1244 @@
+{
+  "provenance": {
+    "kind": "sanitized-recorded-excerpts",
+    "note": "KITE scenario and visual-direction excerpts supplied during the quality review. No model was called."
+  },
+  "brief": {
+    "product": "KITE",
+    "objective": "The user should click the ad to get the card",
+    "audience": "People who want the card for everyday life",
+    "variationNotes": "I want the ad to be simple – a card in an everyday life situations with closeup to the card, overlayed by the hook and CTA with our brand orange color"
+  },
+  "script": {
+    "role": "script",
+    "deliverable": {
+      "threeDirections": [
+        {
+          "id": "concept-1",
+          "premise": "Focuses on the core benefit of effortless rewards for daily essentials.",
+          "timedStoryboard": [
+            {
+              "endTime": 1.5,
+              "sceneId": "scene-1",
+              "narration": "Kite: Your daily rewards.",
+              "startTime": 0,
+              "audioIntent": "Upbeat, light background music.",
+              "motionNotes": "Open on a close-up of the Kite card in a person's hand, subtly integrated into an everyday setting like a cafe. Gentle camera movement following the card.",
+              "onScreenCopy": "Kite: Your daily rewards.",
+              "visualPremiseRef": "acceptedBrandKit.payload.kit.rules[9].value"
+            },
+            {
+              "endTime": 3,
+              "sceneId": "scene-2",
+              "narration": "Get 5% back on groceries.",
+              "startTime": 1.5,
+              "audioIntent": "Friendly, direct tone.",
+              "motionNotes": "Cut to a hand holding the Kite card while picking up groceries. Focus on the card.",
+              "onScreenCopy": "5% back on groceries.",
+              "visualPremiseRef": "acceptedBrandKit.payload.kit.rules[9].value"
+            },
+            {
+              "endTime": 4,
+              "sceneId": "scene-3",
+              "narration": "Get paid now!",
+              "startTime": 3,
+              "audioIntent": "Clear, encouraging.",
+              "motionNotes": "Close-up on the Kite card with the CTA overlay.",
+              "onScreenCopy": "Get paid now!",
+              "visualPremiseRef": "acceptedBrandKit.payload.kit.rules[9].value"
+            }
+          ],
+          "cta": "Get paid now!"
+        }
+      ]
+    }
+  },
+  "visual": {
+    "role": "visual-direction",
+    "deliverable": {
+      "adJudgment": [
+        {
+          "id": "D1",
+          "issue": "The brief asks for orange hook/CTA overlay, but the kit plaque fill is 'ink' (white) and the 'field' token is undefined. Proposed: orange plaque + black text for the CTA everywhere and the hook in concept-1; kit-literal white plaques elsewhere. Alternative: all plaques kit-literal white."
+        },
+        {
+          "id": "D2",
+          "issue": "Kit says 'locked-off or gently breathing camera' and 'hand-held feel', while zoom/sway are forbidden. The treatment uses position drift <=8px and no scale change. Confirm this is acceptable."
+        },
+        {
+          "id": "D3",
+          "issue": "Shallow depth of field versus the 'blur' ban. Interpreted as optical defocus baked into plates; no post-blur or animated blur. Confirm."
+        },
+        {
+          "id": "D4",
+          "issue": "Wordmark on the end frame next to the card's own cream wordmark: keep both, or end frame card-only. Wordmark clear-space is undefined."
+        },
+        {
+          "id": "D5",
+          "issue": "Tab orientation and 'u' unit scale on non-vertical formats; whether 'field' may equal accent."
+        },
+        {
+          "id": "D6",
+          "issue": "Whether a people-free interpretation of 'everyday life situations' satisfies the brief."
+        }
+      ],
+      "assetPromptBriefs": {
+        "briefs": [
+          {
+            "aspect": "9:16",
+            "id": "brief.concept-1.scene-1.plate",
+            "prompt": "Cafe table surface, oat-coloured stone top, corner of a plain white saucer and cup rim at upper left, soft warm window light from upper left, 85mm macro look, shallow optical depth of field, empty flat area right of centre for a card, documentary realism.",
+            "slot": "concept-1.scene-1.plate"
+          },
+          {
+            "aspect": "9:16",
+            "id": "brief.concept-1.scene-2.plate",
+            "prompt": "Grocery counter, pale wood top, edge of a plain brown paper bag with a leek and an apple blurred in the background, soft warm daylight from upper left, 85mm macro look, empty flat area right of centre.",
+            "slot": "concept-1.scene-2.plate"
+          },
+          {
+            "aspect": "9:16",
+            "id": "brief.concept-1.scene-3.plate",
+            "prompt": "Clean sage-grey stone surface, soft warm light, very shallow depth of field, large empty central area, no objects.",
+            "slot": "concept-1.scene-3.plate"
+          },
+          {
+            "aspect": "9:10",
+            "id": "brief.concept-2.scene-1.plate",
+            "prompt": "Cafe counter edge, matte stone, out-of-focus espresso machine shapes behind with no logos, even cool morning light, 50mm, slightly high angle, empty centre for a card.",
+            "slot": "concept-2.scene-1.plate"
+          },
+          {
+            "aspect": "9:10",
+            "id": "brief.concept-2.scene-2.plate",
+            "prompt": "Transit stop surface, brushed metal handrail ledge, out-of-focus unbranded reader shape and platform lines, even cool morning light, 50mm, slightly high angle, empty centre for a card.",
+            "slot": "concept-2.scene-2.plate"
+          },
+          {
+            "aspect": "9:16",
+            "id": "brief.concept-3.scene-1.plate.a",
+            "prompt": "Pale desk surface with the corner of a blank notebook, high-key daylight from the left, 50mm f/4, empty area for a card.",
+            "slot": "concept-3.scene-1.plate.a"
+          },
+          {
+            "aspect": "9:16",
+            "id": "brief.concept-3.scene-1.plate.b",
+            "prompt": "Warm-white shelf edge with the corner of a plain cloth bag, high-key daylight from above, 50mm f/4, empty area for a card.",
+            "slot": "concept-3.scene-1.plate.b"
+          },
+          {
+            "aspect": "9:16",
+            "id": "brief.concept-3.scene-1.plate.c",
+            "prompt": "Light stone tray surface with a plain cup sleeve edge (no print), high-key daylight from the right, 50mm f/4, empty area for a card.",
+            "slot": "concept-3.scene-1.plate.c"
+          },
+          {
+            "aspect": "9:16",
+            "id": "brief.concept-3.scene-2.plate",
+            "prompt": "Soft warm-white wall-and-table gradient, low texture, high-key daylight, 85mm, mostly empty, must tolerate a white scrim and text over the lower two-thirds.",
+            "slot": "concept-3.scene-2.plate"
+          }
+        ],
+        "noGenerationNeeded": [
+          "concept-2.scene-3.plate and concept-3.scene-3.plate are flat paper-black layout fills with no generation.",
+          "Card layers are supplied artwork only, never generated."
+        ],
+        "notes": "Briefs are for the image planner. Nothing has been generated. Proxy size 540x960 for vertical (stills). Each has a reserved empty card keep-out zone. Negative prompt for all: people, hands, faces, text, letters, logos, brand marks, payment-network marks, screens or UI, coins, cash, a card or credit-card shape."
+      },
+      "cropAndProtectedRegions": {
+        "cardLocalRegions": "[inferred, to be measured from verified artwork; normalised 0-1 on the card, origin top-left] chip approx x 0.34-0.66, y 0.14-0.30 (light-gold, upper third, centred); contactless icon just right of the chip; wordmark band approx x 0.10-0.90, y 0.78-0.95 (cream KITE along the bottom short edge); whole rounded-corner silhouette.",
+        "platformUiMargin": "Bottom 23% and top 13% of vertical are provisionally reserved for platform UI [proposed].",
+        "rules": [
+          "No crop, plaque, scrim, shadow or text may cover the chip, contactless icon or wordmark band.",
+          "Perspective on card art <=12 degrees; no stretching, recolouring or retouching of card art; no card network logo, numbers or name added.",
+          "Edge bleed <=8% of card height in at most one scene; the end frame shows the full silhouette.",
+          "Text keep-out: no text within 24px (about 2.2u) of the card's protected regions."
+        ],
+        "textAndLogo": "Keep text, wordmark and CTA inside the safe zone (provisional x 108-972, y 250-1480 on vertical). The wordmark is never placed in a corner, never outlined, stretched or recoloured. Clear-space for the wordmark is [unknown], not in the kit; proposed 0.5x wordmark height on every side, pending AD."
+      },
+      "designBasis": {
+        "audio": "[provided: kit policy, proposed default] No sound unless an audio file is supplied. All treatments are designed silent. Upstream 'music' and 'narration' intents are not honoured.",
+        "cardGeometry": "[unknown] Card pixel geometry has not been inspected. If the card is ISO ID-1 (85.60x53.98 mm, portrait ratio about 0.63 w:h) this is [inferred] only. All card-local boxes below are proposals to be measured from the verified card artwork.",
+        "humans": "[provided: brief.synthesis] People, product and interface are never invented, and no footage of people is supplied. All treatments are people-free (card on surfaces, no hands). The script's 'person/hand' lines are re-staged as environment plus card. Optional <scene>.human slots stay empty unless licensed footage with releases is supplied.",
+        "orderedScope": "[provided: variantManifest 08047a9a] 81 entries, conceptSlot 1, placement vertical only (1080x1920). portrait, wide and square are listed in the brief but have no manifest entries, so the format adaptations below are design rules only and do not add production scope.",
+        "provisionalVerticalSafeZone": "[proposed] The kit says 'placement safe zone' without numbers. Use x 108-972 and y 250-1480 for all text, wordmark and CTA, or the kit margins if stricter. Pixel boxes below are for 1080x1920, tolerance +/-3%.",
+        "timing": "Scene boundaries 0 / 1.5 / 3.0 / 4.0s fall on whole frames at both 24 fps (kit) and 30 fps (placement): 36/72/96 and 45/90/120 frames. 0.5s = 12 or 15 frames.",
+        "unitInference": "[inferred] Kit grid 'u' = 1% of placement width (badge 25.6u x 8.2u matches the 277x89 view box at 1080 wide). So margin_side 10u = 108px, margin_top 6.3u = 68px, gap 3.5u = 38px, region_floor 25u = 270px. AD to confirm."
+      },
+      "motionLanguage": {
+        "allowed": [
+          "hard cut on a frame boundary",
+          "linear slide-in <=4 frames, then frozen",
+          "position drift <=8px (no scale change)"
+        ],
+        "forbidden": "dissolve, blur, zoom, spin, sway, glitch [provided: kit]. Never: corner logo, plaques animating after they appear, store badges after they settle.",
+        "fps": "The kit says 24 fps, the placements say 30 fps. Design timings are integer frames at both (see designBasis.timing). The AD must choose; timing is not affected."
+      },
+      "paletteAndLighting": {
+        "brandColours": {
+          "accent": "#FF5A1F [provided: kit, hue about 16deg; matches the kit card rule hue 12-22, saturation_min 0.55]",
+          "ink": "#FFFFFF [provided: kit]",
+          "paper": "#000000 [provided: kit]"
+        },
+        "contrast": {
+          "accentOnBlack": "about 6.7:1.",
+          "blackOnAccent": "about 6.7:1 (my arithmetic, tooling to verify). Passes flat 4.5.",
+          "textOverMedia": "needs >= 3 per kit; use a scrim or plaque.",
+          "whiteOnAccent": "about 3.1:1. Below flat 4.5, so avoid it unless the kit exception ['ink','field'] is confirmed to apply.",
+          "whiteOnBlack": "21:1."
+        },
+        "lightingMatrix": {
+          "concept-1": "soft warm window light, upper left, 3200-4500K feel",
+          "concept-2": "even cool-neutral morning light (about 5000K) with a warm card highlight",
+          "concept-3": "high-key daylight with a different direction per cut"
+        },
+        "proposedPlateNeutrals": "[proposed] oat #E9DFD0, stone #B9B2A8, sage #9FA89A, warm white #F6F1EA. These are photographic neutrals inside plates only, never UI colours. AD to approve."
+      },
+      "productionConstraints": [
+        "No heavy video or 3D generation before an accepted, current C2 and an admitted request. Draft proxies are low-resolution stills only.",
+        "Draft scale: 9 plate proxies across three directions (concept-1: 3, concept-2: 2, concept-3: 4). Plates are locale-, hook-, beat- and duration-neutral and are not multiplied by 81 variants or by locales. Final needs about 2-4 plates for the selected direction plus card comps (pricing unknown; cost not inferred).",
+        "Run cap is 8,000,000 micro USD [provided]; model pricing is [unknown] and is not assumed free. Retries and corrections count against cumulative caps; an uncertain submission is not retried silently.",
+        "All rendering, encoding and technical QA run in a separate local process. This role produces no render commands for credential-bearing processes. Fonts are local only, with no remote fonts, imports or tracking.",
+        "A C2 change replays the full post-C1 draft segment; a C3 change replays the complete post-C2 final segment.",
+        "Only the vertical placement is ordered. Producing portrait, wide or square needs a manifest change from the application.",
+        "Store badges are not planned: the destination type is unknown and the kit badge text is fixed 'App Store'/'Google Play'."
+      ],
+      "proxyToFinalContracts": [
+        {
+          "checks": [
+            "same slot ID and revision link",
+            "keep-out zone unchanged within 3%",
+            "no text, logos or people",
+            "contrast under text >= 3 or scrim applied"
+          ],
+          "final": "Same slot ID, aspect ratio, timing, camera angle and lens look, light direction and surface/keep-out zone. May be a still plus layout drift, or optional motion plate after C2. 1080x1920, text-free, no people.",
+          "id": "ptf.env_plate",
+          "proxy": "Still PNG, sRGB, 540x960 (vertical), text-free, empty card keep-out zone in the brief. A proxy is a low-resolution still only; no heavy video or 3D before an accepted, current C2."
+        },
+        {
+          "checks": [
+            "protected regions visible and unaltered",
+            "card hue 12-22deg, saturation >= 0.55 [kit card rule]",
+            "silhouette and rounded corners exact"
+          ],
+          "final": "Verified supplied card artwork composited at the planned size, perspective <=12 degrees, matching the shadow and light direction; protected regions intact.",
+          "id": "ptf.card_comp",
+          "proxy": "Neutral labelled slab ('PRODUCT PLACEHOLDER, not card art') at the planned size and position. If the supplied card artwork is verified as authorised, use it instead."
+        },
+        {
+          "checks": [
+            "no overflow in DE",
+            "CTA uppercase correct",
+            "min_text_scale >= 0.85"
+          ],
+          "final": "Brand font, per-locale copy (EN/DE/ES), kit plaque geometry, in the safe zone, contrast 4.5 (flat) / 3 (media).",
+          "id": "ptf.live_text",
+          "proxy": "Placeholder plaques with draft Noto Sans and lorem-length strings; position and size honoured."
+        },
+        {
+          "checks": [
+            "not stretched, outlined or recoloured"
+          ],
+          "final": "Supplied wordmark exactly as drawn (asset 6112f696 PNG or ce8be810 SVG), end frame only, no corner.",
+          "id": "ptf.wordmark",
+          "proxy": "Box with the wordmark's aspect ratio, if the proxy is not placed from the supplied asset."
+        },
+        {
+          "checks": [
+            "rights confirmed before use"
+          ],
+          "final": "Only supplied or licensed footage with releases, matching the slot's timing and framing; otherwise the slot stays empty and the scene reads people-free.",
+          "id": "ptf.human",
+          "proxy": "Empty. No proxy people."
+        }
+      ],
+      "referenceProvenance": {
+        "items": [
+          {
+            "attributes": "accent/ink/paper, kit typography rules, kit grid, tab/badge boundaries, documentary warm natural lighting, locked-off breathing motion, forbidden motion list, card immutables.",
+            "ref": "acceptedBrandKit fb9127eb (sha a38686cc...)",
+            "status": "provided"
+          },
+          {
+            "attributes": "Content not inspected. Not assumed to be the card, a reference or a UI. See blocking question Q1.",
+            "ref": "source asset 287cf133 'Screenshot 2026-10-28 14.28.02.png'",
+            "status": "unknown"
+          },
+          {
+            "attributes": "wordmark artwork 'place exactly as drawn'. Colour and clear-space not inspected.",
+            "ref": "source asset 6112f696 wordmark.png / material ce8be810 wordmark.svg",
+            "status": "provided"
+          },
+          {
+            "attributes": "simple, card in everyday situations, close-up on card, hook and CTA overlaid in brand orange.",
+            "ref": "brief variationNotes",
+            "status": "provided"
+          },
+          {
+            "attributes": "scene IDs, timings 0/1.5/3/4s, copy. Its visualPremiseRef 'rules[9]' resolves to the 'tone' rule, not the imagery rule (rules[8]); this output cites rule IDs directly.",
+            "ref": "upstream script job c1d797f4",
+            "status": "provided (untrusted)"
+          }
+        ],
+        "noUnlicensedArtwork": "No third-party artwork is copied. The briefs describe generic scenes only.",
+        "summary": "No reference image pixels or fonts were inspected. Design attributes come from kit text only."
+      },
+      "shotAndStyleGuide": {
+        "doAndDont": [
+          {
+            "do": "Place a blank, evenly lit contact surface where the card will sit, with its shadow direction fixed in the brief.",
+            "dont": "Generate an image that already contains a card, or a card-like rectangle with detail."
+          },
+          {
+            "do": "Let orange appear only on the card and the plaques over neutral plates.",
+            "dont": "Put an orange field behind the orange card on end frames; use paper-black or neutral plates instead."
+          },
+          {
+            "do": "Hold plaques static after they appear and change them only by cutting.",
+            "dont": "Animate plaques after appearance, or fade, zoom or blur anything."
+          },
+          {
+            "do": "Frame the chip (upper third) and the wordmark (bottom short edge) clearly in at least one scene.",
+            "dont": "Crop through the chip, the contactless icon or the KITE wordmark on the card."
+          },
+          {
+            "do": "Use a neutral transit surface with an out-of-focus unbranded reader shape.",
+            "dont": "Show readable signage, network logos or any invented Kite interface."
+          },
+          {
+            "do": "Use English visual labels in proxy filenames and notes.",
+            "dont": "Bake locale text into proxy plates."
+          }
+        ],
+        "shared": [
+          "Natural everyday realism per kit imagery rule; no stylisation.",
+          "Compositing order: plate, card art comp, contact shadow, scrim (if needed), live text, wordmark.",
+          "No text, logos, currency, cash, coins, payment-network marks or people baked into any plate.",
+          "The end frame always shows the full card silhouette and the supplied wordmark placed exactly as drawn: no recolour, outline or stretch.",
+          "Plates are text-neutral and locale-neutral. All copy is live text rendered by layout, so DE and ES expansion never touches the imagery."
+        ]
+      },
+      "stableSlots": {
+        "durationPolicy": "[proposed] The script defines only the 4s timing. For 8s and 12s variants and for beats-1/beats-2, plates and card comps are reused, with longer holds. New IDs of the form {conceptId}.scene-Nb.* are reserved but not allocated until the script role defines extra beats. The treatments are hook-agnostic and beat-order-agnostic: plates are modular and any scene order works with hard cuts, and scene-3 is always the end frame.",
+        "idGrammar": "{conceptId}.{sceneId}.{layer}[.{subcut}]. IDs persist across revisions. Revisions are linked, never renamed.",
+        "kinds": {
+          "card_comp": "supplied card artwork only",
+          "env_plate": "generated allowed (backgrounds and environments permitted)",
+          "human_footage": "optional, supplied or licensed only, empty by default",
+          "live_text": "rendered by layout role; no baked text",
+          "wordmark": "supplied artwork exactly as drawn"
+        },
+        "slots": [
+          {
+            "id": "concept-1.scene-1.plate",
+            "kind": "env_plate",
+            "t": [
+              0,
+              1.5
+            ]
+          },
+          {
+            "id": "concept-1.scene-1.card",
+            "kind": "card_comp",
+            "t": [
+              0,
+              1.5
+            ]
+          },
+          {
+            "id": "concept-1.scene-1.copy",
+            "kind": "live_text",
+            "t": [
+              0,
+              1.5
+            ]
+          },
+          {
+            "id": "concept-1.scene-2.plate",
+            "kind": "env_plate",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-1.scene-2.card",
+            "kind": "card_comp",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-1.scene-2.copy",
+            "kind": "live_text",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-1.scene-3.plate",
+            "kind": "env_plate",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-1.scene-3.card",
+            "kind": "card_comp",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-1.scene-3.cta",
+            "kind": "live_text",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-1.scene-3.wordmark",
+            "kind": "wordmark",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-2.scene-1.plate",
+            "kind": "env_plate",
+            "t": [
+              0,
+              1.5
+            ]
+          },
+          {
+            "id": "concept-2.scene-1.card",
+            "kind": "card_comp",
+            "t": [
+              0,
+              1.5
+            ]
+          },
+          {
+            "id": "concept-2.scene-1.copy",
+            "kind": "live_text",
+            "t": [
+              0,
+              1.5
+            ]
+          },
+          {
+            "id": "concept-2.scene-1.human",
+            "kind": "human_footage",
+            "state": "reserved, empty",
+            "t": [
+              0,
+              1.5
+            ]
+          },
+          {
+            "id": "concept-2.scene-2.plate",
+            "kind": "env_plate",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-2.scene-2.card",
+            "kind": "card_comp",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-2.scene-2.copy",
+            "kind": "live_text",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-2.scene-2.human",
+            "kind": "human_footage",
+            "state": "reserved, empty",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-2.scene-3.plate",
+            "kind": "layout_fill",
+            "note": "paper-black, no generation",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-2.scene-3.card",
+            "kind": "card_comp",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-2.scene-3.cta",
+            "kind": "live_text",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-2.scene-3.wordmark",
+            "kind": "wordmark",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-3.scene-1.plate.a",
+            "kind": "env_plate",
+            "t": [
+              0,
+              0.5
+            ]
+          },
+          {
+            "id": "concept-3.scene-1.card.a",
+            "kind": "card_comp",
+            "t": [
+              0,
+              0.5
+            ]
+          },
+          {
+            "id": "concept-3.scene-1.plate.b",
+            "kind": "env_plate",
+            "t": [
+              0.5,
+              1
+            ]
+          },
+          {
+            "id": "concept-3.scene-1.card.b",
+            "kind": "card_comp",
+            "t": [
+              0.5,
+              1
+            ]
+          },
+          {
+            "id": "concept-3.scene-1.plate.c",
+            "kind": "env_plate",
+            "t": [
+              1,
+              1.5
+            ]
+          },
+          {
+            "id": "concept-3.scene-1.card.c",
+            "kind": "card_comp",
+            "t": [
+              1,
+              1.5
+            ]
+          },
+          {
+            "id": "concept-3.scene-2.plate",
+            "kind": "env_plate",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-3.scene-2.copy.answer",
+            "kind": "live_text",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-3.scene-2.copy.item1",
+            "kind": "live_text",
+            "t": [
+              1.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-3.scene-2.copy.item2",
+            "kind": "live_text",
+            "t": [
+              2,
+              3
+            ]
+          },
+          {
+            "id": "concept-3.scene-2.copy.item3",
+            "kind": "live_text",
+            "t": [
+              2.5,
+              3
+            ]
+          },
+          {
+            "id": "concept-3.scene-3.plate",
+            "kind": "layout_fill",
+            "note": "paper-black, no generation",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-3.scene-3.card",
+            "kind": "card_comp",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-3.scene-3.cta",
+            "kind": "live_text",
+            "t": [
+              3,
+              4
+            ]
+          },
+          {
+            "id": "concept-3.scene-3.wordmark",
+            "kind": "wordmark",
+            "t": [
+              3,
+              4
+            ]
+          }
+        ]
+      },
+      "treatments": {
+        "concept-1": {
+          "composition": "Full-bleed macro still-life. The orange card sits slightly right of centre with a 3/4 view (yaw or pitch <=12 degrees, no lens warp on card art). Soft contact shadow, neutral oat/stone/sage surface, orange reserved for card and plaques only.",
+          "formatAdaptation": {
+            "portrait": "Re-stage the plate at 4:5. Card centred, 60% height; hook plaque above; CTA below. Re-light so the window falls in the new frame; do not crop the vertical master.",
+            "square": "Card lower-centre at about 68% height, hook plaque top, CTA bottom. Plate regenerated at 1:1.",
+            "vertical": "As above.",
+            "wide": "Re-stage at 16:9. Card in the left third at about 78% height; long table surface with negative space on the right for the plaque column. Camera is 50mm-equivalent, so the table runs horizontally."
+          },
+          "hierarchy": "1) card chip and wordmark area, 2) orange hook plaque, 3) environment, 4) CTA plaque (scene-3 only).",
+          "imagery": "scene-1 cafe table (cup rim and saucer only, no logos, no readable text). scene-2 grocery counter (paper bag, loose produce shapes, no brands). scene-3 clean neutral surface for the end frame.",
+          "lensCamera": "[proposed] 65-85mm-equivalent macro, f/2-2.8 look. Background defocus is baked into the plate optically; no post-blur. Camera locked-off with 'breathing' as a 4-8px positional drift over the scene, sine easing, zero scale change (zoom is forbidden).",
+          "lighting": "Window-side soft warm daylight from upper left, 3200-4500K feel, gentle falloff, no hard specular on the card. Matches kit imagery rule 'natural soft warm light'.",
+          "name": "Close & Warm",
+          "productScale": "scene-1/2: card ~56% frame height (about 1080px, y 520-1600). scene-3: ~44% (about 845px, y 380-1225). Edges may bleed off-frame by <=8% in at most one scene, never through chip, contactless icon or wordmark.",
+          "scriptRef": "[provided: upstream concept-1, hook 'primary'] daily rewards, groceries, then CTA",
+          "soundToMotion": "Silent. Motion lands on 1.5s and 3.0s cuts. If an audio file arrives later, snap cuts to transients within +/-3 frames, with no audio-reactive motion.",
+          "transitions": "Hard cuts at 1.5s and 3.0s. Plaques cut in on the scene's first frame, or slide in over <=4 frames linearly, then stay frozen. Never dissolve, blur, zoom, spin, sway or glitch.",
+          "typographyRelationship": "Hook in a plaque above the card (x108, y 270-470, headline 83px/800). Orange plaque fill with paper-black text is [proposed; deviates from kit plaque fill 'ink', see AD decision D1]. Text never overlaps chip, contactless icon or wordmark. Scene-3: wordmark top-centre y 250-320 (no corner logo), card below, CTA plaque y 1290-1400 (64px/800, uppercase)."
+        },
+        "concept-2": {
+          "composition": "Split frame. A media panel (y 0-1040, 54%) holds one category scene per beat. Below it is a paper-black field (y 1040-1920) carrying all text. A field-coloured tab (44.4u x 4.4u = 480x48px, radius 1.48u, per kit boundary) pokes up into the panel's bottom edge at x108. Card is centred in the panel.",
+          "formatAdaptation": {
+            "portrait": "Panel 0-760 (56%), field below. Card 600px tall. Same plaque order.",
+            "square": "Panel 0-600 (55%), field below. Card 480px tall.",
+            "vertical": "As above.",
+            "wide": "Side-by-side: panel left 58% full height, field right 42%. The tab becomes vertical on the panel's right edge (4.4u x 44.4u), orientation [AD to confirm]."
+          },
+          "hierarchy": "1) card in panel, 2) category line in white plaque on black field, 3) CTA orange plaque, 4) environment.",
+          "imagery": "scene-1 cafe counter edge, no logos or readable text. scene-2 neutral transit-stop surface (platform edge or handrail, no readable signage). A reader or turnstile is out of focus and carries no brand marks, no payment marks and no invented UI.",
+          "lensCamera": "[proposed] 50mm-equivalent, f/2.8, slightly high 3/4 view, locked-off. Optional drift <=6px, no scale change.",
+          "lighting": "Cooler, even morning light (about 5000K) with a warm card highlight. Panel plates are lower-contrast than concept-1 so the orange card separates cleanly.",
+          "name": "Panel & Tab",
+          "productScale": "Card ~840px tall (about 81% of panel, 44% of frame), x-centred, y 100-940. Scale constant across scene-1 and scene-2 for a stable 'one card, many moments' read. scene-3 is 50% of frame on the black field.",
+          "scriptRef": "[provided: upstream concept-2, hook 'hook-1'] morning coffee then daily transport, each with 5% back",
+          "soundToMotion": "Silent. The panel cut is the only rhythm; tab and plaques never animate after appearing.",
+          "transitions": "Hard cut of panel content at 1.5s and 3.0s. Text plaques cut with the panel and are static between cuts. At 3.0s the panel is replaced by a paper-black end plate and the wordmark appears centred above the CTA.",
+          "typographyRelationship": "Category line in headline style, a kit-literal plaque (white fill, paper-black text) on the black field at y 1110-1300. Brand text 'Get 5% back' is the second plaque below. CTA is an orange plaque with black text at y 1380-1480. Field=paper-black is [proposed]."
+        },
+        "concept-3": {
+          "composition": "scene-1: three 0.5s hard-cut stills of the card in different everyday spots (desk, shelf, tray). scene-2: calm high-key plate with a stacked list. scene-3: paper-black end frame. High-key, airy, mostly pale surfaces with the orange card as the only saturated element.",
+          "formatAdaptation": {
+            "portrait": "Re-stage each cut at 4:5 with the card at 56-66% height; list plaques at y 780-1100.",
+            "square": "Card 50-64% height; list plaques stacked at the lower half.",
+            "vertical": "As above.",
+            "wide": "Re-stage scene-1 cuts with the card in different left/right thirds at about 70% height. List plaques become a horizontal row at the lower third."
+          },
+          "hierarchy": "scene-1: card only, no text. scene-2: '5%' answer line, then three list plaques. scene-3: card, wordmark, CTA.",
+          "imagery": "scene-1.a desk surface with a corner of a notebook (blank pages). scene-1.b shelf with a bag edge. scene-1.c tray, cup-sleeve colours only (no logos). All text-free.",
+          "lensCamera": "[proposed] 50mm-equivalent, f/4 for scene-1 cuts (more of the environment readable). 85mm, f/2.8 for the scene-2 plate. All locked-off.",
+          "lighting": "High-key daylight, soft shadows, slight warm bias. Each cut shifts the light direction (left, top, right) for variety, never harsh.",
+          "name": "Cut Rhythm",
+          "productScale": "scene-1 cuts: 42% / 58% / 50% frame height, with the chip upper third always in frame. scene-2: card is not shown; the plate carries texture only. scene-3: 50%.",
+          "scriptRef": "[provided: upstream concept-3, hook 'hook-2'] everyday montage, then 5% groceries/transport/coffee",
+          "soundToMotion": "Silent, but the strictest rhythm of the three: a 0.5s pulse grid (12 frames at 24fps, 15 at 30fps). If audio is supplied, cuts snap to the nearest beat within +/-3 frames.",
+          "transitions": "Hard cuts at 0.5s intervals. List plaques appear by cut-in on 0.5s steps and stay frozen. No dissolve, blur, zoom, spin, sway or glitch.",
+          "typographyRelationship": "scene-2: '5%' in answer style (83px/700-800, plain, white over a scrim so media contrast >= 3). Items 'Groceries / Transport / Coffee' (copy per locale) as list plaques (64px/800, white fill, black text), stacked at y 1020-1380, each plaque cutting in at 1.5s, 2.0s and 2.5s. scene-3: wordmark at y 380-450, card, orange CTA plaque."
+        }
+      },
+      "typographyTreatment": {
+        "family": "Schibsted Grotesk [provided: kit]. Draft previews may use Noto Sans [provided: AD fallback]. Metrics differ, so re-fit text in the brand font before final.",
+        "localeNotes": [
+          "DE runs about 30% longer than EN: allow plaque wrap or the kit min_text_scale 0.85 before any font reduction.",
+          "CTA is uppercase per kit. DE and ES uppercase conversion must be checked (for example ß in DE, accents in ES).",
+          "Weights 700 and 800 are [inferred] from the kit's 'weights 400, 900' note. Confirm the font file supplies them (variable or static)."
+        ],
+        "plaqueColour": "Kit-literal plaque fill is 'ink' (white). The brief asks for brand-orange overlay. Proposal: orange plaque with black text for the CTA in all concepts and for the hook in concept-1 only. See AD decision D1.",
+        "styles": "headline 83/800 plaque; answer 83/800 plain; list 64/800 plaque; end_sub 71/700 plain; cta 64/800 uppercase plaque; badge 30/700. All per kit rule abbd245b."
+      }
+    },
+    "assumptions": [
+      "Card is orange (kit hue 12-22, saturation >= 0.55), so orange field backgrounds are avoided behind it.",
+      "u = 1% of placement width.",
+      "Card aspect ratio about 0.63 is an assumption pending verified artwork.",
+      "Provisional safe zone on vertical y 250-1480, x 108-972.",
+      "The 8s/12s and beats-1/-2 variants reuse the same plates and card comps; the script has not scripted them.",
+      "Black text on orange plaques is assumed acceptable pending D1."
+    ],
+    "blockingQuestions": [
+      "[BLOCKING for final, not for proxies] Q1: What does the screenshot (287cf133) show? Is verified, rights-cleared, front-on high-resolution card artwork available for compositing? Without it every card_comp slot is unfillable and the product must not be invented.",
+      "[BLOCKING for any scene with people] Q2: Confirm the people-free interpretation (D6), or supply licensed footage with releases. People cannot be generated.",
+      "[BLOCKING for layout] Q3: Confirm numeric safe zones per placement, and 24 vs 30 fps (kit says 24, placements say 30).",
+      "[BLOCKING for layout] Q4: Resolve D1 (plaque fill colour and 'field' meaning).",
+      "[OPTIONAL] Q5: Is the destination an app (store badges) or a web page?",
+      "[OPTIONAL] Q6: Confirm Schibsted Grotesk 700/800 instances are in the supplied font file."
+    ],
+    "warnings": [
+      "Upstream manifest/script mismatch: the manifest puts all hooks and beat sequences on conceptSlot 1, while the scripts bind each direction to one hook and only the 'primary' beat sequence at 4s. Whichever direction is selected at C2 must carry hook-1/hook-2, beats-1/beats-2, and the 8s/12s timings; the visual system is hook-agnostic so it can, but the script must be extended.",
+      "Upstream audio intents (music, narration) conflict with the kit's no-sound policy; this output is silent.",
+      "Upstream concept-3 line 'Everyday spending. More back.' may be an unsupported benefit claim; only '5% back on groceries, transport and coffee' is confirmed (immutable). Copy/legal to review. Visuals avoid money, cash and currency imagery per kit 'never: free money, guaranteed'.",
+      "Upstream concept-1 and concept-2 each name only part of the confirmed 5% categories; do not extend them visually beyond what the script states.",
+      "No asset has been generated, rendered or inspected. All proxies and finals above are plans, not results.",
+      "Brief currency USD for a European market and an unconfirmed price: no currency or price is shown (showPrice false)."
+    ]
+  },
+  "assets": [
+    {
+      "id": "287cf133-b167-4e4a-8ffc-ced62987fcac",
+      "url": "99bcc71e2566bd64c406121e2ef341a2ce39a2b6a37e4978d19bc751a1a479a3.png",
+      "mime": "image/png",
+      "width": 387,
+      "height": 397,
+      "sha256": "99bcc71e2566bd64c406121e2ef341a2ce39a2b6a37e4978d19bc751a1a479a3",
+      "thumbnail": "99bcc71e2566bd64c406121e2ef341a2ce39a2b6a37e4978d19bc751a1a479a3.png",
+      "revisionId": "287cf133-b167-4e4a-8ffc-ced62987fcac"
+    },
+    {
+      "id": "6112f696-3224-405d-89d9-22f5df3f92cf",
+      "url": "a5605d2e958856bf12266f81640924eedae0bbf8da1726a20d6872f2b8134dce.png",
+      "mime": "image/png",
+      "width": 507,
+      "height": 141,
+      "sha256": "a5605d2e958856bf12266f81640924eedae0bbf8da1726a20d6872f2b8134dce",
+      "thumbnail": "a5605d2e958856bf12266f81640924eedae0bbf8da1726a20d6872f2b8134dce.png",
+      "revisionId": "6112f696-3224-405d-89d9-22f5df3f92cf"
+    }
+  ],
+  "brand": {
+    "tokens": {
+      "color.ink": "#FFFFFF",
+      "logo.usage": "[SVG artwork rasterized locally without scripts or external resources]\n\ndefault: wordmark",
+      "voice.tone": "plain, friendly, direct",
+      "color.paper": "#000000",
+      "layout.grid": "margin_side_u: 10, margin_top_u: 6.3, gap_region_u: 3.5, min_text_scale: 0.85, region_floor_u: 25",
+      "color.accent": "#FF5A1F",
+      "sound.policy": "No sound unless the brief supplies an audio file.",
+      "logo.wordmark": "Supplied wordmark artwork (ce8be810-819e-492c-a3a7-77f3ca9411e3). Place exactly as drawn.",
+      "voice.copyRules": "say: [\"get paid\", \"back\"]",
+      "typography.rules": "headline: font: brand, size: 83, weight: 800, pitch: 1.14, line_box: 1.08, baseline: 0.8, tracking: 0, case: none, treatment: plaque\n\nanswer: font: brand, size: 83, weight: 800, pitch: 1.14, line_box: 1.08, baseline: 0.8, tracking: 0, case: none, treatment: plain\n\nlist: font: brand, size: 64, weight: 800, pitch: 1.25, line_box: 1.08, baseline: 0.8, tracking: 0, case: none, treatment: plaque\n\nend_sub: font: brand, size: 71, weight: 700, pitch: 1.25, line_box: 1.08, baseline: 0.8, tracking: 0, case: none, treatment: plain\n\ncta: font: brand, size: 64, weight: 800, pitch: 1.14, line_box: 1.08, baseline: 0.8, tracking: 0, case: upper, treatment: plaque\n\nbadge: font: brand, size: 30, weight: 700, pitch: 1.1, tracking: 0, case: none, treatment: plain\n\ntreatments: plain: kind: plain\n\ntreatments: plaque: kind: plaque, pad: [0, 0.15, 0, 0.03], height: 1.08, fill: ink, on: field",
+      "imagery.treatment": "Documentary everyday scenes, natural soft warm light, shallow depth of field, hand-held feel.",
+      "product.immutables": "Card with rounded corners, vertical design. A light-gold chip in the upper third, centred; a small contactless icon to the right of the chip; a large cream KITE wordmark along the bottom short edge. No card network logo, no numbers, no name.",
+      "prohibition.policy": "Logo never: outline, stretch, recolour outside the list\n\nmotion forbidden: [\"dissolve\", \"blur\", \"zoom\", \"spin\", \"sway\", \"glitch\"]\n\nmotion never: [\"corner logo\", \"plaques after they appear\", \"store badges after they settle\"]\n\nnever: [\"free money\", \"guaranteed\"]",
+      "voice.localization": "Font coverage: EN, DE, ES, FR",
+      "layout.safeAreaRule": "Keep text, logo and CTA inside each placement's safe zone.",
+      "motion.motionSystem": "Natural footage, locked-off or gently breathing camera, 24 fps.",
+      "layout.accessibility": "contrast: flat: 4.5, media: 3, exceptions: [[\"ink\", \"field\"], [\"field\", \"ink\"]]",
+      "typography.bodyFamily": "brand: Schibsted Grotesk",
+      "typography.draftFallback": "Noto Sans",
+      "typography.headlineFamily": "brand: Schibsted Grotesk"
+    },
+    "fonts": [
+      {
+        "url": "1f801d2e6d5f9f6884dfdbb67dfc6025a8bfe6cc99896614a526c340ae270732.ttf",
+        "style": "normal",
+        "family": "Schibsted Grotesk",
+        "weight": "400"
+      },
+      {
+        "url": "09aee8065d25508f23a4c3d92cd777ac869c52d93fd868a88f025d888a7937d6.woff2",
+        "style": "normal",
+        "family": "Noto Sans",
+        "weight": "400"
+      },
+      {
+        "url": "05af9e705d3b63aedba67197d19fb448b97353e1386930716c7e835b08f126ba.woff2",
+        "style": "normal",
+        "family": "Noto Sans",
+        "weight": "400"
+      }
+    ],
+    "logos": [
+      {
+        "id": "ce8be810-819e-492c-a3a7-77f3ca9411e3",
+        "url": "991ee11ac27cdac5673923097d4f37e14921e13c343a576f67bcec68dd64a998.svg",
+        "clearSpacePx": 0
+      },
+      {
+        "id": "6112f696-3224-405d-89d9-22f5df3f92cf",
+        "url": "a5605d2e958856bf12266f81640924eedae0bbf8da1726a20d6872f2b8134dce.png",
+        "clearSpacePx": 0
+      }
+    ],
+    "rules": {
+      "allowedFonts": [
+        "Schibsted Grotesk",
+        "Noto Sans"
+      ],
+      "logoRequired": true,
+      "minimumContrast": 4.5,
+      "forbiddenColours": []
+    },
+    "facts": {
+      "product": "KITE",
+      "immutables": "5% back on groceries, transport and coffee"
+    },
+    "references": [
+      {
+        "id": "287cf133-b167-4e4a-8ffc-ced62987fcac",
+        "url": "99bcc71e2566bd64c406121e2ef341a2ce39a2b6a37e4978d19bc751a1a479a3.png"
+      }
+    ],
+    "copy": {},
+    "rawKit": {
+      "rules": [
+        {
+          "id": "4862d69b-bd33-4225-ae80-a3ba79192323",
+          "key": "usage",
+          "value": "[SVG artwork rasterized locally without scripts or external resources]\n\ndefault: wordmark",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "logo",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "char 0-70 on page 0",
+            "sourceId": "ce8be810-819e-492c-a3a7-77f3ca9411e3"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "12180487-850e-4e2a-b061-9241b4e6947b",
+              "e3f08b89-7311-4849-8cfc-0828d3e8a02f"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "c1dedf13-19e0-47cf-a6bd-c760615ba4ce",
+          "key": "immutables",
+          "value": "Card with rounded corners, vertical design. A light-gold chip in the upper third, centred; a small contactless icon to the right of the chip; a large cream KITE wordmark along the bottom short edge. No card network logo, no numbers, no name.",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "product",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "6000-6194",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "dab4b134-7851-4107-a0e7-b61b7a607620"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "1dac2b2c-7af5-4e84-b881-9f37d6339178",
+          "key": "ink",
+          "value": "#FFFFFF",
+          "reason": "Imported from brandbook v1. Review the cited findings and choose the campaign value. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "color",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:362-0:436",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "263809fc-dcf4-4d90-8eef-eb626b938802"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "b1196385-d359-430a-8538-1b3014bd5990",
+          "key": "paper",
+          "value": "#000000",
+          "reason": "Imported from brandbook v1. Review the cited findings and choose the campaign value. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "color",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:290-0:360",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "8606a4f0-6392-4d34-b821-f0cb548aab48"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "b49b1e02-b9e0-43c0-bf63-be49eab056ca",
+          "key": "headlineFamily",
+          "value": "brand: Schibsted Grotesk",
+          "reason": "Imported from brandbook v1. Review the cited findings and choose the campaign value. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "typography",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:501-0:533",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "aec5f61e-874d-40f9-ad6a-be3cf93f4eb0"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "d6234148-4b9a-4230-8e37-a986cbf1ec54",
+          "key": "bodyFamily",
+          "value": "brand: Schibsted Grotesk",
+          "reason": "Imported from brandbook v1. Review the cited findings and choose the campaign value. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "typography",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:501-0:533",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "77b8283a-1a33-4810-8222-3d8ef0e5b31d"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "5deb6234-fd2c-42aa-b128-fb238f0985d7",
+          "key": "safeAreaRule",
+          "value": "Keep text, logo and CTA inside each placement's safe zone.",
+          "reason": "Default used because the brandbook had no value for this rule. Change it with a brand change request.",
+          "status": "proposed",
+          "category": "layout",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "ad_instruction",
+            "locator": "Run brand review default: Dmitriy",
+            "sourceId": null
+          },
+          "sourceVerified": true
+        },
+        {
+          "id": "9a530df4-9c9e-4613-ab84-0dbb80d6f6be",
+          "key": "motionSystem",
+          "value": "Natural footage, locked-off or gently breathing camera, 24 fps.",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "motion",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "6377-6447",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "4e1fd6f5-67f8-4bb2-86bc-f5b5e7507c31"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "603a3c16-7b14-451d-9934-1f118b9a2b76",
+          "key": "treatment",
+          "value": "Documentary everyday scenes, natural soft warm light, shallow depth of field, hand-held feel.",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "imagery",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "6272-6364",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "929be8e2-9450-4b0c-aed8-9d68a9ecee93"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "c6a8b25c-4284-4d3f-853f-e181bfc7fe02",
+          "key": "tone",
+          "value": "plain, friendly, direct",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "voice",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "6459-6486",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "c9ab8906-3ec2-4163-8c4e-b62fa10709ec"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "f45d51e1-0d00-46c1-b939-1b9c6a44528d",
+          "key": "policy",
+          "value": "No sound unless the brief supplies an audio file.",
+          "reason": "Default used because the brandbook had no value for this rule. Change it with a brand change request.",
+          "status": "proposed",
+          "category": "sound",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "ad_instruction",
+            "locator": "Run brand review default: Dmitriy",
+            "sourceId": null
+          },
+          "sourceVerified": true
+        },
+        {
+          "id": "7cffd607-6dc1-422b-837a-e322d38d1705",
+          "key": "policy",
+          "value": "Logo never: outline, stretch, recolour outside the list\n\nmotion forbidden: [\"dissolve\", \"blur\", \"zoom\", \"spin\", \"sway\", \"glitch\"]\n\nmotion never: [\"corner logo\", \"plaques after they appear\", \"store badges after they settle\"]\n\nnever: [\"free money\", \"guaranteed\"]",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "prohibition",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:1710-0:1784",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "b01e5d5f-a72e-4c16-9928-f307e69b40ca",
+              "fdc2d659-09f1-4610-b9d1-719b0e268035",
+              "9f2db2d8-92ab-4783-b97f-3dbd9b4ed50b",
+              "2a77ac05-3724-409b-92d6-021c68f054e0"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "1c27e31c-86ca-4089-894a-d02bbdf9ac7c",
+          "key": "accent",
+          "value": "#FF5A1F",
+          "reason": "Imported from brandbook v1. Review the cited findings and choose the campaign value. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "color",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:63-0:178",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "e9381e46-8e9e-4d17-9ba5-1c2f63f190a2"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "abbd245b-e6f8-46a4-b0a9-d2461705c08e",
+          "key": "rules",
+          "value": "headline: font: brand, size: 83, weight: 800, pitch: 1.14, line_box: 1.08, baseline: 0.8, tracking: 0, case: none, treatment: plaque\n\nanswer: font: brand, size: 83, weight: 800, pitch: 1.14, line_box: 1.08, baseline: 0.8, tracking: 0, case: none, treatment: plain\n\nlist: font: brand, size: 64, weight: 800, pitch: 1.25, line_box: 1.08, baseline: 0.8, tracking: 0, case: none, treatment: plaque\n\nend_sub: font: brand, size: 71, weight: 700, pitch: 1.25, line_box: 1.08, baseline: 0.8, tracking: 0, case: none, treatment: plain\n\ncta: font: brand, size: 64, weight: 800, pitch: 1.14, line_box: 1.08, baseline: 0.8, tracking: 0, case: upper, treatment: plaque\n\nbadge: font: brand, size: 30, weight: 700, pitch: 1.1, tracking: 0, case: none, treatment: plain\n\ntreatments: plain: kind: plain\n\ntreatments: plaque: kind: plaque, pad: [0, 0.15, 0, 0.03], height: 1.08, fill: ink, on: field",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "typography",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:1830-0:2009",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "f35137d9-0e8d-420a-b3f4-81bf1fd7070c",
+              "125fe624-27a6-4f42-8fe6-651c22f6f89b",
+              "42ed709d-e076-4166-a215-75d4140d21cb",
+              "d14a60cf-100e-4f13-bc1d-5b71e72affee",
+              "4a9d2d69-da6a-4e47-9af1-ad9401c23733",
+              "45d44aa4-7e58-4b24-97d1-8a1054d286e1",
+              "07d24483-01f9-4452-87f2-fbb7e7a502c3",
+              "db84f9a2-a70e-41d9-82e9-d76920a1369a"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "b5485509-9cc6-49fc-8d40-e6a89e1a3361",
+          "key": "grid",
+          "value": "margin_side_u: 10, margin_top_u: 6.3, gap_region_u: 3.5, min_text_scale: 0.85, region_floor_u: 25",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "layout",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:5081-0:5252",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "8559c445-1da2-4412-81cc-5e59c32f6c7b"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "aa29aeb3-70c6-4a7f-9302-b79cbce39c65",
+          "key": "accessibility",
+          "value": "contrast: flat: 4.5, media: 3, exceptions: [[\"ink\", \"field\"], [\"field\", \"ink\"]]",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "layout",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:5272-0:5469",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "5c6c1111-cc10-4681-b023-25b499798799"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "900157f7-7ecc-46f8-8f13-78f4699e17ab",
+          "key": "copyRules",
+          "value": "say: [\"get paid\", \"back\"]",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "voice",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "6499-6530",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "0e4a9da4-606b-4212-a097-9709728daf25"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "329e4000-8530-465e-9824-7a7ccf9d2a8c",
+          "key": "localization",
+          "value": "Font coverage: EN, DE, ES, FR",
+          "reason": "Imported from brandbook v1. Review the cited findings. Full originals remain in the submitted book.",
+          "status": "provided",
+          "category": "voice",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "0:691-0:750",
+            "sourceId": "da98b88d-b98e-4397-bddc-e6320cc0249d"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "bebb0584-2489-42ec-88da-f225c9e30f71"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "11fe6670-66db-4727-a877-cc2c873034f3",
+          "key": "wordmark",
+          "value": "Supplied wordmark artwork (ce8be810-819e-492c-a3a7-77f3ca9411e3). Place exactly as drawn.",
+          "reason": "Chosen in brandbook v1.",
+          "status": "provided",
+          "category": "logo",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "material",
+            "locator": "char 0-70 on page 0",
+            "sourceId": "ce8be810-819e-492c-a3a7-77f3ca9411e3"
+          },
+          "sourceVerified": true,
+          "brandbookSource": {
+            "findingIds": [
+              "12180487-850e-4e2a-b061-9241b4e6947b"
+            ],
+            "submissionId": "38e18257-a095-4ee6-b098-012570a2e539"
+          }
+        },
+        {
+          "id": "78cfa93a-cab4-4cae-805f-701124a93fdd",
+          "key": "draftFallback",
+          "value": "Noto Sans",
+          "reason": "The AD explicitly permits the packaged Noto Sans family for local draft previews. Original brand families remain recorded.",
+          "status": "proposed",
+          "category": "typography",
+          "decision": "accepted",
+          "provenance": {
+            "kind": "ad_instruction",
+            "locator": "Run review: Dmitriy",
+            "sourceId": null
+          },
+          "sourceVerified": true
+        }
+      ]
+    }
+  }
+}

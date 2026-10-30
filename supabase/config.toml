@@ -1,0 +1,55 @@
+# Isolated local M02 stack. No remote project is linked.
+project_id = "toggle-studio-m02"
+[api]
+enabled = true
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 500
+auto_expose_new_tables = false
+[db]
+major_version = 17
+health_timeout = "2m"
+[db.migrations]
+enabled = true
+schema_paths = []
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3100"
+additional_redirect_urls = ["http://127.0.0.1:3100/auth/callback"]
+enable_signup = false
+enable_anonymous_sign_ins = false
+minimum_password_length = 12
+[auth.email]
+# Enable the email/password provider; public sign-up remains disabled above.
+enable_signup = true
+enable_confirmations = false
+otp_expiry = 600
+max_frequency = "1m"
+[auth.email.template.magic_link]
+subject = "Your Toggle Studio sign-in link"
+# The experimental stack cannot serve content_path templates. Its default email
+# uses /auth/callback with PKCE. For hosted Auth install templates/magic-link.html;
+# conventional Docker local setups may set content_path to that file as well.
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+[storage.s3_protocol]
+enabled = true
+[storage.buckets.studio-dev]
+public = false
+file_size_limit = "50MiB"
+[studio]
+enabled = false
+[realtime]
+enabled = false
+[local_smtp]
+enabled = true
+[edge_runtime]
+enabled = false
+[analytics]
+enabled = false
+[experimental]
+stack = true

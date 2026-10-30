@@ -1,0 +1,46 @@
+{
+  "step": "B",
+  "date": "2026-10-29",
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "tests": { "passed": 394, "failed": 0 },
+    "nextBuild": "passed",
+    "diffWhitespace": "passed"
+  },
+  "admission": [
+    {
+      "fixture": "sanitized recorded KITE director",
+      "inputBound": 29827,
+      "cap": 32768,
+      "requiredImages": 1,
+      "selectedTreatmentPreserved": true,
+      "decisionNotesPreserved": true,
+      "assumptionsAndQuestionsPreserved": true
+    },
+    {
+      "fixture": "large coder with KITE intent and synthetic inspected-font payloads",
+      "inputBound": 31642,
+      "cap": 32768,
+      "variantCount": 128,
+      "copyKeys": 323,
+      "designChars": 8000,
+      "fontPayloads": 3,
+      "exactRequiredCopyPreserved": true
+    }
+  ],
+  "roleComparison": {
+    "kind": "fixture transport equivalence",
+    "representations": ["merged", "coordinated"],
+    "intentAndOwnerPreserved": true,
+    "default": "coordinated planning, draft-director owns implementation",
+    "creativeQualityWinner": null
+  },
+  "providerCalls": 0,
+  "providerCostMicroUsd": 0,
+  "cachedTokenShare": null,
+  "billingNote": "No provider calls. Bounds are conservative admission estimates, not billed tokenizer counts.",
+  "migrationRequired": false,
+  "visualVerification": false,
+  "pushed": false
+}

@@ -1,0 +1,22 @@
+import {directorView} from '@/lib/server/director';
+import {z} from 'zod';
+import {api,body,json,ApiError} from '@/lib/server/api';
+import {draftContext} from '@/lib/server/drafts';
+import {creativeBlock,creativeStart,creativeTick,creativeDecision,quoteCreativeBuildRepair} from '@/lib/server/creative-drafts';
+import {quoteBuildRepairCommand} from '@/packages/contracts/creative-drafts';
+import {startLocalWorkflow,requireLocalDevice} from '@/lib/server/local-compute';
+import {resumeGuidedCreative} from '@/lib/server/guided-run';
+export async function GET(_:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/creative'>){return api(async()=>{const {id}=await ctx.params,saved=await draftContext(z.uuid().parse(id));const director=await directorView(id);return json({protocol:director.blockId?'director@1':'legacy',block:await creativeBlock(saved),director});});}
+export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/creative'>){return api(async()=>{requireLocalDevice();const {id}=await ctx.params,input=await body(request,z.discriminatedUnion('action',[quoteBuildRepairCommand,z.strictObject({action:z.enum(['start','tick','quoteRebuild','rebuild']),quoteId:z.string().regex(/^[a-f0-9]{64}$/).optional(),maxCostMicroUsd:z.number().int().nonnegative().optional(),directions:z.number().int().min(1).max(3).optional()}),z.strictObject({action:z.literal('decide'),decision:z.enum(['continue','set-aside']),jobId:z.uuid(),quoteId:z.string().regex(/^[a-f0-9]{64}$/),maxCostMicroUsd:z.number().int().nonnegative(),requestId:z.uuid()})]));
+ // Reviewing a quote must never fall through to the worker wake-up below.
+ if(input.action==='quoteBuildRepair')return json(await quoteCreativeBuildRepair(z.uuid().parse(id),input.direction));
+ if(input.action==='quoteRebuild'||input.action==='rebuild'){const result=await creativeStart(z.uuid().parse(id),input.action==='rebuild'&&input.quoteId&&input.maxCostMicroUsd!==undefined?{quoteId:input.quoteId,maxCostMicroUsd:input.maxCostMicroUsd}:undefined,true,input.directions);if('quote' in result)return json(result);const resumed=await resumeGuidedCreative(z.uuid().parse(id));await startLocalWorkflow();return json({...result,resumed,message:'A new draft run started from the approved storyboard. Earlier versions stay available below.'});}
+ const result=await (async()=>{try{return input.action==='decide'?await creativeDecision(z.uuid().parse(id),input):input.action==='start'?await creativeStart(z.uuid().parse(id),input.quoteId&&input.maxCostMicroUsd!==undefined?{quoteId:input.quoteId,maxCostMicroUsd:input.maxCostMicroUsd}:undefined,false,'directions' in input?input.directions:undefined).then(async started=>started.started||'quote' in started?started:{...started,...await creativeTick(z.uuid().parse(id))}):await creativeTick(z.uuid().parse(id));}
+ // Show the real reason on the run page instead of a generic service error.
+ catch(error){if(error instanceof ApiError)throw error;
+  // A network timeout while reading state is transient: the tick is idempotent, so the run keeps going and the next tick retries.
+  if(input.action==='tick'&&error instanceof Error&&(error.name==='TimeoutError'||error.name==='AbortError'||/aborted due to timeout|fetch failed|ECONNRESET|ETIMEDOUT|socket hang up/i.test(`${error.name}: ${error.message}`)))return {state:'running' as const,transient:`${error.name}: ${error.message}`.slice(0,200)};
+  throw new ApiError(409,'CREATIVE_STEP_FAILED',`Creative drafts stopped: ${error instanceof z.ZodError?error.issues.slice(0,3).map(i=>`${i.path.join('.')}: ${i.message}`).join('; '):error instanceof Error?error.message.slice(0,300):'unknown error'}`);}})();
+ if('quote' in result)return json(result);
+ // Starting from Drafts or the run page also wakes a run that stopped on the old preview check.
+ const resumed=input.action==='start'?await resumeGuidedCreative(z.uuid().parse(id)):false;await startLocalWorkflow();return json({...result,resumed,message:'needsPrice' in result&&result.needsPrice?'Review a new draft price to build from the current planning. Earlier previews remain saved.':'state' in result&&result.state==='review'?'Review the question in Draft directions.':'state' in result&&result.state==='complete'?'Draft versions are ready to review.':resumed?'Creative drafts continue. Progress updates below.':'Creative drafts are running.'});});}

@@ -1,0 +1,20 @@
+{
+  "case": "mandatory static coder reasoning rejected when disabled",
+  "recordedModel": "anthropic/claude-sonnet-5.5",
+  "mandatoryReasoning": true,
+  "selectedEffort": "low",
+  "manualThinkingBudget": false,
+  "rejectionCostMicroUsd": 0,
+  "requestAndRoleCapsChanged": false,
+  "frozenRequestsMutated": false,
+  "paidRequestsStartedByVerification": 0,
+  "newMigrationRequired": false,
+  "visualVerification": false,
+  "testsPassed": 360,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "build": true
+  }
+}

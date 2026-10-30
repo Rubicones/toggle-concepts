@@ -1,0 +1,31 @@
+{
+  "step": "C",
+  "date": "2026-10-29",
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "tests": { "passed": 400, "failed": 0 },
+    "nextBuild": "passed",
+    "diffWhitespace": "passed"
+  },
+  "workflowReplay": {
+    "sourceFixture": "fixtures/director/live/Frame.tsx",
+    "squareThenAdaptive": { "coderResponses": 2, "sourceFiles": ["Frame.tsx"], "complete": true },
+    "completeFirstResponse": { "coderResponses": 1, "complete": true },
+    "squareCheckpointImmutable": true,
+    "concurrentPublicationAtomic": true,
+    "imageExports": 0,
+    "visualChecked": false
+  },
+  "admission": [
+    { "fixture": "square-first large coder", "inputBound": 32235, "cap": 32768, "variants": 128, "copyKeys": 323, "designChars": 8000, "fontPayloads": 3 },
+    { "fixture": "square-first recorded KITE director", "inputBound": 30360, "cap": 32768, "requiredImages": 1 }
+  ],
+  "providerCalls": 0,
+  "providerCostMicroUsd": 0,
+  "cachedTokenShare": null,
+  "billingNote": "No provider calls; replay counts and admission bounds are not live billed measurements.",
+  "migrationRequired": false,
+  "visualVerification": false,
+  "pushed": false
+}

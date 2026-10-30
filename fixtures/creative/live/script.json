@@ -1,0 +1,688 @@
+{
+  "provenance": {
+    "kind": "recorded-provider-output",
+    "stepId": "dff8c575-7055-4df1-ab8e-87086eefcf11",
+    "capturedAt": "2026-10-25T23:51:17.585788+00:00",
+    "sha256": "476dca23d14f4b0f48927cf45461503a0788ae7d9460f441b7d6f52493055bae"
+  },
+  "output": {
+    "schemaVersion": "1.0",
+    "role": "script",
+    "status": "draft",
+    "summary": "Three distinct creative concepts for sonicdesk's Snippet feature, including timed storyboards, on-screen copy, voiceover, and asset needs, tailored for the reference locale (en-GB) and placement (vertical) across all specified durations.",
+    "deliverable": {
+      "threeDirections": [
+        {
+          "conceptID": "1",
+          "premise": "Demonstrate the effortless creation of song hooks by simplifying the process of isolating and exporting audio snippets.",
+          "hook": "Stop guessing. Start testing your song's best hook, instantly.",
+          "timedStoryboard": [
+            {
+              "beatID": "1.1",
+              "startTimeSeconds": 0,
+              "endTimeSeconds": 1.5,
+              "scene": "Close-up on a musician's hand (generated, not real) swiping through a complex, generic DAW interface (generated, not real) on a tablet, looking frustrated.",
+              "onScreenCopy": "Tired of guessing your song's best hook?",
+              "narration": "Finding that perfect hook shouldn't be a struggle.",
+              "audioIntent": "Frustrated, slightly muted foley sounds of UI interaction.",
+              "motionNotes": "Quick, slightly jerky swipes, close-up to show detail of a busy interface.",
+              "proxyContract": "generatedMusicianHand_genericDAW.mp4"
+            },
+            {
+              "beatID": "1.2",
+              "startTimeSeconds": 1.5,
+              "endTimeSeconds": 3,
+              "scene": "Transition to a clean, authentic sonicdesk UI. Focus on the 'Snippet' feature, highlighting the waveform and section ribbon.",
+              "onScreenCopy": "Simplify your workflow.",
+              "narration": "With sonicdesk, pinpoint your track's strongest moment.",
+              "audioIntent": "Subtle, smooth UI click sound. Ambient background music (Night Drive, inferred) begins to fade in softly.",
+              "motionNotes": "Smooth, intentional camera movement from complex UI to clean sonicdesk UI. Zoom slightly on Snippet interface.",
+              "proxyContract": "authenticSonicdeskUISnippet.mp4"
+            },
+            {
+              "beatID": "1.3",
+              "startTimeSeconds": 3,
+              "endTimeSeconds": 4,
+              "scene": "The 'Export Snippet' button is highlighted with the brand's lime color.",
+              "onScreenCopy": "Export WAV. Sign up.",
+              "narration": "Export your WAV, ready for social.",
+              "audioIntent": "Crisp confirmation sound. Music swells slightly.",
+              "motionNotes": "Brief flash of lime highlight on the button, then transition to CTA.",
+              "proxyContract": "authenticSonicdeskUIExportButton.mp4"
+            }
+          ],
+          "completeCopy": {
+            "onScreen": [
+              "Tired of guessing your song's best hook?",
+              "Simplify your workflow.",
+              "Export WAV. Sign up."
+            ],
+            "narration": [
+              "Finding that perfect hook shouldn't be a struggle.",
+              "With sonicdesk, pinpoint your track's strongest moment.",
+              "Export your WAV, ready for social."
+            ]
+          },
+          "CTA": "Sign up",
+          "assetNeeds": [
+            {
+              "type": "video",
+              "description": "Generated video of a musician's hand interacting with a complex, generic DAW.",
+              "proxyID": "generatedMusicianHand_genericDAW.mp4"
+            },
+            {
+              "type": "video",
+              "description": "Authentic sonicdesk UI showing the Snippet feature in action.",
+              "proxyID": "authenticSonicdeskUISnippet.mp4"
+            },
+            {
+              "type": "video",
+              "description": "Authentic sonicdesk UI highlighting the 'Export Snippet' button.",
+              "proxyID": "authenticSonicdeskUIExportButton.mp4"
+            },
+            {
+              "type": "audio",
+              "description": "Fictional demo music 'Night Drive'.",
+              "proxyID": "NightDrive_Audio.wav"
+            },
+            {
+              "type": "audio",
+              "description": "UI click sounds and confirmation sound.",
+              "proxyID": "UISounds.wav"
+            }
+          ],
+          "proxyContracts": [
+            {
+              "proxyID": "generatedMusicianHand_genericDAW.mp4",
+              "slot": "scene_1_1",
+              "format": "video",
+              "resolution": "1080x1920"
+            },
+            {
+              "proxyID": "authenticSonicdeskUISnippet.mp4",
+              "slot": "scene_1_2",
+              "format": "video",
+              "resolution": "1080x1920"
+            },
+            {
+              "proxyID": "authenticSonicdeskUIExportButton.mp4",
+              "slot": "scene_1_3",
+              "format": "video",
+              "resolution": "1080x1920"
+            },
+            {
+              "proxyID": "NightDrive_Audio.wav",
+              "slot": "background_music",
+              "format": "audio"
+            },
+            {
+              "proxyID": "UISounds.wav",
+              "slot": "sfx",
+              "format": "audio"
+            }
+          ],
+          "variantBindings": [
+            {
+              "id": "f4ca75a9-c0ce-4862-bc62-99bd60302df8",
+              "conceptSlot": 1,
+              "placementId": "vertical",
+              "durationSeconds": 4
+            },
+            {
+              "id": "c1e5d5ca-077c-4905-be59-f0b1053d6336",
+              "conceptSlot": 1,
+              "placementId": "portrait",
+              "durationSeconds": 4
+            },
+            {
+              "id": "b45f2fc6-1f86-4c2b-b910-7b1d1dd20536",
+              "conceptSlot": 1,
+              "placementId": "square",
+              "durationSeconds": 4
+            },
+            {
+              "id": "4ed0c364-1f34-4f4e-a8a8-cf7cd2c88a9f",
+              "conceptSlot": 1,
+              "placementId": "wide",
+              "durationSeconds": 4
+            },
+            {
+              "id": "e5aebab3-4687-4aea-8046-e12c2d3c964f",
+              "conceptSlot": 1,
+              "placementId": "vertical",
+              "durationSeconds": 6
+            },
+            {
+              "id": "2db2512f-2364-41b1-a19a-60b903669f4b",
+              "conceptSlot": 1,
+              "placementId": "portrait",
+              "durationSeconds": 6
+            },
+            {
+              "id": "8dab93cb-0923-4139-8c71-09e520b5ba2f",
+              "conceptSlot": 1,
+              "placementId": "square",
+              "durationSeconds": 6
+            },
+            {
+              "id": "c9f14d96-090a-4363-9041-d8a87ee45d93",
+              "conceptSlot": 1,
+              "placementId": "wide",
+              "durationSeconds": 6
+            },
+            {
+              "id": "dbf53217-7665-43f5-80d7-2e2db7baa631",
+              "conceptSlot": 1,
+              "placementId": "vertical",
+              "durationSeconds": 9
+            },
+            {
+              "id": "7ee64386-b0f6-4b80-9958-6e0d93ba0056",
+              "conceptSlot": 1,
+              "placementId": "portrait",
+              "durationSeconds": 9
+            },
+            {
+              "id": "000eff5e-9687-4dc2-90f0-1e373dede745",
+              "conceptSlot": 1,
+              "placementId": "square",
+              "durationSeconds": 9
+            },
+            {
+              "id": "e192d8ee-7bff-43f9-9166-17c1ba17bb04",
+              "conceptSlot": 1,
+              "placementId": "wide",
+              "durationSeconds": 9
+            },
+            {
+              "id": "bee23fb6-a1bc-4b37-910f-c9d2a39586e0",
+              "conceptSlot": 1,
+              "placementId": "vertical",
+              "durationSeconds": 12
+            },
+            {
+              "id": "7acf02b6-6ff0-47c6-a835-e739c65339b1",
+              "conceptSlot": 1,
+              "placementId": "portrait",
+              "durationSeconds": 12
+            },
+            {
+              "id": "bb38d4b7-570f-4b26-8770-a4e5131a73cb",
+              "conceptSlot": 1,
+              "placementId": "square",
+              "durationSeconds": 12
+            },
+            {
+              "id": "c31dbdf5-1471-44de-83ae-1fd65dc45ac0",
+              "conceptSlot": 1,
+              "placementId": "wide",
+              "durationSeconds": 12
+            }
+          ]
+        },
+        {
+          "conceptID": "2",
+          "premise": "Highlight sonicdesk Snippet as a tool for data-driven songwriting, allowing musicians to test different song parts for social media appeal before release.",
+          "hook": "Test your song's viral potential. Discover its strongest hook, fast.",
+          "timedStoryboard": [
+            {
+              "beatID": "2.1",
+              "startTimeSeconds": 0,
+              "endTimeSeconds": 1.5,
+              "scene": "A musician (generated) thoughtfully listening to music on headphones, tapping fingers, contemplating different song sections.",
+              "onScreenCopy": "Which part of your song hits hardest?",
+              "narration": "Every artist wants their music to connect.",
+              "audioIntent": "Uplifting, reflective music (Night Drive, inferred) playing softly.",
+              "motionNotes": "Subtle head nods, finger tapping to a beat. Soft focus on the musician.",
+              "proxyContract": "generatedMusicianContemplating.mp4"
+            },
+            {
+              "beatID": "2.2",
+              "startTimeSeconds": 1.5,
+              "endTimeSeconds": 3,
+              "scene": "Show various length chips (5s, 15s, 30s) within the sonicdesk Snippet UI being quickly selected, demonstrating flexibility.",
+              "onScreenCopy": "Test multiple hooks with ease.",
+              "narration": "Easily create and test different hooks from your track.",
+              "audioIntent": "Quick, satisfying UI selection sounds. Music picks up slightly.",
+              "motionNotes": "Rapid, clean UI interactions, highlighting the instant change in snippet length.",
+              "proxyContract": "authenticSonicdeskUILengthChips.mp4"
+            },
+            {
+              "beatID": "2.3",
+              "startTimeSeconds": 3,
+              "endTimeSeconds": 4,
+              "scene": "The exported WAV file is shown being prepared for sharing on a generic social media interface (generated, not real).",
+              "onScreenCopy": "Export WAV. Sign up.",
+              "narration": "Get it ready for social media feedback.",
+              "audioIntent": "Positive, engaging music builds to a short crescendo.",
+              "motionNotes": "Smooth swipe from the sonicdesk UI to a clean, generic social media sharing screen.",
+              "proxyContract": "generatedSocialMediaShare.mp4"
+            }
+          ],
+          "completeCopy": {
+            "onScreen": [
+              "Which part of your song hits hardest?",
+              "Test multiple hooks with ease.",
+              "Export WAV. Sign up."
+            ],
+            "narration": [
+              "Every artist wants their music to connect.",
+              "Easily create and test different hooks from your track.",
+              "Get it ready for social media feedback."
+            ]
+          },
+          "CTA": "Sign up",
+          "assetNeeds": [
+            {
+              "type": "video",
+              "description": "Generated video of a musician listening and contemplating.",
+              "proxyID": "generatedMusicianContemplating.mp4"
+            },
+            {
+              "type": "video",
+              "description": "Authentic sonicdesk UI showing length chips being selected.",
+              "proxyID": "authenticSonicdeskUILengthChips.mp4"
+            },
+            {
+              "type": "video",
+              "description": "Generated video of a generic social media sharing interface.",
+              "proxyID": "generatedSocialMediaShare.mp4"
+            },
+            {
+              "type": "audio",
+              "description": "Fictional demo music 'Night Drive'.",
+              "proxyID": "NightDrive_Audio.wav"
+            },
+            {
+              "type": "audio",
+              "description": "UI selection sounds.",
+              "proxyID": "UISounds.wav"
+            }
+          ],
+          "proxyContracts": [
+            {
+              "proxyID": "generatedMusicianContemplating.mp4",
+              "slot": "scene_2_1",
+              "format": "video",
+              "resolution": "1080x1920"
+            },
+            {
+              "proxyID": "authenticSonicdeskUILengthChips.mp4",
+              "slot": "scene_2_2",
+              "format": "video",
+              "resolution": "1080x1920"
+            },
+            {
+              "proxyID": "generatedSocialMediaShare.mp4",
+              "slot": "scene_2_3",
+              "format": "video",
+              "resolution": "1080x1920"
+            },
+            {
+              "proxyID": "NightDrive_Audio.wav",
+              "slot": "background_music",
+              "format": "audio"
+            },
+            {
+              "proxyID": "UISounds.wav",
+              "slot": "sfx",
+              "format": "audio"
+            }
+          ],
+          "variantBindings": [
+            {
+              "id": "4d7f814d-084a-4846-b82c-d680021c996e",
+              "conceptSlot": 2,
+              "placementId": "vertical",
+              "durationSeconds": 4
+            },
+            {
+              "id": "a12a01c3-9b33-4dd8-8b3e-f554b42154f2",
+              "conceptSlot": 2,
+              "placementId": "portrait",
+              "durationSeconds": 4
+            },
+            {
+              "id": "ba0383fb-42dd-4bf6-94b6-f23568003941",
+              "conceptSlot": 2,
+              "placementId": "square",
+              "durationSeconds": 4
+            },
+            {
+              "id": "c064b8ba-04e8-4cf9-a82d-5a50b2e07016",
+              "conceptSlot": 2,
+              "placementId": "wide",
+              "durationSeconds": 4
+            },
+            {
+              "id": "95d74775-ba4a-4521-9b64-4356281b9624",
+              "conceptSlot": 2,
+              "placementId": "vertical",
+              "durationSeconds": 6
+            },
+            {
+              "id": "987d975b-5685-45c5-b32b-3ddebda00119",
+              "conceptSlot": 2,
+              "placementId": "portrait",
+              "durationSeconds": 6
+            },
+            {
+              "id": "8971e6a4-fc09-46e3-b6ec-1b9972beed11",
+              "conceptSlot": 2,
+              "placementId": "square",
+              "durationSeconds": 6
+            },
+            {
+              "id": "023e09cc-e6e3-446c-a917-4d99215ddde3",
+              "conceptSlot": 2,
+              "placementId": "wide",
+              "durationSeconds": 6
+            },
+            {
+              "id": "e56c52e8-2b76-4a55-b302-7d2226edc339",
+              "conceptSlot": 2,
+              "placementId": "vertical",
+              "durationSeconds": 9
+            },
+            {
+              "id": "f42cb380-9727-49fd-84da-73bbfe35d8f1",
+              "conceptSlot": 2,
+              "placementId": "portrait",
+              "durationSeconds": 9
+            },
+            {
+              "id": "b9d78741-8af8-4775-8881-e0c23328a977",
+              "conceptSlot": 2,
+              "placementId": "square",
+              "durationSeconds": 9
+            },
+            {
+              "id": "4223af01-36ec-4a60-99e4-d248ba69eeb5",
+              "conceptSlot": 2,
+              "placementId": "wide",
+              "durationSeconds": 9
+            },
+            {
+              "id": "eada0afd-acea-44f8-8886-67f6b0e97548",
+              "conceptSlot": 2,
+              "placementId": "vertical",
+              "durationSeconds": 12
+            },
+            {
+              "id": "a9d797ad-8dbe-4b12-a2b3-0570aab5cd0f",
+              "conceptSlot": 2,
+              "placementId": "portrait",
+              "durationSeconds": 12
+            },
+            {
+              "id": "8be95604-c289-4429-b240-696fa0b21e07",
+              "conceptSlot": 2,
+              "placementId": "square",
+              "durationSeconds": 12
+            },
+            {
+              "id": "3dfa0be4-abc4-4075-8689-eb4c3b7a4199",
+              "conceptSlot": 2,
+              "placementId": "wide",
+              "durationSeconds": 12
+            }
+          ]
+        },
+        {
+          "conceptID": "3",
+          "premise": "Focus on seamless integration, showing how sonicdesk Snippet enables musicians to maintain their creative flow by performing tasks within a single workspace.",
+          "hook": "Stay in the creative zone. Get your song hooks without leaving sonicdesk.",
+          "timedStoryboard": [
+            {
+              "beatID": "3.1",
+              "startTimeSeconds": 0,
+              "endTimeSeconds": 1.5,
+              "scene": "A generated band in a studio-like environment (not real people), collaborating intently, then a slight pause as they discuss a social media hook.",
+              "onScreenCopy": "Don't break your flow.",
+              "narration": "Collaboration should be fluid, not interrupted.",
+              "audioIntent": "Dynamic, energetic music (Night Drive, inferred) playing, then a slight, thoughtful pause.",
+              "motionNotes": "Smooth camera pan across the band members, then a subtle zoom on their faces as they pause.",
+              "proxyContract": "generatedBandCollaboration.mp4"
+            },
+            {
+              "beatID": "3.2",
+              "startTimeSeconds": 1.5,
+              "endTimeSeconds": 3,
+              "scene": "The sonicdesk UI seamlessly appears on a screen in the studio scene. The 'Snippet' feature is activated and a section selected.",
+              "onScreenCopy": "Select, loop, export. All in sonicdesk.",
+              "narration": "With sonicdesk, select, loop, and export your snippet – all in one place.",
+              "audioIntent": "Seamless transition sound. Music smoothly continues, now slightly more focused on the UI.",
+              "motionNotes": "Dissolve or quick cut from band to integrated screen showing sonicdesk UI. Clean, quick UI interaction.",
+              "proxyContract": "authenticSonicdeskUIIntegrated.mp4"
+            },
+            {
+              "beatID": "3.3",
+              "startTimeSeconds": 3,
+              "endTimeSeconds": 4,
+              "scene": "The band members (generated) are now smiling, satisfied, resuming their creative work.",
+              "onScreenCopy": "Export WAV. Sign up.",
+              "narration": "Keep your creative momentum going.",
+              "audioIntent": "Music swells, conveying satisfaction and continued energy.",
+              "motionNotes": "Return to the smiling band, subtle motion as they resume work.",
+              "proxyContract": "generatedBandSmiling.mp4"
+            }
+          ],
+          "completeCopy": {
+            "onScreen": [
+              "Don't break your flow.",
+              "Select, loop, export. All in sonicdesk.",
+              "Export WAV. Sign up."
+            ],
+            "narration": [
+              "Collaboration should be fluid, not interrupted.",
+              "With sonicdesk, select, loop, and export your snippet – all in one place.",
+              "Keep your creative momentum going."
+            ]
+          },
+          "CTA": "Sign up",
+          "assetNeeds": [
+            {
+              "type": "video",
+              "description": "Generated video of a band collaborating and pausing.",
+              "proxyID": "generatedBandCollaboration.mp4"
+            },
+            {
+              "type": "video",
+              "description": "Authentic sonicdesk UI integrated into a studio setting.",
+              "proxyID": "authenticSonicdeskUIIntegrated.mp4"
+            },
+            {
+              "type": "video",
+              "description": "Generated video of a band smiling and resuming work.",
+              "proxyID": "generatedBandSmiling.mp4"
+            },
+            {
+              "type": "audio",
+              "description": "Fictional demo music 'Night Drive'.",
+              "proxyID": "NightDrive_Audio.wav"
+            },
+            {
+              "type": "audio",
+              "description": "Seamless transition and UI interaction sounds.",
+              "proxyID": "UISounds.wav"
+            }
+          ],
+          "proxyContracts": [
+            {
+              "proxyID": "generatedBandCollaboration.mp4",
+              "slot": "scene_3_1",
+              "format": "video",
+              "resolution": "1080x1920"
+            },
+            {
+              "proxyID": "authenticSonicdeskUIIntegrated.mp4",
+              "slot": "scene_3_2",
+              "format": "video",
+              "resolution": "1080x1920"
+            },
+            {
+              "proxyID": "generatedBandSmiling.mp4",
+              "slot": "scene_3_3",
+              "format": "video",
+              "resolution": "1080x1920"
+            },
+            {
+              "proxyID": "NightDrive_Audio.wav",
+              "slot": "background_music",
+              "format": "audio"
+            },
+            {
+              "proxyID": "UISounds.wav",
+              "slot": "sfx",
+              "format": "audio"
+            }
+          ],
+          "variantBindings": [
+            {
+              "id": "b7b1927b-4bc2-409e-9a58-6ef79445d4e4",
+              "conceptSlot": 3,
+              "placementId": "vertical",
+              "durationSeconds": 4
+            },
+            {
+              "id": "49cd9647-1f6b-4b98-a255-a9b41f8ac502",
+              "conceptSlot": 3,
+              "placementId": "portrait",
+              "durationSeconds": 4
+            },
+            {
+              "id": "d7fa9edb-489a-4afb-9f0b-d88ee33963df",
+              "conceptSlot": 3,
+              "placementId": "square",
+              "durationSeconds": 4
+            },
+            {
+              "id": "e54e8057-b8f8-4013-a878-89814dc2353b",
+              "conceptSlot": 3,
+              "placementId": "wide",
+              "durationSeconds": 4
+            },
+            {
+              "id": "19269191-6423-4b87-a5c7-fabcce9ea8d0",
+              "conceptSlot": 3,
+              "placementId": "vertical",
+              "durationSeconds": 6
+            },
+            {
+              "id": "fd2ce813-572c-497d-92e7-ab3851d5353f",
+              "conceptSlot": 3,
+              "placementId": "portrait",
+              "durationSeconds": 6
+            },
+            {
+              "id": "a14099b8-87a9-41d6-bd2d-323a0eb9a14e",
+              "conceptSlot": 3,
+              "placementId": "square",
+              "durationSeconds": 6
+            },
+            {
+              "id": "0ef16570-4ccd-48a7-862a-a1e623f1c461",
+              "conceptSlot": 3,
+              "placementId": "wide",
+              "durationSeconds": 6
+            },
+            {
+              "id": "0f2e904e-4430-484c-956d-17575344433d",
+              "conceptSlot": 3,
+              "placementId": "vertical",
+              "durationSeconds": 9
+            },
+            {
+              "id": "8c91e1d9-3b9e-4c41-901c-51025400ae87",
+              "conceptSlot": 3,
+              "placementId": "portrait",
+              "durationSeconds": 9
+            },
+            {
+              "id": "2980bf08-4f6a-4183-828a-ad3e08fefdfc",
+              "conceptSlot": 3,
+              "placementId": "square",
+              "durationSeconds": 9
+            },
+            {
+              "id": "7b405d45-1237-46a3-b048-cb1eb90fb93e",
+              "conceptSlot": 3,
+              "placementId": "wide",
+              "durationSeconds": 9
+            },
+            {
+              "id": "deee0ef6-dfb1-45ca-8281-8fcfaf1c6e69",
+              "conceptSlot": 3,
+              "placementId": "vertical",
+              "durationSeconds": 12
+            },
+            {
+              "id": "eb5fe529-45c9-4ccf-b2ec-a73b9bffb8d7",
+              "conceptSlot": 3,
+              "placementId": "portrait",
+              "durationSeconds": 12
+            },
+            {
+              "id": "ae768a41-2ab3-42c2-889b-c2e744eb584a",
+              "conceptSlot": 3,
+              "placementId": "square",
+              "durationSeconds": 12
+            },
+            {
+              "id": "e45ca987-8a92-4a57-aad1-598be5095211",
+              "conceptSlot": 3,
+              "placementId": "wide",
+              "durationSeconds": 12
+            }
+          ]
+        }
+      ]
+    },
+    "inputRefs": [
+      {
+        "id": "brief",
+        "source": "Submitted brief b37c67cd-1b3c-43fd-99a5-368f1e77e665"
+      },
+      {
+        "id": "strategy",
+        "source": "0cdc7f3a-3fc5-4673-995e-7fd027ad3213"
+      },
+      {
+        "id": "brand_kit",
+        "source": "acceptedBrandKit a9c87202-4b49-4de7-ab5a-6ecfee101ea3"
+      },
+      {
+        "id": "variants",
+        "source": "b0dc8c45-9780-42bb-a0f0-652cf6fb48ad"
+      }
+    ],
+    "assumptions": [
+      "The 4-second duration allows for a rapid problem-solution-CTA narrative. Longer durations (6, 9, 12 seconds) will expand on these beats with more visual detail and slightly longer narration, but the core beats remain consistent.",
+      "Visuals depicting generated musicians/environments will adhere to the brand kit's treatment guidelines (CL016, CL017).",
+      "All product UI shown will be authentic and conform to sonicdesk's immutable guidelines (CL018, CL021, CL022).",
+      "The fictional demo song 'Night Drive' will be used for audio examples and background music (CL023).",
+      "UI sound effects will be crisp and mechanical-confident, aligning with the brand tone (CL025)."
+    ],
+    "blockingQuestions": [],
+    "warnings": [
+      "The provided output is a draft for the reference locale (en-GB) and reference placement (vertical) only. Full localization and placement adaptation will occur in later stages.",
+      "Exact timing for voiceover and on-screen copy for durations other than 4 seconds will require further refinement during media production to ensure natural pacing and readability.",
+      "Asset generation for 'proxyContract' elements is a placeholder and will be executed by an upstream media generation tool, not within this task."
+    ],
+    "handoff": {
+      "nextRole": "Localization/visual/layout assemble drafts, QA and AD A2 precede C2.",
+      "requiredInputs": [
+        "deliverable.threeDirections"
+      ],
+      "checks": [
+        "Each concept has a stable ID, premise, hook, and complete timed storyboard.",
+        "All storyboards include explicit on-screen copy, narration (where applicable), audio intent, motion notes, and proxy contracts for visual assets.",
+        "Each concept clearly states its CTA.",
+        "All required asset needs are identified with proxy IDs.",
+        "All `variantBindings` from the `VariantManifest` are accounted for in the `deliverable.threeDirections` section.",
+        "Duration checks confirm each concept's storyboard beats sum up to the target duration (e.g., 4s).",
+        "All mandatory offer terms, product facts, and brand guidelines are preserved."
+      ]
+    }
+  }
+}

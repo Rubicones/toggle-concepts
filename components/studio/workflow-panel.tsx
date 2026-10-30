@@ -1,0 +1,34 @@
+"use client";
+import {Disclosure} from '@/components/ui/disclosure';
+import {Select} from '@/components/ui/select';
+import {useState} from "react";
+import Link from "next/link";
+import {Button} from "@/components/ui/button";
+import {Badge} from "@/components/ui/badge";
+import {studioRequest,useShared} from "@/lib/shared-http";
+import type {WorkflowView} from "@/packages/contracts/orchestration";
+import type {SharedRun} from "@/packages/contracts/shared";
+import {WorkflowMigration} from "./brief-workspace";
+export function WorkflowPanel({campaignId,runs=[]}:{campaignId?:string;runs?:SharedRun[]}){
+ const {data,error,refresh}=useShared<WorkflowView>(`/api/studio/workflow${campaignId?`?campaign=${campaignId}`:""}`);
+ const [message,setMessage]=useState(""),[busy,setBusy]=useState(false),[runId,setRunId]=useState(""),[consent,setConsent]=useState(false),[retryId,setRetryId]=useState("");
+ async function command(payload:unknown){setBusy(true);try{const r=await studioRequest<{message:string}>("/api/studio/workflow","POST",payload);setMessage(r.message);refresh();}catch(e){setMessage(e instanceof Error?e.message:"Workflow unavailable.");}finally{setBusy(false);}}
+ if(error)return <section className="detail-panel"><p role="alert">{error}</p><Button onClick={refresh}>Refresh workflow</Button></section>;
+ if(!data)return <p role="status">Loading durable workflow…</p>;
+ if(!data.schemaReady)return <WorkflowMigration stage="M06"/>;
+ const online=data.devices.some(d=>d.online);
+ return <section className="detail-panel"><div className="section-heading"><p className="eyebrow">DURABLE LOCAL PRODUCTION</p><h2>Workflow & agent queue</h2><p>Accepted C1 → accepted A1 → evidence → strategy → exact variants → scripts → localization & asset planning. Use the assembly plan above to compile three playable directions after planning finishes.</p></div>
+ <p><Badge variant={online?"blue":"outline"}>{online?"Studio computer online":"Studio computer idle or offline"}</Badge> · Closing the browser does not cancel work. After a computer restart, use Resume local processing in Queue. The worker stops after one idle minute.</p>
+ {campaignId&&runs.length>0&&<form className="studio-form" onSubmit={e=>{e.preventDefault();void command({action:"start",runId:runId||runs[0].id});}}><label>Checkpoint run<Select value={runId||runs[0].id} onChange={e=>{setRunId(e.target.value);setConsent(false);}}>{runs.map(r=><option key={r.id} value={r.id}>{r.name} · {r.status}</option>)}</Select></label><p>C1 and A1 must be accepted in this run. Starting again continues the latest draft round after its own A1 acceptance; it creates no new budget. Client C2 feedback creates the replay round. Manual runs are rejected.</p><label className="checkbox-field"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/><span>Start real planning calls using this run’s frozen models and remaining cumulative caps. A known uncharged 429 may retry up to three attempts; invalid output needs my explicit paid retry.</span></label><Button type="submit" disabled={busy||!consent}>Start / continue planning</Button></form>}
+ <p role="status">{message}</p>
+ {!data.rounds.length&&<p>No workflow jobs yet. Open a campaign’s Drafts tab after accepting its Brand Kit, or submit a manual agent task.</p>}
+ {data.rounds.map(round=>{const jobs=data.jobs.filter(j=>j.round_id===round.id);return <article className="detail-panel" key={round.id}><h3>{round.kind==="draft"?"Draft planning":"Manual agent work"} · round {round.round_no}</h3><p>{round.phase.replaceAll("_"," ")} · {round.status}{round.blocker?` · ${round.blocker.replaceAll("_"," ")}`:""}</p><p className="muted">Run {round.run_id}</p>{!campaignId&&<Link className="text-link" href={`/campaigns/${round.campaign_id}/drafts`}>Open campaign</Link>}
+ <div className="data-heading-actions">{round.status==="active"&&<><Button variant="outline" disabled={busy||!!round.blocker} onClick={()=>void command({action:"pause",roundId:round.id})}>Pause</Button><Button variant="outline" disabled={busy||round.blocker!=="paused_by_user"} onClick={()=>void command({action:"resume",roundId:round.id})}>Resume</Button><Button variant="outline" disabled={busy} onClick={()=>void command({action:"cancel",roundId:round.id})}>Cancel workflow</Button></>}</div>
+ {round.blocker==="provider_status_unknown"&&<p className="notice">Submission outcome is uncertain. The reservation is conservatively charged and the run is closed. No automatic resubmission. Use Provider receipts above to reconcile actual cost. Reopening and a new attempt remain explicit.</p>}
+ {round.blocker==="budget_blocked"&&<p className="notice">A cumulative cap prevented submission. Retries keep all earlier charges; creating another round cannot reset the budget.</p>}
+ {jobs.map(job=>{const deps=data.dependencies.filter(d=>d.job_id===job.id).map(d=>data.jobs.find(j=>j.id===d.requires_id));return <div className="history-entry" key={job.id}><div style={{width:"100%"}}><h4>{job.job_key} · {job.role} <Badge variant="outline">{job.state}</Badge></h4><p>{job.blocker?.replaceAll("_"," ")|| (job.state==="queued"&&!online?"Waiting for studio computer":job.state==="queued"?"Waiting for dependencies or dispatch":"")} · {job.attempt_count}/3 attempts</p>{deps.length>0&&<p className="muted">Requires: {deps.map(d=>`${d?.job_key} (${d?.state})`).join(", ")}</p>}
+ {job.state==="failed"&&job.blocker!=="PROVIDER_400"&&job.attempt_count<3&&round.status==="active"&&<><label className="checkbox-field"><input type="checkbox" checked={retryId===job.id} onChange={e=>setRetryId(e.target.checked?job.id:"")}/><span>{job.kind==="compile"?"Retry this local compilation. No AI call or charge.":"I authorize another bounded attempt under the same cumulative caps. Prior paid invalid output remains charged."}</span></label><Button variant="outline" disabled={busy||retryId!==job.id} onClick={()=>void command({action:"retry",roundId:round.id,jobId:job.id,confirmPaidRetry:true})}>Retry failed job</Button></>}
+ {job.blocker==="PROVIDER_400"&&<p>The provider rejected this frozen request. Correct the request and start a new build; retrying would repeat its original schema.</p>}{job.output&&<Disclosure><summary>Validated planning result · {job.output_hash?.slice(0,12)}…</summary><pre className="shared-output">{job.output}</pre></Disclosure>}
+ <Disclosure><summary>Attempts & provider receipts</summary>{data.attempts.filter(a=>a.job_id===job.id).map(a=><p key={a.id}>Attempt {a.attempt_no}: {a.state}{a.error_code?` · ${a.error_code}`:""}{a.step_id?` · provider step ${a.step_id}`:""}{a.late_receipt?" · late receipt retained for reconciliation":""}</p>)}<p className="muted">Full provider output and accounting remain in campaign agent activity. A successful planning result grants no AD or client approval.</p></Disclosure>
+ </div></div>;})}</article>;})}</section>;
+}

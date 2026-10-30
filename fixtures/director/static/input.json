@@ -1,0 +1,306 @@
+{
+  "protocol": "director@1",
+  "runId": "sonicdesk",
+  "roundId": "p0",
+  "directionId": "d0",
+  "iterationId": "static-i0",
+  "brand": {
+    "tokens": {
+      "ink": "#F8F8F8",
+      "paper": "#070707",
+      "accent": "#DFFF00"
+    },
+    "fonts": [
+      {
+        "family": "Noto Sans",
+        "url": "noto.woff2"
+      }
+    ],
+    "logos": [
+      {
+        "id": "logo0",
+        "url": "logo.svg",
+        "clearSpacePx": 24,
+        "required": true
+      }
+    ],
+    "rules": {
+      "allowedFonts": [
+        "Noto Sans"
+      ],
+      "forbiddenColours": [],
+      "minimumContrast": 4.5
+    },
+    "copy": {
+      "hook": {
+        "en-GB": "YOUR BAND. YOUR TRACKS."
+      },
+      "version": {
+        "en-GB": "VERSION CONTROL FOR MUSIC."
+      },
+      "comment": {
+        "en-GB": "COMMENT ON BARS."
+      },
+      "close": {
+        "en-GB": "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP."
+      },
+      "cta": {
+        "en-GB": "Sign up"
+      },
+      "offer": {
+        "en-GB": "Free 1st month band-plan this month"
+      }
+    },
+    "facts": {},
+    "references": []
+  },
+  "brief": {
+    "cta": "Sign up",
+    "facts": [],
+    "offer": "Free 1st month band-plan this month",
+    "price": "",
+    "rights": "confirmed",
+    "product": "sonicdesk \u2014 a web workspace for bands (\"version control for music\"). This campaign promotes the Snippet feature: inside a song's mixer you select a 5\u201330 second part of the mix (presets 5/10/15/20/25/30 s or free drag), it snaps to section starts (Verse, Chorus, etc.), loops for listening, and exports as an audio file you can use to test the hook in Reels/TikTok before release.",
+    "currency": "USD",
+    "showPrice": false,
+    "synthesis": "Lifestyle scenes may be generated: musicians at home, rehearsal rooms, desks with instruments. Any motion or flat graphics. The product UI must not be AI-generated; use simplified mockups.",
+    "immutables": "sonicdesk logo and wordmark (\"sonicdesk.\" with a lime dot), brand colours (lime #DFFF00 on near-black #060805), typefaces (Archivo for headlines, JetBrains Mono for body), the look of the product UI (square corners, thin hairline borders, pill-shaped waveforms), and the feature behaviour described in the claims.",
+    "priceSource": "",
+    "variationNotes": "Do not use the product screenshot in designs"
+  },
+  "assets": [],
+  "formats": [
+    {
+      "id": "vertical",
+      "fps": 30,
+      "width": 1080,
+      "height": 1920,
+      "safe": {
+        "top": 192,
+        "bottom": 345.59999999999997,
+        "left": 64.8,
+        "right": 64.8
+      },
+      "minTextPx": 32
+    },
+    {
+      "id": "square",
+      "fps": 30,
+      "width": 1080,
+      "height": 1080,
+      "safe": {
+        "top": 54,
+        "bottom": 54,
+        "left": 54,
+        "right": 54
+      },
+      "minTextPx": 32
+    },
+    {
+      "id": "portrait",
+      "fps": 30,
+      "width": 1080,
+      "height": 1350,
+      "safe": {
+        "top": 67.5,
+        "bottom": 67.5,
+        "left": 54,
+        "right": 54
+      },
+      "minTextPx": 32
+    },
+    {
+      "id": "wide",
+      "fps": 30,
+      "width": 1920,
+      "height": 1080,
+      "safe": {
+        "top": 54,
+        "bottom": 54,
+        "left": 96,
+        "right": 96
+      },
+      "minTextPx": 32
+    }
+  ],
+  "variants": [
+    {
+      "id": "vertical",
+      "format": "vertical",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 6
+    },
+    {
+      "id": "square",
+      "format": "square",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 6
+    },
+    {
+      "id": "portrait",
+      "format": "portrait",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 6
+    },
+    {
+      "id": "wide",
+      "format": "wide",
+      "locale": "en-GB",
+      "hook": "primary",
+      "cta": "primary",
+      "length": 6
+    }
+  ],
+  "storyboard": [
+    {
+      "id": "scene-1",
+      "start": 0,
+      "end": 1.5,
+      "copy": [
+        "YOUR BAND. YOUR TRACKS."
+      ],
+      "visualNotes": "Energetic montage: Musicians (guitarist, drummer, vocalist) in various settings (home studio, rehearsal space) captured in dynamic, quick cuts. Focus on passion and collaboration.",
+      "motionNotes": "Approved purposeful continuous motion",
+      "maxStaticSeconds": 0.5
+    },
+    {
+      "id": "scene-2",
+      "start": 1.5,
+      "end": 3.5,
+      "copy": [
+        "VERSION CONTROL FOR MUSIC."
+      ],
+      "visualNotes": "Seamless transition to a clean, dark sonicdesk UI mockup, showing a song project with multiple versions/takes. Highlight waveform pills and subtle lime accents moving to indicate different versions.",
+      "motionNotes": "Approved purposeful continuous motion",
+      "maxStaticSeconds": 0.5
+    },
+    {
+      "id": "scene-3",
+      "start": 3.5,
+      "end": 5,
+      "copy": [
+        "COMMENT ON BARS."
+      ],
+      "visualNotes": "Zoom in on a specific part of the sonicdesk UI, showing a comment bubble tied to a specific bar/section of a waveform.",
+      "motionNotes": "Approved purposeful continuous motion",
+      "maxStaticSeconds": 0.5
+    },
+    {
+      "id": "scene-4",
+      "start": 5,
+      "end": 6,
+      "copy": [
+        "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP."
+      ],
+      "visualNotes": "Fast cut back to musicians nodding in agreement, then a final shot of the sonicdesk logo and offer.",
+      "motionNotes": "Approved purposeful continuous motion",
+      "maxStaticSeconds": 0.5
+    }
+  ],
+  "resourceIds": [],
+  "stage": "draft",
+  "variantFacts": {
+    "vertical": {
+      "sceneCopy": {
+        "scene-1": [
+          "YOUR BAND. YOUR TRACKS."
+        ],
+        "scene-2": [
+          "VERSION CONTROL FOR MUSIC."
+        ],
+        "scene-3": [
+          "COMMENT ON BARS."
+        ],
+        "scene-4": [
+          "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP."
+        ]
+      },
+      "required": [
+        "YOUR BAND. YOUR TRACKS.",
+        "VERSION CONTROL FOR MUSIC.",
+        "COMMENT ON BARS.",
+        "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.",
+        "Free 1st month band-plan this month",
+        "Sign up"
+      ]
+    },
+    "square": {
+      "sceneCopy": {
+        "scene-1": [
+          "YOUR BAND. YOUR TRACKS."
+        ],
+        "scene-2": [
+          "VERSION CONTROL FOR MUSIC."
+        ],
+        "scene-3": [
+          "COMMENT ON BARS."
+        ],
+        "scene-4": [
+          "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP."
+        ]
+      },
+      "required": [
+        "YOUR BAND. YOUR TRACKS.",
+        "VERSION CONTROL FOR MUSIC.",
+        "COMMENT ON BARS.",
+        "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.",
+        "Free 1st month band-plan this month",
+        "Sign up"
+      ]
+    },
+    "portrait": {
+      "sceneCopy": {
+        "scene-1": [
+          "YOUR BAND. YOUR TRACKS."
+        ],
+        "scene-2": [
+          "VERSION CONTROL FOR MUSIC."
+        ],
+        "scene-3": [
+          "COMMENT ON BARS."
+        ],
+        "scene-4": [
+          "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP."
+        ]
+      },
+      "required": [
+        "YOUR BAND. YOUR TRACKS.",
+        "VERSION CONTROL FOR MUSIC.",
+        "COMMENT ON BARS.",
+        "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.",
+        "Free 1st month band-plan this month",
+        "Sign up"
+      ]
+    },
+    "wide": {
+      "sceneCopy": {
+        "scene-1": [
+          "YOUR BAND. YOUR TRACKS."
+        ],
+        "scene-2": [
+          "VERSION CONTROL FOR MUSIC."
+        ],
+        "scene-3": [
+          "COMMENT ON BARS."
+        ],
+        "scene-4": [
+          "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP."
+        ]
+      },
+      "required": [
+        "YOUR BAND. YOUR TRACKS.",
+        "VERSION CONTROL FOR MUSIC.",
+        "COMMENT ON BARS.",
+        "FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.",
+        "Free 1st month band-plan this month",
+        "Sign up"
+      ]
+    }
+  }
+}

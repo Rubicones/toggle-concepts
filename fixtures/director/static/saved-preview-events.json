@@ -1,0 +1,1851 @@
+{
+  "description": "Recorded local still metadata, no pixels or credentials.",
+  "originalRenderEventCount": 202,
+  "originalCheckPasses": 5,
+  "iterationId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c",
+  "variants": [
+    {
+      "id": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "721a69ef-20d0-4c68-bce7-f340e9499b3e",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5cc67e64-3c2b-457e-b0f7-fb1b5df6ea3c",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "38020d70-5978-4845-b77f-dd7671364d33",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "21f7467d-8673-4e1e-a09d-60ef43dfd44e",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "85a0d7ac-9672-4dcd-9838-83370c7d2965",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5401c51e-3953-4f32-ab42-c07db17fb24d",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "378e7cec-cd02-4098-9c8f-cb93b24dfa53",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "65eee105-4cf2-4acb-9397-69ff9375a415",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "efcb6c23-67f7-4700-b0c2-72d74a6973a6",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "acca20ad-325d-4932-a0c6-32e9e8e8bb98",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "702d1bbb-b3ec-4b50-82fa-15735c32f9ef",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "9cdc0e2c-69a5-4c45-8c8b-90e36d120e5c",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "eb0c3e5c-c5aa-4075-8c0b-3fa8d895b3f4",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e6b3708c-c2b5-4f0d-9267-5e667be447d8",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "649be2a0-8b05-4ef3-8b03-d922291f432e",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8452a067-be9b-4188-9f3e-0b7ef015aacf",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "233cd175-cb19-452b-bb8e-04e85d717b9c",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "164d7a3f-823f-4b72-baf0-d064289486d4",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3c7bd0bf-3662-4f15-bd22-2c8726e9afef",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "c7aca9d6-9b36-43ef-b0bc-2e4af4e5ae17",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5d35a642-837f-40f1-aab8-7d689742755e",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "6172d63f-fa88-4ecb-b1ed-d519385dd35a",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "dee7e492-1f05-4e7e-bfac-ea43cd75fa85",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4c803f4c-33ee-465b-ad78-a68c3c2c8b28",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "42d897af-a5bb-44e3-be9f-61c2518561b7",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e6c0312d-0b1c-4cbb-98b8-57f629aa794a",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "cbebd18d-bd10-43f1-af42-6e17407a39f7",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "02d9fb0f-8664-4618-9c2e-a3ce20ba087f",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5ac90804-e6e9-41a5-af6b-f16445178eac",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "44f34c88-6e15-48ee-a4df-01823e7f603a",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "aea51cf2-f119-4a62-8d0e-cad0e2acab25",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "vertical",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "95529e8a-e674-4449-8a8d-d97afdf89e48",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "c29986af-d0a4-4efc-869a-36a8e80a3159",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4ff96028-ec57-4418-8e19-ffd4575b6337",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5da3ba44-5de5-40bc-9e6e-2bcb7195bb4b",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "9be4bdb6-97fc-4801-90c8-ad9de848cacb",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "af19daba-0362-44f9-a6f5-d3cd33d64b89",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a29c77fb-22a5-454b-a384-6e2712910287",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "dc0243bf-1bc8-4d66-9890-c57be2b55e8a",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4c190853-bdd6-4729-8799-c7d3e9c73560",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "445b5e00-3a93-498d-82a4-d9fb1979e884",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f826c603-0d6e-48df-836d-8e54e241eee3",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "1ae0fbb0-b6e1-486c-a74f-277352d00588",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a32c65b0-a79e-4c23-b499-36995c9a8ace",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4b39dce8-fd5c-4601-9654-df09090fa8a0",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "ab9a053b-5a7a-43d3-bca9-2b4db6b23961",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "768c3aff-01be-4fc9-983f-541f4b346a45",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "593194c7-bf79-42a3-b764-fc62fdfbb11b",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "c4674b54-287d-4ca1-bec9-44a7996bace4",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "44efb005-7014-4e28-9126-91459b1ac1aa",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "2143da0c-27aa-4d7d-8dc0-e736ded14ee9",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "403017e2-ac70-4a8b-b73f-a106af2ae490",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0680b018-a9bc-445f-9794-108c36e5fbfc",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "d131248e-31bf-4b7e-9fee-8e15e8d8dd7b",
+      "cta": "primary",
+      "hook": "primary",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f4247ccb-cb88-415c-8a58-5dbc624052aa",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3d5fe1b8-f7e9-4a76-a27a-81f9c422b3f2",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "03d9311e-90a7-4bd8-a390-49e0917ae4b3",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "9d453aae-577c-441d-a36b-423088959e4e",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "6afa00ff-25e9-417f-a2a3-52f4cd6023f7",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "674ca490-c977-40d6-9fcc-0ef0ea918fce",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8d8ba359-2853-4e7d-934c-a6e86c74053a",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f9e52b9d-7fa5-4121-b912-aca1700dc48a",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "cf131fe4-a730-49e9-ba25-3f9ed2c25d57",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "ca5c6080-7502-49ba-967a-1a2ee31963ab",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3e6218c5-42c6-43d9-8cd1-85e9a18a1445",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e174d149-0cc6-4301-9162-845eb0e2147e",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "bf2c1cbd-71f5-49e6-8ea3-71c3940a0671",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3d4c113c-6709-4beb-a1cd-2e0b0be56baf",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "b0f50b17-6bc8-49ce-bb85-5aaf5b711cc3",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "1a068fcd-3e0b-4839-bc87-e1ae0e756739",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0e615163-045c-46ab-ac8c-7a8dcec22b23",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "dd79717b-3f22-4b56-8155-0ac7adca42e2",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "6e8073d5-2a82-4ab9-ae43-79b88da71710",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a72cf329-9254-4790-bdfe-ad70c3a7f913",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "7793f150-c9ba-4ad0-b3cb-356a2f154c81",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4d627eb8-488c-4b87-821f-c00df7b589c9",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8256468b-897d-43fd-b699-ba2bb40bbf66",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5a46c0c6-510e-41ba-ada1-f55b56800bc6",
+      "cta": "primary",
+      "hook": "hook-1",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0c5cb18d-fdef-45fc-a805-0b1959b38a46",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "848f7c0b-108f-45bf-beea-5834af4ce0ae",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a50d90fd-2642-4013-85ef-dd26faa88919",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5eab14ac-c086-4e2c-aa3f-51e0887c8731",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a7c9c728-ecde-4fa2-8bb8-c153f665dddf",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "7086bf63-2fcd-411b-bc1f-83bc008d1684",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3ec24dc9-e2ca-4b7c-813d-0c7892c46323",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0bc66731-f74b-4bdd-b9eb-48287b6d0b9a",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "921f4361-5ffc-4a15-b7bf-c69ca2809d69",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "cdd6c09d-c9e4-4364-91fd-9e42e41cc5cf",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f38566d2-2d88-45c5-a5c6-a9aae16a14aa",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "321d78f3-c681-4b2d-8a70-b9eec5fce2ff",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "69edcc77-a486-43a1-9e43-9c511c91d36e",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "1b75f0ad-1fb6-4680-b147-34cf648b56c9",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "fb04d225-8443-4081-ae6b-1b1d65474065",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "309260d8-3b61-4f7d-adc8-cedcc3569540",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "75a17227-14fb-4095-b38e-b0441342212c",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "cfa86b71-d374-4d14-8c11-91acbc8c3b86",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e404dacd-2531-4568-abd3-e198044dc52a",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f80e065e-e384-4131-92bf-28dfa3e48703",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "50615f60-c824-4d84-82b5-58ca0a09f5c5",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "dc0d8a92-6f4f-4713-a47e-6e8fe398d0d4",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "da294421-2425-4bb1-9c91-2f2752a4976f",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "10d7e29b-d694-4c34-820b-76fcd70d5f20",
+      "cta": "primary",
+      "hook": "hook-2",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "81ec3b7e-2178-46d8-96fa-590f9a678861",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "2dfee53d-ed24-431b-9101-87e17f25d94f",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "a0197a82-2a80-44fd-860e-def6e375061e",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "f246d304-2643-4345-9000-151d5e314213",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0d4036b3-9caf-4ded-83e9-c7165137ec0d",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "57a5a997-d248-40b8-a716-b3d99e2d3918",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "67d54d96-b3c0-45f1-97bc-8d7e39dd6cf2",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8e909814-f32f-4ee2-ac94-7f852ecaa017",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "0169c6cd-4a62-41df-b57d-ee633e15005e",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "4248bb03-7dd1-4cad-b165-a832b74db3b9",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "490818ca-7f02-4c2c-8fef-4ff2dbdbb844",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "2f3e4893-faf5-45fe-83ee-8f39d805e86f",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "e22bc71b-e84c-4aac-b441-d2cce5a1b96a",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "fe425e54-011d-4313-bae7-2a82d0fb32a0",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3c1c4998-6f30-427c-ae12-f11edf628f9d",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 6,
+      "locale": "en-GB"
+    },
+    {
+      "id": "5b879f8f-e067-4419-90a1-d316f3070926",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "d3d1a477-aecc-451c-9639-131b1688b5da",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "3f88123f-8a62-4ac5-8b41-f1bb3e6553da",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 9,
+      "locale": "en-GB"
+    },
+    {
+      "id": "8c4c3dfa-86c7-4a12-84cc-034660c981fd",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "677ba23d-2eef-4a70-bf30-0850b22b1337",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "1d192336-10f5-49ec-be37-f80c2f30a5ef",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 12,
+      "locale": "en-GB"
+    },
+    {
+      "id": "7e66cf32-3898-421a-8430-cc5f9b21ab68",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "square",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "911a12f2-75de-46d8-af3c-a29b08d0d9e6",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "portrait",
+      "length": 15,
+      "locale": "en-GB"
+    },
+    {
+      "id": "d80d6f72-d137-4d98-b6c7-ad9ada1c29db",
+      "cta": "primary",
+      "hook": "hook-3",
+      "format": "wide",
+      "length": 15,
+      "locale": "en-GB"
+    }
+  ],
+  "scenes": [
+    {
+      "moments": [
+        {
+          "id": "hook-a",
+          "description": "Dim rehearsal photo, full headline LOST TRACK OF YOUR BEST TAKE? large in ink, lower-middle safe zone."
+        },
+        {
+          "id": "hook-b",
+          "description": "Same frame plus scattered ghost pills at 15 percent; one pill marked with a lime outline dot as the missing best take."
+        }
+      ],
+      "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11"
+    },
+    {
+      "moments": [
+        {
+          "id": "chaos-a",
+          "description": "Headline in ink, lime full stop; tilted hairline file chips scattered over dim desk photo."
+        },
+        {
+          "id": "order-b",
+          "description": "Same headline; file chips snapped into a tidy aligned column on the 40px grid."
+        }
+      ],
+      "sceneId": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b"
+    },
+    {
+      "moments": [
+        {
+          "id": "versions-a",
+          "description": "Four stacked pill-waveform version tracks, lime playhead at 30 percent, four verbs stacked in ink."
+        },
+        {
+          "id": "versions-b",
+          "description": "Playhead at 70 percent, a second track highlighted with lime played pills and a lime underline hairline on one verb."
+        }
+      ],
+      "sceneId": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d"
+    },
+    {
+      "moments": [
+        {
+          "id": "focus-a",
+          "description": "Dark instrument photo on the upper half, FOCUS ON THE MUSIC emphasised in ink, the second line dimmer."
+        },
+        {
+          "id": "focus-b",
+          "description": "Both lines full ink with lime full stop; calm pill strip below fully lime-played, representing handled files."
+        }
+      ],
+      "sceneId": "3848f442-c894-45fe-a298-0dc6a442f54f"
+    },
+    {
+      "moments": [
+        {
+          "id": "offer-a",
+          "description": "Black grid canvas, sonicdesk wordmark with lime full stop, offer text in lime, faint ink pills."
+        },
+        {
+          "id": "cta-b",
+          "description": "Same layout plus the square lime SIGN UP button with near-black text; the offer stays lime."
+        }
+      ],
+      "sceneId": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e"
+    }
+  ],
+  "events": [
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "hook-a",
+        "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:5:11:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-0",
+      "at": "2026-10-28T12:25:48.220521+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-0"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "hook-a",
+        "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-1",
+      "at": "2026-10-28T12:32:09.101964+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-1"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "hook-b",
+        "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-2",
+      "at": "2026-10-28T12:32:10.998615+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-2"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "chaos-a",
+        "sceneId": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b:chaos-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-3",
+      "at": "2026-10-28T12:32:15.621436+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-3"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "order-b",
+        "sceneId": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b:order-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-4",
+      "at": "2026-10-28T12:32:17.743457+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-4"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": true,
+      "detail": {
+        "moment": "versions-a",
+        "sceneId": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:6ebb2ddb-a720-4316-aef9-2e183a7d6d1d:versions-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-5",
+      "at": "2026-10-28T12:32:18.27308+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-5"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": true,
+      "detail": {
+        "moment": "versions-b",
+        "sceneId": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:6ebb2ddb-a720-4316-aef9-2e183a7d6d1d:versions-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-6",
+      "at": "2026-10-28T12:32:18.867346+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-6"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "focus-a",
+        "sceneId": "3848f442-c894-45fe-a298-0dc6a442f54f",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:3848f442-c894-45fe-a298-0dc6a442f54f:focus-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-7",
+      "at": "2026-10-28T12:32:21.587061+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-7"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "focus-b",
+        "sceneId": "3848f442-c894-45fe-a298-0dc6a442f54f",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:3848f442-c894-45fe-a298-0dc6a442f54f:focus-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-8",
+      "at": "2026-10-28T12:32:24.529169+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-8"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "offer-a",
+        "sceneId": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:c929bcbb-08f5-4c13-a3f8-fc254fa5d14e:offer-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-9",
+      "at": "2026-10-28T12:32:25.772394+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-9"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "cta-b",
+        "sceneId": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e",
+        "variantId": "dd6dd1e2-73b9-4070-9a17-db193c2d9f06"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:c929bcbb-08f5-4c13-a3f8-fc254fa5d14e:cta-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-10",
+      "at": "2026-10-28T12:32:26.450566+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-10"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "hook-a",
+        "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-11",
+      "at": "2026-10-28T12:32:29.344523+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-11"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "hook-b",
+        "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-12",
+      "at": "2026-10-28T12:32:32.367676+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-12"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "chaos-a",
+        "sceneId": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b:chaos-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-13",
+      "at": "2026-10-28T12:32:34.012745+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-13"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "order-b",
+        "sceneId": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b:order-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-14",
+      "at": "2026-10-28T12:32:35.337265+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-14"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": true,
+      "detail": {
+        "moment": "versions-a",
+        "sceneId": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:6ebb2ddb-a720-4316-aef9-2e183a7d6d1d:versions-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-15",
+      "at": "2026-10-28T12:32:36.538793+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-15"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": true,
+      "detail": {
+        "moment": "versions-b",
+        "sceneId": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:6ebb2ddb-a720-4316-aef9-2e183a7d6d1d:versions-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-16",
+      "at": "2026-10-28T12:32:37.074837+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-16"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "focus-a",
+        "sceneId": "3848f442-c894-45fe-a298-0dc6a442f54f",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:3848f442-c894-45fe-a298-0dc6a442f54f:focus-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-17",
+      "at": "2026-10-28T12:32:38.249245+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-17"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "focus-b",
+        "sceneId": "3848f442-c894-45fe-a298-0dc6a442f54f",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:3848f442-c894-45fe-a298-0dc6a442f54f:focus-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-18",
+      "at": "2026-10-28T12:32:39.428927+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-18"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "offer-a",
+        "sceneId": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:c929bcbb-08f5-4c13-a3f8-fc254fa5d14e:offer-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-19",
+      "at": "2026-10-28T12:32:39.875959+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-19"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "cta-b",
+        "sceneId": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e",
+        "variantId": "95529e8a-e674-4449-8a8d-d97afdf89e48"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:95529e8a-e674-4449-8a8d-d97afdf89e48:c929bcbb-08f5-4c13-a3f8-fc254fa5d14e:cta-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-20",
+      "at": "2026-10-28T12:32:40.398906+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-20"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "hook-a",
+        "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-21",
+      "at": "2026-10-28T12:32:44.088305+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-21"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "hook-b",
+        "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-22",
+      "at": "2026-10-28T12:32:45.728072+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-22"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "chaos-a",
+        "sceneId": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b:chaos-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-23",
+      "at": "2026-10-28T12:32:47.228251+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-23"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "order-b",
+        "sceneId": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b:order-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-24",
+      "at": "2026-10-28T12:32:49.931081+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-24"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": true,
+      "detail": {
+        "moment": "versions-a",
+        "sceneId": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:6ebb2ddb-a720-4316-aef9-2e183a7d6d1d:versions-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-25",
+      "at": "2026-10-28T12:32:50.497652+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-25"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": true,
+      "detail": {
+        "moment": "versions-b",
+        "sceneId": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:6ebb2ddb-a720-4316-aef9-2e183a7d6d1d:versions-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-26",
+      "at": "2026-10-28T12:32:51.113466+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-26"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "focus-a",
+        "sceneId": "3848f442-c894-45fe-a298-0dc6a442f54f",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:3848f442-c894-45fe-a298-0dc6a442f54f:focus-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-27",
+      "at": "2026-10-28T12:32:52.481597+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-27"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "focus-b",
+        "sceneId": "3848f442-c894-45fe-a298-0dc6a442f54f",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:3848f442-c894-45fe-a298-0dc6a442f54f:focus-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-28",
+      "at": "2026-10-28T12:32:54.521382+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-28"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "offer-a",
+        "sceneId": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:c929bcbb-08f5-4c13-a3f8-fc254fa5d14e:offer-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-29",
+      "at": "2026-10-28T12:32:55.467558+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-29"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "cta-b",
+        "sceneId": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e",
+        "variantId": "d9995414-1fd7-4c5f-b174-a47a8f8eee1e"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:d9995414-1fd7-4c5f-b174-a47a8f8eee1e:c929bcbb-08f5-4c13-a3f8-fc254fa5d14e:cta-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-30",
+      "at": "2026-10-28T12:32:56.113588+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-30"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "hook-a",
+        "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-31",
+      "at": "2026-10-28T12:32:59.407023+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-31"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "hook-b",
+        "sceneId": "f0175d7f-163d-4e99-ae8e-66011730fa11",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-32",
+      "at": "2026-10-28T12:33:02.30315+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-32"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "chaos-a",
+        "sceneId": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b:chaos-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-33",
+      "at": "2026-10-28T12:33:04.582725+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-33"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "order-b",
+        "sceneId": "c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b:order-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-34",
+      "at": "2026-10-28T12:33:07.21225+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-34"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": true,
+      "detail": {
+        "moment": "versions-a",
+        "sceneId": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:6ebb2ddb-a720-4316-aef9-2e183a7d6d1d:versions-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-35",
+      "at": "2026-10-28T12:33:08.849201+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-35"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": true,
+      "detail": {
+        "moment": "versions-b",
+        "sceneId": "6ebb2ddb-a720-4316-aef9-2e183a7d6d1d",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:6ebb2ddb-a720-4316-aef9-2e183a7d6d1d:versions-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-36",
+      "at": "2026-10-28T12:33:09.469233+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-36"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "focus-a",
+        "sceneId": "3848f442-c894-45fe-a298-0dc6a442f54f",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:3848f442-c894-45fe-a298-0dc6a442f54f:focus-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-37",
+      "at": "2026-10-28T12:33:11.389057+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-37"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "focus-b",
+        "sceneId": "3848f442-c894-45fe-a298-0dc6a442f54f",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:3848f442-c894-45fe-a298-0dc6a442f54f:focus-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-38",
+      "at": "2026-10-28T12:33:13.63069+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-38"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "offer-a",
+        "sceneId": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:c929bcbb-08f5-4c13-a3f8-fc254fa5d14e:offer-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-39",
+      "at": "2026-10-28T12:33:14.339067+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-39"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "detail": {
+        "moment": "cta-b",
+        "sceneId": "c929bcbb-08f5-4c13-a3f8-fc254fa5d14e",
+        "variantId": "c29986af-d0a4-4efc-869a-36a8e80a3159"
+      },
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:still:9:28:c29986af-d0a4-4efc-869a-36a8e80a3159:c929bcbb-08f5-4c13-a3f8-fc254fa5d14e:cta-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-40",
+      "at": "2026-10-28T12:33:14.918302+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-40"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:wrap:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-a",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-41",
+      "at": "2026-10-28T12:33:37.938032+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-41"
+    },
+    {
+      "kind": "render",
+      "model": "Local processing",
+      "proxy": false,
+      "status": "done",
+      "stepId": "e2941a63-87d2-419d-ab93-3b1ff7e62a7c:wrap:dd6dd1e2-73b9-4070-9a17-db193c2d9f06:f0175d7f-163d-4e99-ae8e-66011730fa11:hook-b",
+      "message": "Work in progress, not checked.",
+      "costMicroUsd": 0,
+      "id": "recorded-42",
+      "at": "2026-10-28T12:33:40.290966+00:00",
+      "imageUrl": "/api/studio/fixture/director?asset=event&event=recorded-42"
+    }
+  ],
+  "failedCheckReport": {
+    "passed": false,
+    "findings": [
+      {
+        "check": "safe-area",
+        "message": "Text enters a platform exclusion: LOST TRACK OF YOUR BEST TAKE?",
+        "frame": 0
+      },
+      {
+        "check": "legibility",
+        "message": "No visible glyph pixels: LOST TRACK OF YOUR BEST TAKE?",
+        "frame": 0
+      }
+    ],
+    "sampledFrames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "durationFrames": 1,
+    "renderMs": 7609
+  }
+}

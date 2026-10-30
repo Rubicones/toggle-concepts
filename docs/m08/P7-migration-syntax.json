@@ -1,0 +1,36 @@
+{
+  "databaseConnected": false,
+  "migrationsApplied": false,
+  "results": [
+    {
+      "file": "supabase/migrations/20261028004000_director_pipeline.sql",
+      "sql": "pass",
+      "plpgsql": "pass",
+      "functions": 10
+    },
+    {
+      "file": "supabase/migrations/20261028004100_director_critic.sql",
+      "sql": "pass",
+      "plpgsql": "pass",
+      "functions": 1
+    },
+    {
+      "file": "supabase/migrations/20261028004200_director_delivery.sql",
+      "sql": "pass",
+      "plpgsql": "pass",
+      "functions": 5
+    },
+    {
+      "file": "supabase/migrations/20261028004300_director_ad_review.sql",
+      "sql": "pass",
+      "plpgsql": "pass",
+      "functions": 2
+    },
+    {
+      "file": "supabase/migrations/20261028004400_director_retirement.sql",
+      "sql": "pass",
+      "plpgsql": "pass",
+      "functions": 2
+    }
+  ]
+}

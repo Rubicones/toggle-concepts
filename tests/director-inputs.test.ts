@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import fixture from '../fixtures/creative/live/brand.json';
+import input from '../fixtures/director/input.json';
+import {approvedBrandModule,approvedScenes,variantFacts,type BrandMaterial} from '../packages/director/inputs';
+import type {BrandDraft} from '../packages/contracts/brand-kit';
+import type {Variant} from '../packages/director/types';
+test('approved brand kit remains a system of facts and actual files without layout scaffolds',()=>{const materials=fixture.materials.map(m=>({...m,filename:m.id,metadata:m.metadata})) as BrandMaterial[],brand=approvedBrandModule(fixture.kit as BrandDraft,materials,{},{});assert.ok(brand.fonts.length);assert.ok(brand.logos.length);assert.ok(Object.keys(brand.tokens).every(k=>!k.endsWith('.compositions')&&!k.endsWith('.zones')));assert.ok(brand.rawKit);});
+test('approved storyboard identities are minted by the app and content is preserved',()=>{const scenes=approvedScenes([{sceneId:'model-key',startTime:0,endTime:1,onScreenCopy:'Exact words.',visualNotes:'Free camera staging.'}],'issued-direction');assert.notEqual(scenes[0].id,'model-key');assert.deepEqual(scenes[0].copy,['Exact words.']);assert.equal(scenes[0].visualNotes,'Free camera staging.');});
+test('five-axis variants cannot silently collapse conflicting approved copy',()=>{const scenes=input.storyboard,variants:Variant[]=[{...input.variants[0],id:'one'},{...input.variants[0],id:'two'}];assert.throws(()=>variantFacts({variants,scenes,directionIndex:0,referenceLocale:'en-GB',protectedCopy:{},localization:[{copySlot:'onScreen_1_1',locale:'en-GB',text:'First.',variantIds:['one']},{copySlot:'onScreen_1_1',locale:'en-GB',text:'Second.',variantIds:['two']}]}),/AMBIGUOUS_ORDERED_VARIANTS/);});

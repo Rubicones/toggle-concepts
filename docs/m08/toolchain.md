@@ -1,0 +1,11 @@
+# Local composition toolchain
+
+Create a workspace with `createWorkspace(root, issuedDirectionInput)`. It contains immutable `brand.ts`, `runtime.ts`, `entry.tsx`, `input.json`, a local `public/` directory and agent-owned `Composition.tsx` plus supporting files. The default export accepts `format`, `locale`, `hook`, `cta` and `length`. Approved copy is exported by `brand.ts`; resource URLs use `staticFile` and are materialized before rendering. FontFace loads the actual kit font files.
+
+Call `sandboxTool(folder, 'typecheck' | 'bundle' | 'render', args)` from the local worker. Render arguments carry an exact issued variant and options for video, sampled frames and checks. `renderDirection` is the child implementation, never a path for executing generated code in the worker. Composition code is compiled by webpack/TypeScript and executes only in Chromium. Bundle and source tools must pass the same import/determinism policy. Tool results are observations, never a layout fix.
+
+Install Chrome Headless Shell once using `require('@remotion/renderer').ensureBrowser({chromeMode:'headless-shell'})`. GSAP plugins are installed through the normal package manifest. Import `useGsapTimeline` and plugins from `./runtime`; construct only paused timelines in that hook. Use `useCurrentFrame()` for Three.js mesh transforms. Never use a clock, CSS animation/transition, `useFrame`, timers, network requests, Node APIs or unseeded randomness in a composition.
+
+Run the offline Sonicdesk proof with `node --import tsx scripts/director/verify-p0.ts`. Source assets come from the captured build and recorded campaign stills. `--formats=vertical,square` reruns selected formats and retains the other format reports. `--no-video` runs only frame checks. This does not open a visible browser or perform a subjective visual review. Previews and per-frame PNGs are under `artifacts/m08/workspaces/sonicdesk/p0/d0/i0/renders/`. Reported checks cover sampled frames; the vision critic remains responsible for aesthetic and motion judgment. Sampling is not a proof about every unsampled pixel/frame.
+
+All four project checks run with `node scripts/director/check-phase.mjs P<n>`. Detailed logs stay in ignored artifacts; compact results go in `docs/m08/`.

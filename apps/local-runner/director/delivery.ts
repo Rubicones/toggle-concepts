@@ -1,0 +1,69 @@
+import {directorDeliveryEvents} from './events';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {resolve,dirname} from 'node:path';
+import {createHash} from 'node:crypto';
+import {createCanvas,loadImage} from '@napi-rs/canvas';
+import {adminClient,checked,sharedTenant} from '../../../packages/data/shared-runtime';
+import {objectStore} from '../../../packages/media/s3.server';
+import type {BlockSnapshot} from '../../../packages/director/state';
+import type {DirectionInput,Variant,CheckReport} from '../../../packages/director/types';
+import type {DraftDelivery,CreativeFile} from '../../../packages/creative/delivery';
+import {confinedPath} from '../../../packages/director/policy.local';
+import {createWorkspace} from './workspace';
+import {materialize} from './assets';
+import {snapshotFolder} from './snapshots';
+import {criticEvidence} from './filmstrips';
+import {sandboxTool} from './sandbox';
+const sha=(bytes:Uint8Array|string)=>createHash('sha256').update(bytes).digest('hex');
+export type SealedIteration={id:string;block_id:string;direction_id:string;source_hash:string;payload:{folder:string;source:{hash:string;files:{path:string;source:string;sha256:string}[]};catalog:{id:string;revisionId:string;url:string;thumbnail:string;sha256:string;renderSha256?:string;proxy?:boolean;imageSource?:{url:string;mime:string}}[];reports:Record<string,CheckReport>;unchecked?:boolean;construction?:import('../../../packages/director/construction').DraftConstruction;sourceChecks?:import('../../../packages/director/review').SourceChecks;design?:import('../../../packages/director/contract').Design}};
+export async function restoreIteration(iteration:SealedIteration,snapshot:BlockSnapshot,campaignId:string){
+ const input=structuredClone(snapshot.inputs.find(i=>i.directionId===iteration.direction_id)!);if(!input)throw new Error('UNISSUED_DIRECTION');input.iterationId=iteration.id;const folder=await createWorkspace('artifacts/m08/workspaces',input);
+ for(const file of iteration.payload.source.files){if(sha(file.source)!==file.sha256)throw new Error('SEALED_SOURCE_CHANGED');const path=await confinedPath(folder,file.path);await mkdir(dirname(path),{recursive:true});await writeFile(path,file.source);}
+ await materialize(folder,snapshot);
+ for(const entry of iteration.payload.catalog??[]){const row=checked(await adminClient().from('asset_revisions').select('object_key,sha256').eq('id',entry.revisionId).eq('campaign_id',campaignId).eq('tenant_id',sharedTenant).single());if(!row||row.sha256!==entry.sha256)throw new Error('RESOURCE_BYTES_CHANGED');const bytes=(await objectStore().get(row.object_key)).body;if(sha(bytes)!==entry.sha256)throw new Error('RESOURCE_BYTES_CHANGED');if(entry.imageSource){if(!/^[a-f0-9]{64}\.(png|jpg|webp)$/.test(entry.imageSource.url)||!entry.imageSource.url.startsWith(entry.sha256+'.'))throw new Error('RESOURCE_SOURCE_REQUIRED');await writeFile(await confinedPath(folder,'public/'+entry.imageSource.url),bytes);}let rendered:Uint8Array=bytes;if(entry.proxy){const original=await loadImage(bytes),s=Math.min(1,512/Math.max(original.width,original.height)),proxy=createCanvas(Math.max(1,Math.round(original.width*s)),Math.max(1,Math.round(original.height*s)));proxy.getContext('2d').drawImage(original,0,0,proxy.width,proxy.height);rendered=proxy.toBuffer('image/png');}if(entry.renderSha256&&sha(rendered)!==entry.renderSha256)throw new Error('RESOURCE_BYTES_CHANGED');await writeFile(await confinedPath(folder,'public/'+entry.url),rendered);const img=await loadImage(rendered),scale=Math.min(1,320/img.width),canvas=createCanvas(Math.round(img.width*scale),Math.max(1,Math.round(img.height*scale)));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);await writeFile(await confinedPath(folder,'public/'+entry.thumbnail),canvas.toBuffer('image/png'));}
+ if((await snapshotFolder(folder,iteration.id)).hash!==iteration.source_hash)throw new Error('SEALED_SOURCE_CHANGED');return {input,folder};
+}
+export async function storeDirectorFile(campaignId:string,iterationId:string,bytes:Uint8Array,mime:string,extension:string):Promise<CreativeFile>{const hash=sha(bytes),objectKey=`media/${sharedTenant}/${campaignId}/director/${iterationId}/${hash}.${extension}`;await objectStore().promote(objectKey,Buffer.from(bytes),mime).catch(async error=>{if(sha((await objectStore().get(objectKey)).body)!==hash)throw error;});return {objectKey,sha256:hash,mime,bytes:bytes.length};}
+export function validateDeliveryVariant(input:DirectionInput,variantId:string){const variant=input.variants.find(v=>v.id===variantId);if(!variant)throw new Error('UNISSUED_VARIANT');return variant;}
+export async function publishDirectorVariant(args:{iteration:SealedIteration;input:DirectionInput;folder:string;campaignId:string;variant:Variant;existing?:boolean;onStill?:Parameters<typeof sandboxTool>[4];onChecks?:(report:CheckReport)=>Promise<void>}){
+ const {iteration,input,folder,variant}=args;validateDeliveryVariant(input,variant.id);if(!input.stage)throw new Error('LEGACY_DRAFT_READ_ONLY');if((await snapshotFolder(folder,iteration.id)).hash!==iteration.source_hash)throw new Error('SEALED_SOURCE_CHANGED');
+ let report:CheckReport;if(args.existing)report=iteration.payload.reports[variant.id];else{await sandboxTool(folder,'typecheck',{});await sandboxTool(folder,'bundle',{});const result=JSON.parse((await sandboxTool(folder,'render',{variant,options:{video:input.stage!=='draft',check:true}},undefined,args.onStill)).trim().split('\n').at(-1)!);report=result.report;}
+ if(input.stage==='draft'&&report)await args.onChecks?.(report);
+ // A wrapped-up iteration is published as an unchecked draft preview; every other one needs passing checks.
+ if(!report?.passed&&!iteration.payload.unchecked)throw new Error('VARIANT_OBJECTIVE_CHECKS_FAILED');if(!report)throw new Error('RENDER_NOT_READY');
+ if(input.stage==='draft')return publishStaticFiles(args,report);
+ const output=resolve(folder,'renders',variant.id),mp4=await readFile(resolve(output,'preview.mp4'));if(mp4.length<12||mp4.subarray(4,8).toString()!=='ftyp')throw new Error('DRAFT_MP4_INVALID');
+ const frames=report.sampledFrames,images=await Promise.all(frames.map(f=>readFile(resolve(output,`${f}.png`)).then(loadImage))),w=240,h=Math.round(w*images[0].height/images[0].width),strip=createCanvas(w*4,h*Math.ceil(images.length/4));images.forEach((img,i)=>strip.getContext('2d').drawImage(img,i%4*w,Math.floor(i/4)*h,w,h));
+ const delivery:DraftDelivery={version:'creative-delivery@1',variantId:variant.id,programHash:iteration.source_hash,mp4:await storeDirectorFile(args.campaignId,iteration.id,mp4,'video/mp4','mp4'),contactStrip:await storeDirectorFile(args.campaignId,iteration.id,strip.toBuffer('image/png'),'image/png','png')};
+ return {delivery,report};
+}
+/** Publish a playable reference immediately, including iterations a critic rejects. */
+export async function publishDirectorReference(iteration:SealedIteration,input:DirectionInput,campaignId:string){
+ const admin=adminClient(),prior=checked(await admin.from('studio_director_deliveries').select('iteration_id').eq('iteration_id',iteration.id).eq('variant_id',input.variants[0].id).maybeSingle());if(prior)return;
+ if(input.stage==='draft'){
+  const result=await publishDirectorVariant({iteration,input,campaignId,folder:iteration.payload.folder,variant:input.variants[0],existing:true}),resourceThumbnails=[];
+  for(const r of iteration.payload.catalog??[])resourceThumbnails.push({id:r.id,file:await storeDirectorFile(campaignId,iteration.id,await readFile(resolve(iteration.payload.folder,'public',r.thumbnail)),'image/png','png')});
+  const source=await storeDirectorFile(campaignId,iteration.id,Buffer.from(JSON.stringify(iteration.payload.source)),'application/json','json');
+  checked(await admin.rpc('studio_publish_director_delivery',{iteration:iteration.id,variant:input.variants[0].id,document:{...result,resourceThumbnails,source},device:null,token:null}));return;
+ }
+ const result=await publishDirectorVariant({iteration,input,campaignId,folder:iteration.payload.folder,variant:input.variants[0],existing:true}),strips=await criticEvidence(iteration.payload.folder,input).catch(error=>{if(iteration.payload.unchecked)return {manifest:[],images:[]};throw error;}),filmstrips=[];
+ for(const strip of strips.manifest)filmstrips.push({format:strip.format,file:await storeDirectorFile(campaignId,iteration.id,await readFile(strip.strip),'image/png','png')});
+ const resourceThumbnails=[];for(const resource of iteration.payload.catalog??[])resourceThumbnails.push({id:resource.id,file:await storeDirectorFile(campaignId,iteration.id,await readFile(resolve(iteration.payload.folder,'public',resource.thumbnail)),'image/png','png')});
+ const source=await storeDirectorFile(campaignId,iteration.id,Buffer.from(JSON.stringify(iteration.payload.source)),'application/json','json');checked(await admin.rpc('studio_publish_director_delivery',{iteration:iteration.id,variant:input.variants[0].id,document:{...result,filmstrips,resourceThumbnails,source},device:null,token:null}));
+}
+export async function processDirectorDelivery(device:string){
+ const admin=adminClient(),claim=await admin.rpc('studio_claim_director_delivery',{target_tenant:sharedTenant,device});if(claim.error){if(['PGRST202','42883'].includes(claim.error.code??''))return false;throw new Error(claim.error.message);}if(!claim.data)return false;
+ const {job,iteration,block}=claim.data,emit=directorDeliveryEvents(admin,{iterationId:iteration.id,variantId:job.variant_id,campaignId:block.campaign_id,device,token:job.lease_token}),beat=setInterval(()=>{void Promise.resolve(admin.rpc('studio_heartbeat_director_delivery',{iteration:job.iteration_id,variant:job.variant_id,device,token:job.lease_token})).catch(()=>{});},15000);
+ try{if(block.snapshot.inputs.find((i:DirectionInput)=>i.directionId===iteration.direction_id)?.stage==='draft')throw new Error('DRAFT_EXPORT_DISABLED');await emit('start',{stepId:'local-delivery',kind:'delivery',status:'running',startedAt:new Date().toISOString(),message:'Preparing this variant locally · free.'});const restored=await restoreIteration(iteration,block.snapshot,block.campaign_id),variant=validateDeliveryVariant(restored.input,job.variant_id),result=await publishDirectorVariant({iteration,...restored,campaignId:block.campaign_id,variant,onChecks:async report=>{await emit('checks',{stepId:'local-checks',kind:'checks',status:'done',message:report.passed?'Automatic still checks passed.':'Automatic still checks found issues.',detail:{result:{reports:{[variant.format]:report}}}});},onStill:async still=>{const file=await confinedPath(restored.folder,still.file.startsWith(restored.folder+'/')?still.file.slice(restored.folder.length+1):'rejected');await emit(`still:${still.sceneId}:${still.moment}`,{stepId:`still:${still.sceneId}:${still.moment}`,kind:'render',status:'done',proxy:iteration.payload.design?.resources.some((r:{scene:string;proxy?:boolean})=>r.scene===still.sceneId&&r.proxy),message:'Work in progress, not checked.',detail:{sceneId:still.sceneId,moment:still.moment}},file);}});checked(await admin.rpc('studio_publish_director_delivery',{iteration:iteration.id,variant:variant.id,document:result,device,token:job.lease_token}));await emit('done',{stepId:'local-delivery',kind:'delivery',status:'done',endedAt:new Date().toISOString(),message:'This variant’s static frames are ready.'});}
+ catch(error){checked(await admin.rpc('studio_fail_director_delivery',{iteration:job.iteration_id,variant:job.variant_id,device,token:job.lease_token,reason:error instanceof Error?error.message:'DELIVERY_FAILED'}));await emit('failed',{stepId:'local-delivery',kind:'delivery',status:'failed',endedAt:new Date().toISOString(),message:'These local frames could not be prepared. Saved work stays available.',detail:{error:error instanceof Error?error.message:'Local rendering failed'}});}finally{clearInterval(beat);}return true;
+}
+
+/** Contact sheets only arrange exported stills; they never alter the agent's frame layout. */
+export async function publishStaticFiles(args:{iteration:SealedIteration;input:DirectionInput;folder:string;campaignId:string;variant:Variant},report:CheckReport){
+ const output=resolve(args.folder,'renders',args.variant.id),manifest:import('./static-render').StaticStill[]=JSON.parse(await readFile(resolve(output,'stills.json'),'utf8'));
+ if(!manifest.length)throw new Error('STATIC_STILLS_REQUIRED');
+ const stills=[];for(const still of manifest){if(!/^\d+\.png$/.test(still.file))throw new Error('STATIC_STILL_FILE_INVALID');stills.push({...still,file:await storeDirectorFile(args.campaignId,args.iteration.id,await readFile(resolve(output,still.file)),'image/png','png')});}
+ const images=await Promise.all(manifest.map(s=>readFile(resolve(output,s.file)).then(loadImage))),sceneIds=[...new Set(manifest.map(s=>s.sceneId))],cols=Math.max(...sceneIds.map(id=>manifest.filter(s=>s.sceneId===id).length)),w=300,h=Math.round(w*images[0].height/images[0].width),sheet=createCanvas(w*cols,(h+32)*sceneIds.length),g=sheet.getContext('2d');g.fillStyle='#111';g.fillRect(0,0,sheet.width,sheet.height);g.font='16px sans-serif';g.fillStyle='#fff';
+ manifest.forEach((s,i)=>{const row=sceneIds.indexOf(s.sceneId),col=manifest.slice(0,i).filter(x=>x.sceneId===s.sceneId).length;g.drawImage(images[i],col*w,row*(h+32),w,h);g.fillText(`Scene ${args.input.storyboard.findIndex(scene=>scene.id===s.sceneId)+1} · ${s.moment}${args.iteration.payload.design?.resources.some(r=>r.scene===s.sceneId&&r.proxy)?' · still proxy':''}${args.iteration.payload.unchecked?' · unchecked':''}`,col*w+8,row*(h+32)+h+22);});
+ const contactStrip=await storeDirectorFile(args.campaignId,args.iteration.id,sheet.toBuffer('image/png'),'image/png','png');return {delivery:{version:'static-delivery@1' as const,variantId:args.variant.id,programHash:args.iteration.source_hash,stills,contactStrip},report};
+}
