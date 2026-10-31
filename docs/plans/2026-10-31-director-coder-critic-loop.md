@@ -15,6 +15,8 @@
 
 ## 2. Principles of the redesign
 
+- **Goals, not recipes (owner, 31 October).** Prompts state the quality outcome — every word fully visible and easy to read at the real ad size, in every format and locale, without fighting the subject — and offer an open repertoire of techniques (split screens, colour fields, clean areas planned into the picture, plates, gradients, darkened or blurred zones, collages, type as image, and others). Agents choose and invent per style. Concrete numbers below (line counts, scrim opacities, reserve percentages) are reference examples from the owner's 1win work, not rules for the agents; only technical floors (no clipped glyphs, minimum text size, safe areas) are enforced.
+
 - **Measure in code, judge with a model.** Geometry, overflow, collisions, safe areas, minimum size and contrast are measured deterministically. Research (PRISM, CVPR 2026 Findings; arXiv 2607.11598) shows vision models miss small overlaps and cannot localise principle violations; a model "pass" never overrides a measured failure. The critic model judges what numbers cannot: idea, hierarchy, staging, brand feel, format re-staging.
 - **Agents still author.** The app measures and reports; the director and coder choose the legibility technique, crop and layout. No presets, zones or autofixes (`AGENTS.md` §2).
 - **Bounded and convergent.** Every repair path has a hard count. A finding that survives two targeted repairs becomes a reported known issue for the AD, not another loop (lesson from Sonicdesk).
