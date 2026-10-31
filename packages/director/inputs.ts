@@ -102,7 +102,9 @@ export function variantFacts(args:{variants:Variant[];scenes:Scene[];directionIn
      const dirObj=sourceDirection?.value;
      const hookMap=dirObj?.hook&&typeof dirObj.hook==='object'&&!Array.isArray(dirObj.hook)?dirObj.hook as Record<string,unknown>:undefined;
      const hookCandidate=index===0&&hookMap?(hookMap[v.hook]??hookMap[`hook-${v.hook}`]):undefined;
-     sceneCopy[scene.id]=typeof hookCandidate==='string'&&cleanOnScreenCopyLine(hookCandidate)?[cleanOnScreenCopyLine(hookCandidate)]:scene.copy;
+     const cleanedHook=typeof hookCandidate==='string'?cleanOnScreenCopyLine(hookCandidate):'';
+     const subcopySuffix=cleanedHook&&!cleanedHook.includes('\n')&&scene.copy[0]?.includes('\n')?'\n'+scene.copy[0].split('\n').slice(1).join('\n'):'';
+     sceneCopy[scene.id]=cleanedHook?[cleanedHook+subcopySuffix,...scene.copy.slice(1)]:scene.copy;
     }
     else throw Object.assign(new Error('APPROVED_LOCALIZED_SCENE_COPY_REQUIRED'),{detail:`Scene ${index+1}, ${v.locale}, hook ${v.hook}, ${v.length}s has no approved on-screen binding.`});
    }

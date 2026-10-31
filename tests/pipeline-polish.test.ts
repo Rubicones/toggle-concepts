@@ -27,6 +27,8 @@ import liveVisual from '../fixtures/creative/live/visual-direction.json';
 import liveStrategy from '../fixtures/creative/live/strategy.json';
 import {dashboardItems} from '../packages/contracts/dashboard';
 import {eventPriceLabel,type DirectorEvent} from '../packages/director/events';
+import {directionHistory} from '../packages/director/direction-history';
+import {requestId} from '../packages/director/money';
 const envelope=(deliverable:unknown)=>JSON.stringify({schemaVersion:'1.0',role:'variants',status:'draft',summary:'Scope audit',deliverable,inputRefs:[],assumptions:[],blockingQuestions:[],warnings:[],handoff:{nextRole:'script',requiredInputs:[],checks:[]}});
 const entries=Array.from({length:128},(_,i)=>({id:`issued-${i}`,conceptSlot:1,locale:i%2?'de-DE':'en-GB',hook:`hook-${Math.floor(i/2)}`,offer:'primary',beatSequence:'primary',durationSeconds:6,placementId:'square'}));
 
@@ -200,8 +202,15 @@ test('slotId storyboard aliases, hook variation maps, stage-direction stripping 
  assert.equal(presentation[0].hook,'Losing track of song versions?');
  assert.deepEqual(presentation[0].rest.hookVariations,{'hook-1':'Your band\'s music, always in sync.','hook-2':'Stop the version chaos.'});
  assert.match(planningTransportTask('strategy'),/specific promoted feature/);
+ assert.match(planningTransportTask('strategy'),/radically distinct in their visual world/);
  assert.match(planningTransportTask('script'),/NEVER prefix copy with stage labels/);
+ assert.match(planningTransportTask('script'),/two-tier on-screen copy/);
  assert.match(planningTransportTask('visual-direction'),/Hero Styleframe/);
+ assert.match(planningTransportTask('visual-direction'),/reconstruct authentic, high-density product UI components/);
+ const twoTierScenes=approvedScenes([{sceneId:'scene-1',startSeconds:0,endSeconds:1.5,copy:'TEST THE HOOK BEFORE IT\'S DONE.\nCut 5–30 seconds of the mix right in the song.'}],'dir-two-tier');
+ const twoTierDirections=readPlanningDirections({threeDirections:[{conceptId:'c1',hook:{primary:'TEST THE HOOK BEFORE IT\'S DONE.','hook-1':'CUT IT. POST IT. HEAR WHAT LANDS.'},timedStoryboard:[{sceneId:'scene-1',startSeconds:0,endSeconds:1.5,copy:'TEST THE HOOK BEFORE IT\'S DONE.\nCut 5–30 seconds of the mix right in the song.'}]}]});
+ const twoTierFacts=variantFacts({variants:[{id:'v-p',format:'vertical',locale:'en-GB',hook:'primary',cta:'primary',length:6},{id:'v-h1',format:'vertical',locale:'en-GB',hook:'hook-1',cta:'primary',length:6}],scenes:twoTierScenes,directionIndex:0,referenceLocale:'en-GB',localization:[{copySlot:'cta',locale:'en-GB',text:'Sign up',variantIds:['v-p','v-h1']}],sourceDirections:twoTierDirections,protectedCopy:{}});
+ assert.deepEqual(twoTierFacts['v-h1'].sceneCopy[twoTierScenes[0].id],['CUT IT. POST IT. HEAR WHAT LANDS.\nCut 5–30 seconds of the mix right in the song.']);
  for(const role of ['research','strategy','variants','script','localization','visual-direction']){
   const serialized=JSON.stringify(agentResponseSchema(role,{entries:variants}).schema);
   assert.ok(!serialized.includes('"additionalProperties":true'),`${role} schema must not contain additionalProperties:true`);
@@ -210,4 +219,20 @@ test('slotId storyboard aliases, hook variation maps, stage-direction stripping 
   assert.match(planningTransportTask(role,variants as never,2),/RETRY COMPACTNESS OVERRIDE/);
  }
  assert.ok(lintStaticComposition('export default function Frame(){const res={ready:true,proxy:true,url:"x"};return !res.proxy?null:null;}').some(i=>i.includes('!res.proxy')));
+});
+
+test('directionHistory preserves canonical 1..3 numbers when remaining directions are built in separate blocks',()=>{
+ const roundId='round-canonical-test';
+ const d1Id=requestId({roundId,direction:0});
+ const d2Id=requestId({roundId,direction:1});
+ const d3Id=requestId({roundId,direction:2});
+ const blocksNewestFirst=[
+  {round_id:roundId,snapshot:{inputs:[{directionId:d2Id}]}},
+  {round_id:roundId,snapshot:{inputs:[{directionId:d3Id}]}},
+  {round_id:roundId,snapshot:{inputs:[{directionId:d1Id}]}}
+ ];
+ const history=directionHistory(blocksNewestFirst,roundId);
+ assert.deepEqual(history.get(d1Id),{number:1,archived:false});
+ assert.deepEqual(history.get(d2Id),{number:2,archived:false});
+ assert.deepEqual(history.get(d3Id),{number:3,archived:false});
 });
