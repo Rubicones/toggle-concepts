@@ -24,7 +24,7 @@ export function liveResourceBindings(input:DirectionInput,resources:Resource[],c
   if(!input.resourceIds.includes(resource.id))throw new Error('UNISSUED_RESOURCE_ID');
   const key=independentResourceBindings(input)?resourceRequest(resource,input,1).key:undefined;
   const ready=catalog.find(c=>c.id===resource.id&&(!key||c.requestHash===key));
-  bindings[resource.id]={id:resource.id,sceneId:resource.scene,url:ready?.url??'',proxy:resource.proxy,proxyFor:resource.proxyFor,ready:!!ready,...(ready?{revisionId:ready.revisionId}:{}),...(key?{requestHash:key}:{})};
+  bindings[resource.id]={id:resource.id,sceneId:resource.scene,url:ready?.url??'',proxy:resource.proxy,proxyFor:resource.proxyFor,ready:!!ready,...(ready?{revisionId:ready.revisionId,width:ready.width,height:ready.height,...(ready.image?{image:ready.image}:{})}:{}),...(key?{requestHash:key}:{})};
  }
  return bindings;
 }

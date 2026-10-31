@@ -1,7 +1,7 @@
 # Plan: stronger director → coder → critic loop for live static drafts
 
 - **Date:** 2026-10-31
-- **Status:** proposal, awaiting owner decisions (section 6). Nothing here is implemented yet.
+- **Status:** phase 1 implemented on branch `claude/cool-goodall-qboh37` (see `docs/reviews/2026-10-31-loop-phase-1.md`); phases 2–3 planned. Owner decisions are recorded in section 6.
 - **Builds on:** `docs/claude-task-01-critic-prompt.md` (rendering-free critic), `docs/product-context.md` (taste and creative judgment), the owner's `1win-partners-static` skill (image methods only), public design skills (section 7).
 
 ## 1. What goes wrong today (from the code)
@@ -44,7 +44,7 @@ Prompt changes in `packages/agents/prompts/director-v1.ts` (and its handoff text
 3. **Sequencing:** the coder still writes the square component while pictures are in flight, but adaptation and legibility are finished against real metadata: when the first resources arrive, the next coder turn receives an "images arrived" construction focus with the metadata (inside the existing 9-request allowance).
 4. **Image model upgrade** to `gemini-3.1-flash-image` after confirming availability and price on OpenRouter (list ≈ $0.067 per 1K image vs ≈ $0.039 before); keep the adapter's model allowlist explicit.
 5. **Reference wording by role:** product/UI references say "exact product/interface of image N", people references keep identity wording; one role per reference (from the skill).
-6. **Later (phase 3): edit instead of regenerate** (from the skill): a resource note becomes an image edit "Edit this exact image. Change ONLY …" with the source as image 1, then a pixel-exact local merge (ECC alignment, fixed box or mask, feather, colour match on a ring; everything outside stays the original bytes). Outpaint for a format without reserve = one zoom-out pass + stitch with an ECC floor. Optional composition blocking sketch (flat shapes rasterised from the director's own plan) as image 1 for hard compositions. Method table: new plot → regenerate with sketch; remove → local inpaint; change object → masked edit + merge; small detail → close-up crop edit + merge; another format → crop of the reserved master.
+6. **Phase 3: sketch, inpaint/edit + merge, outpaint + stitch** — the owner's skill methods, adapted to this pipeline (detailed in W6).
 
 ### W3. Coder: legibility playbook and type mechanics
 
@@ -77,11 +77,38 @@ Prompt changes in `packages/agents/prompts/static-coder.ts`:
 4. **Output:** at most 5 ranked notes (P0–P3), each `{recipient, view {format,width,height,locale,hook,cta,sceneId,moment}, element, problem, fix}`. Assembler notes run as targeted `{path, oldText, newText}` edits; director-level notes go to the AD as a recommendation (no automatic paid re-direction); image notes become resource notes (phase 3 edit path).
 5. **Model:** a cheap vision model by default (e.g. `google/gemini-3.1-flash-lite`, ≈ $0.001 per check at low media resolution), configurable in Models & agents; output and reasoning tokens capped.
 
+### W6. Image methods from the owner's skill: sketch, inpaint and stitching (phase 3)
+
+All three keep one rule from the skill: an approved picture is never re-rendered as a whole to change a part; only the changed region is taken from a new generation and merged back, and everything outside it stays the original bytes.
+
+1. **Composition sketch (blocking).**
+   - The director may add an optional `sketch` to a resource: a few flat shapes in fractions of the frame — subject, secondary object, horizon, the reserved copy area — with a tone (light/dark) each. This is the director's own creative decision, written as data.
+   - The app rasterises it deterministically (flat fills, ~160 px, upscaled to 768 px, blur σ≈2, so only layout and light direction survive) and sends it as reference image 1 with fixed wording: "use ONLY for composition, camera angle and light direction; not for textures or details". The skill's test showed that without a sketch the model falls back to a centred standard shot.
+   - **Clean regeneration** reuses the same mechanism: when a liked picture has many problems or looks "neural", its own blurred 160 px version becomes the sketch for a fresh generation, so no texture leaks from the old image.
+   - Contract: optional field, ignored by older readers; counts toward the model's reference limit (sketch + up to 2 supplied references with today's limit of 3).
+2. **Inpaint / partial edit + merge back.**
+   - A resource note (from the AD, later from the critic) becomes an **edit request**, not a new brief: source image as image 1 (+ an identity reference such as the logo or product), the prompt "Edit this exact image. Change ONLY <the part>. Keep framing, identity, colours and every other detail identical. No colour grading.", and a target region in fractions.
+   - Method table, chosen by the note's kind:
+     | Note | Method |
+     |---|---|
+     | new plot / angle / hero | regenerate with a sketch |
+     | remove a small thing (speck, stray object, baked text) | masked edit of a tight region (local LaMa inpaint can be added later, free) |
+     | change an object / outfit | masked edit + merge through the mask |
+     | small detail (logo, hand, label) | close-up crop edit: crop ~512 px around the detail, upscale, edit, downscale, merge |
+     | many notes at once / looks generated | clean regeneration with its own sketch |
+     | another format | crop of the reserved master; no reserve → outpaint (3) |
+   - **Merge** runs locally on the worker (Node, `@napi-rs/canvas`/`sharp`): align the edit to the source (translation + scale by phase correlation, the skill's ECC equivalent), take only the fixed region box (not a threshold mask), feather it (σ ≈ 1–2.5 % of the long side), match colour on a ring around it, and keep every pixel outside identical. Recorded QA numbers: alignment score (≥ 0.95), `outsideIdentical: true`, seam colour step ΔE (< 3). A failed check never activates the edit; the source stays current.
+3. **Outpaint + stitch** for a format the reserved master cannot serve.
+   - Pad the approved source on a neutral grey canvas: at most 2 sides per pass, at most ~1.8× per pass, source placed where the copy needs room.
+   - Edit request: "fill ONLY the flat grey areas with a seamless continuation… do not change anything in the photo area".
+   - Stitch the original back pixel-exact over the generated canvas with a wide feather into smooth areas; require alignment ≥ ~0.85 and identical source area, check seams; a bad seam means the other variant or a regeneration, never a hidden crop.
+4. **Money and bounds.** Every edit/outpaint is a priced image request with its own small per-direction allowance (e.g. 2 edits), the same reserve/claim/settle path and a key `digest(source sha256, instruction, region, references)`. A method that fails twice on the same note is not retried with new wording: the note goes back to the AD with the two results (the skill's "change method, don't loop").
+
 ## 4. Phases
 
 1. **Phase 1 — prompts and image facts (low risk, high impact):** W1, W3, W2.1–W2.3, W2.5. New prompt versions only affect new requests; frozen requests keep their text.
 2. **Phase 2 — measurement and critic:** W4, W5, model binding fix, quote changes, `AGENTS.md` §2/§4/§8 updates.
-3. **Phase 3 — image edits:** W2.4 (if not done earlier), W2.6.
+3. **Phase 3 — image methods:** W6 (sketch, inpaint/edit + merge, outpaint + stitch); W2.4 when the owner approves the model change.
 
 Each phase: recorded fixtures only, no paid calls; `npm run typecheck`, `npm run lint`, relevant `node --import tsx --test` suites; a review in `docs/reviews/`.
 
@@ -92,12 +119,12 @@ Each phase: recorded fixtures only, no paid calls; `npm run typecheck`, `npm run
 - Contrast estimated from source pixels ignores semi-transparent CSS effects beyond plates/scrims; it is reported as an estimate.
 - Changing `estimateLiveDirection` changes new quote identities only; active blocks keep frozen estimates.
 
-## 6. Decisions for the owner
+## 6. Owner decisions (31 October 2026)
 
-1. Can the critic see a few real low-resolution views (e.g. ≤ 6 key views at ~512 px in one contact sheet per round), or only schematic evidence (telemetry + boxes drawn over the actual generated images)? The first is a narrow exception to the "no screenshot sweeps" rule.
-2. Critic model: cheap vision model by default, or the director's model.
-3. Image model: move to `gemini-3.1-flash-image` (after checking OpenRouter), or keep the current one.
-4. Order: phase 1 first, or phases 1–2 together.
+1. **Critic sees real views:** yes — up to ~6 key views at ~512 px in one contact sheet per critic round, rendered by the headless Chrome the studio Mac already has (Remotion headless shell in the sandbox). This is a narrow exception to the "no screenshot sweeps" rule, to be written into `AGENTS.md` in phase 2; there are still no sweeps over all variants.
+2. **Critic model:** a cheap vision model by default (e.g. `google/gemini-3.1-flash-lite`), configurable in Models & agents.
+3. **Image model:** keep `google/gemini-2.5-flash-image` for now. Its availability on OpenRouter should still be checked before the next live run, because Google lists its shutdown as 2026-10-02.
+4. **Order:** phase 1 first, then phase 2.
 
 ## 7. Sources
 

@@ -35,8 +35,8 @@ registerRoot(()=> <>{formats.map(f=><Composition key={f.id} id={f.id} component=
 export const sourceDigest=async(folder:string)=>createHash('sha256').update(await readFile(resolve(folder,JSON.parse(await readFile(resolve(folder,'input.json'),'utf8')).stage==='draft'?'Frame.tsx':'Composition.tsx'))).digest('hex');
 
 /** The coder references issued resource IDs while images arrive independently. */
-export async function writeResources(folder:string,input:DirectionInput,catalog:{id:string;url:string;proxy?:boolean;proxyFor?:string}[]){
- const resources=Object.fromEntries(input.resourceIds.map(id=>{const ready=catalog.find(r=>r.id===id);return [id,{id,url:ready?.url??'',ready:!!ready,proxy:ready?.proxy??false,proxyFor:ready?.proxyFor}];}));
- await atomicFile(resolve(folder,'resources.ts'),`export const resources:Record<string,{id:string;url:string;ready:boolean;proxy?:boolean;proxyFor?:string}>=${JSON.stringify(resources)};\n`);
+export async function writeResources(folder:string,input:DirectionInput,catalog:{id:string;url:string;proxy?:boolean;proxyFor?:string;width?:number;height?:number;image?:import('../../../packages/director/image-facts').ImageFacts}[]){
+ const resources=Object.fromEntries(input.resourceIds.map(id=>{const ready=catalog.find(r=>r.id===id);return [id,{id,url:ready?.url??'',ready:!!ready,proxy:ready?.proxy??false,proxyFor:ready?.proxyFor,...(ready?.width&&ready.height?{width:ready.width,height:ready.height}:{}),...(ready?.image?{image:ready.image}:{})}];}));
+ await atomicFile(resolve(folder,'resources.ts'),`export type ImageFacts={v:1;subject:[number,number,number,number];focus:[number,number];luma:number[];busy:number[];calm:number[]};\nexport const resources:Record<string,{id:string;url:string;ready:boolean;proxy?:boolean;proxyFor?:string;width?:number;height?:number;image?:ImageFacts}>=${JSON.stringify(resources)};\n`);
  await atomicFile(resolve(folder,'catalog.json'),JSON.stringify([...input.assets,...catalog]));
 }
