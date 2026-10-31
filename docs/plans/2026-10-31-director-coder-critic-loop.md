@@ -1,7 +1,7 @@
 # Plan: stronger director → coder → critic loop for live static drafts
 
 - **Date:** 2026-10-31
-- **Status:** phases 1 and 2 implemented on branch `claude/cool-goodall-qboh37` (see `docs/reviews/2026-10-31-loop-phase-1.md` and `docs/reviews/2026-10-31-live-draft-critic.md`); phase 3 planned. Owner decisions are recorded in section 6.
+- **Status:** phases 1–3 implemented on branch `claude/cool-goodall-qboh37` (see `docs/reviews/2026-10-31-loop-phase-1.md`, `docs/reviews/2026-10-31-live-draft-critic.md` and `docs/reviews/2026-10-31-image-methods.md`). Owner decisions are recorded in section 6.
 - **Builds on:** `docs/claude-task-01-critic-prompt.md` (rendering-free critic), `docs/product-context.md` (taste and creative judgment), the owner's `1win-partners-static` skill (image methods only), public design skills (section 7).
 
 ## 1. What goes wrong today (from the code)

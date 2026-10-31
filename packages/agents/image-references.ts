@@ -1,5 +1,7 @@
 import {z} from 'zod';
-export const imageReferenceSchema=z.strictObject({id:z.uuid(),sha256:z.string().regex(/^[a-f0-9]{64}$/),mime:z.enum(['image/png','image/jpeg','image/webp']),bytes:z.number().int().positive().max(10485760),width:z.number().int().positive().max(2048),height:z.number().int().positive().max(2048)}).refine(r=>r.width*r.height<=2097152,'Use references up to two megapixels.');
+export const derivedReferenceKey=/^staging\/director-derived\/[a-f0-9]{64}\.(png|jpg)$/;
+/** objectKey marks an application-made reference (a director sketch or an extension canvas) held in staging storage. */
+export const imageReferenceSchema=z.strictObject({id:z.uuid(),sha256:z.string().regex(/^[a-f0-9]{64}$/),mime:z.enum(['image/png','image/jpeg','image/webp']),bytes:z.number().int().positive().max(10485760),width:z.number().int().positive().max(2048),height:z.number().int().positive().max(2048),objectKey:z.string().regex(derivedReferenceKey).optional()}).refine(r=>r.width*r.height<=2097152,'Use references up to two megapixels.');
 export type ImageReference=z.infer<typeof imageReferenceSchema>;
 export function resolveImageReferences(ids:string[],assets:{id:string;sha256:string;mime:string;bytes:number;inspection:unknown}[]):ImageReference[]{
  if(ids.length>3||new Set(ids).size!==ids.length)throw new Error('INVALID_IMAGE_REFERENCES');

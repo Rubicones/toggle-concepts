@@ -3,7 +3,7 @@ import {canonicalJson} from '../contracts/common';
 import type {MediaPlan,BrandSystem,CreativeRepair} from '../contracts/creative-drafts';
 import type {FrameResource} from '../contracts/frame-program';
 import {nearestImageRatio} from './media-rules';
-export type StillRequest={key:string;prompt:string;references:string[];purpose:string;aspectRatio:ReturnType<typeof nearestImageRatio>;resolution:'draft';maxCostMicroUsd?:number};
+export type StillRequest={key:string;prompt:string;references:string[];purpose:string;aspectRatio:ReturnType<typeof nearestImageRatio>;resolution:'draft';maxCostMicroUsd?:number;derived?:import('../contracts/image-generation').DerivedReference[]};
 export type StillProducer=(request:StillRequest)=>Promise<FrameResource>;
 /** The pack hash includes framing, look, shot identity and reference digests. A durable producer reconciles it before submitting. */
 export async function produceMediaPlan(plan:MediaPlan,brand:BrandSystem,resources:FrameResource[],produce:StillProducer,cache:Map<string,FrameResource>=new Map(),options:{aspect?:(element:string)=>number;maxStills?:number;perStillMicroUsd?:number}={}){
