@@ -7,14 +7,17 @@ import {createHash,randomUUID} from 'node:crypto';
 import {limits} from '../../../packages/director/policy.local';
 const exec=promisify(execFile);
 /** Mandatory macOS OS sandbox; fails closed on other platforms until an equivalent is configured. */
-export async function sandboxTool(folder:string,operation:'bundle'|'render'|'typecheck'|'probe'|'preview',args:unknown,runtimeLimitMs:number=limits.renderMs,onStill?:(value:{variantId:string;sceneId:string;moment:string;file:string})=>Promise<void>){
+export async function sandboxTool(folder:string,operation:'bundle'|'render'|'typecheck'|'probe'|'preview'|'inspect',args:unknown,runtimeLimitMs:number=limits.renderMs,onStill?:(value:{variantId:string;sceneId:string;moment:string;file:string})=>Promise<void>){
  if(process.platform!=='darwin')throw new Error('DIRECTOR_OS_SANDBOX_UNAVAILABLE');
  const root=await realpath(folder),temp=resolve(root,'.tmp',randomUUID());await mkdir(temp,{recursive:true});
  const shortTemp='/private/tmp/m08-'+createHash('sha256').update(temp).digest('hex').slice(0,12);await rm(shortTemp,{force:true});await symlink(temp,shortTemp);
  const renderPort=(operation==='render'||operation==='probe')?await availableRenderPort():0,debugPort=(operation==='render'||operation==='probe')?await availableRenderPort():0;
  let browserPath:string|undefined;
+ const arch=process.arch==='arm64'?'arm64':'x64',headlessShell=process.env.DIRECTOR_CHROME_PATH??resolve(`node_modules/.remotion/chrome-headless-shell/mac-${arch}/chrome-headless-shell-mac-${arch}/chrome-headless-shell`);
+ // Layout inspection drives the browser over a pipe: no network port is opened and the page itself is offline.
+ if(operation==='inspect'){await access(headlessShell);browserPath=headlessShell;}
  if(operation==='render'){
-  const arch=process.arch==='arm64'?'arm64':'x64',actual=process.env.DIRECTOR_CHROME_PATH??resolve(`node_modules/.remotion/chrome-headless-shell/mac-${arch}/chrome-headless-shell-mac-${arch}/chrome-headless-shell`);await access(actual);
+  const actual=headlessShell;await access(actual);
   browserPath=resolve(temp,'chrome-wrapper');await writeFile(browserPath,`#!${process.execPath}\nconst {spawn}=require('node:child_process');const c=spawn(${JSON.stringify(actual)},process.argv.slice(2).map(a=>a==='--remote-debugging-port=0'?'--remote-debugging-port=${debugPort}':a),{stdio:'inherit'});c.on('exit',(code)=>process.exit(code??1));c.on('error',()=>process.exit(1));\n`);await chmod(browserPath,0o700);
  }
  const network=(operation==='render'||operation==='probe')?`(allow network-inbound (local ip "localhost:*"))(allow network-outbound (remote ip "localhost:${renderPort}") (remote ip "localhost:${debugPort}"))`:'';
