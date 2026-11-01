@@ -13,7 +13,8 @@ export function brandbookBriefCandidates(findings: SubmittedFinding[], briefEvid
   const candidates: BriefCandidate[] = [], conflicts: string[] = [];
   const add = (field: BriefField, value: string, source: BriefEvidence) => {if (value.trim()) candidates.push({field, value: value.trim(), sources: [source]});};
   for (const row of briefEvidence) if (fields.has(row.field)) add(row.field as BriefField, row.value, {kind: 'brief', id: row.id, locator: row.locator, evidence: row.evidence});
-  const kept = findings.filter(f => f.decision !== 'reject');
+  // Only findings marked “Use this” carry forward.
+  const kept = findings.filter(f => f.decision === 'keep');
   for (const row of kept) {
     if (!eligible.has(row.field)) continue;
     const source: BriefEvidence = {kind: 'finding', id: row.findingId, locator: row.locator, evidence: row.evidence};
@@ -35,9 +36,9 @@ export function brandbookBriefCandidates(findings: SubmittedFinding[], briefEvid
     if (candidates.some(c => c.field === target) || !rows.length) return;
     candidates.push({field: target, value: [...new Set(rows.map(r => r.value.trim()))].join('\n\n'), sources: rows.map(r => ({kind: 'finding', id: r.findingId, locator: r.locator, evidence: r.evidence}))});
   };
-  const names = kept.filter(r => r.field === 'brandName'), chosenNames = names.filter(r => r.decision === 'keep');
+  const names = kept.filter(r => r.field === 'brandName');
   const descriptions = kept.filter(r => r.field === 'brandDescription');
-  fallback('product', descriptions.length ? descriptions : chosenNames.length ? chosenNames : new Set(names.map(r => r.value.trim())).size === 1 ? names : []);
+  fallback('product', descriptions.length ? descriptions : names);
   fallback('immutables', kept.filter(r => r.field === 'productIdentity'));
   const suggestions: BriefCandidate[] = [];
   for (const field of briefSuggestionFields) {

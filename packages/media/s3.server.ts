@@ -2,6 +2,31 @@ import { S3Client, HeadObjectCommand, GetObjectCommand, PutObjectCommand, Delete
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { adminClient } from "../data/shared-runtime";
 import { storageConfig } from "../data/config.server";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+
+// Final media/ objects are written once (IfNoneMatch / upsert:false) and never change under the same key,
+// so a local copy is reused instead of downloading the same bytes again on every director claim, restore,
+// delivery or vision request. Callers still verify sha256 themselves. staging/ keys are never cached.
+const objectCacheDirectory = resolve(process.env.STUDIO_OBJECT_CACHE_DIR ?? "artifacts/cache/objects");
+const objectCachePath = (key: string) => resolve(objectCacheDirectory, createHash("sha256").update(key).digest("hex"));
+type StoredObject = { body: Buffer; etag?: string };
+async function cachedGet(key: string, download: (key: string) => Promise<StoredObject>): Promise<StoredObject> {
+  if (!key.startsWith("media/")) return download(key);
+  const path = objectCachePath(key);
+  try { return { body: await readFile(path), etag: "" }; }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") console.error("Local media cache is unreadable; downloading the object."); }
+  const result = await download(key);
+  try {
+    await mkdir(objectCacheDirectory, { recursive: true, mode: 0o700 });
+    const temporary = `${path}.${randomUUID()}.tmp`;
+    await writeFile(temporary, result.body, { mode: 0o600 });
+    await rename(temporary, path);
+  } catch { /* A cache write failure never fails the read. */ }
+  return result;
+}
+const forgetCachedObject = (key: string) => unlink(objectCachePath(key)).catch(() => {});
 
 export function objectStore() {
   if (process.env.MEDIA_BACKEND === "supabase") return supabaseObjectStore();
@@ -12,7 +37,7 @@ export function objectStore() {
   return {
     putStaging: (value: string, body: Buffer, mime: string) => client.send(new PutObjectCommand({ ...base(value), Body: body, ContentType: mime })),
     head: (value: string) => client.send(new HeadObjectCommand(base(value))),
-    get: async (value: string) => {
+    get: (value: string) => cachedGet(value, async (value: string) => {
       const result = await client.send(new GetObjectCommand(base(value)));
       // Local validator bounds the response while streaming; a forged Content-Length is insufficient.
       const chunks: Buffer[] = []; let bytes = 0;
@@ -23,12 +48,12 @@ export function objectStore() {
         chunks.push(Buffer.from(chunk));
       }
       return { body: Buffer.concat(chunks), etag: result.ETag };
-    },
+    }),
     promote: (to: string, body: Buffer, mime: string) => {
       if (!to.startsWith("media/")) throw new Error("INVALID_FINAL_KEY");
       return client.send(new PutObjectCommand({ ...base(to), Body: body, ContentType: mime, IfNoneMatch: "*" }));
     },
-    delete: (value: string) => client.send(new DeleteObjectCommand(base(value))),
+    delete: async (value: string) => { const result = await client.send(new DeleteObjectCommand(base(value))); await forgetCachedObject(value); return result; },
     signPut: async (value: string, mime: string, expiresIn: number) => {
       if (!value.startsWith("staging/")) throw new Error("FINAL_KEY_NOT_WRITABLE");
       return getSignedUrl(client, new PutObjectCommand({ ...base(value), ContentType: mime }), { expiresIn, signableHeaders: new Set(["content-type"]) });
@@ -49,9 +74,9 @@ function supabaseObjectStore() {
  return {
   putStaging:(key:string,body:Buffer,mime:string)=>{if(!key.startsWith("staging/"))throw new Error("INVALID_OBJECT_KEY");return upload(key,body,mime);},
   head:async(key:string)=>{const r=await storage.info(valid(key));if(r.error)throw storageError(r.error);return {ContentLength:r.data.size};},
-  get:async(key:string)=>{const link=await storage.createSignedUrl(valid(key),30);if(link.error)throw storageError(link.error);const response=await fetch(link.data.signedUrl,{signal:AbortSignal.timeout(20000)});if(!response.ok||!response.body)throw new Error("STORAGE_UNAVAILABLE");const reader=response.body.getReader(),chunks:Uint8Array[]=[];let bytes=0;while(true){const part=await reader.read();if(part.done)break;bytes+=part.value.byteLength;if(bytes>(key.includes("/brand/")?52428800:10485760)){await reader.cancel();throw new Error("ASSET_VALIDATION_FAILED");}chunks.push(part.value);}return {body:Buffer.concat(chunks),etag:""};},
+  get:(key:string)=>cachedGet(key,async(key:string)=>{const link=await storage.createSignedUrl(valid(key),30);if(link.error)throw storageError(link.error);const response=await fetch(link.data.signedUrl,{signal:AbortSignal.timeout(20000)});if(!response.ok||!response.body)throw new Error("STORAGE_UNAVAILABLE");const reader=response.body.getReader(),chunks:Uint8Array[]=[];let bytes=0;while(true){const part=await reader.read();if(part.done)break;bytes+=part.value.byteLength;if(bytes>(key.includes("/brand/")?52428800:10485760)){await reader.cancel();throw new Error("ASSET_VALIDATION_FAILED");}chunks.push(part.value);}return {body:Buffer.concat(chunks),etag:""};}),
   promote:(key:string,body:Buffer,mime:string)=>{if(!key.startsWith("media/"))throw new Error("INVALID_FINAL_KEY");return upload(key,body,mime);},
-  delete:async(key:string)=>{const r=await storage.remove([valid(key)]);if(r.error)throw new Error("STORAGE_UNAVAILABLE");return r.data;},
+  delete:async(key:string)=>{const r=await storage.remove([valid(key)]);if(r.error)throw new Error("STORAGE_UNAVAILABLE");await forgetCachedObject(key);return r.data;},
   signPut:async()=>{throw new Error("USE_INTERFACE_UPLOAD");},
   signGet:async(key:string,filename:string)=>{if(!key.startsWith("media/"))throw new Error("STAGING_NOT_READABLE");const r=await storage.createSignedUrl(valid(key),60,{download:filename});if(r.error)throw new Error("STORAGE_UNAVAILABLE");return r.data.signedUrl;},
  };

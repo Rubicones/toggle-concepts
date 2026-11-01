@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {brandbookBriefCandidates, type SubmittedFinding} from '../packages/brand/brief-prefill';
 import {fieldExtractionRequest, parseFieldResponse} from '../packages/brand/field-extraction';
-const finding=(field:string,value:string,decision='unreviewed'):SubmittedFinding=>({findingId:'source-'+field,field,value,decision,evidence:'provided',locator:'source paragraph'});
+const finding=(field:string,value:string,decision='keep'):SubmittedFinding=>({findingId:'source-'+field,field,value,decision,evidence:'provided',locator:'source paragraph'});
 
 test('existing submitted descriptions and invariants prefill eligible questions without a model request',()=>{
  const result=brandbookBriefCandidates([finding('brandDescription','A shared workspace for musicians.'),finding('productIdentity','Keep the product name lowercase.')],[]);
@@ -33,4 +33,7 @@ test('incremental reader can save questionnaire answers alongside brand fields w
  assert.ok(JSON.stringify(fieldExtractionRequest(true).responseSchema).includes('brief.audience'));
  assert.ok(!JSON.stringify(fieldExtractionRequest(false).responseSchema).includes('brief.audience'));
  assert.match(fieldExtractionRequest(true).prompt,/never derive an audience/);
+});
+test('unmarked brandbook findings never prefill the brief',()=>{
+ assert.equal(brandbookBriefCandidates([finding('brandDescription','Unmarked product','unreviewed'),finding('productIdentity','Unmarked rule','unreviewed')],[]).suggestions.length,0);
 });

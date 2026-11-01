@@ -21,7 +21,7 @@ function displayText(item:BrandbookItem){
  return item.value;
 }
 function choicesFor(key:string,items:BrandbookItem[]):BrandbookChoice[]{
- const rows=items.filter(item=>item.decision!=='reject'&&mapping[key]?.includes(item.field));
+ const rows=items.filter(item=>item.decision==='keep'&&mapping[key]?.includes(item.field));
  return rows.flatMap(item=>{
   const source={findingId:item.findingId,status:item.evidence,materialId:item.materialId,locator:excerpt(item.locator,1000)};
   if(key.startsWith('color.'))return findingPresentation(item.value,item.field).colors.filter(c=>/^#[a-f\d]{6}(?:[a-f\d]{2})?$/i.test(c.value)).map(c=>({...source,label:[c.label,c.context,c.value].filter(Boolean).join(' · '),value:c.value}));
@@ -48,12 +48,12 @@ export function pickBrandColors(choices:BrandbookChoice[]){
  return out;
 }
 
-/** Curate working A1 fields from an immutable source book. Never approve anything. Safe to repeat: only empty, unreviewed rules are filled. */
+/** Curate working A1 fields from an immutable source book. Never approve anything. Safe to repeat: only empty, unreviewed rules are filled.
+ * Only findings the AD marked “Use this” (decision 'keep') carry forward; unmarked groups stay empty for the brand agent to build. */
 export function importBrandbookToA1(base:BrandDraft,book:BrandbookHeader,items:BrandbookItem[],c1:{id:string;immutables?:string;sourceAssetIds?:string[]},makeId:()=>string){
- const draft:BrandDraft=structuredClone(base),usable=items.filter(item=>item.decision!=='reject');
+ const draft:BrandDraft=structuredClone(base),usable=items.filter(item=>item.decision==='keep');
  if(!draft.sourceAssetIds.length&&c1.sourceAssetIds?.length)draft.sourceAssetIds=[...new Set(c1.sourceAssetIds)].slice(0,20);
- const colorRows=usable.filter(i=>mapping['color.ink'].includes(i.field)),keptColors=colorRows.filter(i=>i.decision==='keep');
- const colorPicks=pickBrandColors(choicesFor('color.ink',keptColors.length?keptColors:colorRows));
+ const colorPicks=pickBrandColors(choicesFor('color.ink',usable));
  const text=(fields:string[])=>usable.filter(i=>fields.includes(i.field)).map(displayText).filter(Boolean).join('\n\n');
  if(!draft.instructions.trim())draft.instructions=excerpt(text(['brandName','brandDescription','voice','tone','imagery'])||'Develop campaign directions from the submitted C1 brief and cited brandbook. Preserve product facts and source artwork; propose any missing creative rules for the art director to review.',8000);
  if(!draft.boundaries.trim())draft.boundaries=excerpt(text(['productIdentity','prohibitions'])||c1.immutables||'',3000);
@@ -63,7 +63,7 @@ export function importBrandbookToA1(base:BrandDraft,book:BrandbookHeader,items:B
  for(const fullKey of keys){
   const [category,...parts]=fullKey.split('.'),key=parts.join('.'),existing=draft.rules.find(r=>r.category===category&&r.key===key);
   if(existing&&(existing.value.trim()||existing.decision!=='unreviewed'))continue;
-  const rows=usable.filter(i=>mapping[fullKey]?.includes(i.field)),selected=rows.filter(i=>i.decision==='keep'),preferred=selected.length?selected:rows;
+  const rows=usable.filter(i=>mapping[fullKey]?.includes(i.field)),preferred=rows;
   const choices=choicesFor(fullKey,preferred);
   let value='';
   const candidate=category==='color'||category==='typography'&&key.endsWith('Family');
@@ -81,13 +81,13 @@ export function importBrandbookToA1(base:BrandDraft,book:BrandbookHeader,items:B
   const source=evidenceRows[0]??rows[0];
   let rule:BrandRule={id:existing?.id??makeId(),category:category as BrandRule['category'],key,value,status:source?evidenceRows.some(i=>i.evidence==='inferred')?'inferred':'provided':'unknown',decision:'unreviewed',sourceVerified:false,
    provenance:source?{kind:'material',sourceId:source.materialId,locator:excerpt(source.locator,1000)}:{kind:'proposal',sourceId:null,locator:''},
-   reason:source?`Imported from brandbook v${book.version_no}. Review the cited findings${candidate?' and choose the campaign value':''}. Full originals remain in the submitted book.`:'Missing from submitted materials; the AD must provide or source this rule.',
+   reason:source?`Imported from brandbook v${book.version_no}. Review the cited findings${candidate?' and choose the campaign value':''}. Full originals remain in the submitted book.`:'Nothing chosen in the brandbook; the brand agent proposes this rule.',
    ...(source?{brandbookSource:{submissionId:book.id,findingIds:[...new Set((evidenceRows.length?evidenceRows:rows).map(i=>i.findingId))]}}:{})};
   if(fullKey==='product.immutables'&&!value&&c1.immutables?.trim())rule={...rule,value:excerpt(c1.immutables,2000),status:'provided',provenance:{kind:'c1',sourceId:c1.id,locator:'Submitted questionnaire: immutables'},reason:'Copied from the fixed C1 product constraints; AD source review is pending.'};
   if(existing)draft.rules[draft.rules.indexOf(existing)]=rule;else draft.rules.push(rule);
  }
  // Each kept logo/icon file becomes its own logo rule so the creative engine can place the actual artwork.
- const artwork=usable.filter(i=>['wordmark','icon','logo','logoFiles','symbol'].includes(i.field)&&i.decision==='keep');
+ const artwork=usable.filter(i=>['wordmark','icon','logo','logoFiles','symbol'].includes(i.field));
  for(const [index,item] of artwork.slice(0,4).entries()){
   const key=`${item.field==='icon'||item.field==='symbol'?'icon':'wordmark'}${index?index+1:''}`;
   if(draft.rules.some(r=>r.category==='logo'&&(r.key===key||r.provenance.kind==='material'&&r.provenance.sourceId===item.materialId&&r.key!=='usage'))||draft.rules.length>=40)continue;

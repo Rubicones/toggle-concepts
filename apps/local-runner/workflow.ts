@@ -16,6 +16,8 @@ import {variantAuditTask} from '../../packages/contracts/variant-identities';
 import {transientExecutionFailure} from '../../packages/director/execution-failures';
 // Trusted local dispatcher. Never imported by Next.js; never executes generated code.
 import {processGuidedCampaign} from "./guided-campaign";
+import {watch as watchFolder} from "node:fs";
+import {studioChangeDirectory} from "../../packages/data/studio-changes";
 import type {ProviderErrorDetail} from "../../packages/contracts/provider-error";
 import {diagnoseIntakeOutput} from "../../packages/contracts/brand-intake";
 import {loadBrandVision} from "../../packages/brand/vision.local";
@@ -48,6 +50,15 @@ async function codeFingerprint(){
 }
 let restartForNewCode=false;
 const wait=(ms:number)=>new Promise(r=>setTimeout(r,ms));
+// An idle worker sleeps longer between empty queue sweeps (each sweep is ~9 API calls) but wakes as soon
+// as Next.js or another worker publishes a work/workspace change, so new work still starts immediately.
+const idleDelay=(quietMs:number)=>quietMs<5000?2000:quietMs<15000?5000:10000;
+function waitForWork(ms:number){return new Promise<void>(done=>{
+ let watcher:ReturnType<typeof watchFolder>|undefined;
+ const finish=()=>{clearTimeout(timer);watcher?.close();done();};
+ const timer=setTimeout(finish,ms);
+ try{watcher=watchFolder(studioChangeDirectory,(_,name)=>{const topic=name?.toString();if(topic==='work'||topic==='workspace')finish();});watcher.on('error',()=>{watcher?.close();watcher=undefined;});}catch{/* Without a change folder the timer alone decides. */}
+});}
 async function rpc(name:string,args:Record<string,unknown>){return checked(await admin.rpc(name,args));}
 async function flushProviderAnchors(){
  for(const file of await readdir(resolve(directory,'provider-ids'))){if(!file.endsWith('.json'))continue;
@@ -172,7 +183,7 @@ async function main(){
    if(Date.now()-checked_at>5000){checked_at=Date.now();if(await codeFingerprint()!==startedWith){restartForNewCode=true;break;}}
    await flushReceipts();await flushProviderAnchors();try{if(await processDirectorWork(device)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis()){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
    const claim=await rpc("studio_claim_workflow",{target_tenant:sharedTenant,device}) as Claim|null;
-   if(claim){idle=Date.now();await execute(claim);}else await wait(2000);
+   if(claim){idle=Date.now();await execute(claim);}else await waitForWork(idleDelay(Date.now()-idle));
   }
  }finally{if(timer)clearInterval(timer);await rpc("studio_workflow_device",{device,target_tenant:sharedTenant,online:false}).catch(()=>{});await unlink(lock).catch(()=>{});
   // Hand over to a worker that loads the current code; it takes the lock and continues the queue.

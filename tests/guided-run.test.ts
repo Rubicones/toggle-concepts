@@ -5,7 +5,7 @@ import {importBrandbookToA1,brandbookRuleChoices,type BrandbookItem} from '../pa
 import {brandAcceptanceBlockers,emptyBrandDraft} from '../packages/contracts/brand-kit';
 import {guidedRunCommand,guidedMilestoneStates,runAttention,type GuidedRunView} from '../packages/contracts/guided-run';
 const book={id:randomUUID(),version_no:2,sha256:'a'.repeat(64),summary:{findings:305}},material=randomUUID(),c1={id:randomUUID(),immutables:'Keep the actual product UI intact.'};
-const item=(field:string,value:string):BrandbookItem=>({findingId:randomUUID(),field,value,materialId:material,locator:'Source section',decision:'unreviewed',evidence:'provided'});
+const item=(field:string,value:string):BrandbookItem=>({findingId:randomUUID(),field,value,materialId:material,locator:'Source section',decision:'keep',evidence:'provided'});
 test('305 source findings produce a curated A1 working kit without approving or replacing the immutable book',()=>{
  const items=Array.from({length:305},(_,i)=>item(i%2?'voice':'primaryColors',i%2?'A calm, precise voice.':JSON.stringify({name:'Accent '+i,hex:'#DFFF00'}))),before=structuredClone(items);
  const result=importBrandbookToA1(emptyBrandDraft(['en-GB']),book,items,c1,randomUUID);
@@ -67,4 +67,14 @@ test('one-click review fills missing required rules with recorded defaults',asyn
  const {applyRunBrandReview,brandAcceptanceBlockers}=await import('../packages/contracts/brand-kit');
  const draft=applyRunBrandReview(emptyBrandDraft(['en-GB']),{reviewerName:'AD',note:'ok',fallbackRuleId:null});
  assert.deepEqual(brandAcceptanceBlockers(draft,['en-GB'],c1.id,[],[]),[]);assert.ok(draft.rules.every(r=>r.decision==='accepted'&&r.value));
+});
+test('only findings marked “Use this” carry forward; unmarked groups stay empty for the brand agent',()=>{
+ const unmarked=(field:string,value:string)=>({...item(field,value),decision:'unreviewed'});
+ const rows=[unmarked('primaryColors','{"name":"accent","hex":"#ff0000"}'),unmarked('voice','Loud and punchy'),unmarked('wordmark','<svg viewBox="0 0 10 10"></svg>'),item('imagery','Grainy film photography'),unmarked('photography','Glossy studio packshots'),unmarked('bodyFonts','Inter')];
+ const result=importBrandbookToA1(emptyBrandDraft(['en-GB']),book,rows,c1,randomUUID),rule=(c:string,k:string)=>result.rules.find(r=>r.category===c&&r.key===k);
+ for(const key of ['ink','paper','accent'])assert.equal(rule('color',key)?.value??'','');
+ assert.equal(rule('voice','tone')?.value,'');assert.equal(rule('typography','bodyFamily')?.value,'');
+ assert.equal(rule('imagery','treatment')?.value,'Grainy film photography');
+ assert.ok(!result.rules.some(r=>r.category==='logo'&&r.key!=='usage'));
+ assert.doesNotMatch(result.instructions,/Loud and punchy|Glossy/);
 });

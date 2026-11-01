@@ -121,7 +121,7 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
         <div>
           <p className="eyebrow">CHOOSE WHAT FITS</p>
           <h2>Pick your brand, field by field.</h2>
-          <p>Open a field and press “Use this” on what fits. Undecided fields are fine.</p>
+          <p>Open a field and press “Use this” on what fits. Only what you mark goes forward; the agents build the rest.</p>
         </div>
         <div className="brandbook-total">
           <strong>
@@ -469,15 +469,15 @@ function FindingList({ endpoint, field, merge, onChanged }: { endpoint: string; 
   return (
     <section className={`brandbook-finding-list ${["primaryColors", "secondaryColors", "semanticColors"].includes(field) ? "is-palette" : ""}`}>
       <p>
-        {merge === "array" ? "Use the option(s) that are right. The rest are kept but ignored." : "Statements from all your files. Exclude anything wrong or outdated."}
+        {merge === "array" ? "Mark the option(s) that are right with “Use this”. Unmarked options are not used." : "Statements from all your files. Mark the ones to use with “Use this”; unmarked ones are not used."}
       </p>
       {error && <p role="alert">{error}</p>}
       {merge === "concat" && (
         <Disclosure>
-          <summary>Combined statements currently loaded</summary>
+          <summary>Combined statements that will be used</summary>
           <div style={{ whiteSpace: "pre-wrap" }}>
             {all
-              .filter((f) => f.decision !== "reject")
+              .filter((f) => f.decision === "keep")
               .map((f) => f.edited_value ?? f.value)
               .join("\n\n")}
           </div>
