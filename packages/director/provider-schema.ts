@@ -17,3 +17,12 @@ export function providerJsonSchema(schema:unknown):unknown{
  }
  return out;
 }
+
+/** Type arrays such as ["string","null"] as anyOf, the nullable form every strict structured-output dialect accepts. */
+export function typeArraysAsAnyOf(schema:unknown):unknown{
+ if(Array.isArray(schema))return schema.map(typeArraysAsAnyOf);
+ if(!schema||typeof schema!=='object')return schema;
+ const {type,...rest}=schema as Record<string,unknown>,out:Record<string,unknown>=Object.fromEntries(Object.entries(rest).map(([k,v])=>[k,typeArraysAsAnyOf(v)]));
+ if(Array.isArray(type)){if(Object.keys(out).length)return {anyOf:type.map(t=>({type:t,...(t!=='null'?out:{})}))};return {anyOf:type.map(t=>({type:t}))};}
+ return type===undefined?out:{type,...out};
+}

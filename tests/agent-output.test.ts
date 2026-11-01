@@ -63,3 +63,28 @@ test('provider request contains the native role schema and performs no automatic
   assert.equal(result.outcome,'succeeded');assert.equal(calls,1);assert.equal(body.response_format?.type,'json_schema');assert.deepEqual(body.response_format?.json_schema.schema.properties.role.enum,['research']);assert.equal(body.provider?.allow_fallbacks,false);
  }finally{globalThis.fetch=saved;}
 });
+
+test('draft planning answers are pinned to the machine role on every model with structured outputs',async()=>{
+ const {planningEnvelopeSchema,envelopeRoleInstruction,closedSchema,agentResponseSchema:schemaFor}=await import('../packages/contracts/agent-output');
+ const {providerJsonSchema,typeArraysAsAnyOf}=await import('../packages/director/provider-schema');
+ const manifest=lumaManifest as unknown as {entries:Record<string,unknown>[]},claude={id:'anthropic/claude-sonnet-4.6',supportedParameters:['structured_outputs','response_format']};
+ // Gemini 2.5 Flash keeps its exact earlier rule.
+ assert.equal(planningEnvelopeSchema({id:'google/gemini-2.5-flash',supportedParameters:['response_format']},schemaFor('variants',manifest)),true);
+ assert.throws(()=>planningEnvelopeSchema({id:'google/gemini-2.5-flash',supportedParameters:[]},schemaFor('variants',manifest)),/STRUCTURED_OUTPUT_UNAVAILABLE/);
+ // Other models: every planning role with a closed schema is pinned, the role is one literal, and nothing is open.
+ for(const role of ['research','strategy','variants','script','localization','visual-direction']){
+  const schema=schemaFor(role,manifest);assert.equal(planningEnvelopeSchema(claude,schema),true,role);
+  const sent=typeArraysAsAnyOf(providerJsonSchema(schema.schema)) as {properties:{role:{enum:string[]};handoff:{properties:{nextRole:unknown}}}};assert.ok(closedSchema(sent),role);assert.ok(!/"type":\[/.test(JSON.stringify(sent)),role);assert.deepEqual(sent.properties.handoff.properties.nextRole,{anyOf:[{type:'string'},{type:'null'}]});assert.ok(JSON.stringify(sent).length<2400,role);assert.deepEqual(sent.properties.role.enum,[role]);
+ }
+ assert.equal(planningEnvelopeSchema({id:'some/model',supportedParameters:['response_format']},schemaFor('variants',manifest)),false,'no structured outputs: plain JSON as before');
+ assert.equal(planningEnvelopeSchema(claude,schemaFor('localization')),false,'localization without a manifest has open rows and is not sent strict');
+ assert.equal(planningEnvelopeSchema(claude,schemaFor('layout',manifest)),false,'open deliverables are never sent strict');
+ // The failure that triggered this: a job title-like label is still rejected, and the task text names the literal value.
+ // The incident: an invented label is replaced on the live path, and the full role validation still decides.
+ const relabelled=prepareAgentOutput(envelope('variant_planner',{scopeSummary:'s',manifest:{useProvided:true},countExplanation:'c',coverage:'c',proposedAmendments:[]}),'variants',true,manifest);
+ assert.equal(JSON.parse(relabelled.text).role,'variants');assert.ok(relabelled.changes.includes('unrecognized-role-label'));
+ assert.throws(()=>prepareAgentOutput(envelope('variant_planner',{strategicBrief:'b'}),'variants',true,manifest),/MANIFEST_COVERAGE_MISMATCH|DELIVERABLE_MISSING/,'a different structure is still rejected');
+ assert.throws(()=>prepareAgentOutput(envelope('strategy',{scopeSummary:'s',manifest:{useProvided:true}}),'variants',true,manifest),/OUTPUT_ROLE_MISMATCH/,'a known other role is never relabelled');
+ assert.throws(()=>planningRecovery(envelope('variant_planner',{scopeSummary:'s',manifest:{useProvided:true},countExplanation:'c',coverage:'c',proposedAmendments:[]}),'variants',manifest),/NO_METADATA_RECOVERY/,'saved-output recovery stays exact, like SQL');
+ assert.match(envelopeRoleInstruction('variants'),/exactly "variants"/);
+});

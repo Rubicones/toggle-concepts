@@ -8,7 +8,8 @@ import type {CreativeStage} from '../../packages/agents/prompts/creative-v1';
 import {textRequestQuote,retryOutputLimit,requireRequestAllowance} from '../../packages/agents/text-quote';
 import {preparePreviewProposal,PREVIEW_PROTOCOL,type PreviewInputs} from '../../packages/contracts/preview-proposal';
 import {planningTransportTask,PLANNING_RETRY_FEEDBACK,type LocalizationVariant} from '../../packages/contracts/localization';
-import {agentResponseSchema,prepareAgentOutput,outputDiagnostic} from '../../packages/contracts/agent-output';
+import {agentResponseSchema,prepareAgentOutput,outputDiagnostic,planningEnvelopeSchema,envelopeRoleInstruction} from '../../packages/contracts/agent-output';
+import {providerJsonSchema,typeArraysAsAnyOf} from '../../packages/director/provider-schema';
 import {effectiveRunAgents} from '../../packages/data/run-limits';
 import {isPlanningJob} from '../../packages/contracts/planning-job';
 import {variantAuditTask} from '../../packages/contracts/variant-identities';
@@ -86,11 +87,15 @@ async function execute(claim:Claim){
   const snapshot:Snapshot={...job.payload.snapshot,upstream,pricing:model,stepCapMicroUsd:agent.step_cap_micro_usd,maxOutputTokens:retryOutputLimit((job.payload.snapshot as unknown as {previewProtocol?:string}).previewProtocol,job.payload.snapshot.maxOutputTokens,agent.max_output_tokens,model.maxOutput),disableReasoning:model.id==="google/gemini-2.5-flash"};
   const creative=job.payload.creativeInputs?{input:job.payload.creativeInputs,stage:(job.payload.snapshot as unknown as {creativeStage:Exclude<CreativeStage,'compile'>}).creativeStage}:null;
   if(creative)Object.assign(snapshot,creativeExecutionSnapshot({...snapshot,maxOutputTokens:job.payload.snapshot.maxOutputTokens},creative.stage,agent.max_output_tokens,model.maxOutput),{creativeRepair:job.attempt_count>1});
-  if(claim.round.kind==='draft'&&agent.model_id==='google/gemini-2.5-flash'&&!snapshot.responseSchema){
-   if(!model.supportedParameters.includes('structured_outputs')&&!model.supportedParameters.includes('response_format'))throw new Error('STRUCTURED_OUTPUT_UNAVAILABLE');
-   snapshot.responseSchema=agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest);snapshot.outputFormat='json_schema';
+  // Draft planning answers use the agent envelope. Pin it with the strict schema wherever the model supports it, so the
+  // role, status and deliverable shape cannot drift (earlier only Gemini 2.5 Flash was pinned).
+  const envelope=claim.round.kind==='draft'&&!snapshot.responseSchema;
+  const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest):null;
+  if(schema&&planningEnvelopeSchema({id:agent.model_id,supportedParameters:model.supportedParameters},schema)){
+   snapshot.responseSchema=agent.model_id==='google/gemini-2.5-flash'?schema:{name:schema.name,schema:typeArraysAsAnyOf(providerJsonSchema(schema.schema)) as Record<string,unknown>};snapshot.outputFormat='json_schema';
   }
   let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count)):'';
+  if(envelope)transportTask=envelopeRoleInstruction(job.role)+(transportTask?'\n'+transportTask:'');
   if(transportTask)snapshot.transportTask=transportTask;
   let reservation:number;
   // Manual requests already have a frozen quote/reservation. Don't change the admitted request on restart.
