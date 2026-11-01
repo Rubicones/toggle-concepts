@@ -80,6 +80,11 @@ test('draft planning answers are pinned to the machine role on every model with 
  assert.equal(planningEnvelopeSchema(claude,schemaFor('localization')),false,'localization without a manifest has open rows and is not sent strict');
  assert.equal(planningEnvelopeSchema(claude,schemaFor('layout',manifest)),false,'open deliverables are never sent strict');
  // The failure that triggered this: a job title-like label is still rejected, and the task text names the literal value.
- assert.throws(()=>prepareAgentOutput(envelope('variant_planner',{}),'variants',true),/OUTPUT_ROLE_MISMATCH/);
+ // The incident: an invented label is replaced on the live path, and the full role validation still decides.
+ const relabelled=prepareAgentOutput(envelope('variant_planner',{scopeSummary:'s',manifest:{useProvided:true},countExplanation:'c',coverage:'c',proposedAmendments:[]}),'variants',true,manifest);
+ assert.equal(JSON.parse(relabelled.text).role,'variants');assert.ok(relabelled.changes.includes('unrecognized-role-label'));
+ assert.throws(()=>prepareAgentOutput(envelope('variant_planner',{strategicBrief:'b'}),'variants',true,manifest),/MANIFEST_COVERAGE_MISMATCH|DELIVERABLE_MISSING/,'a different structure is still rejected');
+ assert.throws(()=>prepareAgentOutput(envelope('strategy',{scopeSummary:'s',manifest:{useProvided:true}}),'variants',true,manifest),/OUTPUT_ROLE_MISMATCH/,'a known other role is never relabelled');
+ assert.throws(()=>planningRecovery(envelope('variant_planner',{scopeSummary:'s',manifest:{useProvided:true},countExplanation:'c',coverage:'c',proposedAmendments:[]}),'variants',manifest),/NO_METADATA_RECOVERY/,'saved-output recovery stays exact, like SQL');
  assert.match(envelopeRoleInstruction('variants'),/exactly "variants"/);
 });

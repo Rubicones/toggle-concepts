@@ -18,17 +18,19 @@
 - `packages/contracts/agent-output.ts`
   - `closedSchema` — true when every object is closed (strict providers reject open objects).
   - `planningEnvelopeSchema(model, schema)` — Gemini 2.5 Flash: unchanged rule (always, else `STRUCTURED_OUTPUT_UNAVAILABLE`). Other models: strict schema when they support `structured_outputs` and the role's schema is fully closed. That covers research, strategy, variants, script, visual-direction, and localization with a manifest. Localization without a manifest and roles with open deliverables keep plain JSON as before.
+  - `replaceUnrecognizedRole` (live validation only, inside `prepareAgentOutput` when `production`) — a role label that names no known role is metadata, not evidence of another role, so it is replaced with the job's role (change `unrecognized-role-label`) and the full role/manifest validation still decides. A label naming a different known role is never changed. Saved-output recovery (`planningRecovery`, mirrored by SQL `canonical_agent_role`) stays exact and rejects this change.
   - `envelopeRoleInstruction(role)` — `OUTPUT ROLE: the JSON "role" field must be exactly "<role>"…`, for models without structured outputs.
 - `apps/local-runner/workflow.ts` — draft planning requests (no creative or preview schema) use the rule above. Non-Flash schemas go through `providerJsonSchema` and `typeArraysAsAnyOf`. The role instruction is prepended to the task text of every draft envelope request.
 - `packages/director/provider-schema.ts` — `typeArraysAsAnyOf`: `["string","null"]` becomes `anyOf`, the nullable form every strict dialect accepts (`handoff.nextRole`). Not applied to existing director schemas.
-- `tests/agent-output.test.ts` — Flash rule unchanged; all six planning roles pinned and closed, with the role as a single literal and no type arrays; each schema stays under 2,400 characters; no strict schema without structured outputs, for open deliverables or for localization without a manifest; the incident's label is still rejected; the role instruction names the literal value.
+- `tests/agent-output.test.ts` — Flash rule unchanged; all six planning roles pinned and closed, with the role as a single literal and no type arrays; each schema stays under 2,400 characters; no strict schema without structured outputs, for open deliverables or for localization without a manifest; the incident's answer now validates on the live path, a different structure or a known other role is still rejected, and saved-output recovery still refuses an invented label; the role instruction names the literal value.
 
 ## 3. Self-Review & Risk Audit
 
 1. **Frozen digests.** `config_hash`, `input_hash`, `requestId` and `quoteId` do not include the response schema or task text; reserved requests replay their stored snapshot.
 2. **Size limits.** Provider schemas measured after conversion: research 1,831, strategy 1,835, variants 1,384, script 2,375, localization 1,427, visual-direction 1,929 characters (limit 2,400, asserted in tests). The role instruction adds about 120 characters to the request; the request quote includes the task text.
-3. **`AGENTS.md` principles.** No creative content, scope or copy is generated or changed; the provider is only constrained to the existing envelope contract, and the application still validates every reply.
-4. **Other risks.**
+3. **Role relabelling.** Safe because every role keeps its own structural check after relabelling (variants: provided-manifest binding; strategy: three territories; research: evidence ledger; script: three directions; localization: full coverage; others: their required deliverable key). A real cross-role answer fails that check or names a known role.
+4. **`AGENTS.md` principles.** No creative content, scope or copy is generated or changed; the provider is only constrained to the existing envelope contract, and the application still validates every reply.
+5. **Other risks.**
    - A model that advertises structured outputs but rejects this schema fails the request with a visible provider error instead of a role mismatch; the AD can retry or pick another model.
    - Strict mode also closes the deliverable shape. Extra fields such as the `duplicates`, `invalidRows` and `missingBindings` seen in the incident are no longer possible; their content belongs in `coverage` and `proposedAmendments`.
 
@@ -39,5 +41,6 @@ Linux cloud checkout, Node 22.23.4:
 - `npm run typecheck` — pass.
 - `npm run lint` — pass.
 - `node --import tsx --test tests/agent-output.test.ts tests/orchestration.test.ts tests/localization-bindings.test.ts tests/pipeline-polish.test.ts tests/intake-output.test.ts` — 44/44 pass.
+- Incident answer (`variant_planner` with extra deliverable fields) validates on this branch and fails on `main` (scratch reproduction).
 - `npm test` — 504 tests: 490 pass, 14 fail; the same 14 environmental failures as the base commit (git-ignored `artifacts/`, the studio-Mac worker, macOS `sandbox-exec`).
 - No paid model calls, migrations or shared database mutations.
