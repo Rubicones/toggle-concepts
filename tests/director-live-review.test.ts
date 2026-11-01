@@ -16,31 +16,48 @@ function deps(over:Partial<LiveReviewDeps>&{inspections?:InspectionSummary[]}={}
 }
 
 test('without objective issues or a priced critic the review only measures',async()=>{
- const {d,calls}=deps(),record=await runLiveReview(d);
+ const {d,calls}=deps(),record=(await runLiveReview(d))!;
  assert.equal(calls.inspect,1);assert.equal(calls.repairs.length,0);assert.equal(record.criticRounds,0);assert.equal(record.inspection.hard,0);
 });
 
 test('measured defects go to at most two bounded coder repairs and a failed repair stops the gate',async()=>{
- const {d,calls}=deps({inspections:[summary(2),summary(1),summary(1)]}),record=await runLiveReview(d);
+ const {d,calls}=deps({inspections:[summary(2),summary(1),summary(1)]}),record=(await runLiveReview(d))!;
  assert.equal(calls.repairs.length,2);assert.equal(record.gateRounds,2);assert.equal(record.inspection.hard,1);assert.match(calls.repairs[0].note,/Choose any technique/);
- const failing=deps({inspections:[summary(3)],repair:async()=>({applied:false,reason:'ROLE_ALLOWANCE_EXHAUSTED'})}),result=await runLiveReview(failing.d);
+ const failing=deps({inspections:[summary(3)],repair:async()=>({applied:false,reason:'ROLE_ALLOWANCE_EXHAUSTED'})}),result=(await runLiveReview(failing.d))!;
  assert.equal(result.gateRounds,1);assert.equal(result.repairs[0].applied,false);assert.equal(failing.calls.inspect,1);
 });
 
 test('critic implementation notes reach the coder, director notes stay for the AD, and rounds are capped',async()=>{
  let count=0;const {d,calls}=deps({criticRounds:2,critic:async(_round,context)=>{count++;assert.ok((context as {measured:unknown}).measured);return JSON.stringify(critique());}});
- const record=await runLiveReview(d);
+ const record=(await runLiveReview(d))!;
  assert.equal(count,2);assert.equal(record.criticRounds,2);assert.equal(calls.repairs.filter(r=>r.kind==='critic').length,2);
  assert.match(calls.repairs[0].note,/Headline competes/);assert.doesNotMatch(calls.repairs[0].note,/product proof/);
  assert.equal(record.directorNotes.length,2);
- const accepted=deps({criticRounds:2,critic:async()=>JSON.stringify(critique({accepted:true,notes:[]}))});assert.equal((await runLiveReview(accepted.d)).criticRounds,1);assert.equal(accepted.calls.repairs.length,0);
+ const accepted=deps({criticRounds:2,critic:async()=>JSON.stringify(critique({accepted:true,notes:[]}))});assert.equal((await runLiveReview(accepted.d))!.criticRounds,1);assert.equal(accepted.calls.repairs.length,0);
 });
 
 test('a failing critic never blocks delivery, while AD controls and lease loss still stop the work',async()=>{
- const {d}=deps({criticRounds:1,critic:async()=>{throw new Error('FROZEN_MODEL_REQUIRED');}}),record=await runLiveReview(d);
+ const {d}=deps({criticRounds:1,critic:async()=>{throw new Error('FROZEN_MODEL_REQUIRED');}}),record=(await runLiveReview(d))!;
  assert.equal(record.skipped,'FROZEN_MODEL_REQUIRED');assert.equal(record.criticRounds,0);
  const control=deps({criticRounds:1,critic:async()=>{throw new Error('DIRECTOR_LIVE_REVISION');}});await assert.rejects(()=>runLiveReview(control.d),/DIRECTOR_LIVE_REVISION/);
- const invalid=deps({criticRounds:1,critic:async()=>JSON.stringify({accepted:false,summary:'x',notes:[]})});assert.match((await runLiveReview(invalid.d)).skipped!,/CRITIC_NOTES_REQUIRED/);
+ const invalid=deps({criticRounds:1,critic:async()=>JSON.stringify({accepted:false,summary:'x',notes:[]})});assert.match((await runLiveReview(invalid.d))!.skipped!,/CRITIC_NOTES_REQUIRED/);
+});
+
+test('a measurement that cannot run never blocks delivery and is not retried as a network blip',async()=>{
+ const broken=deps({criticRounds:2,critic:async()=>{throw new Error('should not be called');},inspect:async()=>{throw new Error('browserType.launch: Timeout 180000ms exceeded');}});
+ assert.equal(await runLiveReview(broken.d),undefined);assert.match(broken.d.state.skipped!,/^INSPECTION_FAILED: browserType\.launch/);assert.ok(broken.calls.events.includes('review:inspect:failed'));
+ // A failed re-measure after an applied repair ends the review: no critic round on stale measurements.
+ let n=0,criticCalls=0;const later=deps({criticRounds:2,critic:async()=>{criticCalls++;return JSON.stringify(critique());},inspect:async()=>{if(n++)throw new Error('RENDER_TIME_LIMIT');return {summary:summary(2),shots:[]};}});
+ const record=(await runLiveReview(later.d))!;assert.equal(later.calls.repairs.length,1);assert.equal(criticCalls,0);assert.match(record.skipped!,/INSPECTION_FAILED: RENDER_TIME_LIMIT/);assert.equal(record.inspection.hard,2);
+ const control=deps({inspect:async()=>{throw new Error('RUN_STOPPED');}});await assert.rejects(()=>runLiveReview(control.d),/RUN_STOPPED/);
+});
+
+test('the critic is never bought when the coder has no allowance left to apply its notes',async()=>{
+ let criticCalls=0;const blocked=deps({criticRounds:2,critic:async()=>{criticCalls++;return JSON.stringify(critique());},repairBlocked:async()=>'No coder requests remain in the approved allowance.'});
+ const record=(await runLiveReview(blocked.d))!;assert.equal(criticCalls,0);assert.equal(record.criticRounds,0);assert.match(record.skipped!,/^CODER_ALLOWANCE_USED/);assert.ok(blocked.calls.events.includes('review:critic:skipped'));
+ // Allowance runs out after the first round's repair: the second round is not bought.
+ let left=1;const partial=deps({criticRounds:2,critic:async()=>{criticCalls++;return JSON.stringify(critique());},repairBlocked:async()=>left>0?undefined:'used up',repair:async()=>{left--;return {applied:true};}});
+ criticCalls=0;const second=(await runLiveReview(partial.d))!;assert.equal(criticCalls,1);assert.equal(second.criticRounds,1);assert.match(second.skipped!,/CODER_ALLOWANCE_USED: used up/);
 });
 
 test('a restarted review keeps used rounds and never repeats a paid critic round',async()=>{

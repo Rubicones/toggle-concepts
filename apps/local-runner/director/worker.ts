@@ -50,7 +50,7 @@ import {compactTranscript,assemblerContext} from '../../../packages/director/tra
 import {providerJsonSchema} from '../../../packages/director/provider-schema';
 import {questionForFailure} from '../../../packages/director/questions';
 import {inspectionViews,analyzeInspection} from '../../../packages/director/layout-inspection';
-import {runLiveReview,newReviewState,type LiveReviewRecord} from '../../../packages/director/live-review';
+import {runLiveReview,newReviewState,CONTROL_FAILURE,type LiveReviewRecord} from '../../../packages/director/live-review';
 import {liveCriticInstructions,liveCriticSchema} from '../../../packages/agents/prompts/director-critic-v1';
 import {reviewSheet} from './review-sheet';
 import {prepareImageMethods,derivedReferences,finishImageMethod} from './image-methods';
@@ -156,9 +156,18 @@ export async function executeDirector(claim:DirectorClaim,device:string){
     const inspect=async()=>{const options=(await latest())?.options??first.options,views=inspectionViews(input,options,design);
      const out=JSON.parse((await sandboxTool(folder,'inspect',{views},180000)).trim().split('\n').at(-1)!),raw=JSON.parse(await readFile(out.file,'utf8'));
      return {summary:analyzeInspection(views,raw,input,facts),shots:views.flatMap(v=>{const r=raw.views.find((x:{key:string;shot?:string})=>x.key===v.key);return r?.shot?[{label:v.label,file:r.shot as string}]:[];})};};
+    // Coder allowance left for repairs: requests counted locally, billed input read from the ledger. One repair needs at
+    // least one request and the quote's average input per coder request.
+    const remainingRequests=()=>estimate.roles.assembler.requests-((state.assembler?.turn??0)+(reviewState.repairTurns??0));
+    const repairBlocked=async():Promise<string|undefined>=>{
+     if(remainingRequests()<1)return 'No coder requests remain in the approved allowance.';
+     const perRequest=Math.ceil(estimate.roles.assembler.inputTokens/Math.max(1,estimate.roles.assembler.requests));
+     const available=await directorInputAllowance(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,role:'assembler',snapshot:{pricing:snapshot.models.assembler.pricing,cachePrompt:true} as Parameters<typeof directorInputAllowance>[1]['snapshot']});
+     return available<perRequest?'The coder’s approved input allowance is used up.':undefined;
+    };
     const repair=async(note:string,kind:'gate'|'critic',round:number)=>{
-     const used=(state.assembler?.turn??0)+(reviewState.repairTurns??0),remaining=estimate.roles.assembler.requests-used;
-     if(remaining<1)return {applied:false,reason:'No coder requests remain in the approved allowance.'};
+     const blocked=await repairBlocked(),remaining=remainingRequests();
+     if(blocked)return {applied:false,reason:blocked};
      const backup=await staticSourceContext(folder,input.iterationId),loop={turn:0,startedAt:Date.now(),transcript:[] as {from:'agent'|'tool';text:string}[],complete:false},notes=[...(state.notes??[]),{recipient:'assembler' as const,text:note}];
      const tools=liveTools(folder,input,Date.now()+180000,preview),restore=async()=>{for(const file of backup.files)await writeFile(resolve(folder,file.path),file.source);await tools.execute({tool:'bundle'}).catch(()=>undefined);};
      try{
@@ -166,13 +175,13 @@ export async function executeDirector(claim:DirectorClaim,device:string){
        filesContext:async()=>staticSourceContext(folder,input.iterationId),
        call:async(l,mode,currentFiles,construction)=>{await controls();return (await call('assembler',JSON.stringify({toolResults:l.transcript,...(currentFiles?.length?{currentFiles}:{}),...(construction?{construction}:{})}),withCreativeHandoff(input,'coder',staticCoderInstructions)+(mode==='tools'?' Return calls using write, read, typecheck, bundle, listResources and finish. Image render tools are unavailable.':''),mode==='files'?staticFilesSchema:staticToolsSchema,assemblerContext(input,design,[...input.assets,...state.catalog!],notes),{turn:l.turn,mode,live:true,review:kind,round})).text;},
        tool:async action=>events.tool(900000+(round*10+(kind==='gate'?0:5))*1000+loop.transcript.length,action,()=>tools.execute(action)),save:async()=>{}});
-     }catch(error){await restore();const message=error instanceof Error?error.message:'REPAIR_FAILED';if(['DIRECTOR_LIVE_REVISION','DIRECTOR_LIVE_WRAP_UP','RUN_STOPPED','STALE_DIRECTOR_LEASE'].includes(message)||transientExecutionFailure(message))throw error;return {applied:false,reason:message.slice(0,200)};}
+     }catch(error){await restore();const message=error instanceof Error?error.message:'REPAIR_FAILED';if(CONTROL_FAILURE.test(message)||transientExecutionFailure(message))throw error;return {applied:false,reason:message.slice(0,200)};}
      finally{reviewState.repairTurns=(reviewState.repairTurns??0)+loop.turn;await save();}
      if(!loop.complete){await restore();return {applied:false,reason:'The coder did not finish the repair within its bounded turns.'};}
      return {applied:true};
     };
     const criticConfig=snapshot.models.critic,canReview=estimate.roles.critic.requests>0&&!!criticConfig?.vision;
-    return runLiveReview({inspect,repair,criticRounds:canReview?Math.min(2,estimate.roles.critic.requests):0,state:reviewState,
+    return runLiveReview({inspect,repair,repairBlocked,criticRounds:canReview?Math.min(2,estimate.roles.critic.requests):0,state:reviewState,
      critic:canReview?async(round,context,shots)=>{await controls();return (await call('critic','Review these live draft views and measurements.',liveCriticInstructions,liveCriticSchema,context,{review:'live',round},await reviewSheet(folder,shots))).text;}:undefined,
      context:()=>({concept:design.designDocument.slice(0,2500),keyFrames:design.keyFrames,resources:design.resources.map(r=>({id:r.id,scene:r.scene,purpose:r.purpose,proxy:r.proxy})),formats:input.formats.map(f=>({id:f.id,width:f.width,height:f.height})),brandTokens:input.brand.tokens}),
      save:async next=>{state.liveReview=next;await save();},
@@ -187,7 +196,12 @@ export async function executeDirector(claim:DirectorClaim,device:string){
     await assembleStatic({state:state.assembler!,recoverExisting:true,maxTurns:estimate.roles.assembler.requests,timeMs:estimate.roles.assembler.timeMs,filesContext:async loop=>{const source=await staticSourceContext(folder,input.iterationId);if(source.oversized)return source;try{compactDraftRequest(JSON.stringify({toolResults:loop.transcript,currentFiles:source.files,...(source.construction?{construction:source.construction}:{})}),{instructions:snapshot.models.assembler.instructions,protocolInstructions:withCreativeHandoff(input,'coder',staticCoderInstructions),maxOutputTokens:snapshot.models.assembler.maxOutputTokens,pricing:snapshot.models.assembler.pricing,responseSchema:staticFilesSchema,campaignContext:{checkpointId:snapshot.checkpointId,...assemblerContext(input,design,[...input.assets,...state.catalog!],state.notes??[])}},[]);}catch{return {...source,oversized:true};}return source;},call:async(loop,mode,currentFiles,construction)=>{await guard();return (await call('assembler',JSON.stringify({toolResults:loop.transcript,...(currentFiles?.length?{currentFiles}:{}),...(construction?{construction}:{})}),withCreativeHandoff(input,'coder',staticCoderInstructions)+(mode==='tools'?' Return calls using write, read, typecheck, bundle, listResources and finish. Image render tools are unavailable.':''),mode==='files'?staticFilesSchema:staticToolsSchema,assemblerContext(input,design,[...input.assets,...state.catalog!],state.notes??[]),{turn:loop.turn,mode,live:true})).text;},tool:execute,save:async loop=>{state.assembler=loop;await save();}});
    },controls);
    // Resources can finish after the source request. Their URLs are mutable data, not another layout generation.
-   await controls();await liveTools(folder,input,Date.now()+480000,preview).execute({tool:'bundle'});const review=await reviewLive();await controls();await seal(review);return;
+   await controls();await liveTools(folder,input,Date.now()+480000,preview).execute({tool:'bundle'});const review=await reviewLive().catch(async error=>{
+    // The review is optional quality work: only AD controls, lease loss and transient blips stop the run. Any other
+    // failure delivers the draft unchecked, exactly as before the review existed.
+    const message=error instanceof Error?error.message:'LIVE_REVIEW_FAILED';if(CONTROL_FAILURE.test(message)||transientExecutionFailure(message))throw error;
+    await events.emit('review:failed',{stepId:'review:failed',kind:'review',status:'failed',costMicroUsd:0,message:'The automatic review could not finish; the draft is delivered without it.',detail:{reason:message.slice(0,300)}});return undefined;});
+   await controls();await seal(review);return;
   }
 
   // "Wrap up and show the draft": render the code written so far without any further model request.

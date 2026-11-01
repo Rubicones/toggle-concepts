@@ -7,7 +7,7 @@ import recorded from '../fixtures/director/static/input.json';
 import {createWorkspace} from '../apps/local-runner/director/workspace';
 import {buildLivePreview} from '../apps/local-runner/director/live-bundle';
 import {inspectLivePreview} from '../apps/local-runner/director/live-inspect';
-import {inspectionViews,analyzeView,analyzeInspection,visibleSourceRect,findingDigest,gateNote,type RawView,type InspectionView} from '../packages/director/layout-inspection';
+import {inspectionViews,analyzeView,analyzeInspection,missingRequiredCopy,visibleSourceRect,findingDigest,gateNote,type RawView,type InspectionView} from '../packages/director/layout-inspection';
 import type {DirectionInput} from '../packages/director/types';
 import type {LiveOptions} from '../packages/director/live-preview';
 
@@ -69,6 +69,24 @@ test('pictures: cover crops are mapped to the source, soft enlargements, cropped
  assert.equal(findings.find(f=>f.code==='SUBJECT_CROPPED')?.severity,'soft');
  assert.match(findings.find(f=>f.code==='CONTRAST_OVER_PICTURE')!.detail,/estimated 1\.\d:1/);
  assert.ok(!analyzeView({...raw,texts:[{...raw.texts[0],complexBackground:true}]},{...ctx(i),facts}).some(f=>f.code==='CONTRAST_OVER_PICTURE'),'a scrim or gradient behind the text is not guessed');
+});
+
+test('required copy is checked across every scene, including hooks with their own storyboard',()=>{
+ const i=input(),line='JETZT 30 TAGE GRATIS TESTEN',views=inspectionViews(i,options,design);
+ i.variantFacts!.alternate={...i.variantFacts!.alternate,storyboard:[],required:['KOMMENTARE ZU TAKTEN.',line]};
+ const group=views.filter(v=>v.variantId==='alternate'&&v.props.width===views.find(x=>x.variantId==='alternate')!.props.width&&v.props.height===views.find(x=>x.variantId==='alternate')!.props.height);
+ assert.equal(new Set(group.map(v=>v.props.sceneId)).size,options.scenes.length,'every displayed scene is measured for the alternate hook');
+ const raw=(shown:string[][])=>views.map(v=>({key:v.key,raw:{width:v.props.width,height:v.props.height,images:[],logos:[],texts:v.variantId==='alternate'?(shown[options.scenes.indexOf(v.props.sceneId)]??[]).map(t=>text(t,box(80,200,700,100))):[]}}));
+ const mine=(found:{view:string}[])=>found.filter(f=>group.some(v=>v.key===f.view));
+ // The CTA appears in scene 4 only, the scene line in scene 2: complete across the frames.
+ assert.equal(mine(missingRequiredCopy(views,raw([[],['KOMMENTARE ZU TAKTEN.'],[],[line]]),i)).length,0);
+ const missing=mine(missingRequiredCopy(views,raw([['KOMMENTARE ZU TAKTEN.']]),i)) as ReturnType<typeof missingRequiredCopy>;
+ assert.equal(missing.length,1);assert.equal(missing[0].severity,'hard');assert.match(missing[0].detail,/30 TAGE/);
+ // The full analysis attaches it to the alternate's group; per-scene checks still do not apply to alternate IDs.
+ const summary=analyzeInspection(views,{revision:'r',views:raw([['KOMMENTARE ZU TAKTEN.']])},i,{});
+ assert.ok(summary.reports.some(r=>r.findings.some(f=>f.code==='COPY_MISSING'&&/30 TAGE/.test(f.detail))));
+ // A group with a view that failed to build proves nothing and is not reported.
+ assert.equal(mine(missingRequiredCopy(views,raw([['KOMMENTARE ZU TAKTEN.']]).filter(r=>r.key!==group[1].key),i)).length,0);
 });
 
 test('a view that does not build is a hard finding and the coder note names views without prescribing a technique',()=>{

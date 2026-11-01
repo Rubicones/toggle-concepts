@@ -166,6 +166,29 @@ export function gateNote(summary:InspectionSummary){
  return `Automatic layout check (measured in the browser, no screenshots) found objective defects. Fix each in the views listed with the smallest coherent change to the existing component; keep the concept, options and working views. Choose any technique that fits the design.\n${items.map((f,i)=>`${i+1}. ${f.detail} — ${f.views.join('; ')}${f.moreViews?` (+${f.moreViews} more views)`:''}`).join('\n')}`;
 }
 
+/**
+ * Copy that must appear somewhere across a variant's key frames (variantFacts.required: every scene line, other on-screen
+ * lines and protected CTA/offer/legal). Checked on each group of views that shows one copy binding at one canvas size in
+ * every displayed scene. This is the only copy check for hooks with their own storyboard, whose scene IDs differ from
+ * the displayed key frames, so a per-scene check cannot apply to them. Lines already checked per scene are skipped.
+ */
+export function missingRequiredCopy(views:InspectionView[],raw:{key:string;raw?:RawView}[],input:DirectionInput):Finding[]{
+ const scenes=new Set(views.map(v=>v.props.sceneId)),groups=new Map<string,InspectionView[]>();
+ for(const v of views){const key=`${v.variantId}|${v.props.width}x${v.props.height}`;groups.set(key,[...(groups.get(key)??[]),v]);}
+ const out:Finding[]=[];
+ for(const group of groups.values()){
+  const facts=input.variantFacts?.[group[0].variantId];if(!facts?.required?.length)continue;
+  // Only a complete, fully built group proves absence: every displayed scene measured without a build error.
+  const measured=group.map(v=>raw.find(r=>r.key===v.key)?.raw);
+  if(new Set(group.map(v=>v.props.sceneId)).size<scenes.size||measured.some(r=>!r))continue;
+  const visible=normal(measured.flatMap(r=>r!.texts.map(t=>t.text)).join(' '));
+  const perScene=facts.storyboard?[]:Object.values(facts.sceneCopy).flat().map(normal);
+  for(const line of facts.required){const n=normal(line);if(!n||perScene.includes(n)||visible.includes(n))continue;
+   out.push({code:'COPY_MISSING',severity:'hard',view:group[0].key,detail:`Approved copy does not appear in any scene: ${quote(line)}`});}
+ }
+ return out;
+}
+
 /** Raw browser output → per-view reports. A view that failed to build is a hard finding. */
 export function analyzeInspection(views:InspectionView[],raw:{revision:string;views:{key:string;raw?:RawView;error?:string}[]},input:DirectionInput,facts:Record<string,ImageFacts|undefined>):InspectionSummary{
  const reports:ViewReport[]=views.map(view=>{
@@ -174,5 +197,6 @@ export function analyzeInspection(views:InspectionView[],raw:{revision:string;vi
   const minTextPx=format?.minTextPx??Math.max(16,Math.round(Math.min(view.props.width,view.props.height)*32/1080));
   return {view:view.key,label:view.label,findings:analyzeView(result.raw,{view,input,minTextPx,safe:format?.safe,facts}),texts:result.raw.texts.length,images:result.raw.images.length};
  });
+ for(const finding of missingRequiredCopy(views,raw.views,input)){const report=reports.find(r=>r.view===finding.view);if(report&&!report.findings.some(f=>f.code===finding.code&&f.detail===finding.detail))report.findings.push(finding);}
  return summarizeInspection(raw.revision,reports);
 }
