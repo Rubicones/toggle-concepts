@@ -47,6 +47,24 @@ export function outputDiagnostic(error:unknown){
  return {code,message:messages[code]??code.replaceAll('_',' '),issues:[] as string[]};
 }
 /** Keep the native schema small; runtime validators own factual and cross-artifact invariants. */
+/** True when every object in a JSON schema is closed (`additionalProperties:false`), as strict providers require. */
+export function closedSchema(node:unknown):boolean{
+ if(Array.isArray(node))return node.every(closedSchema);if(!node||typeof node!=='object')return true;
+ const o=node as Record<string,unknown>;return (o.type!=='object'||o.additionalProperties===false)&&Object.values(o).every(closedSchema);
+}
+/**
+ * Whether a draft planning request carries the strict agent envelope schema. Gemini 2.5 Flash always did and keeps the
+ * exact earlier rule; any other model gets it when it supports structured outputs and the schema is fully closed (an
+ * open deliverable, e.g. localization without a manifest, would be rejected by strict providers). The schema pins
+ * `role` to the job's machine ID, so a model cannot answer with a job title or an invented label.
+ */
+export function planningEnvelopeSchema(model:{id:string;supportedParameters:string[]},schema:{schema:unknown}){
+ const structured=model.supportedParameters.includes('structured_outputs');
+ if(model.id==='google/gemini-2.5-flash'){if(!structured&&!model.supportedParameters.includes('response_format'))throw new Error('STRUCTURED_OUTPUT_UNAVAILABLE');return true;}
+ return structured&&closedSchema(schema.schema);
+}
+/** Plain-text fallback for models without structured outputs: the literal value, never a job title. */
+export const envelopeRoleInstruction=(role:string)=>`OUTPUT ROLE: the JSON "role" field must be exactly "${role}" (the machine ID, not a job title or a description).`;
 export function agentResponseSchema(role:string,manifest?:{entries:Record<string,unknown>[]}){
  const string={type:'string'},strings={type:'array',items:string},list={type:'array',items:{type:'object',additionalProperties:true}};
  const hooks=[...new Set(['primary',...(manifest?.entries??[]).map(e=>typeof e.hook==='string'&&e.hook.trim()?e.hook.trim():'primary')])];
