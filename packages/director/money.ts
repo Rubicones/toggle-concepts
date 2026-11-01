@@ -64,7 +64,16 @@ export function estimateStaticDirection(pricing:Record<Exclude<Role,'resources'>
  roles.resources={maxCostMicroUsd:perStillMicroUsd*maxStills,inputTokens:0,outputTokens:0,timeMs:180000,requests:maxStills};const quote={roles,maxCostMicroUsd:Object.values(roles).reduce((s,r)=>s+r.maxCostMicroUsd,0),perStillMicroUsd,maxStills,maxCriticRounds:2 as const};if(!Number.isSafeInteger(quote.maxCostMicroUsd)||quote.maxCostMicroUsd>1e8)throw new Error('ESTIMATE_EXCEEDS_RUN_LIMIT');return {quoteId:digest({identity,pricing,quote,stage:'draft'}),...quote};
 }
 
-/** Live drafts do not reserve screenshot sweeps or a paid visual critique. Existing frozen allowances are unchanged. */
-export function estimateLiveDirection(pricing:Parameters<typeof estimateStaticDirection>[0],perStillMicroUsd:number,maxStills:number,identity:unknown){
- const quote=estimateStaticDirection(pricing,perStillMicroUsd,maxStills,identity);quote.maxCostMicroUsd-=quote.roles.critic.maxCostMicroUsd;quote.roles.critic={maxCostMicroUsd:0,inputTokens:0,outputTokens:0,timeMs:0,requests:0};quote.quoteId=digest({identity,quote,presentation:'live'});return quote;
+/**
+ * Live drafts never reserve screenshot sweeps. A new quote may include a bounded creative review (at most two critic
+ * requests over a few labelled views) plus coder time for the repairs it asks for. Without criticRequests the quote is
+ * identical to earlier live quotes; existing frozen allowances are never changed.
+ */
+export function estimateLiveDirection(pricing:Parameters<typeof estimateStaticDirection>[0],perStillMicroUsd:number,maxStills:number,identity:unknown,options:{criticRequests?:number}={}){
+ const quote=estimateStaticDirection(pricing,perStillMicroUsd,maxStills,identity);quote.maxCostMicroUsd-=quote.roles.critic.maxCostMicroUsd;
+ const n=Math.max(0,Math.min(2,Math.floor(options.criticRequests??0)));
+ if(n>0){const p=pricing.critic,spec={inputTokens:24000*n,outputTokens:4000*n,timeMs:180000,requests:n},cost=Math.max(1,Math.ceil((p.inputPrice*spec.inputTokens+p.outputPrice*spec.outputTokens)*1e6*1.1));
+  quote.roles.critic={...spec,maxCostMicroUsd:cost};quote.maxCostMicroUsd+=cost;quote.roles.assembler={...quote.roles.assembler,timeMs:quote.roles.assembler.timeMs+180000};}
+ else quote.roles.critic={maxCostMicroUsd:0,inputTokens:0,outputTokens:0,timeMs:0,requests:0};
+ quote.quoteId=digest({identity,quote,presentation:'live'});return quote;
 }

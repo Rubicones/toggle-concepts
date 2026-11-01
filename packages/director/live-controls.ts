@@ -14,7 +14,7 @@ export function applyLiveControls(state:WorkState,controls:LiveControl[]){
 export function beginLiveRevision(state:WorkState,identity:{blockId:string;directionId:string}){
  if(!state.liveRevision)return;
  if(state.liveRevision==='director'){state.previousDesign=state.design;state.design=undefined;state.directorFeedback=[];}
- delete state.liveRevision;state.phase=state.design?'resources':'director';state.pendingSource=state.folder;
+ delete state.liveRevision;delete state.liveReview;state.phase=state.design?'resources':'director';state.pendingSource=state.folder;
  state.assembler={turn:0,startedAt:state.assembler?.startedAt??Date.now(),transcript:[],complete:false};
  if(state.sourceHash){state.iteration=(state.iteration??1)+1;state.sourceHash=undefined;}
  state.iterationId=requestId({...identity,iteration:state.iteration??1,liveNotes:state.appliedControls??[]});

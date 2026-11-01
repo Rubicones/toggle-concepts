@@ -14,6 +14,7 @@ if(operation==='probe'){
  await new Promise<void>(resolve=>server.close(()=>resolve()));console.log(JSON.stringify({ownServer,otherLoopbackDenied,outsideWriteDenied}));
 }
 else if(operation==='preview')console.log(JSON.stringify(await buildLivePreview(folder)));
+else if(operation==='inspect')console.log(JSON.stringify(await (await import('./live-inspect')).inspectLivePreview(folder,args.views)));
 else if(operation==='bundle')console.log(JSON.stringify({bundle:await bundleDirection(folder)}));
 else if(operation==='render')console.log(JSON.stringify(await renderDirection(folder,args.variant as Variant,args.options)));
 else if(operation==='typecheck'){const result=spawnSync(process.execPath,[resolve('node_modules/typescript/bin/tsc'),'--project',resolve(folder,'tsconfig.json')],{encoding:'utf8'});console.log(result.stdout+result.stderr);process.exitCode=result.status??1;}
