@@ -15,6 +15,7 @@ import { singleChoiceFields } from "@/packages/brand/finding-selection";
 import { brandAnalysisCanContinue, brandAnalysisNotice } from "@/packages/brand/workspace-metrics";
 import { flushCampaignSaves } from "@/lib/use-persisted-draft";
 import { WorkflowMigration } from "./brief-workspace";
+import { materialRoleLabels, materialRoles, type MaterialRole } from "@/packages/brand/material-roles";
 export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { campaignId: string; sourcesReady: boolean; onContinue?: () => void }) {
   const router = useRouter();
   const endpoint = `/api/studio/campaigns/${campaignId}/brand-fields`,
@@ -171,6 +172,49 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
             ))}
           </select>
         </label>
+      )}
+      {!!data.materials?.length && (
+        <Disclosure className="brandbook-files" open={data.materials.some((m) => !m.sure) || undefined}>
+          <summary>
+            <FileText size={17} />
+            <strong>What each file is</strong>
+            <span>
+              {data.materials.filter((m) => !m.sure).length
+                ? `${data.materials.filter((m) => !m.sure).length} need your answer`
+                : "Each file is read and trusted as its kind"}
+            </span>
+            <ChevronDown size={16} />
+          </summary>
+          <div>
+            <p>A product screenshot can still name the product; its on-screen texts and colours count as the interface, not as brand rules.</p>
+            <ul className="brandbook-roles">
+              {[...data.materials]
+                .sort((a, b) => Number(a.sure) - Number(b.sure))
+                .map((m) => (
+                  <li key={m.id}>
+                    <span title={m.path}>{m.filename}</span>{" "}
+                    {!m.sure && <Badge>Which is this?</Badge>}{" "}
+                    <select
+                      aria-label={`What ${m.filename} is`}
+                      disabled={busy}
+                      value={m.sure ? m.role : ""}
+                      onChange={(event) =>
+                        void command({ action: "setRole", materialId: m.id, role: (event.target.value || null) as MaterialRole | null })
+                      }
+                    >
+                      {!m.sure && <option value="">{materialRoleLabels[m.role]} (guess)</option>}
+                      {materialRoles.filter((r) => r !== "unknown").map((r) => (
+                        <option key={r} value={r}>
+                          {materialRoleLabels[r]}
+                          {m.role === r && !m.bySomeone && m.sure ? " (detected)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        </Disclosure>
       )}
       <div className="brandbook-overview">
         <section className="brandbook-work-card">

@@ -8,10 +8,12 @@ import {schemaMissing} from '@/lib/server/brief';
 import {brandFields,brandFieldKeys,type BrandAnalysisView} from '@/packages/brand/field-extraction';
 import {startLocalWorkflow,requireLocalDevice} from '@/lib/server/local-compute';
 import {brandScope} from '@/lib/server/brand-source';
+import {effectiveMaterialRole,fieldsOutsideRole,materialRoles} from '@/packages/brand/material-roles';
 const commands=z.discriminatedUnion('action',[
  z.strictObject({action:z.literal('submit'),requestId:z.uuid()}),
  z.strictObject({action:z.literal('prefill')}),
  z.strictObject({action:z.literal('useBrand'),sourceCampaignId:z.uuid().nullable()}),
+ z.strictObject({action:z.literal('setRole'),materialId:z.uuid(),role:z.enum(materialRoles).nullable()}),
  z.strictObject({action:z.literal('startSelected'),requestId:z.uuid(),materialIds:z.array(z.uuid()).min(1),requestCap:z.number().int().min(100).max(10000000),runCap:z.number().int().min(10000).max(10000000)}),
  z.strictObject({action:z.literal('continue'),analysisId:z.uuid(),requestCap:z.number().int().min(100).max(10000000)}),
  z.strictObject({action:z.literal('start'),requestId:z.uuid(),requestCap:z.number().int().min(100).max(10000000),runCap:z.number().int().min(10000).max(10000000)}),
@@ -52,11 +54,20 @@ export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaign
  const head=workspaceReady?checked(await admin.from('studio_brandbook_heads').select('submission_id').eq('campaign_id',campaign.id).maybeSingle()):null;
  const submission=head?checked(await admin.from('studio_brandbook_submissions').select('id,version_no,created_at,is_partial,sha256,summary').eq('id',head.submission_id).eq('tenant_id',tenant).eq('campaign_id',campaign.id).single()):null;
  const steps:BrandUsageRow[]=[];if(runId)for(let offset=0;;offset+=1000){const rows=checked(await admin.from('studio_agent_steps').select('role,status,cost_micro_usd,reserve_micro_usd,usage,maxOutputTokens:config_snapshot->maxOutputTokens,pricing:config_snapshot->pricing').eq('tenant_id',tenant).eq('run_id',runId).order('created_at',{ascending:false}).order('id').range(offset,offset+999))??[];steps.push(...rows as BrandUsageRow[]);if(rows.length<1000)break;}
- return json({schemaReady:true,workspaceReady,updatesReady,submission,usage:run?brandWorkspaceMetrics(run,steps):null,fields:brandFields.map(([key,label,merge])=>({key,label,merge,count:counts.find((c:{field:string})=>c.field===key)?.count??0,kept:counts.find((c:{field:string})=>c.field===key)?.kept??0,unreviewed:counts.find((c:{field:string})=>c.field===key)?.unreviewed,rejected:counts.find((c:{field:string})=>c.field===key)?.rejected})),analyses,brandSource:null,brandOptions,files:files.map(f=>({...f,status:f.status==='completed'||f.status==='skipped'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status==='active'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status??f.status})),run});
+ const materials=await materialRoleRows(admin,tenant,campaign.id);
+ return json({schemaReady:true,workspaceReady,updatesReady,submission,materials,usage:run?brandWorkspaceMetrics(run,steps):null,fields:brandFields.map(([key,label,merge])=>({key,label,merge,count:counts.find((c:{field:string})=>c.field===key)?.count??0,kept:counts.find((c:{field:string})=>c.field===key)?.kept??0,unreviewed:counts.find((c:{field:string})=>c.field===key)?.unreviewed,rejected:counts.find((c:{field:string})=>c.field===key)?.rejected})),analyses,brandSource:null,brandOptions,files:files.map(f=>({...f,status:f.status==='completed'||f.status==='skipped'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status==='active'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status??f.status})),run});
 });}
 export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/brand-fields'>){return api(async()=>{
  const campaign=await campaignRecord((await ctx.params).id),{admin,tenant,actorId}=await studioContext(),input=await body(request,commands,1000000);
  if(input.action==='useBrand'){const result=await admin.rpc('studio_set_brand_source',{target_campaign:campaign.id,source_campaign:input.sourceCampaignId,acting_user:actorId});if(result.error){if(schemaMissing(result.error)||/studio_set_brand_source/.test(result.error.message))throw new ApiError(503,'BRAND_SOURCE_SCHEMA_REQUIRED','Apply migration 20261102000200_brand_source first.');const known:Record<string,string>={A1_ALREADY_ACCEPTED:'This campaign already accepted its Brand Kit; its brand can no longer change.',BRANDBOOK_REQUIRED:'That campaign has no submitted brandbook yet.',BRAND_SOURCE_IS_NOT_A_BRAND:'That campaign itself uses another brand; choose the original.',CAMPAIGN_IS_A_BRAND_SOURCE:'Other campaigns use this campaign as their brand.',INVALID_BRAND_SOURCE:'Choose a brand from this workspace.'};const code=Object.keys(known).find(k=>result.error!.message.includes(k));throw new ApiError(409,code??'BRAND_SOURCE_FAILED',code?known[code]:'The brand could not be changed.');}return json({message:input.sourceCampaignId?'This campaign now uses the chosen brand. Its brandbook is read from there.':'This campaign uses its own brandbook again.'});}
+ if(input.action==='setRole'){
+  if(await brandScope(campaign.id)!==campaign.id)throw new ApiError(409,'BRAND_FROM_SOURCE','This campaign uses a brand from the library. Edit that brand instead.');
+  const material=checked(await admin.from('studio_brand_materials').select('id').eq('id',input.materialId).eq('tenant_id',tenant).eq('campaign_id',campaign.id).maybeSingle());if(!material)throw new ApiError(404,'MATERIAL_NOT_FOUND','File not found in this brand.');
+  const reject=input.role&&input.role!=='unknown'?fieldsOutsideRole(input.role):[];
+  const result=await admin.rpc('studio_set_brand_material_role',{target_material:input.materialId,material_role:input.role,reject_fields:reject,acting_user:actorId});
+  if(result.error){if(/studio_set_brand_material_role|schema cache/.test(result.error.message))throw new ApiError(503,'MATERIAL_ROLE_SCHEMA_REQUIRED','Apply migration 20261102000300_brand_material_roles first.');analysisError(result.error);}
+  const n=Number(result.data??0);return json({message:`Saved.${n?` ${n} unreviewed ${n===1?'finding':'findings'} this kind of file cannot state ${n===1?'was':'were'} excluded; you can bring any back.`:''} Files read from now on use this role.`});
+ }
  if(input.action!=='review'&&await brandScope(campaign.id)!==campaign.id)throw new ApiError(409,'BRAND_FROM_SOURCE','This campaign uses a brand from the library. Edit that brand, or stop using it here first.');
  if(input.action==='review'){
   const finding=checked(await admin.from('studio_brand_findings').select('id').eq('id',input.findingId).eq('tenant_id',tenant).eq('campaign_id',campaign.id).maybeSingle());if(!finding)throw new ApiError(404,'FINDING_NOT_FOUND','Finding not found in this campaign.');
@@ -96,4 +107,13 @@ async function brandSourceOptions(admin:Awaited<ReturnType<typeof studioContext>
  const ids=[...new Set((heads.data??[]).map(h=>h.campaign_id as string))].filter(id=>id!==self);if(!ids.length)return [];
  const rows=await admin.from('campaigns').select('id,name,brand,brand_source_campaign_id').eq('tenant_id',tenant).in('id',ids);if(rows.error)return [];
  return (rows.data??[]).filter(r=>!r.brand_source_campaign_id).map(r=>({id:r.id as string,name:r.name as string,brand:r.brand as string}));
+}
+
+/** Every ready file of this brand with its role: the AD's choice when made, otherwise the application's guess. */
+async function materialRoleRows(admin:Awaited<ReturnType<typeof studioContext>>['admin'],tenant:string,campaignId:string){
+ const base='id,filename,relative_path,mime,kind:extraction->>kind,metadata:extraction->metadata';
+ let rows=await admin.from('studio_brand_materials').select(`${base},role`).eq('tenant_id',tenant).eq('campaign_id',campaignId).eq('state','ready').order('relative_path').limit(500);
+ if(rows.error)rows=await admin.from('studio_brand_materials').select(base).eq('tenant_id',tenant).eq('campaign_id',campaignId).eq('state','ready').order('relative_path').limit(500) as typeof rows;
+ if(rows.error)return [];
+ return (rows.data??[]).map(r=>{const row=r as unknown as {id:string;filename:string;relative_path:string;mime:string;kind:string|null;metadata:Record<string,unknown>|null;role?:string|null};const role=effectiveMaterialRole({filename:row.filename,relative_path:row.relative_path,mime:row.mime,extraction:{kind:row.kind??undefined,metadata:row.metadata??undefined},role:row.role});return {id:row.id,filename:row.filename,path:row.relative_path,mime:row.mime,...role};});
 }
