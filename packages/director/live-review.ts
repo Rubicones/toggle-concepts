@@ -5,6 +5,7 @@
  */
 import {z} from 'zod';
 import {findingDigest,gateNote,type InspectionSummary} from './layout-inspection';
+const NETWORK_BLIP=/TimeoutError|aborted due to timeout|fetch failed|ECONNRESET|EAI_AGAIN|socket hang up/i;
 
 export const liveCritiqueSchema=z.strictObject({
  accepted:z.boolean(),
@@ -102,7 +103,9 @@ export async function runLiveReview(deps:LiveReviewDeps):Promise<LiveReviewRecor
    // Never buy a review whose notes the coder could not apply.
    const blocked=await deps.repairBlocked?.();
    if(blocked){state.skipped=`CODER_ALLOWANCE_USED: ${blocked}`.slice(0,200);await deps.save(state);await deps.emit('review:critic:skipped',`The creative review was not run because the coder has no allowance left to apply its notes; nothing was charged for it. ${blocked}`,{reason:blocked,round});break;}
-   try{critique=readLiveCritique(await deps.critic(round,{...(deps.context() as object),measured:{views:summary.views,hard:summary.hard,soft:summary.soft,findings:findingDigest(summary,'all',20)},views:shots.map(s=>s.label)},{shots,summary}));}
+   // A network blip on the way to the provider (a database or HTTP timeout before anything is sent) gets one more try.
+   const ask=async()=>readLiveCritique(await deps.critic!(round,{...(deps.context() as object),measured:{views:summary.views,hard:summary.hard,soft:summary.soft,findings:findingDigest(summary,'all',20)},views:shots.map(s=>s.label)},{shots,summary}));
+   try{try{critique=await ask();}catch(error){if(!(error instanceof Error&&NETWORK_BLIP.test(`${error.name} ${error.message}`)))throw error;critique=await ask();}}
    catch(error){const message=error instanceof Error?error.message:'CRITIC_FAILED';if(CONTROL_FAILURE.test(message))throw error;state.skipped=message.slice(0,200);await deps.save(state);await deps.emit('review:critic:skipped','The creative review could not run; the draft is delivered with the measured findings only.',{reason:state.skipped});break;}
    state.criticRounds=round;state.critiques.push(critique);await deps.save(state);
    await deps.emit(`review:critic:${round}`,critique.accepted?'The creative review accepted the current views.':`The creative review returned ${plural(critique.notes.length,'note')}.`,critique,shots.length?shots[0].file:undefined);

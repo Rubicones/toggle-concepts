@@ -22,13 +22,13 @@ async function loadAdmission(){
 }
 const fakeAdmin=(rows:Record<string,unknown>)=>({from:(table:string)=>{const b={select:()=>b,eq:()=>b,single:async()=>({data:rows[table],error:null}),maybeSingle:async()=>({data:rows[table],error:null})};return b;}});
 
-test('a still that references a screenshot the director recognised as an interface passes admission',async()=>{
+test('a still that references a screenshot the director recognised as a product passes admission',async()=>{
  const admission=await loadAdmission();
  const shot={id:'00000000-0000-4000-8000-000000000077',url:'s.png',thumbnail:'s.png',width:800,height:600,sha256:'7'.repeat(64),mime:'image/png',revisionId:'00000000-0000-4000-8000-000000000177'};
  const base=structuredClone(inputJson) as unknown as DirectionInput;
  const memory:MaterialMemory={version:1,revision:'r',materials:[{id:shot.id,role:'reference',name:'screen'} as never],rules:[],preferences:null,issues:[],observations:[],reconstruction:{allowed:true,instruction:''}};
  const input:DirectionInput={...base,assets:[...base.assets,shot],resourceIds:['a'],materialMemory:memory,brief:{...base.brief,synthesisAllowed:true}};
- const designMemory:MaterialMemory={...memory,materials:[{id:shot.id,role:'interface',name:'screen'} as never]};
+ const designMemory:MaterialMemory={...memory,materials:[{id:shot.id,role:'product',name:'screen'} as never]};
  const resource:Resource={id:'a',kind:'still',proxy:false,resolution:'low',purpose:'p',scene:input.storyboard[0].id,prompt:'The product screen on a desk.',aspect:'1:1',referenceAssetIds:[shot.id],mustNotContain:[]};
  const worker=resourceRequest(resource,{...input,materialMemory:designMemory},1);
  assert.match(worker.prompt,/fresh polished still/,'the worker asks for reconstruction');

@@ -59,3 +59,18 @@ test('an oversize reference (retina UI screenshot) is dropped from the picture i
  let calls=0;await designDirection({input:withRefs,state,approvedRequests:2,perStillMicroUsd:1,call:async()=>{calls++;return {text:answer};},ready:async()=>{},save:async()=>{}});
  assert.equal(calls,0);assert.ok(state.design);
 });
+
+test('an interface screenshot is never a still reference: it is evidence for the coded mockup',async()=>{
+ const {readDesign}=await import('../packages/director/contract');
+ const {resourceRequest}=await import('../packages/director/resources');
+ const shot={id:'00000000-0000-4000-8000-000000000006',url:'ui.png',thumbnail:'ui.png',width:1200,height:800,sha256:'6'.repeat(64),mime:'image/png',revisionId:'00000000-0000-4000-8000-000000000106'};
+ const photo={id:'00000000-0000-4000-8000-000000000005',url:'p.png',thumbnail:'p.png',width:1000,height:1000,sha256:'5'.repeat(64),mime:'image/png',revisionId:'00000000-0000-4000-8000-000000000105'};
+ const memory={version:1 as const,revision:'r',materials:[{id:shot.id,role:'interface',name:'ui'},{id:photo.id,role:'product',name:'box'}] as never,rules:[],preferences:null,issues:[],observations:[],reconstruction:{allowed:true,instruction:''}};
+ const withRefs={...input,assets:[...input.assets,shot,photo],materialMemory:memory} as typeof input;
+ const design=readDesign({...complete,resources:[{...sketched,sketch:undefined,referenceAssetIds:[shot.id,photo.id]}]},withRefs);
+ assert.deepEqual(design.resources[0].referenceAssetIds,[photo.id]);
+ assert.ok(!design.materialMemory!.issues.some(i=>/No reconstruction is requested for ui/.test(i)),'no nudge to reconstruct an interface');
+ assert.match(resourceRequest(design.resources[0],withRefs,1).prompt,/fresh polished still/,'a product photo still reconstructs');
+ const uiOnly={...sketched,sketch:undefined,referenceAssetIds:[]};
+ assert.doesNotMatch(resourceRequest(uiOnly,withRefs,1).prompt,/fresh polished still/);
+});

@@ -40,6 +40,9 @@ export function readDesign(value:unknown,input:DirectionInput):Design{
   // A reference the image model cannot take (over 2048 px a side or 2 MP, e.g. a retina UI screenshot) is dropped from
   // that picture instead of discarding the whole paid answer; the asset itself stays available to the frame code.
   r.referenceAssetIds=r.referenceAssetIds.filter(id=>{const a=input.assets.find(x=>x.id===id);return !a||!(a.width>2048||a.height>2048||a.width*a.height>2073600);});
+  // An interface is never drawn by the image model: it is a simplified mockup the coder builds in code, so a screenshot
+  // the director recognised as an interface is evidence for that mockup and never a still reference.
+  r.referenceAssetIds=r.referenceAssetIds.filter(id=>!memory?.materials.some(m=>m.id===id&&m.role==='interface'));
   // Image methods exist only for blocks started with them; earlier blocks ignore them instead of failing an answer.
   if(input.brief.imageMethodsVersion!==1){delete r.sketch;delete r.edit;delete r.extend;continue;}
   const validBox=(b?:number[])=>!b||b[0]<b[2]&&b[1]<b[3];
@@ -55,7 +58,7 @@ export function readDesign(value:unknown,input:DirectionInput):Design{
  const knownScenes=issuedScenes(input);
  for(const r of design.resources){if(!input.resourceIds.includes(r.id)||ids.has(r.id))throw new Error('UNISSUED_RESOURCE_ID');ids.add(r.id);if(!knownScenes.some(s=>s.id===r.scene))throw new Error('UNISSUED_SCENE_ID');if(r.referenceAssetIds.some(id=>!input.assets.some(a=>a.id===id)))throw new Error('UNISSUED_REFERENCE_ID');}
  if(input.stage==='draft'){const scenes=design.keyFrames!.map(s=>s.sceneId);if(new Set(scenes).size!==scenes.length||input.storyboard.some(s=>!scenes.includes(s.id))||scenes.some(id=>!knownScenes.some(s=>s.id===id)))throw new Error('SCENE_KEY_FRAMES_REQUIRED');for(const s of design.keyFrames!)if(new Set(s.moments.map(m=>m.id)).size!==s.moments.length)throw new Error('DUPLICATE_MOMENT');for(const r of design.resources)if(!!r.proxyFor!==!!r.proxy)throw new Error('PROXY_LABEL_REQUIRED');}
- if(memory?.reconstruction.allowed)for(const source of memory.materials.filter(m=>['product','interface'].includes(m.role)))if(!design.resources.some(r=>r.referenceAssetIds.includes(source.id)))memory.issues.push(`No reconstruction is requested for ${source.name}; keep it a reference, never substitute its screenshot as artwork.`);
+ if(memory?.reconstruction.allowed)for(const source of memory.materials.filter(m=>m.role==='product'))if(!design.resources.some(r=>r.referenceAssetIds.includes(source.id)))memory.issues.push(`No reconstruction is requested for ${source.name}; keep it a reference, never substitute its screenshot as artwork.`);
  return design;
 }
 export const designResponseSchema={name:'director_v1',schema:z.toJSONSchema(designSchema) as Record<string,unknown>};

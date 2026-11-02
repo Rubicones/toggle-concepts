@@ -11,10 +11,12 @@ import type {ImageFacts} from './image-facts';
 
 export type Box={x:number;y:number;width:number;height:number};
 export type InspectionView={key:string;label:string;variantId:string;props:LiveFrameProps;ordered:boolean;shot:boolean;group?:'reference'|'longest'};
-export type RawText={text:string;box:Box;fontSize:number;color:string;element:number;clipped:boolean;lines:number;background:string|null;complexBackground:boolean;overImage:string|null};
+export type RawText={text:string;box:Box;fontSize:number;color:string;element:number;clipped:boolean;lines:number;background:string|null;complexBackground:boolean;overImage:string|null;brokenWords?:string[]};
 export type RawImage={src:string;box:Box;naturalWidth:number;naturalHeight:number;objectFit:string;objectPosition:string;logo:boolean};
-export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:{id:string;box:Box}[]};
-export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR';
+export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[]};
+/** ink: alpha-weighted relative luminance of the logo's own pixels; background/overImage: what it sits on. */
+export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null};
+export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST';
 export type Finding={code:FindingCode;severity:'hard'|'soft';view:string;detail:string;box?:Box};
 export type ViewReport={view:string;label:string;findings:Finding[];texts:number;images:number};
 export type InspectionSummary={version:1;revision:string;views:number;hard:number;soft:number;reports:ViewReport[]};
@@ -89,9 +91,18 @@ export function collectLayout(size:{width:number;height:number}):RawView{
   }
   if(e.scrollWidth>e.clientWidth+1&&getComputedStyle(e).overflowX!=='visible')clipped=true;
   const under=images.find(i=>!i.logo&&i.box.x<r.right&&i.box.x+i.box.width>r.left&&i.box.y<r.bottom&&i.box.y+i.box.height>r.top);
-  texts.push({text:node.textContent.replace(/\s+/g,' ').trim(),box:box(r),fontSize:parseFloat(style.fontSize)*fontScale,color:style.color,element:index(e),clipped,lines:Math.max(1,lineTops.size),background,complexBackground,overImage:!background&&under?under.src:null});
+  // A word whose glyphs land on two lines was hyphenated or broken (hyphen-joined parts are checked separately).
+  const brokenWords:string[]=[],content=node.textContent;for(const m of content.matchAll(/[^\s\-‐–—/]+/g)){if(brokenWords.length>=4)break;const w=document.createRange();w.setStart(node,m.index!);w.setEnd(node,m.index!+m[0].length);if(new Set(Array.from(w.getClientRects()).filter(c=>c.width>0).map(c=>Math.round(c.top))).size>1)brokenWords.push(m[0]);}
+  texts.push({text:node.textContent.replace(/\s+/g,' ').trim(),box:box(r),fontSize:parseFloat(style.fontSize)*fontScale,color:style.color,element:index(e),clipped,lines:Math.max(1,lineTops.size),background,complexBackground,overImage:!background&&under?under.src:null,...(brokenWords.length?{brokenWords}:{})});
  }
- const logos=Array.from(document.querySelectorAll('[data-brand-logo]')).filter(e=>visible(e)>=0.9).map(e=>({id:e.getAttribute('data-brand-logo')??'',box:box(e.getBoundingClientRect())}));
+ const linear=(v:number)=>{v/=255;return v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4;};
+ const ink=(e:Element)=>{const img=(e.tagName==='IMG'?e:e.querySelector('img')) as HTMLImageElement|null;if(!img||!img.complete||!img.naturalWidth)return null;
+  try{const c=document.createElement('canvas'),w=Math.min(96,img.naturalWidth),h=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));c.width=w;c.height=h;const g=c.getContext('2d');if(!g)return null;g.drawImage(img,0,0,w,h);const d=g.getImageData(0,0,w,h).data;let sum=0,weight=0;
+   for(let i=0;i<d.length;i+=4){const a=d[i+3]/255;if(a<0.5)continue;sum+=a*(0.2126*linear(d[i])+0.7152*linear(d[i+1])+0.0722*linear(d[i+2]));weight+=a;}return weight?sum/weight:null;}catch{return null;}};
+ const logos=Array.from(document.querySelectorAll('[data-brand-logo]')).filter(e=>visible(e)>=0.9).map(e=>{const r=e.getBoundingClientRect();let background:string|null=null;
+  for(let p:Element|null=e.parentElement;p&&p!==document.documentElement&&!background;p=p.parentElement){const s=getComputedStyle(p);if(alpha(s.backgroundColor)>=0.95)background=s.backgroundColor;}
+  const cx=r.left+r.width/2,cy=r.top+r.height/2,under=images.filter(i=>!i.logo&&i.box.x<=cx&&i.box.x+i.box.width>=cx&&i.box.y<=cy&&i.box.y+i.box.height>=cy).at(-1);
+  return {id:e.getAttribute('data-brand-logo')??'',box:box(r),ink:ink(e),background,overImage:under?under.src:null};});
  return {width:size.width,height:size.height,texts,images,logos};
 }
 
@@ -139,10 +150,18 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
     if(ratio<3||f.busy[cell]>0.6)add('CONTRAST_OVER_PICTURE','soft',`Text sits directly on the picture (estimated ${ratio.toFixed(1)}:1, busy ${f.busy[cell].toFixed(2)}); check it reads: ${quote(t.text)}`,t.box);
    }
   }
+  for(const word of t.brokenWords??[])add('WORD_BROKEN',approvedText?'hard':'soft',`A word is split across two lines: ${quote(word)} in ${quote(t.text)}`,t.box);
   for(const logo of raw.logos)if(overlap(t.box,logo.box)>0.1*Math.min(t.box.width*t.box.height,logo.box.width*logo.box.height))add('TEXT_OVER_LOGO','hard',`Text overlaps the logo: ${quote(t.text)}`,{x:Math.min(t.box.x,logo.box.x),y:Math.min(t.box.y,logo.box.y),width:Math.max(t.box.x+t.box.width,logo.box.x+logo.box.width)-Math.min(t.box.x,logo.box.x),height:Math.max(t.box.y+t.box.height,logo.box.y+logo.box.height)-Math.min(t.box.y,logo.box.y)});
  }
  for(let i=0;i<raw.texts.length;i++)for(let j=i+1;j<raw.texts.length;j++){const a=raw.texts[i],b=raw.texts[j];if(a.element===b.element)continue;
   const area=overlap(a.box,b.box),smaller=Math.min(a.box.width*a.box.height,b.box.width*b.box.height);if(smaller>0&&area>0.2*smaller)add('TEXT_OVERLAP','hard',`Text overlaps other text: ${quote(a.text)} and ${quote(b.text)}`,{x:Math.min(a.box.x,b.box.x),y:Math.min(a.box.y,b.box.y),width:Math.max(a.box.x+a.box.width,b.box.x+b.box.width)-Math.min(a.box.x,b.box.x),height:Math.max(a.box.y+a.box.height,b.box.y+b.box.height)-Math.min(a.box.y,b.box.y)});}
+ for(const logo of raw.logos){if(logo.ink==null)continue;
+  // Measured against what the logo actually sits on: a measured picture cell, else the nearest solid background.
+  const image=logo.overImage?raw.images.find(i=>i.src===logo.overImage):undefined,f=logo.overImage?ctx.facts[logo.overImage]:undefined,rect=image&&visibleSourceRect(image);let ground:number|null=null;
+  if(image&&f&&rect){const cx=rect[0]+(logo.box.x+logo.box.width/2-image.box.x)/image.box.width*(rect[2]-rect[0]),cy=rect[1]+(logo.box.y+logo.box.height/2-image.box.y)/image.box.height*(rect[3]-rect[1]);ground=Math.pow(f.luma[Math.min(2,Math.max(0,Math.floor(cy*3)))*3+Math.min(2,Math.max(0,Math.floor(cx*3)))],2.2);}
+  else if(!logo.overImage&&logo.background){const bg=rgb(logo.background);if(bg)ground=luminance(bg);}
+  if(ground!==null){const ratio=contrastRatio(logo.ink,ground);if(ratio<2)add('LOGO_LOW_CONTRAST',logo.overImage?'soft':'hard',`The logo barely shows on its background (${ratio.toFixed(1)}:1); use a logo version or ground it reads on.`,logo.box);}
+ }
  if(ctx.input.brand.logos.some(l=>l.url)&&!raw.logos.length)add('LOGO_MISSING','soft','No brand logo is visible in this view.');
  for(const image of raw.images.filter(i=>!i.logo)){
   const rect=visibleSourceRect(image);if(!rect)continue;const scale=image.box.width/((rect[2]-rect[0])*image.naturalWidth);

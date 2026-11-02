@@ -98,6 +98,19 @@ test('a view that does not build is a hard finding and the coder note names view
  assert.ok(findingDigest(summary,'hard').length<=24);
 });
 
+test('broken words and a logo that disappears on its ground are objective findings',()=>{
+ const i=input();
+ const raw:RawView={width:1080,height:1080,images:[],logos:[{id:'logo0',box:box(800,40,200,80),ink:0.012,background:'rgb(13, 13, 13)',overImage:null}],texts:[
+  text('YOUR BAND. YOUR TRACKS.',box(80,200,700,200),{element:1,brokenWords:['TRACKS']}),
+  text('mono label',box(80,700,300,40),{element:2,brokenWords:['label']}),
+ ]};
+ const findings=analyzeView(raw,ctx(i)),code=(c:string)=>findings.filter(f=>f.code===c);
+ assert.deepEqual(code('WORD_BROKEN').map(f=>f.severity),['hard','soft'],'approved copy is hard, other text is for the critic');
+ assert.equal(code('LOGO_LOW_CONTRAST')[0]?.severity,'hard');
+ const light=analyzeView({...raw,logos:[{...raw.logos[0],ink:0.9}]},ctx(i));assert.ok(!light.some(f=>f.code==='LOGO_LOW_CONTRAST'),'a light logo on black reads');
+ const unknown=analyzeView({...raw,logos:[{id:'logo0',box:box(800,40,200,80)}]},ctx(i));assert.ok(!unknown.some(f=>f.code==='LOGO_LOW_CONTRAST'),'no measurement, no finding');
+});
+
 test('the browser probe measures a real compiled Frame offline and screenshots only the critic views',async t=>{
  const executable=await (async()=>{for(const p of [process.env.CHROME_PATH,'/opt/pw-browsers/chromium','/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'])if(p&&await access(p).then(()=>true,()=>false))return p;})();
  if(!executable){t.skip('No Chromium executable is available for the layout probe.');return;}

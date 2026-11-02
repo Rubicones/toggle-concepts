@@ -122,3 +122,10 @@ test('a critic request for a 128-variant campaign stays inside the draft request
  const result=await compactStaticCriticRequest('Review these live draft views and measurements.',{instructions:staticRoleInstructions.critic,protocolInstructions:liveCriticInstructions,responseSchema:{...liveCriticSchema,schema:providerJsonSchema(liveCriticSchema.schema) as Record<string,unknown>},campaignContext:{checkpointId:'recorded',...context},pricing:{inputPrice:1e-7,outputPrice:4e-7},maxOutputTokens:3000,cachePrompt:true},[{url:`data:image/jpeg;base64,${sheet.toBuffer('image/jpeg',80).toString('base64')}`,label:'Contact sheet of live draft views for review'}]);
  assert.ok(result.compaction.after<=DRAFT_INPUT_CAP);assert.equal(result.images.length,1);
 });
+
+test('a network timeout before the critic request is sent gets one more try; a second one skips the review',async()=>{
+ let count=0;const once=deps({criticRounds:1,critic:async()=>{if(count++===0)throw new DOMException('The operation was aborted due to timeout','TimeoutError');return JSON.stringify(critique({accepted:true,notes:[]}));}});
+ assert.equal((await runLiveReview(once.d))!.criticRounds,1);assert.equal(count,2);
+ let tries=0;const twice=deps({criticRounds:1,critic:async()=>{tries++;throw new DOMException('The operation was aborted due to timeout','TimeoutError');}});
+ const record=(await runLiveReview(twice.d))!;assert.equal(record.criticRounds,0);assert.equal(tries,2);
+});
