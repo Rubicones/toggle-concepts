@@ -19,8 +19,8 @@ section>header{display:flex;justify-content:space-between;gap:12px;align-items:b
 .intro{margin:-10px 0 0;color:var(--muted);font-size:13px;max-width:70ch}
 .q{display:grid;gap:8px;min-width:0}.q>.lab{font-size:13.5px;font-weight:600}.hint{font-size:12px;color:var(--muted);font-weight:400}
 .req::after{content:" *";color:var(--accent)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
-input[type=text],input[type=email],input[type=date],input[type=url],textarea,select{width:100%;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:10px 12px;font:inherit;color:inherit}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px;align-items:start}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+input[type=text],input[type=email],input[type=date],input[type=url],input[type=number],textarea,select{width:100%;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:10px 12px;font:inherit;color:inherit}
 textarea{min-height:64px;resize:vertical}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;color:inherit;cursor:pointer}
@@ -36,6 +36,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.seg[hidden]{display:none}summary .hint{font-weight:400;margin-left:6px}
 .siterow{display:flex;gap:8px}.siterow button{flex:none;border:0;border-radius:10px;background:var(--pick);color:#fff;padding:0 16px;font:inherit;font-weight:600;cursor:pointer}.fromsite{border-color:#9EC3DA!important;background:#F2F8FC!important}
 .cards.packs{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.pack{padding:14px}.pack span{font-size:12px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:6px 8px;min-height:42px}.tags input{flex:1;min-width:140px;border:0;outline:0;font:inherit;padding:4px;background:none;color:inherit}.tags:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.tag-i{display:inline-flex;align-items:center;gap:4px;background:var(--pick);color:#fff;border-radius:999px;padding:3px 4px 3px 10px;font-size:12.5px}.tag-i button{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;width:18px;height:18px;line-height:16px;padding:0;cursor:pointer;font-size:12px}
+.chips.mini .chip{padding:3px 10px;font-size:12px;border-style:dashed}.row{display:flex;align-items:center;gap:8px}.num{width:84px!important;padding:6px 10px!important}
+.stepper{display:flex;align-items:center;gap:8px}.stepper button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;font:inherit;font-size:18px;cursor:pointer;color:inherit}.stepper button:disabled{opacity:.35;cursor:default}.stepper output{min-width:20px;text-align:center;font-weight:700;font-size:16px}
+.total{margin:0;padding:12px 14px;border-radius:12px;background:var(--soft);font-size:13px}.total b{font-size:15px}
 .card .tag{position:absolute;top:12px;left:12px;font-size:10px;font-weight:700;background:var(--pick);color:#fff;border-radius:999px;padding:2px 8px;display:none}
 .card[aria-pressed="true"] .tag{display:block}
 .card.sugcard{border-style:dashed;align-content:center;justify-items:start}.card.sugcard .ph{display:grid;place-items:center;font-size:12px;color:var(--muted);background:var(--soft)}
@@ -76,7 +81,7 @@ details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:
  <div class="q"><label class="lab req" for="audience">Who is it for?</label><input id="audience" type="text" data-site="Solo video creators and small studios who shoot every day" placeholder="e.g. solo creators who shoot every day"></div>
  <div class="q"><label class="lab req" for="markets">Where will it run?</label><input id="markets" type="text" placeholder="UK, Germany…"></div>
  <div class="q"><label class="lab req" for="offer">Offer</label><input id="offer" type="text" placeholder="Free 14-day trial…"></div>
- <div class="q"><label class="lab req" for="cta">Call to action</label><input id="cta" type="text" placeholder="Try it free"><div class="chips" id="ctaPicks"></div></div>
+ <div class="q"><span class="lab req">Calls to action <span class="hint">add several to test</span></span><div class="tags" data-list="cta" data-ph="e.g. Try it free"></div><div class="chips mini" data-picks="cta"></div></div>
 </div>
 <details><summary>Add more detail <span class="hint">optional · makes the ideas sharper</span></summary><div class="grid2" style="margin-top:12px">
  <div class="q"><label class="lab" for="proof">Why should people believe it? <span class="hint">a fact, number or demonstration</span></label><input id="proof" type="text" data-key="proof"></div>
@@ -119,29 +124,31 @@ details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:
 </div></details>
 </section>
 
-<section id="s3"><header><h2>3 · What to make</h2><span>≈ 1 min</span></header>
-<div class="q"><span class="lab">Pick a pack <span class="hint">you can change everything below</span></span><div class="cards packs" id="packs"></div></div>
-<details><summary>Customise the pack <span class="hint">languages, lengths, hooks, formats</span></summary><div style="display:grid;gap:16px;margin-top:12px">
-<div class="grid2">
- <div class="q"><label class="lab" for="locales">Languages <span class="hint">comma separated, e.g. en-GB, de-DE</span></label><input id="locales" type="text" value="en-GB"></div>
- <div class="q"><label class="lab" for="lengths">Lengths, seconds <span class="hint">e.g. 15, 6</span></label><input id="lengths" type="text" value="15"></div>
- <div class="q"><label class="lab" for="hooks">Opening hooks per video <span class="hint">different first seconds to test</span></label><select id="hooks"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
- <div class="q"><label class="lab" for="stories">Story versions <span class="hint">different middles to test</span></label><select id="stories"><option>1</option><option>2</option><option>3</option></select></div>
-</div>
+<section id="s3"><header><h2>3 · What to make</h2><span>≈ 2 min</span></header>
+<p class="intro">Add as many languages, hooks, calls to action and offers as you want to test. Only the video sequence is limited: up to 4 versions per scenario.</p>
+<div class="q"><span class="lab">Quick start <span class="hint">fills the fields below; change anything after</span></span><div class="chips" id="packs"></div></div>
 <div class="q"><span class="lab">Formats</span><div class="formats" id="formats"></div></div>
-<div class="q"><span class="lab">Which videos</span><div class="chips" data-single="combos"></div></div>
-<div class="grid2" style="margin-top:12px">
- <div class="q"><label class="lab" for="finals">Final concepts to produce</label><select id="finals"><option>1</option><option>2</option><option>3</option></select></div>
- <div class="q"><label class="lab" for="offers">Offer variants</label><input id="offers" type="text" placeholder="Comma separated"></div>
+<div class="grid2">
+ <div class="q"><span class="lab">Languages</span><div class="tags" data-list="locales" data-ph="Add a language, e.g. de-DE"></div><div class="chips mini" data-picks="locales"></div></div>
+ <div class="q"><span class="lab">Lengths, seconds</span><div class="tags" data-list="lengths" data-ph="Add a length, e.g. 10"></div><div class="chips mini" data-picks="lengths"></div></div>
+ <div class="q"><span class="lab">Opening hooks <span class="hint">different first seconds to test</span></span><div class="tags" data-list="hooks" data-ph="Write a hook idea and press Enter"></div><div class="row"><label class="hint" for="hookExtra">and we write</label><input id="hookExtra" type="number" min="0" value="2" class="num"><span class="hint">more</span></div></div>
+ <div class="q"><span class="lab">Offer variants <span class="hint">optional</span></span><div class="tags" data-list="offers" data-ph="e.g. 30% off the first month"></div></div>
+ <div class="q"><span class="lab">Video sequence versions <span class="hint">different middles for the same scenario, up to 4</span></span><div class="stepper"><button type="button" id="seqMinus" aria-label="Fewer">−</button><output id="seqN">1</output><button type="button" id="seqPlus" aria-label="More">+</button><span class="hint" id="seqHint"></span></div></div>
+ <div class="q"><span class="lab">Other variations to test <span class="hint">optional, e.g. "with and without a person"</span></span><div class="tags" data-list="extras" data-ph="Describe a variation and press Enter"></div></div>
+</div>
+<p class="total" id="total"></p>
+<details><summary>More options</summary><div class="grid2" style="margin-top:12px">
+ <div class="q"><label class="lab" for="finals">Final concepts to produce</label><input id="finals" type="number" min="1" value="1" class="num"></div>
+ <div class="q"><span class="lab">Which videos</span><div class="chips" data-single="combos"></div></div>
  <div class="q"><label class="lab" for="pl">Preview language</label><input id="pl" type="text" value="en-GB"></div>
  <div class="q"><label class="lab" for="pf">Preview format</label><select id="pf"><option>9:16 · Stories</option><option>4:5 · Feed</option><option>1:1 · Square</option><option>16:9 · Wide</option></select></div>
-</div></div></details>
+</div></details>
 <div class="q"><label class="lab" for="notes">Anything else for the creative team? <span class="hint">optional</span></label><textarea id="notes" placeholder="Ideas, must-haves, what to avoid…"></textarea></div>
 </section>
 
 <section id="s4"><header><h2>4 · Materials &amp; rules</h2><span>≈ 2 min</span></header>
 <div class="q"><span class="lab req">Images for the ads <span class="hint">at least your logo and one product or app picture; brandbook files are reused automatically; your product and interface are always built from these, never invented</span></span>
-<div class="slots"><div class="slot"><b>Logo</b><span class="hint">SVG if you have it</span></div><div class="slot"><b>Product</b><span class="hint">packshots, devices</span></div><div class="slot"><b>App screenshots</b><span class="hint">we rebuild them crisply, never invent</span></div><div class="slot"><b>Brand photos or renders</b><span class="hint">your usual look</span></div><div class="slot"><b>Past ads that worked</b><span class="hint">optional</span></div><div class="slot"><b>Past ads that didn't</b><span class="hint">optional</span></div></div></div>
+<div class="slots"><div class="slot"><b>Logo</b><span class="hint">SVG or PNG; SVG is best</span></div><div class="slot"><b>Product</b><span class="hint">packshots, devices</span></div><div class="slot"><b>App screenshots</b><span class="hint">we rebuild them crisply, never invent</span></div><div class="slot"><b>Brand photos or renders</b><span class="hint">your usual look</span></div><div class="slot"><b>Past ads that worked</b><span class="hint">optional</span></div><div class="slot"><b>Past ads that didn't</b><span class="hint">optional</span></div></div></div>
 <div class="grid2">
  <div class="q"><label class="lab req" for="name">Your name</label><input id="name" type="text"></div>
  <div class="q"><label class="lab req" for="email">Your email</label><input id="email" type="email"></div>
@@ -167,13 +174,16 @@ const NOSUGGEST=new Set(["combos"]);
 const MULTI={platforms:[["meta","Instagram & Facebook"],["tiktok","TikTok"],["youtube","YouTube"],["google","Google Ads"],["app-stores","App stores"],["programmatic","Display"],["other","Other"]],avoid:[["stock","Stock look"],["ai-look","AI-looking images"],["gloomy","Gloomy"],["shouty","Shouty retail"],["corporate","Corporate clichés"],["childish","Childish"],["glossy","Glossy"],["cluttered","Cluttered"],["pompous","Pompous"]],likeAspects:[["colour","Colour"],["light","Light"],["composition","Composition"],["type","Type"],["mood","Mood"],["product-shot","Product shot"],["people","People"],["rhythm","Rhythm"]],dislikeAspects:[["colour","Colour"],["light","Light"],["composition","Composition"],["type","Type"],["mood","Mood"],["product-shot","Product shot"],["people","People"],["rhythm","Rhythm"]],synthesis:[["backgrounds","Backgrounds & environments"],["abstract-light","Abstract shapes & light"],["people-hands","People: hands only"],["people","People"],["product-from-reference","Product scenes from your references"]]};
 const FORMATS=[["vertical","9:16 · Stories",20,34],["portrait","4:5 · Feed",28,34],["square","1:1 · Square",32,32],["wide","16:9 · Wide",44,25]];
 const CTAS=["Try it free","Sign up","Download","Shop now","Learn more"];
-const PACKS=[['standard','Standard pack','9:16, 4:5 and 1:1 · 15 s · one hook, one story · your main language',{formats:['vertical','portrait','square'],lengths:'15',hooks:'1',stories:'1'}],['test','Hook test','9:16 · 6 s and 15 s · three hooks to compare',{formats:['vertical'],lengths:'6, 15',hooks:'3',stories:'1'}],['wide','Everywhere','All four formats · 6 s and 15 s · two hooks',{formats:['vertical','portrait','square','wide'],lengths:'6, 15',hooks:'2',stories:'1'}]];
-const S={pack:'standard',single:{combos:"all"},multi:{synthesis:["backgrounds","abstract-light"]},feel:[],world:[],light:[],axes:Object.fromEntries(AXES.map(a=>[a[0],a[3]])),formats:['vertical','portrait','square'],ex:"live"};
+const PACKS=[['standard','Standard: 9:16, 4:5, 1:1 · 15 s',{formats:['vertical','portrait','square'],lengths:['15'],hookExtra:2,seq:1}],['test','Hook test: 9:16 · 6 and 15 s · 5 hooks',{formats:['vertical'],lengths:['6','15'],hookExtra:5,seq:1}],['wide','Everywhere: all formats · 6 and 15 s',{formats:['vertical','portrait','square','wide'],lengths:['6','15'],hookExtra:2,seq:2}]];
+const PICKS={locales:['en-US','de-DE','fr-FR','es-ES','pt-BR','it-IT','pl-PL','tr-TR','ja-JP'],lengths:['6','10','15','20','30'],cta:['Try it free','Sign up','Download','Shop now','Learn more']};
+const MAXSEQ=4;
+const S={pack:'standard',lists:{locales:['en-GB'],lengths:['15'],hooks:[],offers:[],extras:[],cta:[]},seq:1,single:{combos:"all"},multi:{synthesis:["backgrounds","abstract-light"]},feel:[],world:[],light:[],axes:Object.fromEntries(AXES.map(a=>[a[0],a[3]])),formats:['vertical','portrait','square'],ex:"live"};
 const el=(t,a={},c=[])=>{const e=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==='text')e.textContent=v;else if(k.startsWith('on'))e[k]=v;else e.setAttribute(k,v);}c.forEach(x=>e.append(x));return e;};
 const pic=(src,alt)=>{const i=el('img',{src,alt,loading:'eager'});i.onerror=()=>{const d=el('div',{class:'ph'});i.replaceWith(d);};return i;};
 function chipsSingle(host,key){const list=SINGLE[key],cur=S.single[key]??"suggest";host.replaceChildren(...list.map(([id,l])=>el('button',{type:'button',class:'chip','aria-pressed':String(cur===id),text:l,onclick:()=>{S.single[key]=id;render();}})),...(NOSUGGEST.has(key)?[]:[el('button',{type:'button',class:'chip sug','aria-pressed':String(cur==='suggest'),text:'Suggest',onclick:()=>{S.single[key]='suggest';render();}})]));}
 function chipsMulti(host,key){const list=MULTI[key],cur=S.multi[key]??[];host.replaceChildren(...list.map(([id,l])=>el('button',{type:'button',class:'chip','aria-pressed':String(cur.includes(id)),text:l,onclick:()=>{S.multi[key]=cur.includes(id)?cur.filter(x=>x!==id):[...cur,id];render();}})));}
 function cardSet(host,list,key,max,img,desc){const cur=S[key];host.replaceChildren(...list.map(([id,l,d],i)=>{const n=cur.indexOf(id);return el('button',{type:'button',class:'card','aria-pressed':String(n>=0),onclick:()=>{if(n>=0)cur.splice(n,1);else if(cur.length<max)cur.push(id);render();}},[el('span',{class:'tag',text:key==='feel'?(n===0?'Main':'Also'):'Chosen'}),pic(img(id,i),l),el('b',{text:l}),...(desc&&d?[el('span',{text:d})]:[])]);}),el('button',{type:'button',class:'card sugcard','aria-pressed':String(cur.length===0),onclick:()=>{cur.length=0;render();}},[el('div',{class:'ph',text:'We suggest from your brand kit'}),el('b',{text:'Suggest'})]));}
+function tagList(h){const k=h.dataset.list,inp=el('input',{type:'text',placeholder:h.dataset.ph||'','aria-label':h.dataset.ph||k,id:'list-'+k});const add=()=>{const vals=inp.value.split(',').map(x=>x.trim()).filter(Boolean);vals.forEach(x=>{if(!S.lists[k].includes(x))S.lists[k].push(x);});inp.value='';render();document.getElementById('list-'+k).focus();};inp.onkeydown=e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();add();}else if(e.key==='Backspace'&&!inp.value&&S.lists[k].length){S.lists[k].pop();render();document.getElementById('list-'+k).focus();}};inp.onblur=()=>{if(inp.value.trim())add();};h.replaceChildren(...S.lists[k].map((x,i)=>el('span',{class:'tag-i'},[document.createTextNode(x),el('button',{type:'button','aria-label':'Remove '+x,text:'×',onclick:()=>{S.lists[k].splice(i,1);render();}})])),inp);}
 function render(){
  document.querySelectorAll('[data-single]').forEach(h=>chipsSingle(h,h.dataset.single));document.querySelectorAll('[data-multi]').forEach(h=>chipsMulti(h,h.dataset.multi));
  const med=S.single.medium??'suggest',fixed=med==='live'||med==='digital',ex=fixed?med:S.ex;document.getElementById('exSeg').hidden=fixed;
@@ -182,14 +192,17 @@ function render(){
  cardSet(document.getElementById('lightCards'),LIGHT,'light',2,(id,i)=>IMG.light[i]);
  document.getElementById('exLive').setAttribute('aria-pressed',String(S.ex==='live'));document.getElementById('exDigital').setAttribute('aria-pressed',String(S.ex==='digital'));
  document.getElementById('sliders').replaceChildren(...AXES.map(([id,a,b,base])=>{const r=el('input',{type:'range',min:'1',max:'5',step:'1',value:String(S.axes[id]),'aria-label':`${a} to ${b}`,id:'ax-'+id});r.oninput=()=>{S.axes[id]=+r.value;render();};const m=el('div',{class:'brandmark'});m.style.left=`calc(${(base-1)/4*100}% + ${8-(base-1)/4*16}px)`;const d=S.axes[id]-base;return el('div',{class:'sl'},[el('div',{class:'ends'},[el('span',{text:a}),el('span',{text:b})]),el('div',{class:'track'},[m,r]),el('div',{class:'shift',text:d?`This campaign: a step towards ${d>0?b:a}`:''})]);}));
- document.getElementById('packs').replaceChildren(...PACKS.map(([id,l,d,cfg])=>el('button',{type:'button',class:'card pack','aria-pressed':String(S.pack===id),onclick:()=>{S.pack=id;S.formats=[...cfg.formats];document.getElementById('lengths').value=cfg.lengths;document.getElementById('hooks').value=cfg.hooks;document.getElementById('stories').value=cfg.stories;render();}},[el('span',{class:'tag',text:'Chosen'}),el('b',{text:l}),el('span',{text:d})])));
+ document.getElementById('packs').replaceChildren(...PACKS.map(([id,l,cfg])=>el('button',{type:'button',class:'chip','aria-pressed':String(S.pack===id),text:l,onclick:()=>{S.pack=id;S.formats=[...cfg.formats];S.lists.lengths=[...cfg.lengths];document.getElementById('hookExtra').value=cfg.hookExtra;S.seq=cfg.seq;render();}})));
+ document.querySelectorAll('[data-list]').forEach(tagList);
+ document.querySelectorAll('[data-picks]').forEach(h=>{const k=h.dataset.picks;h.replaceChildren(...PICKS[k].filter(x=>!S.lists[k].includes(x)).map(x=>el('button',{type:'button',class:'chip',text:'+ '+x,onclick:()=>{S.lists[k].push(x);render();}})));});
+ document.getElementById('seqN').textContent=S.seq;document.getElementById('seqMinus').disabled=S.seq<=1;document.getElementById('seqPlus').disabled=S.seq>=MAXSEQ;document.getElementById('seqHint').textContent=S.seq>=MAXSEQ?'maximum per scenario':'';
  document.getElementById('formats').replaceChildren(...FORMATS.map(([id,l,w,h])=>{const on=S.formats.includes(id),i=el('i');i.style.width=w+'px';i.style.height=h+'px';return el('button',{type:'button',class:'fmt','aria-pressed':String(on),onclick:()=>{S.formats=on?S.formats.filter(x=>x!==id):[...S.formats,id];render();}},[i,el('span',{text:l})]);}));
- document.getElementById('ctaPicks').replaceChildren(...CTAS.map(c=>el('button',{type:'button',class:'chip',text:c,onclick:()=>{document.getElementById('cta').value=c;update();}})));
  update();
 }
 function update(){
  const v=id=>document.getElementById(id)?.value.trim()??'',lab=(list,id)=>(list.find(x=>x[0]===id)||[,id])[1];
- const fill=['product','benefit','audience','markets','offer','cta','name','email'].filter(id=>v(id)).length;document.getElementById('progress').style.width=`${Math.round(((fill+(S.feel.length?1:0)+(S.world.length?1:0))/10)*100)}%`;document.getElementById('filled').textContent=`${fill} of 8 required answers filled`;
+ const n=id=>Math.max(1,parseInt(document.getElementById(id)?.value||'0',10)||0);const hooks=S.lists.hooks.length+(parseInt(document.getElementById('hookExtra').value,10)||0)||1;const L2=S.lists;const parts=[[n('finals'),'concept'],[Math.max(1,L2.locales.length),'language'],[hooks,'hook'],[S.seq,'sequence version'],[Math.max(1,L2.offers.length),'offer'],[Math.max(1,L2.cta.length),'call to action','calls to action'],[Math.max(1,L2.lengths.length),'length'],[Math.max(1,S.formats.length),'format'],[Math.max(1,L2.extras.length+(L2.extras.length?1:0)),'variation']];const tot=parts.reduce((a,[x])=>a*x,1);document.getElementById('total').innerHTML='';document.getElementById('total').append(el('b',{text:`${tot} video${tot===1?'':'s'} if every combination is made`}),document.createTextNode(' · '+parts.filter(([x])=>x>1).map(([x,l,pl])=>`${x} ${pl||l+'s'}`).join(' × ')+((S.single.combos==='pick')?' · you pick which combinations to make':'')));
+ const fill=['product','benefit','audience','markets','offer','name','email'].filter(id=>v(id)).length+(S.lists.cta.length?1:0);document.getElementById('progress').style.width=`${Math.round(((fill+(S.feel.length?1:0)+(S.world.length?1:0))/10)*100)}%`;document.getElementById('filled').textContent=`${fill} of 8 required answers filled`;
  const one=k=>{const x=S.single[k]??'suggest';return x==='suggest'?'suggest':lab(SINGLE[k],x);};
  const L=[];L.push(S.feel.length?`Main feeling: ${lab(FEELS,S.feel[0])}${S.feel.length>1?`. Also: ${S.feel.slice(1).map(f=>lab(FEELS,f)).join(', ')}`:''}.`:'Feeling: not chosen; derive it from the brand character and the product benefit.');
  const shifts=AXES.filter(a=>S.axes[a[0]]!==a[3]).map(a=>`${a[1]}–${a[2]} ${S.axes[a[0]]}/5`);if(shifts.length)L.push(`Campaign character: ${shifts.join('; ')}.`);
@@ -202,6 +215,7 @@ function update(){
  document.getElementById('brief').textContent='FEELING BRIEF (client choices; "suggest" means you propose from the brand kit):\n'+L.join('\n');
 }
 document.querySelectorAll('input,textarea').forEach(e=>e.addEventListener('input',update));
+document.getElementById('seqMinus').onclick=()=>{S.seq=Math.max(1,S.seq-1);render();};document.getElementById('seqPlus').onclick=()=>{S.seq=Math.min(MAXSEQ,S.seq+1);render();};
 document.getElementById('exLive').onclick=()=>{S.ex='live';render();};document.getElementById('exDigital').onclick=()=>{S.ex='digital';render();};
 const qp=new URLSearchParams(location.search);if(qp.get('medium'))S.single.medium=qp.get('medium');if(qp.get('open'))document.querySelectorAll('details').forEach(d=>d.open=true);
 document.getElementById('fillSite').onclick=()=>{document.querySelectorAll('[data-site]').forEach(f=>{if(!f.value){f.value=f.dataset.site;f.classList.add('fromsite');f.addEventListener('input',()=>f.classList.remove('fromsite'),{once:true});}});update();};
