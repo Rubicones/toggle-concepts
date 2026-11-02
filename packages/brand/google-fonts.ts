@@ -4,9 +4,11 @@
  * sandbox itself stays offline. The application never chooses a font: it only completes the one the brand names.
  */
 import type {BrandDraft} from '../contracts/brand-kit';
+import {normalizeFontFamily} from './normalize';
 
 const GENERIC=new Set(['sans-serif','serif','monospace','system-ui','cursive','fantasy','inherit','arial','helvetica','helvetica neue','times','times new roman','georgia','verdana','sf pro','san francisco','-apple-system']);
-export const normalizeFamily=(name:string)=>name.toLowerCase().replace(/[^a-z0-9]/g,'');
+/** Comparison key: style words in a file's family name ("Archivo SemiBold") do not make another family. */
+export const normalizeFamily=(name:string)=>normalizeFontFamily(name).toLowerCase().replace(/[^a-z0-9]/g,'');
 export const GOOGLE_FONT_WEIGHTS=[100,200,300,400,500,600,700,800,900] as const;
 
 /** Family names the accepted Brand Kit typography rules name first ("Schibsted Grotesk (OFL, …)" → "Schibsted Grotesk"). */

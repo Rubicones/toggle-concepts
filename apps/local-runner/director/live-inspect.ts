@@ -17,7 +17,7 @@ export async function inspectLivePreview(folder:string,views:InspectionView[]){
  const {revision}=await liveSource(folder),cache=resolve(folder,'.reports','live',revision);
  const script=await readFile(resolve(cache,'preview.js'),'utf8'),css=await readFile(resolve(cache,'preview.css'),'utf8').catch(()=>'');
  const resourcesSource=await readFile(resolve(folder,'resources.ts'),'utf8'),resources=JSON.parse(resourcesSource.slice(resourcesSource.indexOf('>=')+2).trim().replace(/;\s*$/,''));
- const names=new Set<string>([...input.brand.fonts.map(f=>f.url),...input.brand.logos.map(l=>l.url),...input.assets.map(a=>a.url),...Object.values(resources as Record<string,{url:string}>).map(r=>r.url)].filter((n):n is string=>!!n&&previewMaterialAllowed(input.materialMemory,n)));
+ const names=new Set<string>([...input.brand.fonts.map(f=>f.url),...input.brand.logos.flatMap(l=>[l.url,...(l.variants?[l.variants.onDark,l.variants.onLight]:[])]),...input.assets.map(a=>a.url),...Object.values(resources as Record<string,{url:string}>).map(r=>r.url)].filter((n):n is string=>!!n&&previewMaterialAllowed(input.materialMemory,n)));
  const assets:Record<string,string>={};
  for(const name of names){const bytes=await readFile(resolve(folder,'public',name)).catch(()=>undefined);if(bytes)assets[name]=`data:${mimes[extname(name).toLowerCase()]??'application/octet-stream'};base64,${bytes.toString('base64')}`;}
  const out=resolve(folder,'.reports','inspect',revision);await mkdir(out,{recursive:true});

@@ -1,4 +1,5 @@
 import type * as Fontkit from 'fontkit';
+import {normalizeFontFamily} from './normalize';
 type Font=ReturnType<typeof Fontkit.create>&{familyName:string};
 
 /** Postgres JSON cannot hold U+0000; font name tables sometimes contain it. */
@@ -18,7 +19,7 @@ export function fontMetadata(font:Font,bytes:Uint8Array){
  const advance=(sample:string)=>f.layout(sample).positions.reduce((sum,p)=>sum+p.xAdvance,0)/[...sample].length/f.unitsPerEm,axis=f.variationAxes?.wght;
  return {container:fontContainer(bytes),averageAdvanceByScript:Object.fromEntries([['latin','abcdefghijklmnopqrstuvwxyz'],['cyrillic','абвгдежзиклмнопрстуфхцчшщ']].filter(([,sample])=>[...sample].every(ch=>f.characterSet.includes(ch.codePointAt(0)!))).map(([script,sample])=>[script,advance(sample)])),
   unitsPerEm:f.unitsPerEm,glyphCoverage:f.characterSet,averageAdvance:advance('abcdefghijklmnopqrstuvwxyz'),weight:f['OS/2']?.usWeightClass??400,...(axis?{weightRange:[axis.min,axis.max]}:{}),
-  style:/italic/i.test(f.subfamilyName)?'italic':'normal',family:noNul(f.familyName),subfamily:noNul(f.subfamilyName),postscriptName:noNul(f.postscriptName),numGlyphs:f.numGlyphs,characterCount:f.characterSet.length,
+  style:/italic/i.test(f.subfamilyName)?'italic':'normal',family:normalizeFontFamily(String(noNul(f.familyName))),nameFamily:noNul(f.familyName),subfamily:noNul(f.subfamilyName),postscriptName:noNul(f.postscriptName),numGlyphs:f.numGlyphs,characterCount:f.characterSet.length,
   latinBasic:f.characterSet.filter(n=>n>=32&&n<127).length,cyrillic:f.characterSet.filter(n=>n>=0x400&&n<=0x4ff).length,embeddingFlags:f['OS/2']?.fsType??null,copyright:noNul(f.copyright)};
 }
 

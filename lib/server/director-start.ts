@@ -2,6 +2,8 @@ import 'server-only';
 import {googleFontMaterials} from '@/lib/server/google-fonts';
 import {draftLineage,isCurrentDraftBlock,matchesDraftLineage,draftWorkProgress} from '@/packages/director/draft-lineage';
 import {randomUUID,createHash} from 'node:crypto';
+import {objectStore} from '@/packages/media/s3.server';
+import {inkColours,logoInkVariants} from '@/packages/brand/normalize';
 import {readFile} from 'node:fs/promises';
 import {draftContext} from './drafts';
 import {checked} from './studio';
@@ -90,6 +92,16 @@ export async function directorStart(campaignId:string,approval?:{quoteId:string;
  materials.push(...(await googleFontMaterials(kit,materials,requestId).catch(()=>({materials:[] as BrandMaterial[]}))).materials);
  const assets=checked(await saved.admin.from('asset_revisions').select('id,filename,mime,sha256,object_key,inspection').eq('tenant_id',saved.tenant).eq('campaign_id',campaignId))??[],assetFiles=assets.filter(a=>a.mime.startsWith('image/'));for(const asset of assetFiles.filter(a=>kit.sourceAssetIds.includes(a.id)))if(!materials.some(m=>m.id===asset.id))materials.push({id:asset.id,filename:asset.filename,mime:asset.mime,sha256:asset.sha256,objectKey:asset.object_key,metadata:{}});
  const files=[...materials,...assets.map(a=>({id:a.id,filename:a.filename,mime:a.mime,sha256:a.sha256,objectKey:a.object_key,metadata:{}}))].filter((m,i,all)=>all.findIndex(x=>x.sha256===m.sha256)===i).map(m=>({url:sourceFilename(m),objectKey:m.objectKey,sha256:m.sha256,mime:m.mime}));
+ // A logo drawn in currentColor renders black when placed as an image: the same drawing is added resolved to the brand's
+ // light ink (for dark grounds) and dark ink (for light grounds), stored by hash and pinned in the snapshot like any file.
+ const ink=inkColours(kit.rules.filter(r=>r.decision==='accepted'&&r.category==='color').flatMap(r=>r.value.match(/#[0-9a-f]{6}\b/gi)??[])),logoVariants=new Map<string,{onDark:string;onLight:string}>();
+ for(const m of materials.filter(m=>m.mime==='image/svg+xml'&&!m.objectKey.startsWith('fixtures/'))){try{
+  const variants=logoInkVariants(Buffer.from((await objectStore().get(m.objectKey)).body).toString('utf8'),ink);if(!variants)continue;const urls={onDark:'',onLight:''};
+  for(const key of ['onDark','onLight'] as const){const bytes=Buffer.from(variants[key],'utf8'),sha=createHash('sha256').update(bytes).digest('hex'),objectKey=`staging/brand-variants/${sha}.svg`;
+   await objectStore().putStaging(objectKey,bytes,'image/svg+xml').catch((error:unknown)=>{if(!(error instanceof Error&&error.message==='Precondition'))throw error;});
+   if(!files.some(f=>f.sha256===sha))files.push({url:`${sha}.svg`,objectKey,sha256:sha,mime:'image/svg+xml'});urls[key]=`${sha}.svg`;}
+  logoVariants.set(m.id,urls);
+ }catch{/* the supplied logo stays available as it is */}}
  const brief=(saved.context.submittedBrief as {questionnaire?:Record<string,unknown>}).questionnaire??{},protectedCopy:Record<string,Record<string,string>>={};for(const key of ['cta','offer','legal'])if(typeof brief[key]==='string'&&brief[key])protectedCopy[key]=Object.fromEntries(saved.context.scope.locales.map(locale=>[locale,String(brief[key])]));
  let localizationRows:ApprovedLocalization[];try{localizationRows=fillShorterCutScenes(readPlanningLocalization(localization.output,saved.context.manifest.entries),saved.context.manifest.entries);}catch(error){throw plainStartError(error,0);}
  const formats=directorFormats(saved.context.scope.placements),variants:Variant[]=saved.context.manifest.entries.map(v=>({id:v.id,format:v.placementId,locale:v.locale,hook:v.hook,cta:v.offer,length:v.durationSeconds}));variants.sort((a,b)=>Number(b.format===saved.context.scope.referencePlacement&&b.locale===saved.context.scope.referenceLocale)-Number(a.format===saved.context.scope.referencePlacement&&a.locale===saved.context.scope.referenceLocale));
@@ -100,6 +112,7 @@ export async function directorStart(campaignId:string,approval?:{quoteId:string;
  const blockId=randomUUID(),inputs:DirectionInput[]=[],estimates:Record<string,Estimate>={};for(const [index,direction]of selectedEntries){try{
   const directionId=requestId({roundId:saved.round.id,direction:index}),scenes=approvedScenes(direction.storyboard,directionId),copy:BrandKit['copy']={...protectedCopy,hook:{[saved.context.scope.referenceLocale]:scenes[0].copy[0]??''}};for(const row of localizationRows)copy[requestId({directionId,field:row.copySlot,variants:row.variantIds})]={[row.locale]:row.text};
   const brand=approvedBrandModule(kit,materials,copy,Object.fromEntries([...(Array.isArray(brief.facts)?brief.facts.filter(f=>f&&['confirmed','provided'].includes(f.status)).map(f=>[String(f.id),String(f.claim)]):[]),...Object.entries(brief).filter(([key])=>['product','immutables'].includes(key)||brief.priceConfirmed===true&&['price','currency','priceSource'].includes(key)).map(([key,value])=>[key,String(value)])])),input:DirectionInput={protocol:'director@1',stage:'draft',runId:saved.run.id,roundId:saved.round.id,directionId,iterationId:randomUUID(),storyboard:scenes,brand,brief:{...brief,referenceReconstructionAllowed:true,draftConstructionVersion:1,resourceBindingVersion:1,imageMethodsVersion:1,approvedDirection:direction.value,suppliedAssetMetadata:assets.map(a=>({id:a.id,name:a.filename,mime:a.mime,inspection:a.inspection})),synthesisAllowed:synthesisPermitted(String(brief.synthesis??'')),synthesisPermission:String(brief.synthesis??'')},assets:assets.map(a=>({id:a.id,url:sourceFilename(a),thumbnail:a.mime.startsWith('image/')?sourceFilename(a):'',width:a.inspection.width??0,height:a.inspection.height??0,sha256:a.sha256,mime:a.mime,revisionId:a.id})),formats,variants:[...variants].sort((a,b)=>Number(Object.hasOwn((direction.value.variantBindings??{}) as object,`hook-${b.hook}`))-Number(Object.hasOwn((direction.value.variantBindings??{}) as object,`hook-${a.hook}`))),resourceIds:Array.from({length:4},(_,i)=>requestId({directionId,resource:i})),variantFacts:variantFacts({variants,scenes,directionIndex:index,sourceDirections:directions,referenceLocale:saved.context.scope.referenceLocale,localization:localizationForDirection(localizationRows,direction,directions),protectedCopy})};
+  for(const logo of brand.logos){const variants=logoVariants.get(logo.id);if(variants)logo.variants=variants;}
   input.materialMemory=createMaterialMemory(input);
   input.creativeHandoff=buildCreativeHandoff({creativeFocus,brief,direction,directions,script:planning,visual,strategy,input});
   if(input.creativeHandoff.referenceAssetIds.length>6)throw new Error('REQUIRED_REFERENCE_IMAGE_CAP');
