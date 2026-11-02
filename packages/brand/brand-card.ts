@@ -3,7 +3,7 @@
 import {choicesFor,pickBrandColors,type BrandbookItem} from './a1-handoff';
 import {prioritizeFindings} from './source-priority';
 import {selectFindings} from './finding-selection';
-import {normalizeFontFamily} from './normalize';
+import {normalizeFontFamily,fontFamilyOf} from './normalize';
 import {contrastRatio} from '../engine/engine/util';
 import type {MaterialRole} from './material-roles';
 
@@ -38,13 +38,13 @@ export function buildBrandCard(findings:Finding[],materials:Material[]):BrandCar
  const fontFiles=materials.filter(m=>m.role==='font'&&typeof m.metadata?.family==='string');
  const families=new Map<string,BrandCard['fonts'][number]>();
  for(const m of fontFiles){const family=normalizeFontFamily(String(m.metadata!.family)),weight=Number(m.metadata!.weight)||400,style=String(m.metadata!.style??'normal');const f=families.get(family)??{family,weights:[],files:[]};f.files.push({id:m.id,weight,style});if(!f.weights.includes(weight))f.weights.push(weight);f.weights.sort((a,b)=>a-b);families.set(family,f);}
- const named=[...new Set(of('displayFonts','bodyFonts','monoFonts').map(i=>{let v=i.value;try{const p=JSON.parse(v);if(typeof p==='string')v=p;else if(p&&typeof p==='object')v=String(p.family??p.fontFamily??p.name??v);}catch{}return normalizeFontFamily(v.split(',')[0].replace(/["'`]/g,'').trim());}).filter(v=>v&&!/^(sans-serif|serif|monospace|system-ui|ui-[a-z-]+)$/i.test(v)&&v.length<40))];
+ const named=[...new Map(of('displayFonts','bodyFonts','monoFonts').map(i=>fontFamilyOf(i.value)).filter((v):v is string=>!!v).map(v=>[v.toLowerCase().replace(/[^a-z0-9]/g,''),v])).values()];
  const checks:BrandCard['checks']=[];
  // Logo on dark and on light grounds: currentColor drawings get both versions; fixed-colour SVGs are judged by their fills.
  const readable=(ground:'dark'|'light')=>logos.some(l=>{if(l.delegatesColour)return true;const m=byId.get(l.id),fills=m?.svgText?hexFills(m.svgText):[];if(!fills.length)return !l.svg;return fills.some(f=>ground==='dark'?lum(f)>0.4:lum(f)<0.2);});
  if(!logos.length)checks.push({ok:false,text:'No logo file. Mark the logo, wordmark or icon in “What each file is”.'});
  else{checks.push({ok:readable('dark'),text:readable('dark')?'A logo reads on dark backgrounds.':'Every logo is dark: add a light version for dark backgrounds.'});checks.push({ok:readable('light'),text:readable('light')?'A logo reads on light backgrounds.':'Every logo is light: add a dark version for light backgrounds.'});}
- for(const family of named){const f=[...families.values()].find(x=>x.family.toLowerCase()===family.toLowerCase());checks.push(f?{ok:true,text:`${family}: font files in ${f.weights.join(', ')}.`}:{ok:false,text:`${family}: no font file. If it is on Google Fonts it is fetched for drafts; otherwise add the files.`});}
+ for(const family of named){const key=(v:string)=>v.toLowerCase().replace(/[^a-z0-9]/g,''),f=[...families.values()].find(x=>key(x.family)===key(family));checks.push(f?{ok:true,text:`${family}: font files in ${f.weights.join(', ')}.`}:{ok:false,text:`${family}: no font file. If it is on Google Fonts it is fetched for drafts; otherwise add the files.`});}
  checks.push(hex('accent')?{ok:true,text:`One accent colour: ${hex('accent')}.`}:{ok:false,text:'No accent colour found. Mark the brand colours or add the tokens file.'});
  const c=ratio(hex('ink'),hex('paper'));if(c!==null)checks.push({ok:c>=4.5,text:`Text on background contrast ${c}:1${c>=4.5?'.':' — below 4.5:1.'}`});
  return {name:first('brandName'),description:first('brandDescription'),voice:of('voice','tone').slice(0,3).map(i=>card(i,300)),vocabulary:of('copyRules').slice(0,4).map(i=>card(i,300)),rules:of('prohibitions').slice(0,5).map(i=>card(i,240)),product:first('productIdentity'),

@@ -15,8 +15,7 @@ import { singleChoiceFields } from "@/packages/brand/finding-selection";
 import { brandAnalysisCanContinue, brandAnalysisNotice } from "@/packages/brand/workspace-metrics";
 import { flushCampaignSaves } from "@/lib/use-persisted-draft";
 import { WorkflowMigration } from "./brief-workspace";
-import { BrandCard } from "./brand-card";
-import { materialRoleLabels, materialRoles, type MaterialRole } from "@/packages/brand/material-roles";
+import { BrandCard, BrandDisagreements, BrandFileRoles, BrandLibraryPicker } from "./brand-card";
 export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { campaignId: string; sourcesReady: boolean; onContinue?: () => void }) {
   const router = useRouter();
   const endpoint = `/api/studio/campaigns/${campaignId}/brand-fields`,
@@ -161,101 +160,29 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
           <small>fields found · {excludedTotal} excluded</small>
         </div>
       </header>
-      {!!data.brandOptions?.length && (
-        <label className="brandbook-library">
-          Already prepared this brand?{" "}
-          <select disabled={busy} value="" onChange={(event) => event.target.value && void command({ action: "useBrand", sourceCampaignId: event.target.value })}>
-            <option value="">Use a brand from the library…</option>
-            {data.brandOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.brand} — {option.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+      {!!data.brandOptions?.length && <BrandLibraryPicker options={data.brandOptions} busy={busy} choose={(id) => void command({ action: "useBrand", sourceCampaignId: id })} />}
       {!!data.decisions?.length && (
-        <section className="brandbook-decisions" aria-label="Where your files disagree">
-          <h3>{data.decisions.some((d) => d.question) ? "Your files disagree — which is right?" : "Where your files disagree"}</h3>
-          <ul>
-            {data.decisions.map((d) => {
-              const label = data.fields.find((f) => f.key === d.field)?.label ?? d.field;
-              const keep = (o: { findingId: string; version: number }) =>
-                void command({ action: "review", findingId: o.findingId, expectedVersion: o.version, decision: "keep", editedValue: null });
-              return (
-                <li key={d.field}>
-                  <strong>{label}</strong>{" "}
-                  {d.question ? (
-                    <>
-                      <Badge>Which is this?</Badge>{" "}
-                      {d.options.map((o) => (
-                        <Button key={o.findingId} variant="outline" disabled={busy} onClick={() => keep(o)} title={o.file}>
-                          {o.value.slice(0, 60)}
-                        </Button>
-                      ))}
-                    </>
-                  ) : (
-                    <>
-                      using “{d.chosen.value.slice(0, 60)}” from {d.chosen.file} ({materialRoleLabels[d.chosen.role].toLowerCase()}).{" "}
-                      {d.others.map((o) => (
-                        <span key={o.findingId}>
-                          {o.file} says “{o.value.slice(0, 40)}”{" "}
-                          <Button variant="outline" disabled={busy} onClick={() => keep(o)}>
-                            Use this instead
-                          </Button>{" "}
-                        </span>
-                      ))}
-                    </>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+        <BrandDisagreements
+          decisions={data.decisions}
+          fields={data.fields}
+          busy={busy}
+          keep={(o) => void command({ action: "review", findingId: o.findingId, expectedVersion: o.version, decision: "keep", editedValue: null })}
+        />
       )}
-      {!!data.materials?.length && (
-        <Disclosure className="brandbook-files" open={data.materials.some((m) => !m.sure) || undefined}>
-          <summary>
-            <FileText size={17} />
-            <strong>What each file is</strong>
-            <span>
-              {data.materials.filter((m) => !m.sure).length
-                ? `${data.materials.filter((m) => !m.sure).length} need your answer`
-                : "Each file is read and trusted as its kind"}
-            </span>
-            <ChevronDown size={16} />
-          </summary>
-          <div>
-            <p>A product screenshot can still name the product; its on-screen texts and colours count as the interface, not as brand rules.</p>
-            <ul className="brandbook-roles">
-              {[...data.materials]
-                .sort((a, b) => Number(a.sure) - Number(b.sure))
-                .map((m) => (
-                  <li key={m.id}>
-                    <span title={m.path}>{m.filename}</span>{" "}
-                    {!m.sure && <Badge>Which is this?</Badge>}{" "}
-                    <select
-                      aria-label={`What ${m.filename} is`}
-                      disabled={busy}
-                      value={m.sure ? m.role : ""}
-                      onChange={(event) =>
-                        void command({ action: "setRole", materialId: m.id, role: (event.target.value || null) as MaterialRole | null })
-                      }
-                    >
-                      {!m.sure && <option value="">{materialRoleLabels[m.role]} (guess)</option>}
-                      {materialRoles.filter((r) => r !== "unknown").map((r) => (
-                        <option key={r} value={r}>
-                          {materialRoleLabels[r]}
-                          {m.role === r && !m.bySomeone && m.sure ? " (detected)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </li>
-                ))}
-            </ul>
-          </div>
-        </Disclosure>
-      )}
+      {!!data.materials?.length &&
+        (data.materials.some((m) => !m.sure) ? (
+          <BrandFileRoles materials={data.materials} busy={busy} setRole={(id, role) => void command({ action: "setRole", materialId: id, role })} />
+        ) : (
+          <Disclosure className="brandbook-files">
+            <summary>
+              <FileText size={17} />
+              <strong>What each file is</strong>
+              <span>{data.materials.length} files, each read as its kind</span>
+              <ChevronDown size={16} />
+            </summary>
+            <BrandFileRoles materials={data.materials} busy={busy} setRole={(id, role) => void command({ action: "setRole", materialId: id, role })} />
+          </Disclosure>
+        ))}
       <div className="brandbook-overview">
         <section className="brandbook-work-card">
           <div className="brandbook-status">

@@ -30,3 +30,8 @@ test('token colours in oklch and rgb become hex values',async()=>{
  const lime=cssColorToHex('oklch(0.93 0.21 118)')!;assert.match(lime,/^#[0-9A-F]{6}$/);assert.ok(parseInt(lime.slice(1,3),16)>150&&parseInt(lime.slice(3,5),16)>200&&parseInt(lime.slice(5,7),16)<100,lime);
  assert.equal(cssColorToHex('rgb(13, 13, 13)'),'#0D0D0D');assert.equal(cssColorToHex('#dff'),'#DDFFFF');assert.equal(cssColorToHex('lime'),null);
 });
+
+test('a font finding names its family or nothing',async()=>{
+ const {fontFamilyOf}=await import('../packages/brand/normalize');
+ for(const [value,family] of [['Archivo (`display`) for names, headings, numbers and primary','Archivo'],['Archivo SemiBold ExtraBold (weight: 800,','Archivo'],['JetBrains Mono Medium','JetBrains Mono'],['JetBrainsMono-Bold (postscriptName)','JetBrainsMono'],['"Archivo", ui-sans-serif, system-ui','Archivo'],['weight: 700',null],['Regular (Subfamily)',null],['style: normal',null],['Sans-serif for body text',null]] as const)assert.equal(fontFamilyOf(value),family,value);
+});

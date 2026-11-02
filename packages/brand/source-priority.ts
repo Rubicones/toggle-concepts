@@ -2,6 +2,8 @@
 // font files, and those outrank screenshots and references. A finding the AD marked “Use this” always stays.
 import {fieldsOutsideRole,type MaterialRole} from './material-roles';
 import {singleChoiceFields} from './finding-selection';
+import {fontFamilyOf} from './normalize';
+const FONT_FIELDS=new Set(['displayFonts','bodyFonts','monoFonts']);
 
 const rank:Record<MaterialRole,number>={brandbook:0,tokens:1,logo:2,font:2,licence:2,unknown:3,screenshot:3,photo:4,reference:4};
 export const rolePriority=(role:MaterialRole|undefined)=>rank[role??'unknown'];
@@ -36,7 +38,8 @@ const norm=(v:string)=>v.toLowerCase().replace(/[^a-z0-9#]+/g,'');
 export function brandDecisions(findings:Finding[],material:(id:string)=>{file:string;role:MaterialRole}|undefined):BrandDecision[]{
  const out:BrandDecision[]=[];
  for(const field of singleChoiceFields){
-  const rows=findings.filter(f=>f.field===field&&f.decision!=='reject').map(f=>({f,m:material(f.material_id),value:(f.edited_value??f.value).trim()})).filter(x=>x.m&&x.value&&!/<svg\b/i.test(x.value));
+  // Fonts are compared by the family they name: a file's “weight: 700” or “Archivo SemiBold” is not a disagreement.
+  const rows=findings.filter(f=>f.field===field&&f.decision!=='reject').map(f=>{const raw=(f.edited_value??f.value).trim();return {f,m:material(f.material_id),value:FONT_FIELDS.has(field)?fontFamilyOf(raw)??'':raw};}).filter(x=>x.m&&x.value&&!/<svg\b/i.test(x.value));
   const distinct=[...new Map(rows.map(x=>[norm(x.value),x])).values()];if(distinct.length<2)continue;
   if(rows.some(x=>x.f.decision==='keep'))continue; // the AD already chose
   const top=Math.min(...distinct.map(x=>rolePriority(x.m!.role))),leaders=distinct.filter(x=>rolePriority(x.m!.role)===top);
