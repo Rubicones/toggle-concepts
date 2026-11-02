@@ -1,5 +1,6 @@
 import {processDirectorWork} from './director/worker';
 import {CREATIVE_FOCUS_ROLES,creativeFocusBlock,normalizeCreativeFocus} from '../../packages/contracts/creative-focus';
+import {withFeelingBrief} from '../../packages/contracts/brief-feel';
 import {processCreativeDelivery} from './creative-delivery';
 import {creativeExecutionSnapshot} from '../../packages/creative/request-snapshot';
 import {compileCreativeClaim} from './creative-compile';
@@ -111,6 +112,8 @@ async function execute(claim:Claim){
   }
   let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count)):'';
   if(envelope)transportTask=envelopeRoleInstruction(job.role)+(transportTask?'\n'+transportTask:'');
+  // Guided planning contexts are built in SQL without the feeling brief the planning contracts read first; add it here.
+  if(claim.round.kind==='draft'&&!creative&&snapshot.campaignContext)snapshot.campaignContext=withFeelingBrief(snapshot.campaignContext as Record<string,unknown>) as typeof snapshot.campaignContext;
   // The AD's creative focus reaches each creative planning step when it starts (packages/contracts/creative-focus.ts).
   if(claim.round.kind==='draft'&&!creative&&(CREATIVE_FOCUS_ROLES as readonly string[]).includes(job.role)){
    const saved=await admin.from('studio_run_creative_focus').select('focus').eq('run_id',job.run_id).maybeSingle(),block=saved.error?'':creativeFocusBlock(saved.data?.focus);

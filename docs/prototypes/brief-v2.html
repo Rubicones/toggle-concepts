@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Campaign Brief v2</title>
+<style>
+:root{
+ /* Studio brief, friendlier: light panels, navy ink, one warm accent for progress; step layout with sticky nav. */
+ --ink:#0C2B3F;--muted:#5A6B78;--line:#DDE3E8;--panel:#F4F5F6;--field:#FFFFFF;--pick:#0C2B3F;--soft:#E8F1F7;--accent:#FF4F17;--ok:#1F7A4D;--bg:#FFFFFF;
+ --ui:"Noto Sans","Inter",system-ui,-apple-system,sans-serif;color-scheme:light}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--ui)}
+.top{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.top .in{max-width:1120px;margin:0 auto;padding:12px max(16px,env(safe-area-inset-left,0px));display:grid;gap:10px}
+.title{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}.title h1{font-size:20px;margin:0}.title span{font-size:12px;color:var(--muted)}
+.bar{height:6px;background:var(--panel);border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.steps{display:flex;gap:6px;overflow-x:auto}.steps a{flex:none;text-decoration:none;color:var(--muted);font-size:13px;padding:6px 12px;border-radius:999px;background:var(--panel)}.steps a b{color:var(--ink)}
+main{max-width:1120px;margin:0 auto;padding-block:22px 160px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+.reviewnote{background:#FFF4EC;border-radius:14px;padding:12px 16px;font-size:13px;color:#7a3a14}
+section{border:1px solid var(--line);background:var(--panel);border-radius:22px;padding:22px;display:grid;gap:20px;scroll-margin-top:120px}
+section>header{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}section h2{font-size:19px;margin:0}section>header span{font-size:12px;color:var(--muted)}
+.intro{margin:-10px 0 0;color:var(--muted);font-size:13px;max-width:70ch}
+.q{display:grid;gap:8px;min-width:0}.q>.lab{font-size:13.5px;font-weight:600}.hint{font-size:12px;color:var(--muted);font-weight:400}
+.req::after{content:" *";color:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px;align-items:start}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+input[type=text],input[type=email],input[type=date],input[type=url],input[type=number],textarea,select{width:100%;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:10px 12px;font:inherit;color:inherit}
+textarea{min-height:64px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;color:inherit;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--pick);border-color:var(--pick);color:#fff}
+.chip.sug{border-style:dashed}.chip.sug[aria-pressed="true"]{background:var(--soft);color:var(--ink);border:1px solid var(--pick)}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.card{border:1px solid var(--line);background:#fff;border-radius:14px;padding:8px;display:grid;gap:6px;cursor:pointer;text-align:left;font:inherit;color:inherit;position:relative}
+.card[aria-pressed="true"]{outline:2px solid var(--pick);border-color:var(--pick)}
+.card img,.card .ph{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;display:block;background:linear-gradient(135deg,#e9eef2,#d7e0e6)}
+.card b{font-size:13px}.card span{font-size:11.5px;color:var(--muted);line-height:1.35}
+.cards.compact{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}.cards.compact .card{padding:6px;gap:4px;border-radius:12px}.cards.compact .card b{font-size:12px}.cards.compact .card span{font-size:10.5px}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.seg[hidden]{display:none}summary .hint{font-weight:400;margin-left:6px}
+.siterow{display:flex;gap:8px}.siterow button{flex:none;border:0;border-radius:10px;background:var(--pick);color:#fff;padding:0 16px;font:inherit;font-weight:600;cursor:pointer}.fromsite{border-color:#9EC3DA!important;background:#F2F8FC!important}
+.cards.packs{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.pack{padding:14px}.pack span{font-size:12px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:6px 8px;min-height:42px}.tags input{flex:1;min-width:140px;border:0;outline:0;font:inherit;padding:4px;background:none;color:inherit}.tags:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.tag-i{display:inline-flex;align-items:center;gap:4px;background:var(--pick);color:#fff;border-radius:999px;padding:3px 4px 3px 10px;font-size:12.5px}.tag-i button{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;width:18px;height:18px;line-height:16px;padding:0;cursor:pointer;font-size:12px}
+.rows{display:grid;gap:6px}.rowi{display:flex;gap:6px}.rowi input{flex:1;min-width:0}.rm{flex:none;width:38px;border:1px solid var(--line);background:#fff;border-radius:10px;font:inherit;font-size:16px;color:var(--muted);cursor:pointer}.rm:hover{color:var(--ink)}
+.addrow{justify-self:start;border:1px dashed #9EC3DA;background:#F2F8FC;color:var(--ink);border-radius:10px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}.addbtn{flex:none;border:0;background:var(--soft);color:var(--ink);border-radius:8px;padding:4px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+.chips.mini .chip{padding:3px 10px;font-size:12px;border-style:dashed}.row{display:flex;align-items:center;gap:8px}.num{width:84px!important;padding:6px 10px!important}
+.stepper{display:flex;align-items:center;gap:8px}.stepper button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;font:inherit;font-size:18px;cursor:pointer;color:inherit}.stepper button:disabled{opacity:.35;cursor:default}.stepper output{min-width:20px;text-align:center;font-weight:700;font-size:16px}
+.total{margin:0;padding:12px 14px;border-radius:12px;background:var(--soft);font-size:13px}.total b{font-size:15px}
+.card .tag{position:absolute;top:12px;left:12px;font-size:10px;font-weight:700;background:var(--pick);color:#fff;border-radius:999px;padding:2px 8px;display:none}
+.card[aria-pressed="true"] .tag{display:block}
+.card.sugcard{border-style:dashed;align-content:center;justify-items:start}.card.sugcard .ph{display:grid;place-items:center;font-size:12px;color:var(--muted);background:var(--soft)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:#fff;gap:2px}.seg button{border:0;background:none;border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer;color:var(--muted)}.seg button[aria-pressed="true"]{background:var(--pick);color:#fff}
+.sliders{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px}@media(max-width:760px){.sliders{grid-template-columns:1fr}}
+.sl{display:grid;gap:4px}.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.track{position:relative;height:30px}.track input{width:100%;margin:8px 0 0;accent-color:var(--pick)}
+.brandmark{position:absolute;top:0;width:2px;height:12px;background:var(--accent);transform:translateX(-1px)}
+.shift{font-size:11.5px;color:var(--ok);min-height:16px}
+.formats{display:flex;gap:10px;flex-wrap:wrap}.fmt{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px;width:96px;display:grid;justify-items:center;gap:8px;cursor:pointer;font:inherit;font-size:12px;color:inherit}
+.fmt i{display:block;background:#d7e4ec;border-radius:3px}.fmt[aria-pressed="true"]{outline:2px solid var(--pick)}.fmt[aria-pressed="true"] i{background:var(--pick)}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}.slot{border:1px dashed #9EC3DA;background:#F2F8FC;border-radius:14px;padding:12px;display:grid;gap:4px;font-size:12.5px}.slot b{font-size:13px}
+input[aria-invalid="true"]{border-color:var(--accent)}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px}.check input{margin-top:3px}
+details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}summary{cursor:pointer;font-weight:600;font-size:13px}
+.agent{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--ink);color:#fff;padding:12px max(16px,env(safe-area-inset-left,0px)) calc(12px + env(safe-area-inset-bottom,0px))}
+.agent .in{max-width:1120px;margin:0 auto;display:grid;gap:6px}.agent header{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.agent h3{margin:0;font-size:13px}.agent small{color:#b9cbd6;font-size:11.5px}
+.agent pre{margin:0;max-height:28vh;overflow:auto;white-space:pre-wrap;font:11.5px/1.5 ui-monospace,Menlo,monospace;color:#d9e6ee}
+.agent button{background:#fff;color:var(--ink);border:0;border-radius:999px;padding:5px 12px;font:inherit;font-size:12px;cursor:pointer}
+.submit{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.submit button{background:var(--accent);color:#fff;border:0;border-radius:999px;padding:12px 22px;font:inherit;font-weight:600;cursor:pointer}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bar i{transition:none}}
+</style></head><body>
+<div class="top"><div class="in">
+ <div class="title"><h1>New campaign brief</h1><span id="eta">About 6 minutes · everything saves as you go · anything you skip, we suggest</span></div>
+ <div class="bar" aria-hidden="true"><i id="progress"></i></div>
+ <nav class="steps" aria-label="Brief steps"><a href="#s1"><b>1</b> Campaign</a><a href="#s2"><b>2</b> Feel &amp; look</a><a href="#s3"><b>3</b> What to make</a><a href="#s4"><b>4</b> Materials &amp; rules</a></nav>
+</div></div>
+<main>
+<p class="reviewnote">Review prototype. The dark panel at the bottom shows what the creative agents receive from these answers; it is here for review only and is not shown to clients in the final questionnaire. Mood pictures were generated for this prototype.</p>
+
+<section id="s1"><header><h2>1 · The campaign</h2><span>≈ 3 min</span></header>
+<div class="q site"><label class="lab" for="site">Your website or app store page <span class="hint">we read it and pre-fill the answers below; you check and edit</span></label><div class="siterow"><input id="site" type="url" placeholder="https://"><button type="button" id="fillSite">Fill from site</button></div></div>
+<div class="grid2">
+ <div class="q"><label class="lab req" for="product">What are we advertising?</label><textarea id="product" data-site="Sonicdesk, a desktop app that keeps every take and version of your videos" placeholder="The product or feature, in plain words"></textarea></div>
+ <div class="q"><label class="lab req" for="benefit">The one benefit, in a sentence</label><textarea id="benefit" data-key="benefit" data-site="Find your best take in seconds" placeholder="What changes for the viewer"></textarea></div>
+</div>
+<div class="q"><span class="lab req">What should the ad achieve?</span><div class="chips" data-single="goal"></div></div>
+<div class="grid2">
+ <div class="q"><label class="lab req" for="audience">Who is it for?</label><input id="audience" type="text" data-site="Solo video creators and small studios who shoot every day" placeholder="e.g. solo creators who shoot every day"></div>
+ <div class="q"><label class="lab req" for="markets">Where will it run?</label><input id="markets" type="text" placeholder="UK, Germany…"></div>
+ <div class="q"><label class="lab req" for="offer">Offer</label><input id="offer" type="text" placeholder="Free 14-day trial…"></div>
+ <div class="q"><span class="lab req">Calls to action <span class="hint">add several to test</span></span><div class="rows" data-rows="cta" data-ph="e.g. Try it free" data-add="Add a call to action"></div><div class="chips mini" data-picks="cta"></div></div>
+</div>
+<details><summary>Add more detail <span class="hint">optional · makes the ideas sharper</span></summary><div class="grid2" style="margin-top:12px">
+ <div class="q"><label class="lab" for="proof">Why should people believe it? <span class="hint">a fact, number or demonstration</span></label><input id="proof" type="text" data-key="proof"></div>
+ <div class="q"><label class="lab" for="difference">What makes it different?</label><input id="difference" type="text" data-key="difference"></div>
+ <div class="q"><label class="lab" for="tension">What gets in their way today?</label><input id="tension" type="text" data-key="audienceTension" placeholder="e.g. their best takes get lost in folders"></div>
+ <div class="q"><label class="lab" for="link">Link the ad opens</label><input id="link" type="url" placeholder="https://"></div>
+ <div class="q"><span class="lab">How well do they know you?</span><div class="chips" data-single="audienceAwareness"></div></div>
+ <div class="q"><span class="lab">On which platforms?</span><div class="chips" data-multi="platforms"></div></div>
+</div></details>
+</section>
+
+<section id="s2"><header><h2>2 · Feel &amp; look</h2><span>≈ 2 min · all optional</span></header>
+<p class="intro">Pick by instinct. Anything you skip, we propose from your brand kit.</p>
+<div class="q"><span class="lab">Live photography or digital imagery?</span><div class="chips" data-single="medium"></div></div>
+<div class="q"><div class="qhead"><span class="lab">What should people feel? <span class="hint">one main, up to two more</span></span><div class="seg" id="exSeg" role="group" aria-label="Example pictures"><button type="button" id="exLive" aria-pressed="true">Live</button><button type="button" id="exDigital" aria-pressed="false">Digital</button></div></div>
+<div class="cards compact" id="feelCards"></div></div>
+<div class="grid2">
+ <div class="q"><span class="lab">How far from your usual style?</span><div class="chips" data-single="stretch"></div></div>
+ <div class="q"><span class="lab">Definitely not</span><div class="chips" data-multi="avoid"></div></div>
+</div>
+<details><summary>Fine-tune the look <span class="hint">optional · world of the pictures, brand character, light, colour, people, references</span></summary><div style="display:grid;gap:18px;margin-top:14px">
+<div class="q"><span class="lab">The world of the pictures <span class="hint">up to three</span></span><div class="cards compact" id="worldCards"></div></div>
+<div class="q"><span class="lab">Brand character for this campaign <span class="hint">orange mark = how your brand usually feels (from the brand kit)</span></span><div class="sliders" id="sliders"></div></div>
+<div class="q"><span class="lab">Light <span class="hint">up to two</span></span><div class="cards compact" id="lightCards"></div></div>
+<div class="grid2">
+ <div class="q"><span class="lab">Energy</span><div class="chips" data-single="energy"></div></div>
+ <div class="q"><span class="lab">Colour</span><div class="chips" data-single="colour"></div></div>
+ <div class="q"><span class="lab">Type and picture</span><div class="chips" data-single="typeRole"></div></div>
+ <div class="q"><span class="lab">The product's role</span><div class="chips" data-single="productRole"></div></div>
+ <div class="q"><span class="lab">People in the picture</span><div class="chips" data-single="people"></div><input id="peopleNote" type="text" placeholder="Who, if anyone (optional)"></div>
+ <div class="q"><span class="lab">How much text on screen</span><div class="chips" data-single="textAmount"></div></div>
+ <div class="q"><span class="lab">Humour</span><div class="chips" data-single="humour"></div></div>
+ <div class="q"><label class="lab" for="endFeeling">The feeling at the very end, in your words</label><input id="endFeeling" type="text" placeholder="e.g. relief: my best take is safe"></div>
+ <div class="q"><label class="lab" for="avoidNote">Anything else to avoid</label><input id="avoidNote" type="text"></div>
+</div>
+<div class="grid2">
+ <div class="q"><span class="lab">Ads or images you like</span><div class="slot"><b>Drop images or paste a link</b><span class="hint">What exactly do you like?</span><div class="chips" data-multi="likeAspects"></div></div></div>
+ <div class="q"><span class="lab">Ads or images you don't like</span><div class="slot"><b>Drop images or paste a link</b><span class="hint">What exactly is wrong?</span><div class="chips" data-multi="dislikeAspects"></div></div></div>
+</div>
+</div></details>
+</section>
+
+<section id="s3"><header><h2>3 · What to make</h2><span>≈ 2 min</span></header>
+<p class="intro">Add as many languages, hooks, calls to action and offers as you want to test. Only the video sequence is limited: up to 4 versions per scenario.</p>
+<div class="q"><span class="lab">Quick start <span class="hint">fills the fields below; change anything after</span></span><div class="chips" id="packs"></div></div>
+<div class="q"><span class="lab">Formats</span><div class="formats" id="formats"></div></div>
+<div class="grid2">
+ <div class="q"><span class="lab">Languages</span><div class="tags" data-list="locales" data-ph="Add a language, e.g. de-DE"></div><div class="chips mini" data-picks="locales"></div></div>
+ <div class="q"><span class="lab">Lengths, seconds</span><div class="tags" data-list="lengths" data-ph="Add a length, e.g. 10"></div><div class="chips mini" data-picks="lengths"></div></div>
+ <div class="q"><span class="lab">Opening hooks <span class="hint">your own ideas, optional</span></span><div class="rows" data-rows="hooks" data-ph="A hook idea, e.g. Show the lost take first" data-add="Add a hook"></div><div class="row"><label class="hint" for="hookExtra">Plus, we write</label><input id="hookExtra" type="number" min="0" value="2" class="num"><span class="hint">more hooks</span></div></div>
+ <div class="q"><span class="lab">Offer variants <span class="hint">optional</span></span><div class="rows" data-rows="offers" data-ph="e.g. 30% off the first month" data-add="Add an offer"></div></div>
+ <div class="q"><span class="lab">Video sequence versions <span class="hint">different middles for the same scenario, up to 4</span></span><div class="stepper"><button type="button" id="seqMinus" aria-label="Fewer">−</button><output id="seqN">1</output><button type="button" id="seqPlus" aria-label="More">+</button><span class="hint" id="seqHint"></span></div></div>
+ <div class="q"><span class="lab">Other variations to test <span class="hint">optional, e.g. "with and without a person"</span></span><div class="rows" data-rows="extras" data-ph="e.g. With and without a person" data-add="Add a variation"></div></div>
+</div>
+<p class="total" id="total"></p>
+<details><summary>More options</summary><div class="grid2" style="margin-top:12px">
+ <div class="q"><label class="lab" for="finals">Final concepts to produce</label><input id="finals" type="number" min="1" value="1" class="num"></div>
+ <div class="q"><span class="lab">Which videos</span><div class="chips" data-single="combos"></div></div>
+ <div class="q"><label class="lab" for="pl">Preview language</label><input id="pl" type="text" value="en-GB"></div>
+ <div class="q"><label class="lab" for="pf">Preview format</label><select id="pf"><option>9:16 · Stories</option><option>4:5 · Feed</option><option>1:1 · Square</option><option>16:9 · Wide</option></select></div>
+</div></details>
+<div class="q"><label class="lab" for="notes">Anything else for the creative team? <span class="hint">optional</span></label><textarea id="notes" placeholder="Ideas, must-haves, what to avoid…"></textarea></div>
+</section>
+
+<section id="s4"><header><h2>4 · Materials &amp; rules</h2><span>≈ 2 min</span></header>
+<div class="q"><span class="lab req">Images for the ads <span class="hint">at least your logo and one product or app picture; brandbook files are reused automatically; your product and interface are always built from these, never invented</span></span>
+<div class="slots"><div class="slot"><b>Logo</b><span class="hint">SVG or PNG; SVG is best</span></div><div class="slot"><b>Product</b><span class="hint">packshots, devices</span></div><div class="slot"><b>App screenshots</b><span class="hint">we rebuild them crisply, never invent</span></div><div class="slot"><b>Brand photos or renders</b><span class="hint">your usual look</span></div><div class="slot"><b>Past ads that worked</b><span class="hint">optional</span></div><div class="slot"><b>Past ads that didn't</b><span class="hint">optional</span></div></div></div>
+<div class="grid2">
+ <div class="q"><label class="lab req" for="name">Your name</label><input id="name" type="text"></div>
+ <div class="q"><label class="lab req" for="email">Your email</label><input id="email" type="email"></div>
+ <div class="q"><label class="lab req" for="date">Delivery date <span class="hint">at least 5 days after payment</span></label><input id="date" type="date"><span class="hint" id="dateHint"></span></div>
+ <div class="q"><label class="lab req" for="never">What must never change</label><textarea id="never">Product name, logo, app interface and product shape stay exactly as supplied.</textarea></div>
+</div>
+<label class="check"><input type="checkbox" id="perm"> I have permission to use the uploaded images, logos, fonts and brand materials in these ads.</label>
+<details><summary>Claims, prices and rights notes (optional)</summary><div class="grid2" style="margin-top:12px"><div class="q"><label class="lab" for="claim">A claim we may use</label><input id="claim" type="text"></div><div class="q"><label class="lab" for="claimSource">Its source</label><input id="claimSource" type="text"></div><div class="q"><label class="lab" for="price">Price to show</label><input id="price" type="text"></div><div class="q"><label class="lab" for="rights">Rights notes</label><input id="rights" type="text"></div></div></details>
+<div class="submit"><span class="hint" id="filled"></span><button type="button">Send brief</button></div>
+</section>
+</main>
+<aside class="agent" aria-label="Review only: what the agents receive"><div class="in"><header><h3>What the creative agents receive <small>· review only, not shown to clients in the final version</small></h3><button type="button" id="toggleAgent">Hide</button></header><pre id="brief"></pre></div></aside>
+<script>
+const IMG={"live": ["https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143239_b81ddc67-0601-42b9-9ac4-1acfdb8eeb6c_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143244_0bc3b6d5-8043-4fee-9de7-f75ec266f59b_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143243_ea7bd28c-d616-43ce-907a-22922267720b_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143241_7ba742b0-d88d-4e4b-917d-c47b1f51f33b_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143239_7fb57df0-2094-4658-84bc-7f30636b4ed0_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143242_99e97913-f420-4937-b63e-006dd9a3ac2c_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143244_4e10cf66-e605-4bda-abb0-b11b73462ffd_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143243_d04c2ba9-7b70-4ebd-85b2-c8f23b3f9193_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143240_32192f59-a22a-42bb-9d4d-0c8b939c65d0_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143239_741dc904-a88c-4d11-9e3a-be8a36386225_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143243_6ab1d448-2249-432a-ae0f-88773fad0754_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143237_48a800ff-585c-4922-9cd3-74d210cac9aa_min.webp"], "digital": ["https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152530_f3483b6f-148c-4839-8119-2f2658e2b513_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152524_4aab3280-f8e0-4bf2-9ab1-20ca06ee0f95_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152531_ee74a10b-b9ae-4448-a879-0e8ac29aac38_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152524_5a4fb09d-450c-4018-8d90-17a44b213fc2_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152526_3f2fdeda-4030-4008-a2b6-44784b400425_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152528_84c2261f-7058-4f97-bf9c-27c0cfe78f1a_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152532_a5ce0971-ffa7-4efa-8cb1-72418d0370ca_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152529_2ae26eaf-7055-4448-b344-ee1079381f35_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152531_1be3b582-1b7d-41b0-8803-dacbf373be38_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152530_7cf680b1-c24b-4292-9e3d-8797f017ebc2_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152525_e4c2630c-b449-46d7-90f6-a44b7a8a4638_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152527_2229f28f-531e-42c0-8291-b023fa79b0e0_min.webp"], "light": ["https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143251_589033c4-5be1-4762-9d49-c335779baa92_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143249_3fa2d8db-c4ce-4989-b706-8a660edd5848_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143247_4aded612-0da1-4ea2-b1eb-4d1eff006742_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143246_ddccffd8-77a6-4469-8d2a-f213d92807ae_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143251_184cdf11-3d3a-4cf7-b09c-b296119059a2_min.webp", "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143247_114f982b-d1ee-4a3e-a228-6c784a7dc5fa_min.webp"], "world": {"motion-graphics": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152537_3935ca69-8826-4fda-b677-5e80858aa342_min.webp", "object-3d": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152534_b187ef59-ead5-4ce6-a636-dace56496e01_min.webp", "product-interface": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152534_98c0e3b1-08fd-4d5f-9526-7faeab4afe0a_min.webp", "typography-led": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152535_5a237803-fe36-4b0e-bea7-26f66834b668_min.webp", "illustration": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152535_c652737f-fde7-46db-9da3-59544529738f_min.webp", "data-diagrams": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152537_0fd53405-9b13-4a0a-b002-c6673a15dd73_min.webp", "real-life": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143243_6ab1d448-2249-432a-ae0f-88773fad0754_min.webp", "studio": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143242_99e97913-f420-4937-b63e-006dd9a3ac2c_min.webp", "home": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143239_b81ddc67-0601-42b9-9ac4-1acfdb8eeb6c_min.webp", "city": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_143241_7ba742b0-d88d-4e4b-917d-c47b1f51f33b_min.webp", "abstract-graphic": "https://d8j0ntlcm91z4.cloudfront.net/user_2w7oxY6DLgBJXYCjDMTtvSMDZvw/hf_20261102_152536_b8232db4-4362-485d-9210-5b23ea25434a_min.webp"}};
+const FEELS=[["warmth","Warmth & care","Soft warm light, rounded friendly forms, unhurried rhythm."],["craft","Tactile & crafted","Texture, macro detail, honest imperfection."],["calm-confidence","Calm confidence","Even light, order and grid, restrained palette."],["energy","Energy & drive","Diagonals, motion, contrast, short lines."],["creative-freedom","Creative freedom","Unexpected angles, asymmetry, collage."],["premium","Premium","Space, slowness, light as material."],["clarity","Clarity & help","Product in focus, clear steps, big type."],["play","Play & humour","Bold colour, exaggeration, surprise."],["bold","Bold & challenging","Hard contrast, big type, graphic shapes."],["wonder","Wonder","Light, transformation, one reveal."],["belonging","Belonging","Togetherness, shared moments, community."],["urgency","Deal & urgency","Offer first, clear numbers, decisive."]];
+const AXES=[["temperature","Warm","Cool",4],["volume","Quiet","Loud",2],["texture","Tactile, crafted","Digital, clean",4],["tone","Serious","Playful",2],["novelty","Familiar","Experimental",3],["price","Accessible","Premium",3]];
+const LIGHT=[["soft-daylight","Soft daylight"],["golden-hour","Golden hour"],["hard-sun","Hard sun & graphic shadows"],["dark-studio","Dark studio, sculpted"],["direct-flash","Direct flash"],["night-neon","Night & city light"]];
+const WORLD=[["real-life","Real life moments"],["studio","Studio & still life"],["home","Home"],["city","City"],["product-interface","Interface as the hero"],["motion-graphics","Motion graphics"],["object-3d","3D objects & materials"],["typography-led","Type as the visual"],["illustration","Illustration"],["data-diagrams","Data & diagrams"],["abstract-graphic","Abstract & graphic"]];
+const SINGLE={goal:[["awareness","Get known"],["installs","App installs"],["sign-ups","Sign-ups"],["sales","Sales"],["engagement","Engagement"],["retention","Bring people back"]],audienceAwareness:[["new-to-category","New to the category"],["knows-category","Knows the category, not us"],["knows-us","Knows us"],["customers","Our customers"]],stretch:[["on-brand","Strictly on brand"],["fresh","Recognisable, but fresh"],["bold","Bold, try something new"]],humour:[["none","None"],["light","A light touch"],["central","Humour is the idea"]],medium:[["live","Live photography"],["digital","Digital: 3D, motion graphics, interface"],["mix","A mix of both"]],energy:[["still","Still and composed"],["gentle","Gentle movement"],["dynamic","Dynamic and fast"]],colour:[["brand-only","Brand colours only"],["brand-natural","Brand + natural colours"],["bold-contrast","Bold contrast"],["soft-muted","Soft and muted"]],typeRole:[["type-led","Type is the hero"],["balanced","Balanced"],["picture-led","The picture is the hero"]],productRole:[["hero","Product as the hero"],["in-use","Product in use"],["result","Show the result"],["not-shown","Product not shown"]],people:[["none","No people"],["hands","Hands only"],["yes","Yes"]],textAmount:[["minimal","Minimal"],["balanced","Balanced"],["detailed","Detailed"]],combos:[["all","Every combination"],["pick","Only specific combinations"]]};
+const LIVEW=new Set(['real-life','studio','home','city','typography-led','illustration']),DIGW=new Set(['product-interface','motion-graphics','object-3d','typography-led','illustration','data-diagrams','abstract-graphic']);
+const worldFor=m=>WORLD.filter(([id])=>m==='live'?LIVEW.has(id):m==='digital'?DIGW.has(id):true);
+const NOSUGGEST=new Set(["combos"]);
+const MULTI={platforms:[["meta","Instagram & Facebook"],["tiktok","TikTok"],["youtube","YouTube"],["google","Google Ads"],["app-stores","App stores"],["programmatic","Display"],["other","Other"]],avoid:[["stock","Stock look"],["ai-look","AI-looking images"],["gloomy","Gloomy"],["shouty","Shouty retail"],["corporate","Corporate clichés"],["childish","Childish"],["glossy","Glossy"],["cluttered","Cluttered"],["pompous","Pompous"]],likeAspects:[["colour","Colour"],["light","Light"],["composition","Composition"],["type","Type"],["mood","Mood"],["product-shot","Product shot"],["people","People"],["rhythm","Rhythm"]],dislikeAspects:[["colour","Colour"],["light","Light"],["composition","Composition"],["type","Type"],["mood","Mood"],["product-shot","Product shot"],["people","People"],["rhythm","Rhythm"]],synthesis:[["backgrounds","Backgrounds & environments"],["abstract-light","Abstract shapes & light"],["people-hands","People: hands only"],["people","People"],["product-from-reference","Product scenes from your references"]]};
+const FORMATS=[["vertical","9:16 · Stories",20,34],["portrait","4:5 · Feed",28,34],["square","1:1 · Square",32,32],["wide","16:9 · Wide",44,25]];
+const CTAS=["Try it free","Sign up","Download","Shop now","Learn more"];
+const PACKS=[['standard','Standard: 9:16, 4:5, 1:1 · 15 s',{formats:['vertical','portrait','square'],lengths:['15'],hookExtra:2,seq:1}],['test','Hook test: 9:16 · 6 and 15 s · 5 hooks',{formats:['vertical'],lengths:['6','15'],hookExtra:5,seq:1}],['wide','Everywhere: all formats · 6 and 15 s',{formats:['vertical','portrait','square','wide'],lengths:['6','15'],hookExtra:2,seq:2}]];
+const PICKS={locales:['en-US','de-DE','fr-FR','es-ES','pt-BR','it-IT','pl-PL','tr-TR','ja-JP'],lengths:['6','10','15','20','30'],cta:['Try it free','Sign up','Download','Shop now','Learn more']};
+const MAXSEQ=4;
+const S={pack:'standard',lists:{locales:['en-GB'],lengths:['15'],hooks:[],offers:[],extras:[],cta:[]},seq:1,single:{combos:"all"},multi:{synthesis:["backgrounds","abstract-light"]},feel:[],world:[],light:[],axes:Object.fromEntries(AXES.map(a=>[a[0],a[3]])),formats:['vertical','portrait','square'],ex:"live"};
+const el=(t,a={},c=[])=>{const e=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==='text')e.textContent=v;else if(k.startsWith('on'))e[k]=v;else e.setAttribute(k,v);}c.forEach(x=>e.append(x));return e;};
+const pic=(src,alt)=>{const i=el('img',{src,alt,loading:'eager'});i.onerror=()=>{const d=el('div',{class:'ph'});i.replaceWith(d);};return i;};
+function chipsSingle(host,key){const list=SINGLE[key],cur=S.single[key]??"suggest";host.replaceChildren(...list.map(([id,l])=>el('button',{type:'button',class:'chip','aria-pressed':String(cur===id),text:l,onclick:()=>{S.single[key]=id;render();}})),...(NOSUGGEST.has(key)?[]:[el('button',{type:'button',class:'chip sug','aria-pressed':String(cur==='suggest'),text:'Suggest',onclick:()=>{S.single[key]='suggest';render();}})]));}
+function chipsMulti(host,key){const list=MULTI[key],cur=S.multi[key]??[];host.replaceChildren(...list.map(([id,l])=>el('button',{type:'button',class:'chip','aria-pressed':String(cur.includes(id)),text:l,onclick:()=>{S.multi[key]=cur.includes(id)?cur.filter(x=>x!==id):[...cur,id];render();}})));}
+function cardSet(host,list,key,max,img,desc){const cur=S[key];host.replaceChildren(...list.map(([id,l,d],i)=>{const n=cur.indexOf(id);return el('button',{type:'button',class:'card','aria-pressed':String(n>=0),onclick:()=>{if(n>=0)cur.splice(n,1);else if(cur.length<max)cur.push(id);render();}},[el('span',{class:'tag',text:key==='feel'?(n===0?'Main':'Also'):'Chosen'}),pic(img(id,i),l),el('b',{text:l}),...(desc&&d?[el('span',{text:d})]:[])]);}),el('button',{type:'button',class:'card sugcard','aria-pressed':String(cur.length===0),onclick:()=>{cur.length=0;render();}},[el('div',{class:'ph',text:'We suggest from your brand kit'}),el('b',{text:'Suggest'})]));}
+function tagList(h){const k=h.dataset.list,inp=el('input',{type:'text',placeholder:h.dataset.ph||'','aria-label':h.dataset.ph||k,id:'list-'+k});const add=()=>{const vals=inp.value.split(',').map(x=>x.trim()).filter(Boolean);vals.forEach(x=>{if(!S.lists[k].includes(x))S.lists[k].push(x);});inp.value='';render();document.getElementById('list-'+k).focus();};inp.onkeydown=e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();add();}else if(e.key==='Backspace'&&!inp.value&&S.lists[k].length){S.lists[k].pop();render();document.getElementById('list-'+k).focus();}};inp.onblur=()=>{if(inp.value.trim())add();};h.replaceChildren(...S.lists[k].map((x,i)=>el('span',{class:'tag-i'},[document.createTextNode(x),el('button',{type:'button','aria-label':'Remove '+x,text:'×',onclick:()=>{S.lists[k].splice(i,1);render();}})])),inp,el('button',{type:'button',class:'addbtn',text:'Add',onclick:add}));}
+function rowList(h){const k=h.dataset.rows;if(!S.lists[k].length)S.lists[k].push('');h.replaceChildren(...S.lists[k].map((x,i)=>{const inp=el('input',{type:'text',value:x,placeholder:h.dataset.ph||'',id:`row-${k}-${i}`,'aria-label':`${h.dataset.add||k} ${i+1}`});inp.oninput=()=>{S.lists[k][i]=inp.value;update();};return el('div',{class:'rowi'},[inp,el('button',{type:'button',class:'rm','aria-label':'Remove line '+(i+1),text:'×',onclick:()=>{S.lists[k].splice(i,1);render();}})]);}),el('button',{type:'button',class:'addrow',text:'+ '+(h.dataset.add||'Add a line'),onclick:()=>{S.lists[k].push('');render();document.getElementById(`row-${k}-${S.lists[k].length-1}`).focus();}}));}
+const filled=k=>S.lists[k].filter(x=>x.trim());
+function render(){
+ document.querySelectorAll('[data-single]').forEach(h=>chipsSingle(h,h.dataset.single));document.querySelectorAll('[data-multi]').forEach(h=>chipsMulti(h,h.dataset.multi));
+ const med=S.single.medium??'suggest',fixed=med==='live'||med==='digital',ex=fixed?med:S.ex;document.getElementById('exSeg').hidden=fixed;
+ cardSet(document.getElementById('feelCards'),FEELS,'feel',3,(id,i)=>IMG[ex][i],true);
+ S.world=S.world.filter(w=>worldFor(med).some(x=>x[0]===w));cardSet(document.getElementById('worldCards'),worldFor(med),'world',3,id=>IMG.world[id]);
+ cardSet(document.getElementById('lightCards'),LIGHT,'light',2,(id,i)=>IMG.light[i]);
+ document.getElementById('exLive').setAttribute('aria-pressed',String(S.ex==='live'));document.getElementById('exDigital').setAttribute('aria-pressed',String(S.ex==='digital'));
+ document.getElementById('sliders').replaceChildren(...AXES.map(([id,a,b,base])=>{const r=el('input',{type:'range',min:'1',max:'5',step:'1',value:String(S.axes[id]),'aria-label':`${a} to ${b}`,id:'ax-'+id});r.oninput=()=>{S.axes[id]=+r.value;render();};const m=el('div',{class:'brandmark'});m.style.left=`calc(${(base-1)/4*100}% + ${8-(base-1)/4*16}px)`;const d=S.axes[id]-base;return el('div',{class:'sl'},[el('div',{class:'ends'},[el('span',{text:a}),el('span',{text:b})]),el('div',{class:'track'},[m,r]),el('div',{class:'shift',text:d?`This campaign: a step towards ${d>0?b:a}`:''})]);}));
+ document.getElementById('packs').replaceChildren(...PACKS.map(([id,l,cfg])=>el('button',{type:'button',class:'chip','aria-pressed':String(S.pack===id),text:l,onclick:()=>{S.pack=id;S.formats=[...cfg.formats];S.lists.lengths=[...cfg.lengths];document.getElementById('hookExtra').value=cfg.hookExtra;S.seq=cfg.seq;render();}})));
+ document.querySelectorAll('[data-list]').forEach(tagList);document.querySelectorAll('[data-rows]').forEach(rowList);
+ document.querySelectorAll('[data-picks]').forEach(h=>{const k=h.dataset.picks;h.replaceChildren(...PICKS[k].filter(x=>!S.lists[k].includes(x)).map(x=>el('button',{type:'button',class:'chip',text:'+ '+x,onclick:()=>{const e=S.lists[k].indexOf('');if(e>=0)S.lists[k][e]=x;else S.lists[k].push(x);render();}})));});
+ document.getElementById('seqN').textContent=S.seq;document.getElementById('seqMinus').disabled=S.seq<=1;document.getElementById('seqPlus').disabled=S.seq>=MAXSEQ;document.getElementById('seqHint').textContent=S.seq>=MAXSEQ?'maximum per scenario':'';
+ document.getElementById('formats').replaceChildren(...FORMATS.map(([id,l,w,h])=>{const on=S.formats.includes(id),i=el('i');i.style.width=w+'px';i.style.height=h+'px';return el('button',{type:'button',class:'fmt','aria-pressed':String(on),onclick:()=>{S.formats=on?S.formats.filter(x=>x!==id):[...S.formats,id];render();}},[i,el('span',{text:l})]);}));
+ update();
+}
+function update(){
+ const v=id=>document.getElementById(id)?.value.trim()??'',lab=(list,id)=>(list.find(x=>x[0]===id)||[,id])[1];
+ const n=id=>Math.max(1,parseInt(document.getElementById(id)?.value||'0',10)||0);const hooks=filled('hooks').length+(parseInt(document.getElementById('hookExtra').value,10)||0)||1;const L2=S.lists;const parts=[[n('finals'),'concept'],[Math.max(1,L2.locales.length),'language'],[hooks,'hook'],[S.seq,'sequence version'],[Math.max(1,filled('offers').length),'offer'],[Math.max(1,filled('cta').length),'call to action','calls to action'],[Math.max(1,L2.lengths.length),'length'],[Math.max(1,S.formats.length),'format'],[Math.max(1,filled('extras').length+(filled('extras').length?1:0)),'variation']];const tot=parts.reduce((a,[x])=>a*x,1);document.getElementById('total').innerHTML='';document.getElementById('total').append(el('b',{text:`${tot} video${tot===1?'':'s'} if every combination is made`}),document.createTextNode(' · '+parts.filter(([x])=>x>1).map(([x,l,pl])=>`${x} ${pl||l+'s'}`).join(' × ')+((S.single.combos==='pick')?' · you pick which combinations to make':'')));
+ const fill=['product','benefit','audience','markets','offer','name','email'].filter(id=>v(id)).length+(filled('cta').length?1:0);document.getElementById('progress').style.width=`${Math.round(((fill+(S.feel.length?1:0)+(S.world.length?1:0))/10)*100)}%`;document.getElementById('filled').textContent=`${fill} of 8 required answers filled`;
+ const one=k=>{const x=S.single[k]??'suggest';return x==='suggest'?'suggest':lab(SINGLE[k],x);};
+ const L=[];L.push(S.feel.length?`Main feeling: ${lab(FEELS,S.feel[0])}${S.feel.length>1?`. Also: ${S.feel.slice(1).map(f=>lab(FEELS,f)).join(', ')}`:''}.`:'Feeling: not chosen; derive it from the brand character and the product benefit.');
+ const shifts=AXES.filter(a=>S.axes[a[0]]!==a[3]).map(a=>`${a[1]}–${a[2]} ${S.axes[a[0]]}/5`);if(shifts.length)L.push(`Campaign character: ${shifts.join('; ')}.`);
+ L.push(`How far from the usual style: ${one('stretch')}.`);
+ L.push(`Look: imagery ${one('medium')}; world ${S.world.length?S.world.map(w=>lab(WORLD,w)).join(' + '):'suggest'}; light ${S.light.length?S.light.map(w=>lab(LIGHT,w)).join(' + '):'suggest'}; energy ${one('energy')}; colour ${one('colour')}; type ${one('typeRole')}; product ${one('productRole')}; people ${one('people')}${v('peopleNote')?` (${v('peopleNote')})`:''}; text on screen ${one('textAmount')}; humour ${one('humour')}.`);
+ if(v('endFeeling'))L.push(`Feeling at the end: "${v('endFeeling')}".`);
+ const av=[...(S.multi.avoid??[]).map(a=>lab(MULTI.avoid,a)),v('avoidNote')].filter(Boolean);if(av.length)L.push(`Avoid: ${av.join(', ')}.`);
+ const c=[v('benefit')&&`benefit: ${v('benefit')}`,v('proof')&&`proof: ${v('proof')}`,v('difference')&&`difference: ${v('difference')}`,v('tension')&&`audience tension: ${v('tension')}`,S.single.audienceAwareness&&S.single.audienceAwareness!=='suggest'&&`audience knows: ${lab(SINGLE.audienceAwareness,S.single.audienceAwareness)}`,S.single.goal&&S.single.goal!=='suggest'&&`goal: ${lab(SINGLE.goal,S.single.goal)}`].filter(Boolean);if(c.length)L.push(`Campaign: ${c.join('; ')}.`);
+ L.push('Brand kit (wins over every choice above): voice.tone, voice.character, voice.samples, imagery and motion rules from the accepted kit.');
+ document.getElementById('brief').textContent='FEELING BRIEF (client choices; "suggest" means you propose from the brand kit):\n'+L.join('\n');
+}
+document.querySelectorAll('input,textarea').forEach(e=>e.addEventListener('input',update));
+(()=>{const d=document.getElementById('date'),iso=x=>x.toISOString().slice(0,10),min=new Date();min.setDate(min.getDate()+5);d.min=iso(min);d.value=iso(min);const chk=()=>{const ok=d.value>=d.min;document.getElementById('dateHint').textContent=ok?'If you pay later, the date moves so you always get at least 5 days.':'Pick a date at least 5 days after payment, '+d.min+' or later.';d.setAttribute('aria-invalid',String(!ok));};d.addEventListener('input',chk);chk();})();
+document.getElementById('seqMinus').onclick=()=>{S.seq=Math.max(1,S.seq-1);render();};document.getElementById('seqPlus').onclick=()=>{S.seq=Math.min(MAXSEQ,S.seq+1);render();};
+document.getElementById('exLive').onclick=()=>{S.ex='live';render();};document.getElementById('exDigital').onclick=()=>{S.ex='digital';render();};
+const qp=new URLSearchParams(location.search);if(qp.get('medium'))S.single.medium=qp.get('medium');if(qp.get('open'))document.querySelectorAll('details').forEach(d=>d.open=true);
+document.getElementById('fillSite').onclick=()=>{document.querySelectorAll('[data-site]').forEach(f=>{if(!f.value){f.value=f.dataset.site;f.classList.add('fromsite');f.addEventListener('input',()=>f.classList.remove('fromsite'),{once:true});}});update();};
+document.getElementById('toggleAgent').onclick=e=>{const p=document.getElementById('brief');p.hidden=!p.hidden;e.target.textContent=p.hidden?'Show':'Hide';};
+render();
+</script></body></html>
