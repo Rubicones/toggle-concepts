@@ -37,6 +37,9 @@ export function readDesign(value:unknown,input:DirectionInput):Design{
  if(input.stage==='draft'&&normalized&&typeof normalized==='object')delete (normalized as Record<string,unknown>).materialMemory;
  const design:Design=(input.stage==='draft'?staticDesignSchema:designSchema).parse(normalized),ids=new Set<string>();if(memory)design.materialMemory=memory;if(bindings)design.bindings=bindings;
  if(input.stage==='draft')for(const r of design.resources){
+  // A reference the image model cannot take (over 2048 px a side or 2 MP, e.g. a retina UI screenshot) is dropped from
+  // that picture instead of discarding the whole paid answer; the asset itself stays available to the frame code.
+  r.referenceAssetIds=r.referenceAssetIds.filter(id=>{const a=input.assets.find(x=>x.id===id);return !a||!(a.width>2048||a.height>2048||a.width*a.height>2073600);});
   // Image methods exist only for blocks started with them; earlier blocks ignore them instead of failing an answer.
   if(input.brief.imageMethodsVersion!==1){delete r.sketch;delete r.edit;delete r.extend;continue;}
   const validBox=(b?:number[])=>!b||b[0]<b[2]&&b[1]<b[3];

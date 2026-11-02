@@ -46,3 +46,16 @@ test('an optional sketch that does not fit is dropped instead of rejecting the w
  let calls=0;await designDirection({input:withRefs,state,approvedRequests:2,perStillMicroUsd:1,call:async()=>{calls++;return {text:answer};},ready:async()=>{},save:async()=>{}});
  assert.equal(calls,0);assert.ok(state.design);assert.equal(state.design!.resources[0].sketch,undefined);
 });
+
+test('an oversize reference (retina UI screenshot) is dropped from the picture instead of rejecting the paid answer',async()=>{
+ const {readDesign}=await import('../packages/director/contract');
+ const big={id:'00000000-0000-4000-8000-000000000009',url:'big.png',thumbnail:'big.png',width:2318,height:1400,sha256:'9'.repeat(64),mime:'image/png',revisionId:'00000000-0000-4000-8000-000000000109'};
+ const ok={id:'00000000-0000-4000-8000-000000000008',url:'ok.png',thumbnail:'ok.png',width:1000,height:1000,sha256:'8'.repeat(64),mime:'image/png',revisionId:'00000000-0000-4000-8000-000000000108'};
+ const withRefs={...input,assets:[...input.assets,big,ok]} as typeof input;
+ const resource={...sketched,referenceAssetIds:[big.id,ok.id]};
+ const design=readDesign({...complete,resources:[resource]},withRefs);
+ assert.deepEqual(design.resources[0].referenceAssetIds,[ok.id]);
+ const state:WorkState={directorFeedback:[JSON.stringify({savedOutput:JSON.stringify({...complete,resources:[resource]}),error:'IMAGE_REFERENCE_DIMENSIONS_UNAVAILABLE'})]};
+ let calls=0;await designDirection({input:withRefs,state,approvedRequests:2,perStillMicroUsd:1,call:async()=>{calls++;return {text:answer};},ready:async()=>{},save:async()=>{}});
+ assert.equal(calls,0);assert.ok(state.design);
+});
