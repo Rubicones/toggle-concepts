@@ -71,6 +71,34 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
     );
   if (!data) return <p>Loading brand fields…</p>;
   if (!data.schemaReady) return <WorkflowMigration stage="Incremental brand fields" />;
+  if (data.brandSource)
+    return (
+      <section className={styles.workspace}>
+        <header className="brandbook-heading">
+          <div>
+            <p className="eyebrow">BRAND FROM THE LIBRARY</p>
+            <h2>{data.brandSource.brand}</h2>
+            <p>
+              This campaign uses the brand prepared in “{data.brandSource.name}”
+              {data.submission ? ` (brandbook version ${data.submission.version_no})` : ""}. Files, findings and edits live there.
+            </p>
+          </div>
+        </header>
+        {message && <p role="status">{message}</p>}
+        <div className="step-footer">
+          <div className="step-footer-actions">
+            <a className="text-link" href={`/campaigns/${data.brandSource.id}`}>Open that brand</a>
+            <Button variant="outline" disabled={busy} onClick={() => void command({ action: "useBrand", sourceCampaignId: null })}>
+              Use this campaign’s own files instead
+            </Button>
+            <Button disabled={busy || !data.submission} onClick={() => { onContinue?.(); router.push(`/campaigns/${campaignId}/brief`); }}>
+              Continue to questionnaire
+              <ArrowRight size={15} />
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
   const active = data.analyses.find((a) => !["completed", "cancelled"].includes(a.status)),
     latest = active ?? data.analyses[0],
     files = data.files.filter((f) => f.analysis_id === latest?.id),
@@ -131,6 +159,19 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
           <small>fields found · {excludedTotal} excluded</small>
         </div>
       </header>
+      {!!data.brandOptions?.length && (
+        <label className="brandbook-library">
+          Already prepared this brand?{" "}
+          <select disabled={busy} value="" onChange={(event) => event.target.value && void command({ action: "useBrand", sourceCampaignId: event.target.value })}>
+            <option value="">Use a brand from the library…</option>
+            {data.brandOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.brand} — {option.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="brandbook-overview">
         <section className="brandbook-work-card">
           <div className="brandbook-status">

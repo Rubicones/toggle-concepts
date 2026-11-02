@@ -5,6 +5,7 @@ import {z} from 'zod';
 import {api,ApiError} from '@/lib/server/api';
 import {campaignRecord,studioContext,checked} from '@/lib/server/studio';
 import {schemaMissing} from '@/lib/server/brief';
+import {brandScope} from '@/lib/server/brand-source';
 
 const PAGE=1000,PROMPT_PREVIEW=4000;
 type Query={range:(from:number,to:number)=>PromiseLike<{data:unknown[]|null;error:{code?:string;message:string}|null}>};
@@ -15,19 +16,19 @@ async function all<T>(query:()=>Query):Promise<T[]>{
 const chunks=<T,>(items:T[],size=200)=>Array.from({length:Math.ceil(items.length/size)},(_,i)=>items.slice(i*size,(i+1)*size));
 
 export async function GET(_:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/brand-export'>){return api(async()=>{
- const campaign=await campaignRecord(z.uuid().parse((await ctx.params).id)),{admin,tenant}=await studioContext(),id=campaign.id;
- const materials=await all<Record<string,unknown>>(()=>admin.from('studio_brand_materials').select('id,filename,relative_path,mime,bytes,sha256,state,included,attempts,error_code,extraction,extraction_sha,created_at').eq('tenant_id',tenant).eq('campaign_id',id).order('created_at'));
- const analyses=await all<{id:string}>(()=>admin.from('studio_brand_analyses').select('*').eq('tenant_id',tenant).eq('campaign_id',id).order('created_at'));
+ const campaign=await campaignRecord(z.uuid().parse((await ctx.params).id)),{admin,tenant}=await studioContext(),id=campaign.id,brand=await brandScope(id);
+ const materials=await all<Record<string,unknown>>(()=>admin.from('studio_brand_materials').select('id,filename,relative_path,mime,bytes,sha256,state,included,attempts,error_code,extraction,extraction_sha,created_at').eq('tenant_id',tenant).eq('campaign_id',brand).order('created_at'));
+ const analyses=await all<{id:string}>(()=>admin.from('studio_brand_analyses').select('*').eq('tenant_id',tenant).eq('campaign_id',brand).order('created_at'));
  const fileReads:{id:string}[]=[];for(const group of chunks(analyses.map(a=>a.id)))fileReads.push(...await all<{id:string}>(()=>admin.from('studio_brand_file_reads').select('*').in('analysis_id',group).order('position')));
  const readParts:{step_id:string|null}[]=[];for(const group of chunks(fileReads.map(f=>f.id)))readParts.push(...await all<{step_id:string|null}>(()=>admin.from('studio_brand_read_parts').select('id,file_id,sort_key,page_no,status,step_id,blocker,payload').in('file_id',group).order('sort_key')));
- const findings=await all<{step_id:string}>(()=>admin.from('studio_brand_findings').select('id,seq,material_id,source_sha,part_id,step_id,field,value,locator,evidence,decision,edited_value,version,created_at').eq('tenant_id',tenant).eq('campaign_id',id).order('seq'));
+ const findings=await all<{step_id:string}>(()=>admin.from('studio_brand_findings').select('id,seq,material_id,source_sha,part_id,step_id,field,value,locator,evidence,decision,edited_value,version,created_at').eq('tenant_id',tenant).eq('campaign_id',brand).order('seq'));
  const stepIds=[...new Set([...readParts.map(p=>p.step_id),...findings.map(f=>f.step_id)].filter((s):s is string=>!!s))];
  const steps:Record<string,unknown>[]=[];for(const group of chunks(stepIds))steps.push(...await all<Record<string,unknown>>(()=>admin.from('studio_agent_steps').select('id,role,model_id,status,error_code,cost_micro_usd,usage,output,prompt,created_at').in('id',group).order('created_at')));
- const submissions=await all<{id:string}>(()=>admin.from('studio_brandbook_submissions').select('*').eq('tenant_id',tenant).eq('campaign_id',id).order('version_no',{ascending:false}));
+ const submissions=await all<{id:string}>(()=>admin.from('studio_brandbook_submissions').select('*').eq('tenant_id',tenant).eq('campaign_id',brand).order('version_no',{ascending:false}));
  const latest=submissions[0],items=latest?await all<Record<string,unknown>>(()=>admin.from('studio_brandbook_submission_items').select('source_finding_id,source_seq,payload').eq('submission_id',latest.id).order('source_seq')):[];
  const draft=checked(await admin.from('studio_brand_drafts').select('version,round_no,payload,updated_at').eq('tenant_id',tenant).eq('campaign_id',id).maybeSingle());
  const revision=checked(await admin.from('studio_brand_revisions').select('id,revision_no,sha256,created_at,payload').eq('tenant_id',tenant).eq('campaign_id',id).order('revision_no',{ascending:false}).limit(1).maybeSingle());
- const body={version:'brand-export@1',exportedAt:new Date().toISOString(),campaignId:id,
+ const body={version:'brand-export@1',exportedAt:new Date().toISOString(),campaignId:id,brandSourceCampaignId:brand===id?null:brand,
   counts:{materials:materials.length,analyses:analyses.length,fileReads:fileReads.length,readParts:readParts.length,steps:steps.length,findings:findings.length,submissions:submissions.length,submissionItems:items.length},
   materials,analyses,fileReads,readParts,
   steps:steps.map(s=>({...s,prompt:typeof s.prompt==='string'&&s.prompt.length>PROMPT_PREVIEW?`${s.prompt.slice(0,PROMPT_PREVIEW)}… [${s.prompt.length} chars]`:s.prompt})),

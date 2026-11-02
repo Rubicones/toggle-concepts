@@ -2,13 +2,14 @@ import 'server-only';
 import {ApiError} from './api';
 import {checked, studioContext} from './studio';
 import {schemaMissing} from './brief';
+import {brandScope} from './brand-source';
 import type {BrandDraft} from '@/packages/contracts/brand-kit';
 import type {BrandbookHeader, BrandbookItem} from '@/packages/brand/a1-handoff';
 
 export async function submittedBrandbook(campaignId:string,id?:string){
- const {admin,tenant}=await studioContext();
- if(!id){const head=await admin.from('studio_brandbook_heads').select('submission_id').eq('campaign_id',campaignId).maybeSingle();if(head.error&&schemaMissing(head.error))return null;id=checked(head)?.submission_id;if(!id)return null;}
- const book=checked(await admin.from('studio_brandbook_submissions').select('id,version_no,sha256,summary').eq('id',id).eq('tenant_id',tenant).eq('campaign_id',campaignId).maybeSingle());
+ const {admin,tenant}=await studioContext(),scope=await brandScope(campaignId);
+ if(!id){const head=await admin.from('studio_brandbook_heads').select('submission_id').eq('campaign_id',scope).maybeSingle();if(head.error&&schemaMissing(head.error))return null;id=checked(head)?.submission_id;if(!id)return null;}
+ const book=checked(await admin.from('studio_brandbook_submissions').select('id,version_no,sha256,summary').eq('id',id).eq('tenant_id',tenant).eq('campaign_id',scope).maybeSingle());
  if(!book)throw new ApiError(409,'BRANDBOOK_NOT_FOUND','The submitted brandbook does not belong to this campaign.');
  return book as BrandbookHeader;
 }

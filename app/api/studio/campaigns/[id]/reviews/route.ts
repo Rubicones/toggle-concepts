@@ -8,6 +8,7 @@ import {draftReviewCommandSchema,commentTarget} from '@/packages/contracts/draft
 import {a2Snapshot,c2Snapshot,clientReviewBatch} from '@/packages/data/draft-review-snapshot';
 import {parseCheckpoint} from '@/packages/contracts/workflow';
 import {objectStore} from '@/packages/media/s3.server';
+import {brandScope} from '@/lib/server/brand-source';
 function audience(request:Request){return new URL(request.url).searchParams.get('audience')==='client'?'client' as const:'ad' as const;}
 export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/reviews'>){return api(async()=>{
  const id=z.uuid().parse((await ctx.params).id),mode=audience(request);let saved;try{saved=await reviewContext(id);}catch(e){if(e instanceof ApiError&&e.code==='M08_SCHEMA_REQUIRED')return json({schemaReady:false});throw e;}
@@ -17,7 +18,7 @@ export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaign
   if(!program||mode==='client'&&params.get('otherFormats')!=='true'&&program.placementId!==c1.scope.referencePlacement)throw new ApiError(404,'BINDING_NOT_FOUND','Select an offered reference creative.');
   const asset=params.get('asset');if(asset){z.uuid().parse(asset);const ids=program.scenes.flatMap(s=>s.assets).filter(a=>a.kind!=='font').map(a=>a.revisionId);if(program.engine)ids.push(...program.engine.resources.filter(r=>r.kind!=='font').map(r=>r.revisionId));if(program.audio)ids.push(program.audio.assetRevisionId);if(!ids.includes(asset))throw new ApiError(404,'ASSET_NOT_FOUND','This asset is not part of the reviewed creative.');
    const media=checked(await admin.from('asset_revisions').select('object_key,filename,mime,sha256,bytes').eq('tenant_id',tenant).eq('campaign_id',id).eq('id',asset).maybeSingle());
-   if(!media&&program.engine){const ref=program.engine.resources.find(r=>r.revisionId===asset&&r.kind==='logo');const material=ref?checked(await admin.from('studio_brand_materials').select('object_key,filename,mime,sha256,bytes').eq('tenant_id',tenant).eq('campaign_id',id).eq('id',asset).eq('state','ready').maybeSingle()):null;if(!material||material.sha256!==ref!.sha256||material.object_key!==ref!.objectKey)throw new ApiError(404,'ASSET_NOT_FOUND','Reviewed kit artwork is unavailable.');return json({url:await objectStore().signGet(material.object_key,material.filename),sha256:material.sha256,mime:material.mime,bytes:material.bytes});}
+   if(!media&&program.engine){const ref=program.engine.resources.find(r=>r.revisionId===asset&&r.kind==='logo');const material=ref?checked(await admin.from('studio_brand_materials').select('object_key,filename,mime,sha256,bytes').eq('tenant_id',tenant).eq('campaign_id',await brandScope(id)).eq('id',asset).eq('state','ready').maybeSingle()):null;if(!material||material.sha256!==ref!.sha256||material.object_key!==ref!.objectKey)throw new ApiError(404,'ASSET_NOT_FOUND','Reviewed kit artwork is unavailable.');return json({url:await objectStore().signGet(material.object_key,material.filename),sha256:material.sha256,mime:material.mime,bytes:material.bytes});}
    if(!media)throw new ApiError(404,'ASSET_NOT_FOUND','Reviewed media is unavailable.');
    return json({url:await objectStore().signGet(media.object_key,media.filename),sha256:media.sha256,mime:media.mime,bytes:media.bytes});
   }return json({program,batchSha256:batch.sha256});
