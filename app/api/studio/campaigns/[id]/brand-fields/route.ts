@@ -12,6 +12,9 @@ import {fieldsOutsideRole,materialRoles} from '@/packages/brand/material-roles';
 import {materialRoleRows} from '@/lib/server/brand-roles';
 import {brandDecisions} from '@/packages/brand/source-priority';
 import {singleChoiceFields} from '@/packages/brand/finding-selection';
+import {buildBrandCard} from '@/packages/brand/brand-card';
+import {inkColours,logoInkVariants} from '@/packages/brand/normalize';
+import {objectStore} from '@/packages/media/s3.server';
 const commands=z.discriminatedUnion('action',[
  z.strictObject({action:z.literal('submit'),requestId:z.uuid()}),
  z.strictObject({action:z.literal('prefill')}),
@@ -26,6 +29,22 @@ const commands=z.discriminatedUnion('action',[
 function analysisError(error:{code?:string;message:string}|null){if(!error)return;if(schemaMissing(error))throw new ApiError(503,'BRAND_FIELDS_SCHEMA_REQUIRED','Enable the required Brand Kit update in Settings. Submission and continuation use migration 014.');const messages:Record<string,string>={SOURCE_ALREADY_QUEUED:'This source already has saved work. Continue its existing analysis to retain its exact position.',INTAKE_BUILD_ACTIVE:'A source is currently being read. Wait for it to finish, then analyze the new notes only.',NO_BRAND_FINDINGS:'Collect or keep at least one finding before submitting the brandbook.',ANALYSIS_EXISTS:'An analysis already exists. Resume it to retain its budget and saved findings.',MATERIALS_NOT_READY:'Finish file reading or explicitly exclude unreadable files before analysis.',REVIEW_REQUIRED:'This part has an uncertain or invalid result. Saved findings are retained; inspect its activity before another paid request.',STALE_FINDING:'This finding changed. Reload before saving your decision.',RUN_NOT_ACTIVE:'The run is closed. Saved findings remain available; reconcile unknown charges before continuing.',RUN_CAP_REACHED:'The analysis budget is exhausted. All completed findings remain saved.',STEP_CAP_REACHED:'The cumulative brand-agent allowance is exhausted. All completed findings remain saved.'};const code=Object.keys(messages).find(c=>error.message.includes(c));if(code)throw new ApiError(409,code,messages[code]);throw new Error(error.message);}
 export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/brand-fields'>){return api(async()=>{
  const campaign=await campaignRecord((await ctx.params).id),{admin,tenant}=await studioContext(),url=new URL(request.url),scope=await brandScope(campaign.id);
+ const assetId=url.searchParams.get('asset');if(assetId){
+  // Brand card previews: a logo (optionally with currentColor resolved for a ground) or a font file, from this brand only.
+  const m=checked(await admin.from('studio_brand_materials').select('id,mime,object_key,sha256').eq('id',z.uuid().parse(assetId)).eq('tenant_id',tenant).eq('campaign_id',scope).eq('state','ready').maybeSingle());if(!m)throw new ApiError(404,'MATERIAL_NOT_FOUND','File not found in this brand.');
+  let bytes=Buffer.from((await objectStore().get(m.object_key)).body),type=m.mime;
+  const ground=url.searchParams.get('ground');
+  if(m.mime==='image/svg+xml'&&(ground==='dark'||ground==='light')){const colours=checked(await admin.from('studio_brand_findings').select('value').eq('tenant_id',tenant).eq('campaign_id',scope).in('field',['primaryColors','secondaryColors','semanticColors']).neq('decision','reject').limit(500))??[];const v=logoInkVariants(bytes.toString('utf8'),inkColours(colours.flatMap(c=>String(c.value).match(/#[0-9a-f]{6}\b/gi)??[])));if(v)bytes=Buffer.from(ground==='dark'?v.onDark:v.onLight,'utf8');}
+  if(!type.startsWith('image/'))type=/woff2/.test(m.mime)||bytes.subarray(0,4).toString('latin1')==='wOF2'?'font/woff2':bytes.subarray(0,4).toString('latin1')==='wOFF'?'font/woff':'font/ttf';
+  return new Response(new Uint8Array(bytes),{headers:{'Content-Type':type,'Cache-Control':'private, max-age=300','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; sandbox"}});
+ }
+ if(url.searchParams.has('card')){
+  const roles=new Map((await materialRoleRows(scope)).map(r=>[r.id,r]));
+  const rows=checked(await admin.from('studio_brand_materials').select('id,filename,mime,object_key,metadata:extraction->metadata').eq('tenant_id',tenant).eq('campaign_id',scope).eq('state','ready').limit(500))??[];
+  const materials=await Promise.all(rows.map(async r=>{const role=roles.get(r.id);const svgText=role?.role==='logo'&&r.mime==='image/svg+xml'?Buffer.from((await objectStore().get(r.object_key)).body).toString('utf8').slice(0,200000):null;return {id:r.id,filename:r.filename,mime:r.mime,role:role?.role??'unknown',sure:role?.sure??false,metadata:r.metadata as Record<string,unknown>|null,svgText};}));
+  const findings:Parameters<typeof buildBrandCard>[0]=[];for(let offset=0;offset<10000;offset+=1000){const page=checked(await admin.from('studio_brand_findings').select('id,field,value,edited_value,decision,version,material_id,evidence,locator').eq('tenant_id',tenant).eq('campaign_id',scope).order('seq').range(offset,offset+999))??[];findings.push(...page);if(page.length<1000)break;}
+  return json(buildBrandCard(findings,materials));
+ }
  const materialId=url.searchParams.get('materialState');if(materialId){const material=checked(await admin.from('studio_brand_materials').select('id,state,error_code').eq('id',z.uuid().parse(materialId)).eq('tenant_id',tenant).eq('campaign_id',scope).maybeSingle());if(!material)throw new ApiError(404,'MATERIAL_NOT_FOUND','Brand source not found.');return json(material);}
  const ready=await admin.from('studio_brand_analyses').select('id').limit(0);if(ready.error){analysisError(schemaMissing(ready.error)?null:ready.error);return json({schemaReady:false,fields:[],analyses:[],files:[],run:null});}
  const submissionId=url.searchParams.get('submission');if(submissionId){

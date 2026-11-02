@@ -15,6 +15,7 @@ import { singleChoiceFields } from "@/packages/brand/finding-selection";
 import { brandAnalysisCanContinue, brandAnalysisNotice } from "@/packages/brand/workspace-metrics";
 import { flushCampaignSaves } from "@/lib/use-persisted-draft";
 import { WorkflowMigration } from "./brief-workspace";
+import { BrandCard } from "./brand-card";
 import { materialRoleLabels, materialRoles, type MaterialRole } from "@/packages/brand/material-roles";
 export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { campaignId: string; sourcesReady: boolean; onContinue?: () => void }) {
   const router = useRouter();
@@ -478,6 +479,13 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
             Show all fields
           </button>
         </p>
+      )}
+      {count > 0 && (
+        <BrandCard
+          endpoint={endpoint}
+          busy={busy}
+          review={(finding, value) => command({ action: "review", findingId: finding.findingId, expectedVersion: finding.version, decision: "keep", editedValue: value })}
+        />
       )}
       <div className="step-footer">
         <p>

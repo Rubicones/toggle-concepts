@@ -24,7 +24,7 @@ function displayText(item:BrandbookItem){
  try{const parsed=JSON.parse(item.value);if(typeof parsed==='string')return parsed;if(parsed&&typeof parsed==='object')return JSON.stringify(parsed,null,2);}catch{}
  return item.value;
 }
-function choicesFor(key:string,items:BrandbookItem[]):BrandbookChoice[]{
+export function choicesFor(key:string,items:BrandbookItem[]):BrandbookChoice[]{
  const rows=selectFindings(items).filter(item=>mapping[key]?.includes(item.field));
  return rows.flatMap(item=>{
   const source={findingId:item.findingId,status:item.evidence,materialId:item.materialId,locator:excerpt(item.locator,1000)};
@@ -48,7 +48,7 @@ export function pickBrandColors(choices:BrandbookChoice[]){
  const named=(re:RegExp)=>{const hits=[...new Set(unique.filter(c=>re.test(c.label)).map(c=>c.value.slice(0,7).toLowerCase()))];return hits.length===1?unique.find(c=>c.value.slice(0,7).toLowerCase()===hits[0]):undefined;};
  const out:Partial<Record<'ink'|'paper'|'accent',BrandbookChoice>>={};
  out.paper=named(/\b(paper|background|canvas|bg|surface)\b/i)??[...unique].sort((a,b)=>saturation(a.value)-saturation(b.value)||Math.abs(luminance(b.value)-.5)-Math.abs(luminance(a.value)-.5))[0];
- if(out.paper){const paper=out.paper;out.ink=named(/\b(ink|foreground|text|fg)\b/i);if(!out.ink||out.ink===paper)out.ink=[...unique].filter(c=>c!==paper).sort((a,b)=>contrastRatio(b.value,paper.value)-contrastRatio(a.value,paper.value))[0];}
+ if(out.paper){const paper=out.paper;out.ink=named(/\b(ink|foreground|text|fg)\b/i);if(!out.ink||out.ink===paper)out.ink=[...unique].filter(c=>c!==paper).sort((a,b)=>Number(saturation(a.value)>0.25)-Number(saturation(b.value)>0.25)||contrastRatio(b.value,paper.value)-contrastRatio(a.value,paper.value))[0];}
  out.accent=named(/\b(accent|primary|brand|cta|highlight)\b/i);if(!out.accent||out.accent===out.paper||out.accent===out.ink)out.accent=[...unique].filter(c=>c!==out.paper&&c!==out.ink).sort((a,b)=>saturation(b.value)-saturation(a.value))[0];
  return out;
 }
