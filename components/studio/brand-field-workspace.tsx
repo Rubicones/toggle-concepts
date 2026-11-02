@@ -173,6 +173,45 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
           </select>
         </label>
       )}
+      {!!data.decisions?.length && (
+        <section className="brandbook-decisions" aria-label="Where your files disagree">
+          <h3>{data.decisions.some((d) => d.question) ? "Your files disagree — which is right?" : "Where your files disagree"}</h3>
+          <ul>
+            {data.decisions.map((d) => {
+              const label = data.fields.find((f) => f.key === d.field)?.label ?? d.field;
+              const keep = (o: { findingId: string; version: number }) =>
+                void command({ action: "review", findingId: o.findingId, expectedVersion: o.version, decision: "keep", editedValue: null });
+              return (
+                <li key={d.field}>
+                  <strong>{label}</strong>{" "}
+                  {d.question ? (
+                    <>
+                      <Badge>Which is this?</Badge>{" "}
+                      {d.options.map((o) => (
+                        <Button key={o.findingId} variant="outline" disabled={busy} onClick={() => keep(o)} title={o.file}>
+                          {o.value.slice(0, 60)}
+                        </Button>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      using “{d.chosen.value.slice(0, 60)}” from {d.chosen.file} ({materialRoleLabels[d.chosen.role].toLowerCase()}).{" "}
+                      {d.others.map((o) => (
+                        <span key={o.findingId}>
+                          {o.file} says “{o.value.slice(0, 40)}”{" "}
+                          <Button variant="outline" disabled={busy} onClick={() => keep(o)}>
+                            Use this instead
+                          </Button>{" "}
+                        </span>
+                      ))}
+                    </>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       {!!data.materials?.length && (
         <Disclosure className="brandbook-files" open={data.materials.some((m) => !m.sure) || undefined}>
           <summary>

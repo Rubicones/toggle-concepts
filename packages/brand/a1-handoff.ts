@@ -1,6 +1,9 @@
 import {brandDraftSchema, requiredBrandRules, type BrandDraft, type BrandRule} from '../contracts/brand-kit';
 import {findingPresentation} from './finding-presentation';
 import {selectFindings} from './finding-selection';
+import {prioritizeFindings} from './source-priority';
+import {cssColorToHex} from './normalize';
+import type {MaterialRole} from './material-roles';
 import {contrastRatio,luminance} from '../engine/engine/util';
 
 export type BrandbookItem={findingId:string;field:string;value:string;originalValue?:string;decision:string;evidence:'provided'|'inferred';materialId:string;locator:string};
@@ -25,7 +28,8 @@ function choicesFor(key:string,items:BrandbookItem[]):BrandbookChoice[]{
  const rows=selectFindings(items).filter(item=>mapping[key]?.includes(item.field));
  return rows.flatMap(item=>{
   const source={findingId:item.findingId,status:item.evidence,materialId:item.materialId,locator:excerpt(item.locator,1000)};
-  if(key.startsWith('color.'))return findingPresentation(item.value,item.field).colors.filter(c=>/^#[a-f\d]{6}(?:[a-f\d]{2})?$/i.test(c.value)).map(c=>({...source,label:[c.label,c.context,c.value].filter(Boolean).join(' · '),value:c.value}));
+  // Token colours are often oklch() or rgb(): each is converted to #RRGGBB so it can be chosen like a hex value.
+  if(key.startsWith('color.'))return findingPresentation(item.value,item.field).colors.map(c=>({...c,hex:/^#[a-f\d]{6}(?:[a-f\d]{2})?$/i.test(c.value)?c.value:/^#[a-f\d]{3,4}$/i.test(c.value)?null:cssColorToHex(c.value)})).filter((c):c is typeof c&{hex:string}=>!!c.hex).map(c=>({...source,label:[c.label,c.context,c.value].filter(Boolean).join(' · '),value:c.hex}));
   let value=item.value;try{const parsed=JSON.parse(value);if(typeof parsed==='string')value=parsed;else if(parsed&&typeof parsed==='object'){const family=parsed.family??parsed.fontFamily??parsed.name;if(typeof family==='string')value=family;}}catch{}
   return [{...source,label:excerpt(value,140),value:excerpt(value,2000)}];
  });
@@ -52,8 +56,9 @@ export function pickBrandColors(choices:BrandbookChoice[]){
 /** Curate working A1 fields from an immutable source book. Never approve anything. Safe to repeat: only empty, unreviewed rules are filled.
  * Everything found carries forward unless the AD excluded it; in single-choice fields (logo, fonts, name) “Use this” narrows it to the pick.
  * Groups with nothing found stay empty for the brand agent to build. */
-export function importBrandbookToA1(base:BrandDraft,book:BrandbookHeader,items:BrandbookItem[],c1:{id:string;immutables?:string;sourceAssetIds?:string[]},makeId:()=>string){
- const draft:BrandDraft=structuredClone(base),usable=selectFindings(items);
+export function importBrandbookToA1(base:BrandDraft,book:BrandbookHeader,items:BrandbookItem[],c1:{id:string;immutables?:string;sourceAssetIds?:string[]},makeId:()=>string,roleOf?:(materialId:string)=>MaterialRole|undefined){
+ // When files disagree the better-ranked source wins (source-priority.ts); without roles the order is unchanged.
+ const draft:BrandDraft=structuredClone(base),usable=prioritizeFindings(selectFindings(items),roleOf);
  if(!draft.sourceAssetIds.length&&c1.sourceAssetIds?.length)draft.sourceAssetIds=[...new Set(c1.sourceAssetIds)].slice(0,20);
  const colorPicks=pickBrandColors(choicesFor('color.ink',usable));
  const text=(fields:string[])=>usable.filter(i=>fields.includes(i.field)).map(displayText).filter(Boolean).join('\n\n');

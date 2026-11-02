@@ -31,3 +31,21 @@ export function logoInkVariants(svg:string,ink:{light:string;dark:string}){
  if(!/currentColor/i.test(svg))return null;
  return {onDark:svg.replace(/currentColor/gi,ink.light),onLight:svg.replace(/currentColor/gi,ink.dark)};
 }
+
+const toHex=(channels:number[])=>`#${channels.map(v=>Math.round(Math.min(1,Math.max(0,v))*255).toString(16).padStart(2,'0')).join('').toUpperCase()}`;
+const num=(v:string,scale=1)=>v.trim().endsWith('%')?parseFloat(v)/100*scale:parseFloat(v);
+/** A CSS colour (hex, rgb(), oklch()) as #RRGGBB; null when it is not one of those. Design tokens are often oklch. */
+export function cssColorToHex(value:string):string|null{
+ const v=value.trim();
+ let m=/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(v);
+ if(m){const h=m[1].length<=4?[...m[1].slice(0,3)].map(c=>c+c).join(''):m[1].slice(0,6);return `#${h.toUpperCase()}`;}
+ m=/^rgba?\(\s*([^)]+)\)$/i.exec(v);
+ if(m){const p=m[1].split(/[\s,/]+/).filter(Boolean);if(p.length<3)return null;const c=p.slice(0,3).map(x=>x.endsWith('%')?parseFloat(x)/100:parseFloat(x)/255);return c.some(Number.isNaN)?null:toHex(c);}
+ m=/^oklch\(\s*([^)]+)\)$/i.exec(v);
+ if(m){const p=m[1].split(/[\s,/]+/).filter(Boolean);if(p.length<3)return null;const L=num(p[0]),C=num(p[1],0.4),h=parseFloat(p[2])*Math.PI/180;if([L,C].some(Number.isNaN))return null;
+  const a=C*Math.cos(Number.isNaN(h)?0:h),b=C*Math.sin(Number.isNaN(h)?0:h);
+  const l=(L+0.3963377774*a+0.2158037573*b)**3,mm=(L-0.1055613458*a-0.0638541728*b)**3,s=(L-0.0894841775*a-1.291485548*b)**3;
+  const lin=[4.0767416621*l-3.3077115913*mm+0.2309699292*s,-1.2684380046*l+2.6097574011*mm-0.3413193965*s,-0.0041960863*l-0.7034186147*mm+1.707614701*s];
+  return toHex(lin.map(x=>x<=0.0031308?12.92*x:1.055*Math.max(0,x)**(1/2.4)-0.055));}
+ return null;
+}

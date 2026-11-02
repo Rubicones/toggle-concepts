@@ -11,6 +11,7 @@ import { schemaMissing } from "@/lib/server/brief";
 import { brandDbError, savedBrandInputs, importSavedBrandProposal } from "@/lib/server/brand-kit";
 import { brandDraftSchema, emptyBrandDraft, brandInputErrors } from "@/packages/contracts/brand-kit";
 import { brandSnapshot, a1ReviewSource } from "@/packages/data/brand-snapshot";
+import {brandRoleOf} from '@/lib/server/brand-roles';
 
 export async function GET(_:Request,ctx:RouteContext<"/api/studio/campaigns/[id]/brand-kit">){return api(async()=>{
  const {id}=await ctx.params;await campaignRecord(z.uuid().parse(id));const {admin,tenant}=await studioContext();
@@ -49,7 +50,7 @@ export async function POST(request:Request,ctx:RouteContext<"/api/studio/campaig
   const book=await submittedBrandbook(id,input.submissionId);if(!book)throw new ApiError(409,'BRANDBOOK_REQUIRED','Submit your brandbook before loading it into A1.');
   const base=current?brandDraftSchema.parse(current.payload):emptyBrandDraft(cp.payload.scope.locales);
   const items=await submittedBrandbookItems(id,book),brief=JSON.parse(cp.brief_text).questionnaire;
-  let draft;try{draft=importBrandbookToA1(base,book,items,{id:cp.id,immutables:brief?.immutables,sourceAssetIds:Array.isArray(brief?.sourceAssetIds)?brief.sourceAssetIds:[]},randomUUID);}catch{throw new ApiError(409,'BRANDBOOK_IMPORT_LIMIT','The A1 working kit cannot fit the added rules or material references. Existing data is unchanged; retain the full source book and curate the working kit.');}
+  let draft;try{draft=importBrandbookToA1(base,book,items,{id:cp.id,immutables:brief?.immutables,sourceAssetIds:Array.isArray(brief?.sourceAssetIds)?brief.sourceAssetIds:[]},randomUUID,await brandRoleOf(id));}catch{throw new ApiError(409,'BRANDBOOK_IMPORT_LIMIT','The A1 working kit cannot fit the added rules or material references. Existing data is unchanged; retain the full source book and curate the working kit.');}
   // Repeat imports only fill empty, unreviewed rules; an unchanged kit keeps its version.
   if(current&&canonicalJson(draft)===canonicalJson(base))return json({draft:base,version:current.version,message:`Brandbook v${book.version_no} is already loaded. Your current A1 edits are retained.`});
   if((current?.version??0)!==input.expectedVersion)throw new ApiError(409,'STALE_BRAND','The A1 working kit changed. Reload before importing.');

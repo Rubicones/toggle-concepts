@@ -8,7 +8,10 @@ import {schemaMissing} from '@/lib/server/brief';
 import {brandFields,brandFieldKeys,type BrandAnalysisView} from '@/packages/brand/field-extraction';
 import {startLocalWorkflow,requireLocalDevice} from '@/lib/server/local-compute';
 import {brandScope} from '@/lib/server/brand-source';
-import {effectiveMaterialRole,fieldsOutsideRole,materialRoles} from '@/packages/brand/material-roles';
+import {fieldsOutsideRole,materialRoles} from '@/packages/brand/material-roles';
+import {materialRoleRows} from '@/lib/server/brand-roles';
+import {brandDecisions} from '@/packages/brand/source-priority';
+import {singleChoiceFields} from '@/packages/brand/finding-selection';
 const commands=z.discriminatedUnion('action',[
  z.strictObject({action:z.literal('submit'),requestId:z.uuid()}),
  z.strictObject({action:z.literal('prefill')}),
@@ -54,8 +57,10 @@ export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaign
  const head=workspaceReady?checked(await admin.from('studio_brandbook_heads').select('submission_id').eq('campaign_id',campaign.id).maybeSingle()):null;
  const submission=head?checked(await admin.from('studio_brandbook_submissions').select('id,version_no,created_at,is_partial,sha256,summary').eq('id',head.submission_id).eq('tenant_id',tenant).eq('campaign_id',campaign.id).single()):null;
  const steps:BrandUsageRow[]=[];if(runId)for(let offset=0;;offset+=1000){const rows=checked(await admin.from('studio_agent_steps').select('role,status,cost_micro_usd,reserve_micro_usd,usage,maxOutputTokens:config_snapshot->maxOutputTokens,pricing:config_snapshot->pricing').eq('tenant_id',tenant).eq('run_id',runId).order('created_at',{ascending:false}).order('id').range(offset,offset+999))??[];steps.push(...rows as BrandUsageRow[]);if(rows.length<1000)break;}
- const materials=await materialRoleRows(admin,tenant,campaign.id);
- return json({schemaReady:true,workspaceReady,updatesReady,submission,materials,usage:run?brandWorkspaceMetrics(run,steps):null,fields:brandFields.map(([key,label,merge])=>({key,label,merge,count:counts.find((c:{field:string})=>c.field===key)?.count??0,kept:counts.find((c:{field:string})=>c.field===key)?.kept??0,unreviewed:counts.find((c:{field:string})=>c.field===key)?.unreviewed,rejected:counts.find((c:{field:string})=>c.field===key)?.rejected})),analyses,brandSource:null,brandOptions,files:files.map(f=>({...f,status:f.status==='completed'||f.status==='skipped'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status==='active'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status??f.status})),run});
+ const materials=await materialRoleRows(campaign.id),byId=new Map(materials.map(m=>[m.id,{file:m.filename,role:m.role}]));
+ const choiceRows=checked(await admin.from('studio_brand_findings').select('id,field,value,edited_value,decision,version,material_id').eq('tenant_id',tenant).eq('campaign_id',campaign.id).in('field',[...singleChoiceFields]).limit(2000))??[];
+ const decisions=brandDecisions(choiceRows,id=>byId.get(id));
+ return json({schemaReady:true,workspaceReady,updatesReady,submission,materials,decisions,usage:run?brandWorkspaceMetrics(run,steps):null,fields:brandFields.map(([key,label,merge])=>({key,label,merge,count:counts.find((c:{field:string})=>c.field===key)?.count??0,kept:counts.find((c:{field:string})=>c.field===key)?.kept??0,unreviewed:counts.find((c:{field:string})=>c.field===key)?.unreviewed,rejected:counts.find((c:{field:string})=>c.field===key)?.rejected})),analyses,brandSource:null,brandOptions,files:files.map(f=>({...f,status:f.status==='completed'||f.status==='skipped'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status==='active'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status??f.status})),run});
 });}
 export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/brand-fields'>){return api(async()=>{
  const campaign=await campaignRecord((await ctx.params).id),{admin,tenant,actorId}=await studioContext(),input=await body(request,commands,1000000);
@@ -109,11 +114,3 @@ async function brandSourceOptions(admin:Awaited<ReturnType<typeof studioContext>
  return (rows.data??[]).filter(r=>!r.brand_source_campaign_id).map(r=>({id:r.id as string,name:r.name as string,brand:r.brand as string}));
 }
 
-/** Every ready file of this brand with its role: the AD's choice when made, otherwise the application's guess. */
-async function materialRoleRows(admin:Awaited<ReturnType<typeof studioContext>>['admin'],tenant:string,campaignId:string){
- const base='id,filename,relative_path,mime,kind:extraction->>kind,metadata:extraction->metadata';
- let rows=await admin.from('studio_brand_materials').select(`${base},role`).eq('tenant_id',tenant).eq('campaign_id',campaignId).eq('state','ready').order('relative_path').limit(500);
- if(rows.error)rows=await admin.from('studio_brand_materials').select(base).eq('tenant_id',tenant).eq('campaign_id',campaignId).eq('state','ready').order('relative_path').limit(500) as typeof rows;
- if(rows.error)return [];
- return (rows.data??[]).map(r=>{const row=r as unknown as {id:string;filename:string;relative_path:string;mime:string;kind:string|null;metadata:Record<string,unknown>|null;role?:string|null};const role=effectiveMaterialRole({filename:row.filename,relative_path:row.relative_path,mime:row.mime,extraction:{kind:row.kind??undefined,metadata:row.metadata??undefined},role:row.role});return {id:row.id,filename:row.filename,path:row.relative_path,mime:row.mime,...role};});
-}

@@ -15,9 +15,10 @@ export async function supplementRunBrand(control:Pick<GuidedRunControl,'campaign
  const {admin,tenant}=await studioContext();const book=await submittedBrandbook(control.campaign_id,control.brandbook_id);if(!book)return draft;
  const c1=checked(await admin.from('studio_c1_checkpoints').select('id,brief_text').eq('tenant_id',tenant).eq('id',control.c1_id).maybeSingle());if(!c1)return draft;
  const brief=JSON.parse(c1.brief_text).questionnaire;
- try{return importBrandbookToA1(draft,book,await submittedBrandbookItems(control.campaign_id,book),{id:c1.id,immutables:brief?.immutables,sourceAssetIds:Array.isArray(brief?.sourceAssetIds)?brief.sourceAssetIds:[]},randomUUID);}catch{return draft;}
+ try{return importBrandbookToA1(draft,book,await submittedBrandbookItems(control.campaign_id,book),{id:c1.id,immutables:brief?.immutables,sourceAssetIds:Array.isArray(brief?.sourceAssetIds)?brief.sourceAssetIds:[]},randomUUID,await brandRoleOf(control.campaign_id));}catch{return draft;}
 }
 import type {GuidedRunControl} from '@/packages/contracts/guided-run';
+import {brandRoleOf} from './brand-roles';
 const stableId=(value:string)=>{const h=createHash('sha256').update(value).digest('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-8${h.slice(17,20)}-${h.slice(20,32)}`;};
 export function guidedDbError(error:{code?:string;message:string}|null){
  if(!error)return;

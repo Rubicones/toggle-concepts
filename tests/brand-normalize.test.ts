@@ -22,3 +22,11 @@ test('a logo drawn in currentColor gets the same drawing for dark and light grou
  assert.equal(logoInkVariants('<svg><path fill="#000"/></svg>',ink),null);
  assert.deepEqual(inkColours(['#dfff00']),{light:'#FFFFFF',dark:'#111111'},'fallback inks when the palette has none');
 });
+
+test('token colours in oklch and rgb become hex values',async()=>{
+ const {cssColorToHex}=await import('../packages/brand/normalize');
+ assert.equal(cssColorToHex('oklch(0 0 0)'),'#000000');assert.equal(cssColorToHex('oklch(1 0 0)'),'#FFFFFF');
+ assert.equal(cssColorToHex('oklch(0.93 0 0)'),'#E8E8E8');
+ const lime=cssColorToHex('oklch(0.93 0.21 118)')!;assert.match(lime,/^#[0-9A-F]{6}$/);assert.ok(parseInt(lime.slice(1,3),16)>150&&parseInt(lime.slice(3,5),16)>200&&parseInt(lime.slice(5,7),16)<100,lime);
+ assert.equal(cssColorToHex('rgb(13, 13, 13)'),'#0D0D0D');assert.equal(cssColorToHex('#dff'),'#DDFFFF');assert.equal(cssColorToHex('lime'),null);
+});
