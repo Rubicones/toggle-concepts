@@ -41,10 +41,12 @@ export function readDesign(value:unknown,input:DirectionInput):Design{
   if(input.brief.imageMethodsVersion!==1){delete r.sketch;delete r.edit;delete r.extend;continue;}
   const validBox=(b?:number[])=>!b||b[0]<b[2]&&b[1]<b[3];
   if(r.edit&&r.extend)throw new Error('IMAGE_METHOD_CONFLICT: use either edit or extend for one picture.');
-  if((r.edit||r.extend)&&r.sketch)throw new Error('IMAGE_METHOD_CONFLICT: a sketch guides a fresh picture, not an edit or extension.');
-  if((r.edit||r.extend)&&r.referenceAssetIds.length)throw new Error('IMAGE_METHOD_REFERENCES: an edit or extension uses only its source picture; list no other references.');
-  if(r.sketch&&r.referenceAssetIds.length>2)throw new Error('IMAGE_METHOD_REFERENCES: a sketch leaves room for at most two other references.');
-  if(!validBox(r.edit?.region)||r.sketch?.shapes.some(s=>!validBox(s.box)))throw new Error('IMAGE_METHOD_BOX_INVALID: boxes are [x0,y0,x1,y1] fractions with x0<x1 and y0<y1.');
+  // An optional helper that does not fit is dropped instead of discarding a complete paid answer: the sketch is only a
+  // composition guide, while references carry identity, and an edit or extension already uses its own source picture.
+  if((r.edit||r.extend)&&r.sketch)delete r.sketch;
+  if((r.edit||r.extend)&&r.referenceAssetIds.length)r.referenceAssetIds=[];
+  if(r.sketch&&(r.referenceAssetIds.length>2||r.sketch.shapes.some(s=>!validBox(s.box))))delete r.sketch;
+  if(!validBox(r.edit?.region))throw new Error('IMAGE_METHOD_BOX_INVALID: boxes are [x0,y0,x1,y1] fractions with x0<x1 and y0<y1.');
   const from=r.edit?.from??r.extend?.from;if(from&&(from===r.id||!input.resourceIds.includes(from)))throw new Error('IMAGE_METHOD_SOURCE: edit or extend an earlier picture by its issued id into a different issued id.');
  }
  const knownScenes=issuedScenes(input);

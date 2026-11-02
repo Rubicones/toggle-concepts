@@ -31,3 +31,18 @@ test('answers saved by the earlier rejections are recovered without a new paid r
  let calls=0;await designDirection({input,state,approvedRequests:2,perStillMicroUsd:1,call:async()=>{calls++;return {text:answer};},ready:async()=>{},save:async()=>{}});
  assert.equal(calls,0);assert.ok(state.design);
 });
+
+test('an optional sketch that does not fit is dropped instead of rejecting the whole paid answer (IMAGE_METHOD_REFERENCES case)',async()=>{
+ const {readDesign}=await import('../packages/director/contract');
+ const assets=[1,2,3].map(n=>({id:`00000000-0000-4000-8000-00000000000${n}`,url:`r${n}.png`,thumbnail:`r${n}.png`,width:1024,height:1024,sha256:String(n).repeat(64),mime:'image/png',revisionId:`00000000-0000-4000-8000-00000000010${n}`}));
+ const withRefs={...input,assets:[...input.assets,...assets]} as typeof input,refs=assets.map(a=>a.id);
+ const heavy={...sketched,referenceAssetIds:refs};
+ const design=readDesign({...complete,resources:[heavy]},withRefs);
+ assert.equal(design.resources[0].sketch,undefined,'the sketch goes');assert.deepEqual(design.resources[0].referenceAssetIds,refs,'identity references stay');
+ const badBox=readDesign({...complete,resources:[{...sketched,sketch:{shapes:[{role:'subject',box:[0.8,0.2,0.1,0.9],tone:'mid'}]}}]},withRefs);
+ assert.equal(badBox.resources[0].sketch,undefined);
+ // A saved answer rejected for this reason is now recovered for free.
+ const state:WorkState={directorFeedback:[JSON.stringify({savedOutput:JSON.stringify({...complete,resources:[heavy]}),error:'IMAGE_METHOD_REFERENCES: a sketch leaves room for at most two other references.'})]};
+ let calls=0;await designDirection({input:withRefs,state,approvedRequests:2,perStillMicroUsd:1,call:async()=>{calls++;return {text:answer};},ready:async()=>{},save:async()=>{}});
+ assert.equal(calls,0);assert.ok(state.design);assert.equal(state.design!.resources[0].sketch,undefined);
+});

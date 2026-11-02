@@ -31,3 +31,10 @@
 - `npm run lint`: pass.
 - `node --import tsx --test tests/director-design-methods.test.ts`: 2/2 pass.
 - `npm test`: only the same 14 pre-existing environmental failures as the baseline (diffed by name).
+
+## Addendum (2026-11-02): an unfitting optional sketch no longer discards the answer
+
+- **Evidence:** a complete director answer (about 13k chars) was rejected with `IMAGE_METHOD_REFERENCES: a sketch leaves room for at most two other references`. The second attempt then did not fit the remaining input allowance (`ROLE_ALLOWANCE_EXHAUSTED`), so the direction stopped.
+- **Fix (`packages/director/contract.ts`):** an optional sketch that does not fit is dropped instead of failing the answer. This covers more than two references, invalid boxes, and a sketch combined with an edit or extension. References from an edit or extension are dropped too, because those use only their source picture. Identity references stay; edit + extend together and an invalid edit region still fail.
+- **Effect:** a saved answer rejected for these reasons is recovered free on the next continue (`recoverSavedDesign`).
+- **Tests:** `tests/director-design-methods.test.ts`, owner's case plus free recovery. The full suite shows only the 14 pre-existing failures.
