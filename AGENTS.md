@@ -109,6 +109,13 @@ Use this sequence to solve a creative problem:
 8. Capture the exact reviewed view and a concrete observation, desired result and affected scope. Preserve prior working source and images while a revision is prepared.
 9. Review the changed work. Do not use “build passed” as a substitute for the AD's visual judgment or invent a paid critic as an automatic fix.
 
+### Brand character and campaign feeling (brief v2)
+
+- The brief may carry optional `feel` answers and sharper campaign fields (`benefit`, `proof`, `difference`, `audienceTension`, `audienceAwareness`, `goal`, `platforms`, `sourceAssetRoles`, `synthesisChoices`) — `packages/contracts/brief-feel.ts`, `packages/contracts/brief.ts`. Every single choice accepts `suggest`; choices are preferences and evidence, never templates.
+- `compileFeelingBrief` turns those answers plus the accepted kit's voice/imagery/motion rules into one compact feeling brief (≤ 1,800 characters). Planning roles receive it as `campaignContext.feelingBrief`; the draft director and coder receive it as `creativeHandoff.intent.feeling` (only for briefs that have `feel`); the live critic receives it in its context. The brand kit wins over every choice.
+- The brand-kit intake may propose `voice.character` (we-are/we-are-not pairs and six character axes with evidence) and `voice.samples` (verbatim brand lines with sources); the AD accepts them like any rule.
+- Planning contracts (`planningTransportTask`) read the brand and the feeling brief first, honour "how far from the usual style" and the live/digital imagery choice, and never list stock ad formats or another brand's copy as examples.
+
 ### Source artwork versus identity evidence
 
 A product photo, video crop or UI screenshot may be a reference to reconstruct, not finished advertising artwork. Where accepted permissions allow reconstruction, the director should request a fresh polished still using actual reference pixels and protected identity details. Keep official logos exact and marketing text separately editable. Do not invent interfaces, people, product features or hidden details. Missing evidence remains unknown.

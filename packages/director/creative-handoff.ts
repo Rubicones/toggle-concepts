@@ -1,3 +1,4 @@
+import {compileFeelingBrief} from '../contracts/brief-feel';
 import {createHash} from 'node:crypto';
 import {readKnowledge,resolveReference} from '../agents/knowledge';
 import {planningObject,planningField,planningNodes,type PlanningDirection,type PlanningJob} from './planning';
@@ -5,7 +6,7 @@ import type {DirectionInput} from './types';
 import {squareFirstDraft} from './construction';
 import {independentResourceBindings} from './resources';
 const hash=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
-export type CreativeHandoff={version:1;owner:'draft-director';revision:string;intent:{goal:unknown;audience:unknown;adNotes:unknown;direction:{id:string;name?:string;premise?:unknown}};strategy:unknown;visual:unknown;sources:{id:string;role:string;hash:string;contentHash:string;raw:unknown}[];referenceAssetIds:string[];issues:string[];actions:string[]};
+export type CreativeHandoff={version:1;owner:'draft-director';revision:string;intent:{goal:unknown;audience:unknown;adNotes:unknown;feeling?:string;direction:{id:string;name?:string;premise?:unknown}};strategy:unknown;visual:unknown;sources:{id:string;role:string;hash:string;contentHash:string;raw:unknown}[];referenceAssetIds:string[];issues:string[];actions:string[]};
 const content=(v:unknown)=>readKnowledge(v).content;
 function scopeEvidence(raw:unknown,direction:PlanningDirection,directions:PlanningDirection[],source:'visual'|'strategy'='visual'){
  const entities=directions.map(d=>({id:d.id,aliases:d.aliases})),fragments:{path:string;evidence:unknown}[]=[];let matched=0,foreign=0,unknown=0;
@@ -50,7 +51,9 @@ function deliverable(raw:unknown){
 export function buildCreativeHandoff(args:{brief:Record<string,unknown>;direction:PlanningDirection;directions:PlanningDirection[];script:PlanningJob;visual:PlanningJob;strategy?:PlanningJob;input:DirectionInput}):CreativeHandoff{
  const {direction}=args,visual=scopeEvidence(deliverable(args.visual.output),direction,args.directions),strategy=args.strategy?scopeEvidence(deliverable(args.strategy.output),direction,args.directions,'strategy'):undefined;
  const sources=[args.script,args.visual,...(args.strategy?[args.strategy]:[])].filter((job,index,all)=>all.findIndex(j=>j.id===job.id)===index).map(j=>({id:j.id,role:j.job_key,hash:j.output_hash??hash(j.output),contentHash:hash(j.output),raw:j.output}));
- const intent={goal:args.brief.objective??args.brief.goal??null,audience:args.brief.audience??null,adNotes:args.brief.variationNotes??null,direction:{id:direction.id,...(typeof planningField(direction.value,['name','title'])==='string'?{name:String(planningField(direction.value,['name','title']))}:{}),premise:planningField(direction.value,['premise','idea','concept','summary'])}};
+ // Briefs with Feel/Look answers carry the same compact feeling brief the planning roles saw (with the accepted brand voice).
+ const feeling=args.brief.feel?compileFeelingBrief(args.brief,args.input.brand.tokens as Record<string,unknown>)?.text:undefined;
+ const intent={goal:args.brief.objective??args.brief.goal??null,audience:args.brief.audience??null,adNotes:args.brief.variationNotes??null,...(feeling?{feeling}:{}),direction:{id:direction.id,...(typeof planningField(direction.value,['name','title'])==='string'?{name:String(planningField(direction.value,['name','title']))}:{}),premise:planningField(direction.value,['premise','idea','concept','summary'])}};
  const assetEntities=args.input.assets.filter(a=>a.mime.startsWith('image/')).map(a=>({id:a.id,aliases:[a.url,a.sha256,...(args.input.materialMemory?.materials.find(m=>m.id===a.id)?.aliases??[])]})),references=new Set<string>();
  for(const passage of readKnowledge(visual.scoped).passages){const found=resolveReference(passage.text,assetEntities);if(found.status==='resolved')references.add(found.id);}
  const actions:string[]=[],pack=(source:typeof visual,role:string)=>{

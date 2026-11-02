@@ -183,7 +183,7 @@ export async function executeDirector(claim:DirectorClaim,device:string){
     const criticConfig=snapshot.models.critic,canReview=estimate.roles.critic.requests>0&&!!criticConfig?.vision;
     return runLiveReview({inspect,repair,repairBlocked,criticRounds:canReview?Math.min(2,estimate.roles.critic.requests):0,state:reviewState,
      critic:canReview?async(round,context,shots)=>{await controls();return (await call('critic','Review these live draft views and measurements.',liveCriticInstructions,liveCriticSchema,context,{review:'live',round},await reviewSheet(folder,shots))).text;}:undefined,
-     context:()=>({concept:design.designDocument.slice(0,2500),keyFrames:design.keyFrames,resources:design.resources.map(r=>({id:r.id,scene:r.scene,purpose:r.purpose,proxy:r.proxy})),formats:input.formats.map(f=>({id:f.id,width:f.width,height:f.height})),brandTokens:input.brand.tokens}),
+     context:()=>({concept:design.designDocument.slice(0,2500),...(input.creativeHandoff?.intent.feeling?{feeling:input.creativeHandoff.intent.feeling}:{}),keyFrames:design.keyFrames,resources:design.resources.map(r=>({id:r.id,scene:r.scene,purpose:r.purpose,proxy:r.proxy})),formats:input.formats.map(f=>({id:f.id,width:f.width,height:f.height})),brandTokens:input.brand.tokens}),
      save:async next=>{state.liveReview=next;await save();},
      emit:async(step,message,detail,file)=>{await events.emit(step,{stepId:step,kind:'review',status:'done',costMicroUsd:0,message,detail},file);}});
    };
