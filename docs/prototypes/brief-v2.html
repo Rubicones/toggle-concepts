@@ -34,6 +34,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .card b{font-size:13px}.card span{font-size:11.5px;color:var(--muted);line-height:1.35}
 .cards.compact{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}.cards.compact .card{padding:6px;gap:4px;border-radius:12px}.cards.compact .card b{font-size:12px}.cards.compact .card span{font-size:10.5px}
 .qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.seg[hidden]{display:none}summary .hint{font-weight:400;margin-left:6px}
+.siterow{display:flex;gap:8px}.siterow button{flex:none;border:0;border-radius:10px;background:var(--pick);color:#fff;padding:0 16px;font:inherit;font-weight:600;cursor:pointer}.fromsite{border-color:#9EC3DA!important;background:#F2F8FC!important}
+.cards.packs{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.pack{padding:14px}.pack span{font-size:12px}
 .card .tag{position:absolute;top:12px;left:12px;font-size:10px;font-weight:700;background:var(--pick);color:#fff;border-radius:999px;padding:2px 8px;display:none}
 .card[aria-pressed="true"] .tag{display:block}
 .card.sugcard{border-style:dashed;align-content:center;justify-items:start}.card.sugcard .ph{display:grid;place-items:center;font-size:12px;color:var(--muted);background:var(--soft)}
@@ -56,7 +58,7 @@ details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bar i{transition:none}}
 </style></head><body>
 <div class="top"><div class="in">
- <div class="title"><h1>New campaign brief</h1><span id="eta">About 8 minutes · everything saves as you go · anything you skip, we suggest</span></div>
+ <div class="title"><h1>New campaign brief</h1><span id="eta">About 6 minutes · everything saves as you go · anything you skip, we suggest</span></div>
  <div class="bar" aria-hidden="true"><i id="progress"></i></div>
  <nav class="steps" aria-label="Brief steps"><a href="#s1"><b>1</b> Campaign</a><a href="#s2"><b>2</b> Feel &amp; look</a><a href="#s3"><b>3</b> What to make</a><a href="#s4"><b>4</b> Materials &amp; rules</a></nav>
 </div></div>
@@ -64,13 +66,14 @@ details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:
 <p class="reviewnote">Review prototype. The dark panel at the bottom shows what the creative agents receive from these answers; it is here for review only and is not shown to clients in the final questionnaire. Mood pictures were generated for this prototype.</p>
 
 <section id="s1"><header><h2>1 · The campaign</h2><span>≈ 3 min</span></header>
+<div class="q site"><label class="lab" for="site">Your website or app store page <span class="hint">we read it and pre-fill the answers below; you check and edit</span></label><div class="siterow"><input id="site" type="url" placeholder="https://"><button type="button" id="fillSite">Fill from site</button></div></div>
 <div class="grid2">
- <div class="q"><label class="lab req" for="product">What are we advertising?</label><textarea id="product" placeholder="The product or feature, in plain words"></textarea></div>
- <div class="q"><label class="lab req" for="benefit">The one benefit, in a sentence</label><textarea id="benefit" data-key="benefit" placeholder="What changes for the viewer"></textarea></div>
+ <div class="q"><label class="lab req" for="product">What are we advertising?</label><textarea id="product" data-site="Sonicdesk, a desktop app that keeps every take and version of your videos" placeholder="The product or feature, in plain words"></textarea></div>
+ <div class="q"><label class="lab req" for="benefit">The one benefit, in a sentence</label><textarea id="benefit" data-key="benefit" data-site="Find your best take in seconds" placeholder="What changes for the viewer"></textarea></div>
 </div>
 <div class="q"><span class="lab req">What should the ad achieve?</span><div class="chips" data-single="goal"></div></div>
 <div class="grid2">
- <div class="q"><label class="lab req" for="audience">Who is it for?</label><input id="audience" type="text" placeholder="e.g. solo creators who shoot every day"></div>
+ <div class="q"><label class="lab req" for="audience">Who is it for?</label><input id="audience" type="text" data-site="Solo video creators and small studios who shoot every day" placeholder="e.g. solo creators who shoot every day"></div>
  <div class="q"><label class="lab req" for="markets">Where will it run?</label><input id="markets" type="text" placeholder="UK, Germany…"></div>
  <div class="q"><label class="lab req" for="offer">Offer</label><input id="offer" type="text" placeholder="Free 14-day trial…"></div>
  <div class="q"><label class="lab req" for="cta">Call to action</label><input id="cta" type="text" placeholder="Try it free"><div class="chips" id="ctaPicks"></div></div>
@@ -90,12 +93,12 @@ details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:
 <div class="q"><span class="lab">Live photography or digital imagery?</span><div class="chips" data-single="medium"></div></div>
 <div class="q"><div class="qhead"><span class="lab">What should people feel? <span class="hint">one main, up to two more</span></span><div class="seg" id="exSeg" role="group" aria-label="Example pictures"><button type="button" id="exLive" aria-pressed="true">Live</button><button type="button" id="exDigital" aria-pressed="false">Digital</button></div></div>
 <div class="cards compact" id="feelCards"></div></div>
-<div class="q"><span class="lab">The world of the pictures <span class="hint">up to three</span></span><div class="cards compact" id="worldCards"></div></div>
 <div class="grid2">
  <div class="q"><span class="lab">How far from your usual style?</span><div class="chips" data-single="stretch"></div></div>
  <div class="q"><span class="lab">Definitely not</span><div class="chips" data-multi="avoid"></div></div>
 </div>
-<details><summary>Fine-tune the look <span class="hint">optional · brand character, light, colour, people, references</span></summary><div style="display:grid;gap:18px;margin-top:14px">
+<details><summary>Fine-tune the look <span class="hint">optional · world of the pictures, brand character, light, colour, people, references</span></summary><div style="display:grid;gap:18px;margin-top:14px">
+<div class="q"><span class="lab">The world of the pictures <span class="hint">up to three</span></span><div class="cards compact" id="worldCards"></div></div>
 <div class="q"><span class="lab">Brand character for this campaign <span class="hint">orange mark = how your brand usually feels (from the brand kit)</span></span><div class="sliders" id="sliders"></div></div>
 <div class="q"><span class="lab">Light <span class="hint">up to two</span></span><div class="cards compact" id="lightCards"></div></div>
 <div class="grid2">
@@ -116,7 +119,9 @@ details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:
 </div></details>
 </section>
 
-<section id="s3"><header><h2>3 · What to make</h2><span>≈ 2 min</span></header>
+<section id="s3"><header><h2>3 · What to make</h2><span>≈ 1 min</span></header>
+<div class="q"><span class="lab">Pick a pack <span class="hint">you can change everything below</span></span><div class="cards packs" id="packs"></div></div>
+<details><summary>Customise the pack <span class="hint">languages, lengths, hooks, formats</span></summary><div style="display:grid;gap:16px;margin-top:12px">
 <div class="grid2">
  <div class="q"><label class="lab" for="locales">Languages <span class="hint">comma separated, e.g. en-GB, de-DE</span></label><input id="locales" type="text" value="en-GB"></div>
  <div class="q"><label class="lab" for="lengths">Lengths, seconds <span class="hint">e.g. 15, 6</span></label><input id="lengths" type="text" value="15"></div>
@@ -125,17 +130,17 @@ details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:
 </div>
 <div class="q"><span class="lab">Formats</span><div class="formats" id="formats"></div></div>
 <div class="q"><span class="lab">Which videos</span><div class="chips" data-single="combos"></div></div>
-<div class="q"><label class="lab" for="notes">Anything else for the creative team? <span class="hint">optional</span></label><textarea id="notes" placeholder="Ideas, must-haves, what to avoid…"></textarea></div>
-<details><summary>More options</summary><div class="grid2" style="margin-top:12px">
+<div class="grid2" style="margin-top:12px">
  <div class="q"><label class="lab" for="finals">Final concepts to produce</label><select id="finals"><option>1</option><option>2</option><option>3</option></select></div>
  <div class="q"><label class="lab" for="offers">Offer variants</label><input id="offers" type="text" placeholder="Comma separated"></div>
  <div class="q"><label class="lab" for="pl">Preview language</label><input id="pl" type="text" value="en-GB"></div>
  <div class="q"><label class="lab" for="pf">Preview format</label><select id="pf"><option>9:16 · Stories</option><option>4:5 · Feed</option><option>1:1 · Square</option><option>16:9 · Wide</option></select></div>
-</div></details>
+</div></div></details>
+<div class="q"><label class="lab" for="notes">Anything else for the creative team? <span class="hint">optional</span></label><textarea id="notes" placeholder="Ideas, must-haves, what to avoid…"></textarea></div>
 </section>
 
 <section id="s4"><header><h2>4 · Materials &amp; rules</h2><span>≈ 2 min</span></header>
-<div class="q"><span class="lab req">Images for the ads <span class="hint">at least your logo and one product or app picture; brandbook files are reused automatically</span></span>
+<div class="q"><span class="lab req">Images for the ads <span class="hint">at least your logo and one product or app picture; brandbook files are reused automatically; your product and interface are always built from these, never invented</span></span>
 <div class="slots"><div class="slot"><b>Logo</b><span class="hint">SVG if you have it</span></div><div class="slot"><b>Product</b><span class="hint">packshots, devices</span></div><div class="slot"><b>App screenshots</b><span class="hint">we rebuild them crisply, never invent</span></div><div class="slot"><b>Brand photos or renders</b><span class="hint">your usual look</span></div><div class="slot"><b>Past ads that worked</b><span class="hint">optional</span></div><div class="slot"><b>Past ads that didn't</b><span class="hint">optional</span></div></div></div>
 <div class="grid2">
  <div class="q"><label class="lab req" for="name">Your name</label><input id="name" type="text"></div>
@@ -143,7 +148,6 @@ details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:
  <div class="q"><label class="lab req" for="date">Delivery date</label><input id="date" type="date" value="2026-11-16"></div>
  <div class="q"><label class="lab req" for="never">What must never change</label><textarea id="never">Product name, logo, app interface and product shape stay exactly as supplied.</textarea></div>
 </div>
-<div class="q"><span class="lab req">What AI may create</span><div class="chips" data-multi="synthesis"></div><span class="hint">Your product and its interface are never invented; they are always built from what you upload.</span></div>
 <label class="check"><input type="checkbox" id="perm"> I have permission to use the uploaded images, logos, fonts and brand materials in these ads.</label>
 <details><summary>Claims, prices and rights notes (optional)</summary><div class="grid2" style="margin-top:12px"><div class="q"><label class="lab" for="claim">A claim we may use</label><input id="claim" type="text"></div><div class="q"><label class="lab" for="claimSource">Its source</label><input id="claimSource" type="text"></div><div class="q"><label class="lab" for="price">Price to show</label><input id="price" type="text"></div><div class="q"><label class="lab" for="rights">Rights notes</label><input id="rights" type="text"></div></div></details>
 <div class="submit"><span class="hint" id="filled"></span><button type="button">Send brief</button></div>
@@ -163,7 +167,8 @@ const NOSUGGEST=new Set(["combos"]);
 const MULTI={platforms:[["meta","Instagram & Facebook"],["tiktok","TikTok"],["youtube","YouTube"],["google","Google Ads"],["app-stores","App stores"],["programmatic","Display"],["other","Other"]],avoid:[["stock","Stock look"],["ai-look","AI-looking images"],["gloomy","Gloomy"],["shouty","Shouty retail"],["corporate","Corporate clichés"],["childish","Childish"],["glossy","Glossy"],["cluttered","Cluttered"],["pompous","Pompous"]],likeAspects:[["colour","Colour"],["light","Light"],["composition","Composition"],["type","Type"],["mood","Mood"],["product-shot","Product shot"],["people","People"],["rhythm","Rhythm"]],dislikeAspects:[["colour","Colour"],["light","Light"],["composition","Composition"],["type","Type"],["mood","Mood"],["product-shot","Product shot"],["people","People"],["rhythm","Rhythm"]],synthesis:[["backgrounds","Backgrounds & environments"],["abstract-light","Abstract shapes & light"],["people-hands","People: hands only"],["people","People"],["product-from-reference","Product scenes from your references"]]};
 const FORMATS=[["vertical","9:16 · Stories",20,34],["portrait","4:5 · Feed",28,34],["square","1:1 · Square",32,32],["wide","16:9 · Wide",44,25]];
 const CTAS=["Try it free","Sign up","Download","Shop now","Learn more"];
-const S={single:{combos:"all"},multi:{synthesis:["backgrounds","abstract-light"]},feel:[],world:[],light:[],axes:Object.fromEntries(AXES.map(a=>[a[0],a[3]])),formats:["vertical"],ex:"live"};
+const PACKS=[['standard','Standard pack','9:16, 4:5 and 1:1 · 15 s · one hook, one story · your main language',{formats:['vertical','portrait','square'],lengths:'15',hooks:'1',stories:'1'}],['test','Hook test','9:16 · 6 s and 15 s · three hooks to compare',{formats:['vertical'],lengths:'6, 15',hooks:'3',stories:'1'}],['wide','Everywhere','All four formats · 6 s and 15 s · two hooks',{formats:['vertical','portrait','square','wide'],lengths:'6, 15',hooks:'2',stories:'1'}]];
+const S={pack:'standard',single:{combos:"all"},multi:{synthesis:["backgrounds","abstract-light"]},feel:[],world:[],light:[],axes:Object.fromEntries(AXES.map(a=>[a[0],a[3]])),formats:['vertical','portrait','square'],ex:"live"};
 const el=(t,a={},c=[])=>{const e=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==='text')e.textContent=v;else if(k.startsWith('on'))e[k]=v;else e.setAttribute(k,v);}c.forEach(x=>e.append(x));return e;};
 const pic=(src,alt)=>{const i=el('img',{src,alt,loading:'eager'});i.onerror=()=>{const d=el('div',{class:'ph'});i.replaceWith(d);};return i;};
 function chipsSingle(host,key){const list=SINGLE[key],cur=S.single[key]??"suggest";host.replaceChildren(...list.map(([id,l])=>el('button',{type:'button',class:'chip','aria-pressed':String(cur===id),text:l,onclick:()=>{S.single[key]=id;render();}})),...(NOSUGGEST.has(key)?[]:[el('button',{type:'button',class:'chip sug','aria-pressed':String(cur==='suggest'),text:'Suggest',onclick:()=>{S.single[key]='suggest';render();}})]));}
@@ -177,6 +182,7 @@ function render(){
  cardSet(document.getElementById('lightCards'),LIGHT,'light',2,(id,i)=>IMG.light[i]);
  document.getElementById('exLive').setAttribute('aria-pressed',String(S.ex==='live'));document.getElementById('exDigital').setAttribute('aria-pressed',String(S.ex==='digital'));
  document.getElementById('sliders').replaceChildren(...AXES.map(([id,a,b,base])=>{const r=el('input',{type:'range',min:'1',max:'5',step:'1',value:String(S.axes[id]),'aria-label':`${a} to ${b}`,id:'ax-'+id});r.oninput=()=>{S.axes[id]=+r.value;render();};const m=el('div',{class:'brandmark'});m.style.left=`calc(${(base-1)/4*100}% + ${8-(base-1)/4*16}px)`;const d=S.axes[id]-base;return el('div',{class:'sl'},[el('div',{class:'ends'},[el('span',{text:a}),el('span',{text:b})]),el('div',{class:'track'},[m,r]),el('div',{class:'shift',text:d?`This campaign: a step towards ${d>0?b:a}`:''})]);}));
+ document.getElementById('packs').replaceChildren(...PACKS.map(([id,l,d,cfg])=>el('button',{type:'button',class:'card pack','aria-pressed':String(S.pack===id),onclick:()=>{S.pack=id;S.formats=[...cfg.formats];document.getElementById('lengths').value=cfg.lengths;document.getElementById('hooks').value=cfg.hooks;document.getElementById('stories').value=cfg.stories;render();}},[el('span',{class:'tag',text:'Chosen'}),el('b',{text:l}),el('span',{text:d})])));
  document.getElementById('formats').replaceChildren(...FORMATS.map(([id,l,w,h])=>{const on=S.formats.includes(id),i=el('i');i.style.width=w+'px';i.style.height=h+'px';return el('button',{type:'button',class:'fmt','aria-pressed':String(on),onclick:()=>{S.formats=on?S.formats.filter(x=>x!==id):[...S.formats,id];render();}},[i,el('span',{text:l})]);}));
  document.getElementById('ctaPicks').replaceChildren(...CTAS.map(c=>el('button',{type:'button',class:'chip',text:c,onclick:()=>{document.getElementById('cta').value=c;update();}})));
  update();
@@ -198,6 +204,7 @@ function update(){
 document.querySelectorAll('input,textarea').forEach(e=>e.addEventListener('input',update));
 document.getElementById('exLive').onclick=()=>{S.ex='live';render();};document.getElementById('exDigital').onclick=()=>{S.ex='digital';render();};
 const qp=new URLSearchParams(location.search);if(qp.get('medium'))S.single.medium=qp.get('medium');if(qp.get('open'))document.querySelectorAll('details').forEach(d=>d.open=true);
+document.getElementById('fillSite').onclick=()=>{document.querySelectorAll('[data-site]').forEach(f=>{if(!f.value){f.value=f.dataset.site;f.classList.add('fromsite');f.addEventListener('input',()=>f.classList.remove('fromsite'),{once:true});}});update();};
 document.getElementById('toggleAgent').onclick=e=>{const p=document.getElementById('brief');p.hidden=!p.hidden;e.target.textContent=p.hidden?'Show':'Hide';};
 render();
 </script></body></html>
