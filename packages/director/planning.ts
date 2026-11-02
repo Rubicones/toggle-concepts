@@ -81,3 +81,25 @@ export function planningScene(value:unknown):Record<string,unknown>{
  const o=planningObject(value),timing=planningField(o,['timing','time'])??o;
  return {...o,id:planningField(o,['sceneId','shotId','beatId','beatKey','sceneKey','slotId','slot','id','key']),start:planningField(timing,['start','startTime','startTimeSeconds','startSeconds','from']),end:planningField(timing,['end','endTime','endTimeSeconds','endSeconds','to']),duration:planningField(timing,['duration','durationSeconds']),onScreenCopy:planningField(o,['onScreenCopy','onScreenText','onScreen','headline','caption','super','overlayText','displayCopy','copy','text']),visualNotes:planningField(o,['visualNotes','visual','visuals','description','shot','scene','action','staging','imagery','visualDescription']),motionNotes:planningField(o,['motionNotes','motion']),narration:planningField(o,['narration','voiceover'])};
 }
+
+/**
+ * Drafts are stills of every scene in every ordered length, but a shorter cut may leave out scenes, and localization
+ * then writes no copy for them. Such a scene reuses the approved copy of the same language, hook, beat order, offer and
+ * concept from the longest length that has it, so a draft never stops for copy that a shorter cut simply omits.
+ * Only scene slots are filled; a slot the shorter cut already has is never replaced.
+ */
+export function fillShorterCutScenes(rows:import('./inputs').ApprovedLocalization[],entries:LocalizationVariant[]){
+ const scene=(slot:string)=>/(?:^|[_ .-])(?:scene|beat|shot|onscreen)/i.test(slot)&&!/cta|offer|legal|disclaimer|narration|voice|audio|subtitle|sfx|music/i.test(slot);
+ const added:import('./inputs').ApprovedLocalization[]=[];
+ for(const e of entries){
+  const own=new Set(rows.filter(r=>r.locale===e.locale&&r.variantIds.includes(e.id)).map(r=>r.copySlot));
+  if(!own.size)continue;
+  const siblings=entries.filter(o=>o.id!==e.id&&o.locale===e.locale&&o.hook===e.hook&&o.beatSequence===e.beatSequence&&o.offer===e.offer&&o.conceptSlot===e.conceptSlot&&o.durationSeconds>e.durationSeconds).sort((a,b)=>b.durationSeconds-a.durationSeconds);
+  for(const sibling of siblings){
+   for(const r of rows.filter(r=>r.locale===e.locale&&r.variantIds.includes(sibling.id)&&scene(r.copySlot)&&!own.has(r.copySlot))){
+    own.add(r.copySlot);added.push({...r,variantIds:[e.id]});
+   }
+  }
+ }
+ return added.length?[...rows,...added]:rows;
+}
