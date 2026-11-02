@@ -374,7 +374,7 @@ function BriefEditor({
           {field("audienceTension", "What gets in their way today?", { multiline: true, placeholder: "The problem or habit the product solves (optional)" })}
           {field("markets", "Where will it run?", { placeholder: "UK, Germany…" })}
           {field("offer", "Offer", { multiline: true, placeholder: "Free 14-day trial…" })}
-          {field("cta", "Call to action", { placeholder: "Try it free" })}
+          {field("cta", "Call to action", { placeholder: "Try it free / Start your project", hint: "Several options? Separate them with /; each ad uses one." })}
           {field("destination", "Link the ad opens", { type: "url", placeholder: "https://" })}
         </div>
       </fieldset>

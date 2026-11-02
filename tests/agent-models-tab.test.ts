@@ -45,7 +45,7 @@ test('creative prompts teach a method, never example styles, and know the studio
  const {defaultAgentSettings:agents,AGENT_INSTRUCTION_VERSION:version}=await import('../packages/agents/defaults');
  const {staticDirectorPrompt}=await import('../packages/agents/prompts/director-v1');
  const {staticCoderInstructions}=await import('../packages/agents/prompts/static-coder');
- assert.equal(version,'2026-11-02.2');
+ assert.equal(version,'2026-11-02.3');
  const anchors=/App Screen|Still Life|color.block|colour.block|highlight strip|section rulers|high-density|phone mockup|split screens, colour fields|draw it natively/i;
  for(const role of ['strategy','script','visual-direction']){const text=agents.find(a=>a.role===role)!.instructions;assert.doesNotMatch(text,anchors,role);assert.match(text,/HOW TO INVENT/);assert.match(text,/GSAP/);assert.match(text,/Three\.js/);assert.ok(text.length<=12000,role);}
  assert.match(agents.find(a=>a.role==='visual-direction')!.instructions,/makingTechnique/);

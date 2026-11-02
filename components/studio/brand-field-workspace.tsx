@@ -369,6 +369,9 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
               <Download size={14} /> Download
             </a>
           )}
+          <a href={`/api/studio/campaigns/${campaignId}/brand-export`} download className="text-link" title="Everything the brandbook reading produced, as one JSON file">
+            <Download size={14} /> Export full JSON
+          </a>
           <Button disabled={busy || count === 0 || !data.workspaceReady || !data.updatesReady} onClick={() => void continueToBrief()}>
             Continue to questionnaire
             <ArrowRight size={15} />
