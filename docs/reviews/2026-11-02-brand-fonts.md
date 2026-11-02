@@ -48,3 +48,10 @@
 - `npm run lint`: pass.
 - `node --import tsx --test tests/google-fonts.test.ts`: 4/4 pass.
 - `npm test`: only the 14 pre-existing environmental failures (diffed by name).
+
+## Addendum: "unsupported Unicode escape sequence" at draft start
+
+- **Symptom:** the first draft start after Google Fonts arrived failed with Postgres `unsupported Unicode escape sequence`. The download itself worked.
+- **Cause:** font metadata stored the container tag as the first four bytes read as text. TrueType files start with `00 01 00 00`, so the tag held NUL characters, which Postgres JSON rejects. Supplied fonts had been WOFF2 (`wOF2`), so this had never shown up.
+- **Fix:** `fontContainer()` names TrueType `true`, keeps printable tags such as `wOF2`, `wOFF` and `OTTO`, and uses hex otherwise. Name-table strings are stripped of NUL. It is used both for downloaded fonts and for newly uploaded brand fonts (`apps/local-runner/extract-brand-file.ts`). Extensions are unchanged (`true` maps to `.ttf`).
+- **Tests:** container tags, and no NUL in the metadata of a real TTF fixture. The full suite shows only the 14 pre-existing failures.

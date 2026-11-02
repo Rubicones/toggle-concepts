@@ -42,3 +42,10 @@ test('a named family is downloaded once per weight, pinned by hash, and any fail
  const supplied=await googleFontMaterials(kit,[{id:'x',filename:'a',mime:'font/ttf',sha256:'s',objectKey:'k',metadata:{family:'Noto Sans',weight:400,weightRange:[100,900]}}],String,{fetch:fetcher,store});
  assert.equal(supplied.materials.length,0,'nothing is downloaded when the supplied files already cover the weights');
 });
+test('font metadata never contains a NUL character (Postgres JSON rejects it), TrueType files included',async()=>{
+ const {fontContainer}=await import('../packages/brand/font-metadata');
+ assert.equal(fontContainer(new Uint8Array([0,1,0,0,9])),'true');assert.equal(fontContainer(Buffer.from('wOF2abc')),'wOF2');assert.equal(fontContainer(Buffer.from('OTTOabc')),'OTTO');
+ assert.equal(fontContainer(new Uint8Array([0,0,0,1])),'00000001');
+ const {readdirSync}=await import('node:fs');const ttf=readdirSync('fixtures',{recursive:true}).map(String).find(f=>/\.ttf$/i.test(f));
+ if(ttf){const fontkit=await import('fontkit');const {fontMetadata}=await import('../packages/brand/font-metadata');const bytes=readFileSync(`fixtures/${ttf}`);const font=fontkit.create(bytes);if(!('fonts' in font))assert.doesNotMatch(JSON.stringify(fontMetadata(font as never,bytes)),/\\u0000/);}
+});
