@@ -12,3 +12,12 @@
 .suggest { border-style: dashed; }
 .badge { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .inline { display: grid; gap: 6px; max-width: 520px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.card { display: grid; gap: 6px; padding: 6px 6px 9px; border: 1px solid #dfe7eb; border-radius: 14px; background: #fff; color: var(--ink); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.card:hover:not(:disabled) { border-color: var(--ink); }
+.card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.card:disabled { opacity: 0.45; cursor: default; }
+.card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.picture { width: 100%; aspect-ratio: 1; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, #e9eef2, #d7e0e6); display: block; }
+.cardLabel { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 0 3px; }
+.fineTune { display: grid; gap: 22px; padding-top: 14px; }

@@ -16,7 +16,9 @@ test('earlier briefs stay valid and the new answers are optional',()=>{
 });
 
 test('every single choice offers suggest and the catalogue covers digital brands without live imagery',()=>{
- for(const key of ['stretch','medium','energy','colour','typeRole','productRole','people','textAmount','humour'] as const)assert.equal(briefFeelSchema.shape[key].parse(undefined),SUGGEST,key);
+ for(const key of ['stretch','medium','energy','colour','people','textAmount','humour'] as const)assert.equal(briefFeelSchema.shape[key].parse(undefined),SUGGEST,key);
+ for(const key of ['world','typeRole','productRole'] as const)assert.deepEqual(briefFeelSchema.shape[key].parse(undefined),[],`${key} is an open-to list, empty by default`);
+ assert.deepEqual(briefFeelSchema.shape.typeRole.parse('type-led'),['type-led'],'an older single answer reads as a one-item list');
  const worlds=lookOptions.world.map(w=>w.id);for(const id of ['motion-graphics','object-3d','product-interface','typography-led','data-diagrams'])assert.ok(worlds.includes(id as never),id);
  assert.equal(feelings.length,12);
  assert.doesNotMatch(JSON.stringify([feelings,lookOptions]),/[Ѐ-ӿ]/,'no Russian text in the client questionnaire');
@@ -27,7 +29,7 @@ test('the feeling brief is compact, explicit about suggest, and lets the brand k
  const tokens=brandTokensFromKit(kit);assert.equal(tokens['voice.tone'],'Direct, never decorative.');assert.equal(tokens['voice.character'],undefined);
  const brief=compileFeelingBrief({benefit:'Find your best take in seconds.',feel:{feelings:['creative-freedom','calm-confidence'],medium:'digital',stretch:'fresh',character:{volume:2},avoid:['stock'],likes:[{aspects:['light'],note:'soft studio glow'}]}},tokens)!;
  assert.match(brief.text,/Main feeling: Creative freedom\. Translate it into this brand's own look; it is not a recipe/);assert.doesNotMatch(brief.text,/sensory hints|soft warm light|asymmetry/,'no stock sensory recipe reaches the agents');assert.match(brief.text,/Also: Calm confidence/);
- assert.match(brief.text,/Client choices: imagery Made, not photographed/);assert.doesNotMatch(brief.text,/light suggest/,'unanswered choices are left to the agents, not listed');
+ assert.match(brief.text,/Boundaries \(hold these\): pictures made, not photographed/);assert.doesNotMatch(brief.text,/light suggest/,'unanswered choices are left to the agents, not listed');
  assert.match(brief.text,/one direction at the brand core, two step aside/);assert.match(brief.text,/Quiet–Loud 2\/5/);
  assert.match(brief.text,/Avoid: Stock look/);assert.match(brief.text,/liked for Light/);assert.match(brief.text,/benefit: Find your best take/);
  assert.match(brief.text,/Brand kit \(wins over every choice above\): voice.tone: Direct, never decorative\./);assert.match(brief.text,/voice.samples/);
@@ -62,6 +64,16 @@ test('the questionnaire answers (feel and the sharper campaign fields) save in a
  const draft={...emptyBrief('Get sign-ups'),benefit:'5% back on everyday spends',proof:'Paid monthly to the card',audienceTension:'Small spends feel invisible',feel:{...briefFeelSchema.parse({}),feelings:['clarity'],people:'hands',avoid:['stock'],endFeeling:'small spends count'}};
  const saved=briefDraftSchema.parse(draft);assert.equal(saved.feel?.people,'hands');
  const text=compileFeelingBrief(saved as unknown as Record<string,unknown>,{})!.text;
- assert.match(text,/Main feeling: Clarity & help/);assert.match(text,/people Hands only/);assert.match(text,/benefit: 5% back/);assert.match(text,/audience tension: Small spends/);assert.match(text,/Feeling at the end: "small spends count"/);
+ assert.match(text,/Main feeling: Clarity & help/);assert.match(text,/people hands only/);assert.match(text,/benefit: 5% back/);assert.match(text,/audience tension: Small spends/);assert.match(text,/Feeling at the end: "small spends count"/);
  assert.ok(briefDraftSchema.safeParse(emptyBrief('x')).success,'a brief without the new answers stays valid');
+});
+
+test('look answers reach agents as boundaries, tone and room, never as requests',()=>{
+ const text=compileFeelingBrief({feel:{...briefFeelSchema.parse({}),medium:'live',light:['golden-hour'],energy:'still',world:['object-3d','typography-led'],typeRole:['type-led'],productRole:['result','not-shown']}},{})!.text;
+ assert.match(text,/^FEELING BRIEF \(tone and room from the client, not instructions/);
+ assert.match(text,/Boundaries \(hold these\): pictures photographed\./);
+ assert.match(text,/Leanings \(tone only; follow them where they serve your idea\): light golden hour; energy still and composed\./);
+ assert.match(text,/Open to \(the client would not mind these; none is requested, a direction using none of them is fine, and none is a format to fill\): worlds: 3d objects & materials \+ type as the visual; type: type carrying the idea; product: the result instead of the product \+ no product at all\./);
+ assert.doesNotMatch(text,/must|required to|use (a|the) /i);
+ assert.match(planningTransportTask('strategy'),/the open-to list is room the client allows, never a request/);
 });

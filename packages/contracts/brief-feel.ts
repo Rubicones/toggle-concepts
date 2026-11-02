@@ -42,8 +42,8 @@ export const lookOptions={
  world:[{id:'real-life',label:'Real life moments'},{id:'studio',label:'Studio & still life'},{id:'home',label:'Home'},{id:'city',label:'City'},{id:'nature',label:'Nature'},{id:'product-interface',label:'Interface as the hero'},{id:'motion-graphics',label:'Motion graphics'},{id:'object-3d',label:'3D objects & materials'},{id:'typography-led',label:'Type as the visual'},{id:'illustration',label:'Illustration'},{id:'data-diagrams',label:'Data & diagrams'},{id:'abstract-graphic',label:'Abstract & graphic'}],
  energy:[{id:'still',label:'Still and composed'},{id:'gentle',label:'Gentle movement'},{id:'dynamic',label:'Dynamic and fast'}],
  colour:[{id:'brand-only',label:'Brand colours only'},{id:'brand-natural',label:'Brand + natural colours'},{id:'bold-contrast',label:'Bold contrast'},{id:'soft-muted',label:'Soft and muted'}],
- typeRole:[{id:'type-led',label:'Type is the hero'},{id:'balanced',label:'Balanced'},{id:'picture-led',label:'The picture is the hero'}],
- productRole:[{id:'hero',label:'Product as the hero'},{id:'in-use',label:'Product in use'},{id:'result',label:'Show the result, not the product'},{id:'not-shown',label:'Product not shown'}],
+ typeRole:[{id:'type-led',label:'Type carrying the idea'},{id:'balanced',label:'Type and picture together'},{id:'picture-led',label:'The picture carrying it'}],
+ productRole:[{id:'hero',label:'The product up close'},{id:'in-use',label:'The product in use'},{id:'result',label:'The result instead of the product'},{id:'not-shown',label:'No product at all'}],
  people:[{id:'none',label:'No people'},{id:'hands',label:'Hands only'},{id:'yes',label:'Yes'}],
  textAmount:[{id:'minimal',label:'Minimal'},{id:'balanced',label:'Balanced'},{id:'detailed',label:'Detailed'}],
  humour:[{id:'none',label:'None'},{id:'light',label:'A light touch'},{id:'central',label:'Humour is the idea'}],
@@ -60,6 +60,7 @@ export const campaignOptions={
 
 const ids=<T extends readonly {id:string}[]>(list:T)=>list.map(x=>x.id) as [T[number]['id'],...T[number]['id'][]];
 const choice=<T extends readonly {id:string}[]>(list:T)=>z.enum([...ids(list),SUGGEST]);
+const openTo=<T extends readonly {id:string}[]>(list:T,max:number)=>z.preprocess(v=>typeof v==='string'?(v===SUGGEST?[]:[v]):v,z.array(z.enum(ids(list))).max(max)).default([]);
 const reference=z.strictObject({assetId:z.uuid().optional(),url:z.string().url().max(500).optional(),aspects:z.array(z.enum(ids(lookOptions.referenceAspects))).max(8).default([]),note:z.string().max(300).default('')});
 
 export const briefFeelSchema=z.strictObject({
@@ -70,11 +71,11 @@ export const briefFeelSchema=z.strictObject({
  stretch:choice(lookOptions.stretch).default(SUGGEST),
  medium:choice(lookOptions.medium).default(SUGGEST),
  light:z.array(z.enum([...ids(lookOptions.light),SUGGEST])).max(2).default([]),
- world:z.array(z.enum([...ids(lookOptions.world),SUGGEST])).max(3).default([]),
+ world:openTo(lookOptions.world,4),
  energy:choice(lookOptions.energy).default(SUGGEST),
  colour:choice(lookOptions.colour).default(SUGGEST),
- typeRole:choice(lookOptions.typeRole).default(SUGGEST),
- productRole:choice(lookOptions.productRole).default(SUGGEST),
+ typeRole:openTo(lookOptions.typeRole,3),
+ productRole:openTo(lookOptions.productRole,4),
  people:choice(lookOptions.people).default(SUGGEST),
  peopleNote:z.string().max(300).default(''),
  textAmount:choice(lookOptions.textAmount).default(SUGGEST),
@@ -115,8 +116,15 @@ export function compileFeelingBrief(questionnaire:Record<string,unknown>|undefin
  if(shifts.length)lines.push(`Campaign character (1 = first pole, 5 = second): ${shifts.join('; ')}.`);
  const stretch=lookOptions.stretch.find(s=>s.id===feel.stretch);
  lines.push(stretch?`How far from the usual style: ${stretch.label}: ${stretch.hint}.`:'How far from the usual style: suggest; make one direction the brand core and two clearly different.');
- const answered=([['imagery',feel.medium,lookOptions.medium],['light',feel.light,lookOptions.light],['world',feel.world,lookOptions.world],['energy',feel.energy,lookOptions.energy],['colour',feel.colour,lookOptions.colour],['type',feel.typeRole,lookOptions.typeRole],['product',feel.productRole,lookOptions.productRole],['people',feel.people,lookOptions.people],['text on screen',feel.textAmount,lookOptions.textAmount],['humour',feel.humour,lookOptions.humour]] as [string,string|readonly string[],readonly {id:string;label:string}[]][]).map(([name,value,list])=>{const real=(Array.isArray(value)?value:[value]).filter(x=>x!==SUGGEST);return real.length?`${name} ${real.map(x=>label(list,x)).join(' + ')}${name==='people'&&feel.peopleNote?` (${clip(feel.peopleNote,120)})`:''}`:'';}).filter(Boolean);
- lines.push(answered.length?`Client choices: ${answered.join('; ')}. Everything else is yours to propose from the brand kit.`:'Look: not chosen; propose it from the brand kit.');
+ const real=(value:string|readonly string[])=>(Array.isArray(value)?value:[value]).filter(x=>x!==SUGGEST);
+ const named=(value:string|readonly string[],list:readonly {id:string;label:string}[])=>real(value).map(x=>label(list,x)).join(' + ');
+ const boundaries=[real(feel.medium).length?`pictures ${named(feel.medium,lookOptions.medium).toLowerCase()}`:'',real(feel.people).length?`people ${named(feel.people,lookOptions.people).toLowerCase()}${feel.people==='yes'&&feel.peopleNote?` (${clip(feel.peopleNote,120)})`:''}`:''].filter(Boolean);
+ if(boundaries.length)lines.push(`Boundaries (hold these): ${boundaries.join('; ')}.`);
+ const leanings=([['light',feel.light,lookOptions.light],['energy',feel.energy,lookOptions.energy],['colour',feel.colour,lookOptions.colour],['words on screen',feel.textAmount,lookOptions.textAmount],['humour',feel.humour,lookOptions.humour]] as [string,string|readonly string[],readonly {id:string;label:string}[]][]).filter(([,v])=>real(v).length).map(([n,v,l])=>`${n} ${named(v,l).toLowerCase()}`);
+ if(leanings.length)lines.push(`Leanings (tone only; follow them where they serve your idea): ${leanings.join('; ')}.`);
+ const open=([['worlds',feel.world,lookOptions.world],['type',feel.typeRole,lookOptions.typeRole],['product',feel.productRole,lookOptions.productRole]] as [string,readonly string[],readonly {id:string;label:string}[]][]).filter(([,v])=>v.length).map(([n,v,l])=>`${n}: ${named(v,l).toLowerCase()}`);
+ if(open.length)lines.push(`Open to (the client would not mind these; none is requested, a direction using none of them is fine, and none is a format to fill): ${open.join('; ')}.`);
+ if(!boundaries.length&&!leanings.length&&!open.length)lines.push('Look: not chosen; propose it from the brand kit.');
  if(feel.endFeeling)lines.push(`Feeling at the end: "${clip(feel.endFeeling,200)}".`);
  if(feel.avoid.length||feel.avoidNote)lines.push(`Avoid: ${[...feel.avoid.map(a=>label(lookOptions.avoid,a)),clip(feel.avoidNote,200)].filter(Boolean).join(', ')}.`);
  const refs=(list:BriefFeel['likes'],word:string)=>list.length?`${list.length} reference(s) ${word}${list.flatMap(r=>r.aspects).length?` for ${[...new Set(list.flatMap(r=>r.aspects))].map(a=>label(lookOptions.referenceAspects,a)).join(', ')}`:''}${list.some(r=>r.note)?` (${list.map(r=>clip(r.note,80)).filter(Boolean).join('; ')})`:''}`:'';
@@ -125,7 +133,7 @@ export function compileFeelingBrief(questionnaire:Record<string,unknown>|undefin
  if(campaign.length)lines.push(`Campaign: ${campaign.join('; ')}.`);
  const kit=['voice.tone','voice.character','voice.copyRules','voice.samples','imagery.treatment','motion.motionSystem'].map(k=>brandTokens[k]?`${k}: ${clip(brandTokens[k],k==='voice.samples'?260:200)}`:'').filter(Boolean);
  lines.push(kit.length?`Brand kit (wins over every choice above): ${kit.join(' | ')}`:'Brand kit: no voice or imagery rules accepted yet; infer carefully from the supplied evidence and say so.');
- let text=`FEELING BRIEF (client choices; an AD creative focus, when given, leads them; anything not chosen is yours to propose from the brand kit):\n${lines.join('\n')}`;
+ let text=`FEELING BRIEF (tone and room from the client, not instructions; an AD creative focus, when given, leads it; anything not chosen is yours to propose from the brand kit):\n${lines.join('\n')}`;
  if(text.length>1800)text=text.slice(0,1799)+'…';
  return {text,data:{feelings:feel.feelings,character:feel.character,stretch:feel.stretch,medium:feel.medium,light:feel.light,world:feel.world,energy:feel.energy,colour:feel.colour,typeRole:feel.typeRole,productRole:feel.productRole,people:feel.people,textAmount:feel.textAmount,humour:feel.humour,avoid:feel.avoid}};
 }

@@ -50,3 +50,24 @@
 - `node --import tsx --test tests/brief-feel.test.ts`: 6/6 pass.
 - `npm test`: only the 14 pre-existing environmental failures (diffed by name).
 - Not checked in a browser (owner preference: code checks only).
+
+## Addendum: look fine-tuning as tone and room, with mood pictures
+
+- **Owner decision:** bring back worlds, type role, product role and mood pictures, but process them so they never tell agents what to do: they set a tone or open tools.
+- `packages/contracts/brief-feel.ts`:
+  - Worlds, type and product are "open to" lists (multi-select; an older single answer reads as a one-item list). Their labels are worded as room ("The result instead of the product", "Type carrying the idea").
+  - The feeling brief now has three registers. **Boundaries (hold these):** pictures, people. **Leanings (tone only; follow them where they serve your idea):** light, energy, colour, words on screen, humour. **Open to (the client would not mind these; none is requested, a direction using none of them is fine, and none is a format to fill):** worlds, type, product.
+  - The header calls the brief "tone and room from the client, not instructions".
+- `packages/contracts/localization.ts`: the shared brand-first rule says boundaries hold, leanings are tone, and the open-to list is room, never a request.
+- `components/studio/brief-feel-fields.tsx`:
+  - feelings as picture cards (photographed or made variant, following the "Pictures" answer);
+  - a folded "Fine-tune the look" with light cards (up to two), world cards filtered by the "Pictures" answer (up to four), and type/product open-to chips;
+  - energy, colour and humour chips;
+  - client-facing copy that nothing here is an order.
+- `packages/contracts/brief-moods.ts`, `scripts/brief-moods.json`, `scripts/fetch-brief-moods.mjs`: the 41 mood pictures from the prototype are downloaded once into `public/brief-moods/`. Until then the cards show a quiet placeholder. The pictures are never sent to agents.
+- **Tests:**
+  - open-to defaults and legacy single answers;
+  - the three registers with exact framing;
+  - no imperative wording in the brief;
+  - the contract states "room, never a request".
+- **Verification:** typecheck and lint pass; `tests/brief-feel.test.ts` 7/7; full suite: only the 14 pre-existing failures.
