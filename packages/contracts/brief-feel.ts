@@ -146,11 +146,14 @@ export function brandTokensFromKit(kit:unknown):Record<string,string>{
  return Object.fromEntries(rules.filter((r:{decision?:string;category?:string;key?:string;value?:unknown})=>r&&(r.decision===undefined||r.decision==='accepted')&&typeof r.category==='string'&&typeof r.key==='string'&&typeof r.value==='string').map((r:{category:string;key:string;value:string})=>[`${r.category}.${r.key}`,r.value]));
 }
 
-/** Adds the compact feeling brief to a planning context that carries the submitted brief but not yet the brief itself. */
-export function withFeelingBrief<T extends Record<string,unknown>>(context:T|undefined):T|undefined{
- if(!context||typeof context.feelingBrief==='string')return context;
+/**
+ * The feeling brief for a planning context that carries the submitted brief but not the brief itself (guided runs build
+ * their context in SQL). It travels with the task text: the frozen campaignContext is checked at admission and must
+ * stay byte-identical, so it is never modified.
+ */
+export function feelingBriefForContext(context:Record<string,unknown>|undefined){
+ if(!context||typeof context.feelingBrief==='string')return undefined;
  const submitted=context.submittedBrief as {questionnaire?:Record<string,unknown>}|undefined;
- if(!submitted||typeof submitted!=='object')return context;
- const text=compileFeelingBrief(submitted.questionnaire,brandTokensFromKit(context.acceptedBrandKit))?.text;
- return text?{...context,feelingBrief:text}:context;
+ if(!submitted||typeof submitted!=='object')return undefined;
+ return compileFeelingBrief(submitted.questionnaire,brandTokensFromKit(context.acceptedBrandKit))?.text;
 }

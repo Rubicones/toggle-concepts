@@ -35,3 +35,14 @@
 - `npm run lint`: pass.
 - `node --import tsx --test tests/brief-feel.test.ts`: 5/5 (4 from the PR, 1 added).
 - `npm test`: 543 tests, 529 pass, 14 fail. All 14 are the pre-existing environmental failures (diffed by name).
+
+## Addendum: STALE_WORKFLOW on the first strategy step (regression from finding 1's fix)
+
+- **Symptom:** strategy stopped with `STALE_WORKFLOW` before any provider call (no charge).
+- **Cause:** the merge fix added the feeling brief by rewriting `snapshot.campaignContext` at execution. `studio_begin_workflow` compares `snapshot->'campaignContext'` with the job's frozen payload byte for byte, so admission refused every guided planning step.
+- **Fix:**
+  - The feeling brief now travels with the task text (`transportTask`, like the creative focus), for strategy, script and visual direction only.
+  - `feelingBriefForContext()` returns the text and never modifies the context.
+  - The contracts read "campaignContext.feelingBrief or the FEELING BRIEF in this task".
+  - A test asserts the worker never assigns `snapshot.campaignContext`, and that the context object stays byte-identical.
+- **Recovery for the stopped run:** Start run over (repeats research, about $0.03), or ask for a change to the strategy step.

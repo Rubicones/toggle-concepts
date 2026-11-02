@@ -51,12 +51,12 @@ test('planning contracts read the brand and the feeling brief first and never li
 });
 
 test('guided planning gets the feeling brief from the stored brand revision (payload.kit.rules), accepted rules only',async()=>{
- const {withFeelingBrief,brandTokensFromKit}=await import('../packages/contracts/brief-feel');
+ const {feelingBriefForContext,brandTokensFromKit}=await import('../packages/contracts/brief-feel');
  const revision={id:'r',payload:{kit:{rules:[{category:'voice',key:'tone',value:'Direct, warm',decision:'accepted'},{category:'voice',key:'character',value:'proposed only',decision:'proposed'}]}}};
  assert.deepEqual(brandTokensFromKit(revision),{'voice.tone':'Direct, warm'});
- const ctx=withFeelingBrief<Record<string,unknown>>({submittedBrief:{questionnaire:{}},acceptedBrandKit:revision})!;
- assert.match(String(ctx.feelingBrief),/voice.tone: Direct, warm/);assert.doesNotMatch(String(ctx.feelingBrief),/proposed only/);
- assert.equal(withFeelingBrief({feelingBrief:'kept'})!.feelingBrief,'kept');assert.deepEqual(withFeelingBrief({mode:'manual'}),{mode:'manual'});
+ const context={submittedBrief:{questionnaire:{}},acceptedBrandKit:revision},frozen=JSON.stringify(context),text=feelingBriefForContext(context)!;assert.equal(JSON.stringify(context),frozen,'the frozen campaign context is never modified (admission compares it byte for byte)');
+ assert.match(text,/voice.tone: Direct, warm/);assert.doesNotMatch(text,/proposed only/);
+ assert.equal(feelingBriefForContext({feelingBrief:'already in the context'}),undefined);assert.equal(feelingBriefForContext({mode:'manual'}),undefined);
 });
 
 test('the questionnaire answers (feel and the sharper campaign fields) save in a draft and reach the feeling brief',async()=>{
@@ -76,4 +76,9 @@ test('look answers reach agents as boundaries, tone and room, never as requests'
  assert.match(text,/Open to \(the client would not mind these; none is requested, a direction using none of them is fine, and none is a format to fill\): worlds: 3d objects & materials \+ type as the visual; type: type carrying the idea; product: the result instead of the product \+ no product at all\./);
  assert.doesNotMatch(text,/must|required to|use (a|the) /i);
  assert.match(planningTransportTask('strategy'),/the open-to list is room the client allows, never a request/);
+});
+
+test('the worker never rewrites the frozen campaign context of a planning job (admission compares it byte for byte)',async()=>{
+ const {readFileSync}=await import('node:fs');const source=readFileSync('apps/local-runner/workflow.ts','utf8');
+ assert.doesNotMatch(source,/snapshot\.campaignContext\s*=(?!=)/,'add per-request text to the task instead');
 });
