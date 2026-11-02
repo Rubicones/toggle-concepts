@@ -8,6 +8,7 @@ import {modelCatalog} from '../../packages/agents/catalog';
 import {submitText,type TextReceipt} from '../../packages/agents/text-provider';
 import {fieldExtractionRequest,parseFieldResponse,splitBrandText} from '../../packages/brand/field-extraction';
 import type {AgentSetting} from '../../packages/contracts/shared';
+import {effectiveRunAgents} from '../../packages/data/run-limits';
 const directory=resolve('artifacts/brand-fields/receipts');
 async function rpc(name:string,args:Record<string,unknown>){return checked(await adminClient().rpc(name,args));}
 export async function flushBrandReadReceipts(){
@@ -19,8 +20,9 @@ export async function processBrandFieldAnalysis():Promise<boolean>{
  const beat=setInterval(()=>{void rpc('studio_heartbeat_brand_read',{target_part:part.id,token:part.lease_token}).catch(()=>{});},15000);
  try{
   const material=checked(await admin.from('studio_brand_materials').select('id,extraction_sha,included,state,filename').eq('id',file.material_id).eq('tenant_id',sharedTenant).single());if(!material||material.extraction_sha!==file.source_sha||!material.included||material.state!=='ready')throw new Error('BRAND_SOURCE_CHANGED');
-  const run=checked(await admin.from('studio_runs').select('config_snapshot,status').eq('id',analysis.run_id).eq('tenant_id',sharedTenant).single());if(run?.status!=='active')throw new Error('RUN_NOT_ACTIVE');
-  const agent=(run.config_snapshot as AgentSetting[]).find(a=>a.role==='brand-kit');if(!agent?.model_id)throw new Error('AGENT_NOT_CONFIGURED');
+  const run=checked(await admin.from('studio_runs').select('id,config_snapshot,status').eq('id',analysis.run_id).eq('tenant_id',sharedTenant).single());if(run?.status!=='active')throw new Error('RUN_NOT_ACTIVE');
+  // Frozen instructions and limits, with the model currently chosen in Models & agents (same rule as admission).
+  const agent=(await effectiveRunAgents(admin,run as {id:string;config_snapshot:AgentSetting[]},{directorOverrides:false})).find(a=>a.role==='brand-kit');if(!agent?.model_id)throw new Error('AGENT_NOT_CONFIGURED');
   const model=(await modelCatalog()).find(m=>m.id===agent.model_id);if(!model||model.outputModalities.length!==1||model.outputModalities[0]!=='text')throw new Error('MODEL_UNAVAILABLE');
   const saved=[];let after=0;while(true){const batch=checked(await admin.from('studio_brand_findings').select('seq,field,value,locator').eq('part_id',part.id).gt('seq',after).order('seq').limit(100))??[];saved.push(...batch.map(({seq,...finding})=>{after=seq;return finding;}));if(batch.length<100)break;}
   const checkpoint=checked(await admin.from('studio_c1_checkpoints').select('id').eq('run_id',analysis.run_id).eq('tenant_id',sharedTenant).maybeSingle());

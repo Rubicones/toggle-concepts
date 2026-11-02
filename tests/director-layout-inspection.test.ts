@@ -7,7 +7,7 @@ import recorded from '../fixtures/director/static/input.json';
 import {createWorkspace} from '../apps/local-runner/director/workspace';
 import {buildLivePreview} from '../apps/local-runner/director/live-bundle';
 import {inspectLivePreview} from '../apps/local-runner/director/live-inspect';
-import {inspectionViews,analyzeView,analyzeInspection,missingRequiredCopy,visibleSourceRect,findingDigest,gateNote,type RawView,type InspectionView} from '../packages/director/layout-inspection';
+import {MAX_SHOTS,inspectionViews,analyzeView,analyzeInspection,missingRequiredCopy,visibleSourceRect,findingDigest,gateNote,type RawView,type InspectionView} from '../packages/director/layout-inspection';
 import type {DirectionInput} from '../packages/director/types';
 import type {LiveOptions} from '../packages/director/live-preview';
 
@@ -23,13 +23,15 @@ function view(over:Partial<InspectionView['props']>={},ordered=true):InspectionV
 const text=(t:string,b:ReturnType<typeof box>,extra:Partial<RawView['texts'][number]>={})=>({text:t,box:b,fontSize:64,color:'rgb(19, 52, 69)',element:Math.random(),clipped:false,lines:1,background:'rgb(244, 234, 207)',complexBackground:false,overImage:null,...extra});
 const ctx=(i:DirectionInput,v=view())=>({view:v,input:i,minTextPx:32,safe:{top:54,right:54,bottom:54,left:54},facts:{}});
 
-test('the view matrix covers every ordered format and scene, the longest copy and adaptive sizes, with at most six screenshots',()=>{
+test('the view matrix covers every ordered format and scene, the longest copy and adaptive sizes; screenshots show every format of every scene',()=>{
  const i=input(),views=inspectionViews(i,options,design);
  assert.ok(views.length<=60&&views.length>=i.formats.length*4);
  for(const f of i.formats)for(const scene of options.scenes)assert.ok(views.some(v=>v.props.width===f.width&&v.props.height===f.height&&v.props.sceneId===scene&&v.ordered));
  assert.ok(views.some(v=>v.props.locale==='de-DE'),'the longest (German) copy binding is measured');
  assert.ok(views.some(v=>!v.ordered),'intermediate canvases test continuous adaptation');
- const shots=views.filter(v=>v.shot);assert.ok(shots.length>=4&&shots.length<=6);
+ const shots=views.filter(v=>v.shot);assert.ok(shots.length<=MAX_SHOTS);
+ for(const f of i.formats)for(const scene of options.scenes)assert.ok(shots.some(v=>v.variantId!=='alternate'&&v.props.width===f.width&&v.props.height===f.height&&v.props.sceneId===scene),'every ordered format of every scene is seen');
+ assert.ok(shots.some(v=>v.props.locale==='de-DE'),'the longest copy is seen');
  assert.equal(new Set(views.map(v=>v.key)).size,views.length);
  assert.deepEqual(inspectionViews(i,{...options,hooks:[],ctas:[]},design),[]);
 });

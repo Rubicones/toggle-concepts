@@ -10,16 +10,17 @@ import {liveFormat,liveReferenceVariant,readyLiveVariants} from './live-preview'
 import type {ImageFacts} from './image-facts';
 
 export type Box={x:number;y:number;width:number;height:number};
-export type InspectionView={key:string;label:string;variantId:string;props:LiveFrameProps;ordered:boolean;shot:boolean};
+export type InspectionView={key:string;label:string;variantId:string;props:LiveFrameProps;ordered:boolean;shot:boolean;group?:'reference'|'longest'};
 export type RawText={text:string;box:Box;fontSize:number;color:string;element:number;clipped:boolean;lines:number;background:string|null;complexBackground:boolean;overImage:string|null};
 export type RawImage={src:string;box:Box;naturalWidth:number;naturalHeight:number;objectFit:string;objectPosition:string;logo:boolean};
 export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:{id:string;box:Box}[]};
 export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR';
-export type Finding={code:FindingCode;severity:'hard'|'soft';view:string;detail:string};
+export type Finding={code:FindingCode;severity:'hard'|'soft';view:string;detail:string;box?:Box};
 export type ViewReport={view:string;label:string;findings:Finding[];texts:number;images:number};
 export type InspectionSummary={version:1;revision:string;views:number;hard:number;soft:number;reports:ViewReport[]};
 
-const MAX_VIEWS=60,MAX_SHOTS=6;
+const MAX_VIEWS=60;
+export const MAX_SHOTS=24;
 const textLength=(input:DirectionInput,variant:Variant)=>Object.values(input.variantFacts?.[variant.id]?.sceneCopy??{}).flat().join(' ').length;
 function momentOf(design:{keyFrames?:{sceneId:string;moments:{id:string}[]}[]},sceneId:string){return design.keyFrames?.find(k=>k.sceneId===sceneId)?.moments[0]?.id??'main';}
 const sizeLabel=(w:number,h:number)=>{const g=(a:number,b:number):number=>b?g(b,a%b):a,d=g(w,h);return `${w/d}:${h/d}`;};
@@ -27,7 +28,7 @@ const sizeLabel=(w:number,h:number)=>{const g=(a:number,b:number):number=>b?g(b,
 /**
  * A bounded, deterministic matrix: every ordered format and scene for the reference copy, the longest copy binding in
  * every ordered format, alternate hook narratives, and two intermediate canvases that test continuous adaptation.
- * At most six views are marked for screenshots (only used by the critic).
+ * At most MAX_SHOTS views are marked for screenshots: every ordered format per scene, plus the longest copy.
  */
 export function inspectionViews(input:DirectionInput,options:LiveOptions,design:{keyFrames?:{sceneId:string;moments:{id:string}[]}[]}):InspectionView[]{
  const ready=readyLiveVariants(input.variants,options),reference=liveReferenceVariant(input.variants,options);if(!reference||!ready.length)return [];
@@ -49,13 +50,15 @@ export function inspectionViews(input:DirectionInput,options:LiveOptions,design:
  if(longest)for(const sceneId of scenes)for(const size of sizes)add(longest,size,sceneId);
  for(const v of alternates)for(const sceneId of scenes)add(v,sizes[0],sceneId);
  for(const size of extras)for(const sceneId of scenes)add(reference,size,sceneId);
- // Screenshots for the critic: the reference copy in every ordered format of the first scene, then the longest copy
- // in the tallest format and a second scene, up to six.
- const pick=(match:(v:InspectionView)=>boolean)=>{const view=views.find(v=>!v.shot&&match(v));if(view&&views.filter(v=>v.shot).length<MAX_SHOTS)view.shot=true;};
- for(const size of sizes)pick(v=>v.variantId===reference.id&&v.props.sceneId===scenes[0]&&v.props.width===size.width&&v.props.height===size.height);
- if(longest&&longest.id!==reference.id)pick(v=>v.variantId===longest.id&&v.props.width/v.props.height===tallest);
- if(scenes[1])pick(v=>v.variantId===reference.id&&v.props.sceneId===scenes[1]&&v.ordered);
- for(const sceneId of scenes.slice(2))pick(v=>v.variantId===reference.id&&v.props.sceneId===sceneId&&v.ordered);
+ // Real views for the coder and critic (owner decision, 1 November 2026): every ordered format of every scene for the
+ // reference copy, so adaptation is judged side by side, plus the longest copy binding in every ordered format for its
+ // densest scene. Bounded by MAX_SHOTS; never a sweep over variants.
+ const shoot=(match:(v:InspectionView)=>boolean,group:'reference'|'longest'='reference')=>{const view=views.find(v=>!v.shot&&match(v));if(view&&views.filter(v=>v.shot).length<MAX_SHOTS){view.shot=true;view.group=group;}};
+ for(const sceneId of scenes)for(const size of sizes)shoot(v=>v.variantId===reference.id&&v.props.sceneId===sceneId&&v.props.width===size.width&&v.props.height===size.height);
+ if(longest&&longest.id!==reference.id){
+  const lines=(sceneId:string)=>(input.variantFacts?.[longest.id]?.sceneCopy?.[sceneId]??[]).join(' ').length,dense=[...scenes].sort((a,b)=>lines(b)-lines(a))[0];
+  for(const size of sizes)shoot(v=>v.variantId===longest.id&&v.props.sceneId===dense&&v.props.width===size.width&&v.props.height===size.height,'longest');
+ }
  return views;
 }
 
@@ -112,7 +115,7 @@ export type AnalysisContext={view:InspectionView;input:DirectionInput;minTextPx:
 
 /** Objective findings for one view. Hard findings are defects any design must avoid; soft ones go to the critic/AD. */
 export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
- const out:Finding[]=[],view=ctx.view.key,add=(code:FindingCode,severity:'hard'|'soft',detail:string)=>{if(!out.some(f=>f.code===code&&f.detail===detail))out.push({code,severity,view,detail});};
+ const out:Finding[]=[],view=ctx.view.key,add=(code:FindingCode,severity:'hard'|'soft',detail:string,box?:Box)=>{if(!out.some(f=>f.code===code&&f.detail===detail))out.push({code,severity,view,detail,...(box?{box}:{})});};
  const facts=ctx.input.variantFacts?.[ctx.view.variantId],approved=(facts?.sceneCopy?.[ctx.view.props.sceneId]??[]).filter(Boolean);
  const approvedNorm=approved.map(normal),isApproved=(t:string)=>{const n=normal(t);return n.length>0&&approvedNorm.some(a=>a.includes(n)||n.includes(a));};
  const visible=normal(raw.texts.map(t=>t.text).join(' '));
@@ -120,12 +123,12 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
  for(const t of raw.texts){
   const approvedText=isApproved(t.text);
   const offCanvas=t.box.x<-2||t.box.y<-2||t.box.x+t.box.width>raw.width+2||t.box.y+t.box.height>raw.height+2;
-  if(t.clipped&&!offCanvas)add('TEXT_CLIPPED','hard',`Text is cut by its container: ${quote(t.text)}`);
-  if(offCanvas)add('TEXT_OFF_CANVAS','hard',`Text leaves the canvas: ${quote(t.text)}`);
-  else if(ctx.safe&&(t.box.x<ctx.safe.left-1||t.box.y<ctx.safe.top-1||t.box.x+t.box.width>raw.width-ctx.safe.right+1||t.box.y+t.box.height>raw.height-ctx.safe.bottom+1))add('TEXT_OUTSIDE_SAFE_AREA',ctx.view.ordered?'hard':'soft',`Text enters the placement's safe margin: ${quote(t.text)}`);
-  if(t.fontSize<ctx.minTextPx-0.5)add('TEXT_TOO_SMALL',approvedText?'hard':'soft',`${Math.round(t.fontSize)}px text is below the ${ctx.minTextPx}px minimum: ${quote(t.text)}`);
+  if(t.clipped&&!offCanvas)add('TEXT_CLIPPED','hard',`Text is cut by its container: ${quote(t.text)}`,t.box);
+  if(offCanvas)add('TEXT_OFF_CANVAS','hard',`Text leaves the canvas: ${quote(t.text)}`,t.box);
+  else if(ctx.safe&&(t.box.x<ctx.safe.left-1||t.box.y<ctx.safe.top-1||t.box.x+t.box.width>raw.width-ctx.safe.right+1||t.box.y+t.box.height>raw.height-ctx.safe.bottom+1))add('TEXT_OUTSIDE_SAFE_AREA',ctx.view.ordered?'hard':'soft',`Text enters the placement's safe margin: ${quote(t.text)}`,t.box);
+  if(t.fontSize<ctx.minTextPx-0.5)add('TEXT_TOO_SMALL',approvedText?'hard':'soft',`${Math.round(t.fontSize)}px text is below the ${ctx.minTextPx}px minimum: ${quote(t.text)}`,t.box);
   const fg=rgb(t.color);
-  if(fg&&t.background){const bg=rgb(t.background);if(bg){const ratio=contrastRatio(luminance(fg),luminance(bg));if(ratio<3)add('LOW_CONTRAST',approvedText?'hard':'soft',`Contrast ${ratio.toFixed(1)}:1 on a solid background: ${quote(t.text)}`);}}
+  if(fg&&t.background){const bg=rgb(t.background);if(bg){const ratio=contrastRatio(luminance(fg),luminance(bg));if(ratio<3)add('LOW_CONTRAST',approvedText?'hard':'soft',`Contrast ${ratio.toFixed(1)}:1 on a solid background: ${quote(t.text)}`,t.box);}}
   else if(fg&&t.overImage&&!t.complexBackground){
    const image=raw.images.find(i=>i.src===t.overImage),f=ctx.facts[t.overImage],rect=image&&visibleSourceRect(image);
    if(image&&f&&rect){
@@ -133,18 +136,18 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
     const cx=rect[0]+(t.box.x+t.box.width/2-image.box.x)/image.box.width*(rect[2]-rect[0]),cy=rect[1]+(t.box.y+t.box.height/2-image.box.y)/image.box.height*(rect[3]-rect[1]);
     const cell=Math.min(2,Math.max(0,Math.floor(cy*3)))*3+Math.min(2,Math.max(0,Math.floor(cx*3)));
     const ratio=contrastRatio(luminance(fg),Math.pow(f.luma[cell],2.2));
-    if(ratio<3||f.busy[cell]>0.6)add('CONTRAST_OVER_PICTURE','soft',`Text sits directly on the picture (estimated ${ratio.toFixed(1)}:1, busy ${f.busy[cell].toFixed(2)}); check it reads: ${quote(t.text)}`);
+    if(ratio<3||f.busy[cell]>0.6)add('CONTRAST_OVER_PICTURE','soft',`Text sits directly on the picture (estimated ${ratio.toFixed(1)}:1, busy ${f.busy[cell].toFixed(2)}); check it reads: ${quote(t.text)}`,t.box);
    }
   }
-  for(const logo of raw.logos)if(overlap(t.box,logo.box)>0.1*Math.min(t.box.width*t.box.height,logo.box.width*logo.box.height))add('TEXT_OVER_LOGO','hard',`Text overlaps the logo: ${quote(t.text)}`);
+  for(const logo of raw.logos)if(overlap(t.box,logo.box)>0.1*Math.min(t.box.width*t.box.height,logo.box.width*logo.box.height))add('TEXT_OVER_LOGO','hard',`Text overlaps the logo: ${quote(t.text)}`,{x:Math.min(t.box.x,logo.box.x),y:Math.min(t.box.y,logo.box.y),width:Math.max(t.box.x+t.box.width,logo.box.x+logo.box.width)-Math.min(t.box.x,logo.box.x),height:Math.max(t.box.y+t.box.height,logo.box.y+logo.box.height)-Math.min(t.box.y,logo.box.y)});
  }
  for(let i=0;i<raw.texts.length;i++)for(let j=i+1;j<raw.texts.length;j++){const a=raw.texts[i],b=raw.texts[j];if(a.element===b.element)continue;
-  const area=overlap(a.box,b.box),smaller=Math.min(a.box.width*a.box.height,b.box.width*b.box.height);if(smaller>0&&area>0.2*smaller)add('TEXT_OVERLAP','hard',`Text overlaps other text: ${quote(a.text)} and ${quote(b.text)}`);}
+  const area=overlap(a.box,b.box),smaller=Math.min(a.box.width*a.box.height,b.box.width*b.box.height);if(smaller>0&&area>0.2*smaller)add('TEXT_OVERLAP','hard',`Text overlaps other text: ${quote(a.text)} and ${quote(b.text)}`,{x:Math.min(a.box.x,b.box.x),y:Math.min(a.box.y,b.box.y),width:Math.max(a.box.x+a.box.width,b.box.x+b.box.width)-Math.min(a.box.x,b.box.x),height:Math.max(a.box.y+a.box.height,b.box.y+b.box.height)-Math.min(a.box.y,b.box.y)});}
  if(ctx.input.brand.logos.some(l=>l.url)&&!raw.logos.length)add('LOGO_MISSING','soft','No brand logo is visible in this view.');
  for(const image of raw.images.filter(i=>!i.logo)){
   const rect=visibleSourceRect(image);if(!rect)continue;const scale=image.box.width/((rect[2]-rect[0])*image.naturalWidth);
-  if(scale>1.6)add('PICTURE_UPSCALED','soft',`A picture is enlarged ${scale.toFixed(1)}× beyond its pixels and will look soft.`);
-  const f=ctx.facts[image.src];if(f){const [sx0,sy0,sx1,sy1]=f.subject,inside=Math.max(0,Math.min(sx1,rect[2])-Math.max(sx0,rect[0]))*Math.max(0,Math.min(sy1,rect[3])-Math.max(sy0,rect[1])),area=(sx1-sx0)*(sy1-sy0);if(area>0&&inside/area<0.6)add('SUBJECT_CROPPED','soft','The measured subject of a picture is mostly cropped out in this view.');}
+  if(scale>1.6)add('PICTURE_UPSCALED','soft',`A picture is enlarged ${scale.toFixed(1)}× beyond its pixels and will look soft.`,image.box);
+  const f=ctx.facts[image.src];if(f){const [sx0,sy0,sx1,sy1]=f.subject,inside=Math.max(0,Math.min(sx1,rect[2])-Math.max(sx0,rect[0]))*Math.max(0,Math.min(sy1,rect[3])-Math.max(sy0,rect[1])),area=(sx1-sx0)*(sy1-sy0);if(area>0&&inside/area<0.6)add('SUBJECT_CROPPED','soft','The measured subject of a picture is mostly cropped out in this view.',image.box);}
  }
  return out;
 }

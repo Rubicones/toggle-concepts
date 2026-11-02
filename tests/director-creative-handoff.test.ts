@@ -104,3 +104,11 @@ test('repeated scene names are scoped to their direction, and conflicting scene 
  const explicit=rows.map((r,index)=>({...r,copySlot:'onScreen_scene-1',direction:`concept-${index+1}`}));assert.equal(localizationForDirection(explicit,directions[1],directions)[0].text,'Second direction.');assert.throws(()=>localizationForDirection([{...explicit[0],direction:'unknown'}],directions[0],directions),/BINDING_MISMATCH/);
  const i=kite(),variant={id:'v',format:'vertical',locale:'en-GB',hook:'primary',cta:'primary',length:4};assert.throws(()=>variantFacts({variants:[variant],scenes:i.storyboard,directionIndex:0,referenceLocale:'en-GB',protectedCopy:{},localization:[{...rows[0],copySlot:'onScreen_scene-2'}]}),/AMBIGUOUS_LOCALIZED/);
 });
+test('the AD creative focus reaches the director and the coder; without it the handoff is unchanged',()=>{
+ const directions=readPlanningDirections(recorded.script),i=kite(),base={brief:i.brief,direction:directions[0],directions,script,visual,input:i};
+ const without=buildCreativeHandoff(base),blank=buildCreativeHandoff({...base,creativeFocus:'   '});
+ assert.equal(blank.revision,without.revision,'an empty focus changes nothing');assert.equal('creativeFocus' in without.intent,false);
+ const focused=buildCreativeHandoff({...base,creativeFocus:'Split screen: one half a studio 3D object, the other everyday life.'});
+ assert.notEqual(focused.revision,without.revision);assert.equal(focused.intent.creativeFocus,'Split screen: one half a studio 3D object, the other everyday life.');
+ for(const role of ['director','coder'] as const){const text=withCreativeHandoff({...i,creativeHandoff:focused},role,'BASE');assert.match(text,/AD CREATIVE FOCUS/);assert.match(text,/Split screen/);assert.doesNotMatch(withCreativeHandoff({...i,creativeHandoff:without},role,'BASE'),/AD CREATIVE FOCUS/);}
+});

@@ -12,11 +12,11 @@ const detail = (flow: CampaignFlow | null, step: FlowStep) => {
   if (!flow) return "";
   if (step === "brand-kit")
     return flow.brandbook.submitted
-      ? `Saved · ${flow.brandbook.chosen} chosen`
+      ? `Saved · ${flow.brandbook.findings - flow.brandbook.excluded} in use`
       : flow.brandbook.reading
         ? "Reading files…"
         : flow.brandbook.files
-          ? `${flow.brandbook.files} files · ${flow.brandbook.chosen} chosen`
+          ? `${flow.brandbook.files} files · ${flow.brandbook.findings - flow.brandbook.excluded} in use`
           : "Drop your brand files";
   if (step === "brief") return flow.questionnaire.submitted ? "Submitted" : flow.questionnaire.saved ? "In progress" : "Campaign answers";
   return flow.run.started ? (flow.run.status === "blocked" ? "Needs attention" : flow.run.status === "review" ? "Your review" : flow.run.status === "paused" ? "Paused" : flow.run.status === "complete" ? "Saved" : "Running") : "Starts from the questionnaire";

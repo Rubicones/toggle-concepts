@@ -201,12 +201,11 @@ test('slotId storyboard aliases, hook variation maps, stage-direction stripping 
  const presentation=scenarioPresentation({threeDirections:[rawDirection]})!;
  assert.equal(presentation[0].hook,'Losing track of song versions?');
  assert.deepEqual(presentation[0].rest.hookVariations,{'hook-1':'Your band\'s music, always in sync.','hook-2':'Stop the version chaos.'});
- assert.match(planningTransportTask('strategy'),/specific promoted feature/);
- assert.match(planningTransportTask('strategy'),/radically distinct in their visual world/);
- assert.match(planningTransportTask('script'),/NEVER prefix copy with stage labels/);
- assert.match(planningTransportTask('script'),/two-tier on-screen copy/);
- assert.match(planningTransportTask('visual-direction'),/Hero Styleframe/);
- assert.match(planningTransportTask('visual-direction'),/reconstruct authentic, high-density product UI components/);
+ // Contracts fix the output only; the role instructions carry the method. No example styles, formats or techniques.
+ assert.match(planningTransportTask('strategy'),/promoted feature/);assert.match(planningTransportTask('strategy'),/creativeIdea and visualPremise/);
+ assert.match(planningTransportTask('script'),/never stage labels/);assert.match(planningTransportTask('script'),/its own opening headline/);
+ assert.match(planningTransportTask('visual-direction'),/visualIdea and makingTechnique/);
+ for(const role of ['strategy','script','visual-direction'])assert.doesNotMatch(planningTransportTask(role),/e\.g\.|such as \(|App Screen|color.block|Still Life|Lifestyle|high-density|highlight strip/i,`${role} contract must not anchor on example styles`);
  const twoTierScenes=approvedScenes([{sceneId:'scene-1',startSeconds:0,endSeconds:1.5,copy:'TEST THE HOOK BEFORE IT\'S DONE.\nCut 5–30 seconds of the mix right in the song.'}],'dir-two-tier');
  const twoTierDirections=readPlanningDirections({threeDirections:[{conceptId:'c1',hook:{primary:'TEST THE HOOK BEFORE IT\'S DONE.','hook-1':'CUT IT. POST IT. HEAR WHAT LANDS.'},timedStoryboard:[{sceneId:'scene-1',startSeconds:0,endSeconds:1.5,copy:'TEST THE HOOK BEFORE IT\'S DONE.\nCut 5–30 seconds of the mix right in the song.'}]}]});
  const twoTierFacts=variantFacts({variants:[{id:'v-p',format:'vertical',locale:'en-GB',hook:'primary',cta:'primary',length:6},{id:'v-h1',format:'vertical',locale:'en-GB',hook:'hook-1',cta:'primary',length:6}],scenes:twoTierScenes,directionIndex:0,referenceLocale:'en-GB',localization:[{copySlot:'cta',locale:'en-GB',text:'Sign up',variantIds:['v-p','v-h1']}],sourceDirections:twoTierDirections,protectedCopy:{}});
@@ -215,7 +214,8 @@ test('slotId storyboard aliases, hook variation maps, stage-direction stripping 
   const serialized=JSON.stringify(agentResponseSchema(role,{entries:variants}).schema);
   assert.ok(!serialized.includes('"additionalProperties":true'),`${role} schema must not contain additionalProperties:true`);
   assert.ok(serialized.length<2400,`${role} schema must stay under 2400 bytes`);
-  if(role!=='variants'&&role!=='localization')assert.match(planningTransportTask(role,variants as never,1),/OUTPUT BUDGET & ANTI-ECHO CONTRACT/);
+  if(role==='research')assert.match(planningTransportTask(role,variants as never,1),/OUTPUT BUDGET & ANTI-ECHO CONTRACT/);
+  if(['strategy','script','visual-direction'].includes(role))assert.match(planningTransportTask(role,variants as never,1),/OUTPUT CONTRACT: Spend the words on the ideas/);
   assert.match(planningTransportTask(role,variants as never,2),/RETRY COMPACTNESS OVERRIDE/);
  }
  assert.ok(lintStaticComposition('export default function Frame(){const res={ready:true,proxy:true,url:"x"};return !res.proxy?null:null;}').some(i=>i.includes('!res.proxy')));

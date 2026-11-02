@@ -1,0 +1,44 @@
+import {createHash} from 'node:crypto';
+import * as fontkit from 'fontkit';
+import {objectStore} from '@/packages/media/s3.server';
+import type {BrandDraft} from '@/packages/contracts/brand-kit';
+import type {BrandMaterial} from '@/packages/director/inputs';
+import {fontMetadata} from '@/packages/brand/font-metadata';
+import {brandFontFamilies,familyNeedsWeights,googleFontCssUrl,parseGoogleFontCss,normalizeFamily,GOOGLE_FONT_WEIGHTS} from '@/packages/brand/google-fonts';
+
+const MAX_FONT_BYTES=3*1024*1024;
+type Fetch=typeof fetch;
+type Store={putStaging:(key:string,body:Buffer,mime:string)=>Promise<unknown>;head:(key:string)=>Promise<unknown>};
+
+/**
+ * Completes the brand's named fonts from Google Fonts before a draft starts (see packages/brand/google-fonts.ts).
+ * Any failure (offline, family not on Google Fonts, unexpected response) leaves the materials unchanged.
+ */
+export async function googleFontMaterials(kit:Pick<BrandDraft,'rules'>,materials:BrandMaterial[],id:(seed:unknown)=>string,deps:{fetch?:Fetch;store?:Store}={}){
+ const get=deps.fetch??fetch,added:BrandMaterial[]=[],notes:string[]=[];
+ for(const family of brandFontFamilies(kit)){
+  if(!familyNeedsWeights(family,materials))continue;
+  const found=await Promise.all(GOOGLE_FONT_WEIGHTS.map(async weight=>{
+   try{
+    const css=await get(googleFontCssUrl(family,weight),{headers:{'User-Agent':'curl/8.4.0'},signal:AbortSignal.timeout(8000)});if(!css.ok)return null;
+    const face=parseGoogleFontCss(await css.text());if(!face||face.style!=='normal')return null;
+    const file=await get(face.url,{signal:AbortSignal.timeout(15000)});if(!file.ok)return null;
+    const bytes=Buffer.from(await file.arrayBuffer());if(bytes.length>MAX_FONT_BYTES)return null;
+    const font=fontkit.create(bytes);if('fonts' in font)return null;
+    const metadata=fontMetadata(font as Parameters<typeof fontMetadata>[0],bytes);
+    if(normalizeFamily(String(metadata.family))!==normalizeFamily(family)||metadata.style!=='normal')return null;
+    return {bytes,metadata:{...metadata,source:'google-fonts'}};
+   }catch{return null;}
+  }));
+  const files=found.filter((f):f is NonNullable<typeof f>=>!!f).filter((f,i,all)=>all.findIndex(x=>x.metadata.weight===f.metadata.weight)===i);
+  if(!files.length){notes.push(`${family}: not available from Google Fonts here; supplied files are used as they are.`);continue;}
+  for(const f of files){
+   const sha256=createHash('sha256').update(f.bytes).digest('hex'),container=String(f.metadata.container),ext=container==='wOF2'?'woff2':container==='wOFF'?'woff':container==='OTTO'?'otf':'ttf',mime=ext==='ttf'?'font/ttf':`font/${ext}`,objectKey=`staging/google-fonts/${sha256}.${ext}`;
+   const store=deps.store??objectStore();
+   try{await store.putStaging(objectKey,f.bytes,mime);}catch(error){try{await store.head(objectKey);}catch{throw error;}}
+   added.push({id:id({googleFont:sha256}),filename:`${family.replace(/\s+/g,'')}-${f.metadata.weight}.${ext}`,mime,sha256,objectKey,metadata:f.metadata});
+  }
+  notes.push(`${family}: ${files.map(f=>f.metadata.weight).join(', ')} from Google Fonts.`);
+ }
+ return {materials:added,notes};
+}

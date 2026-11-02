@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {brandbookBriefCandidates, type SubmittedFinding} from '../packages/brand/brief-prefill';
 import {fieldExtractionRequest, parseFieldResponse} from '../packages/brand/field-extraction';
-const finding=(field:string,value:string,decision='keep'):SubmittedFinding=>({findingId:'source-'+field,field,value,decision,evidence:'provided',locator:'source paragraph'});
+const finding=(field:string,value:string,decision='unreviewed'):SubmittedFinding=>({findingId:'source-'+field,field,value,decision,evidence:'provided',locator:'source paragraph'});
 
 test('existing submitted descriptions and invariants prefill eligible questions without a model request',()=>{
  const result=brandbookBriefCandidates([finding('brandDescription','A shared workspace for musicians.'),finding('productIdentity','Keep the product name lowercase.')],[]);
@@ -34,6 +34,14 @@ test('incremental reader can save questionnaire answers alongside brand fields w
  assert.ok(!JSON.stringify(fieldExtractionRequest(false).responseSchema).includes('brief.audience'));
  assert.match(fieldExtractionRequest(true).prompt,/never derive an audience/);
 });
-test('unmarked brandbook findings never prefill the brief',()=>{
- assert.equal(brandbookBriefCandidates([finding('brandDescription','Unmarked product','unreviewed'),finding('productIdentity','Unmarked rule','unreviewed')],[]).suggestions.length,0);
+test('everything found prefills the brief unless excluded; conflicting brand names stay unfilled',()=>{
+ const found=brandbookBriefCandidates([finding('productIdentity','Keep the logo upright.')],[]);
+ assert.deepEqual(found.suggestions.map(s=>[s.field,s.value]),[['immutables','Keep the logo upright.']]);
+ assert.equal(brandbookBriefCandidates([finding('productIdentity','Old rule','reject')],[]).suggestions.length,0);
+ const names=[{...finding('brandName','Sonicdesk'),findingId:'a'},{...finding('brandName','SonicDesk Pro'),findingId:'b'}];
+ assert.ok(!brandbookBriefCandidates(names,[]).suggestions.some(s=>s.field==='product'));
+});
+test('a brand name picked with “Use this” wins over the other names found',()=>{
+ const names=[{...finding('brandName','Sonicdesk','keep'),findingId:'a'},{...finding('brandName','SonicDesk Pro'),findingId:'b'}];
+ assert.equal(brandbookBriefCandidates(names,[]).suggestions.find(s=>s.field==='product')?.value,'Sonicdesk');
 });

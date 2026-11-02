@@ -49,10 +49,11 @@ import {ensureDirectorToolchain} from './toolchain';
 import {compactTranscript,assemblerContext} from '../../../packages/director/transcript';
 import {providerJsonSchema} from '../../../packages/director/provider-schema';
 import {questionForFailure} from '../../../packages/director/questions';
+import {draftModelProblem,draftModelConfig,draftRoleNames} from '../../../packages/director/role-models';
 import {inspectionViews,analyzeInspection} from '../../../packages/director/layout-inspection';
 import {runLiveReview,newReviewState,CONTROL_FAILURE,type LiveReviewRecord} from '../../../packages/director/live-review';
 import {liveCriticInstructions,liveCriticSchema} from '../../../packages/agents/prompts/director-critic-v1';
-import {reviewSheet} from './review-sheet';
+import {reviewImages} from './review-sheet';
 import {prepareImageMethods,derivedReferences,finishImageMethod} from './image-methods';
 export {questionForFailure};
 export type DirectorClaim={block:{id:string;run_id:string;round_id:string;campaign_id:string;snapshot:BlockSnapshot;approved_resource_ids:string[]};work:{direction_id:string;iteration_id:string;lease_token:number;state:WorkState}};
@@ -92,7 +93,16 @@ export async function executeDirector(claim:DirectorClaim,device:string){
   if(state.wrapUp&&!state.design)throw new Error('WRAP_UP_NOTHING_TO_SHOW');
   const callOnce=async(role:Exclude<Role,'resources'>,prompt:string,protocolInstructions:string,responseSchema:{name:string;schema:Record<string,unknown>},context:unknown,identity:unknown,images:{url:string;label:string}[]=[])=>{
    await controls();state.roleStartedAt??={};if(!state.roleStartedAt[role]){state.roleStartedAt[role]=Date.now();await save();}const remainingMs=input.stage==='draft'||role==='assembler'?estimate.roles[role].timeMs-(Date.now()-state.roleStartedAt[role]!):600000;if(remainingMs<=0)throw Object.assign(new Error('ROLE_ALLOWANCE_EXHAUSTED'),{detail:`${role}: its approved working time is used up`});
-   const config=snapshot.models[role];if(role!=='assembler'&&!config.vision)throw new Error('VISION_MODEL_REQUIRED');const run=checked(await admin.from('studio_runs').select('id,config_snapshot').eq('id',input.runId).single()),agent=(await effectiveRunAgents(admin,run!)).find(a=>a.role===roleNames[role]);if(!agent||agent.model_id!==config.modelId)throw new Error('FROZEN_MODEL_REQUIRED');
+   // A request already admitted (restart, receipt) keeps the model on its step; a new one uses the model currently
+   // chosen in Models & agents, checked by the same rules as the quote. The role's brief and allowance are unchanged.
+   const id=requestId({blockId:block.id,iterationId:input.iterationId,role,identity}),prior=checked(await admin.from('studio_agent_steps').select('prompt,model_id,config_snapshot').eq('run_id',input.runId).eq('config_snapshot->>directorCallId',id).maybeSingle());
+   const run=checked(await admin.from('studio_runs').select('id,config_snapshot').eq('id',input.runId).single()),agent=(await effectiveRunAgents(admin,run!)).find(a=>a.role===roleNames[role]);if(!agent)throw new Error('FROZEN_MODEL_REQUIRED');
+   let config=snapshot.models[role];const wanted=prior?.model_id??agent.model_id;
+   if(wanted&&wanted!==config.modelId){const model=(await modelCatalog()).find(m=>m.id===wanted),problem=draftModelProblem(role,model,wanted);
+    if(problem)throw Object.assign(new Error('AGENT_MODEL_UNSUITABLE'),{detail:`${problem.message} Choose another model for this role in Models & agents; no request was sent.`});
+    config=draftModelConfig(role,model!,config.instructions,{liveReview:config.liveReview});
+    if(!prior)await events.emit(`model:${id}`,{stepId:`model:${id}`,kind:'control',status:'done',model:config.modelId,costMicroUsd:0,message:`This ${draftRoleNames[role].toLowerCase()} request uses ${model!.name}, the model now chosen in Models & agents.`,detail:{previousModel:snapshot.models[role].modelId,model:config.modelId}});}
+   if(role!=='assembler'&&!config.vision)throw new Error('VISION_MODEL_REQUIRED');if(!prior&&agent.model_id!==config.modelId)throw new Error('FROZEN_MODEL_REQUIRED');
    let outputLimit=Math.min(config.maxOutputTokens,agent.max_output_tokens);
    if(input.stage==='draft'&&role==='director'&&estimate.roles.director.requests>2&&hasCutOffAnswer(state.directorFeedback??[])){
     const maximum=config.modelMaxOutputTokens??(await modelCatalog()).find(model=>model.id===config.modelId)?.maxOutput;if(!maximum)throw new Error('MODEL_UNAVAILABLE');
@@ -100,7 +110,6 @@ export async function executeDirector(claim:DirectorClaim,device:string){
    }
    let base:import('../../../packages/agents/text-provider').TextSnapshot&{directorIterationId:string;modelId:string;budgetScopeId:string;stepCapMicroUsd:number}={...(input.stage==='draft'?{cachePrompt:true,cacheSessionId:`${block.id}:${input.directionId}:${role}`,requestInputCap:draftRequestCap(config.contextLength,outputLimit)}:{}),directorIterationId:input.iterationId,timeoutMs:input.stage==='draft'?1800000:Math.min(1800000,remainingMs),instructions:config.instructions,protocolInstructions,modelId:config.modelId,maxOutputTokens:outputLimit,pricing:config.pricing,campaignContext:{checkpointId:snapshot.checkpointId,...context as object},budgetScopeId:`budget-step-${input.runId}-${roleNames[role]}`,stepCapMicroUsd:agent.step_cap_micro_usd,outputFormat:'json_schema',responseSchema:{name:responseSchema.name,schema:providerJsonSchema(responseSchema.schema) as Record<string,unknown>},stream:true};
    // First reuse the exact frozen request on restart; allowance accounting must not change its identity.
-   const id=requestId({blockId:block.id,iterationId:input.iterationId,role,identity}),prior=checked(await admin.from('studio_agent_steps').select('prompt,config_snapshot').eq('run_id',input.runId).eq('config_snapshot->>directorCallId',id).maybeSingle());
    if(input.stage==='draft'&&!prior){const policy=await admin.rpc('studio_draft_request_policy_version');if(policy.error||policy.data!=='draft-size@2')throw Object.assign(new Error('DRAFT_SIZE_SCHEMA_REQUIRED'),{detail:'Apply migration 058, then retry within the approved allowance. No request was sent.'});}
    if(input.stage==='draft'&&!prior){try{const availableInput=await directorInputAllowance(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,role,snapshot:base});const compacted=role==='critic'?await compactStaticCriticRequest(prompt,base,images):compactDraftRequest(prompt,base,images,base.requestInputCap,availableInput);prompt=compacted.prompt;images=compacted.images;base={...base,...compacted.snapshot};if(compacted.compaction.actions.length)await events.emit(`compact:${id}`,{stepId:`compact:${id}`,kind:'compaction',status:'done',costMicroUsd:0,message:'This request was compacted to stay within its size limit.',detail:compacted.compaction});}catch(error){await events.emit(`compact:${id}:failed`,{stepId:`compact:${id}`,kind:'compaction',status:'failed',costMicroUsd:0,message:error instanceof Error&&error.message==='ROLE_ALLOWANCE_EXHAUSTED'?'The required request does not fit the remaining billed-token allowance. No request was sent.':'The required material exceeds this request’s size limit. No request was sent.',detail:(error as {compaction?:unknown}).compaction});throw error;}}
    if(prior)images=prior.config_snapshot.visionPacking==='all-formats'?await packCriticImages(images,prior.config_snapshot.directorVisionCount??images.length):images.slice(0,prior.config_snapshot.directorVisionCount??images.length);
@@ -112,7 +121,7 @@ export async function executeDirector(claim:DirectorClaim,device:string){
    if(role==='director'&&cfg.maxOutputTokens>config.maxOutputTokens)await events.emit(`answer-room:${id}`,{stepId:`answer-room:${id}`,kind:'control',status:'done',model:config.modelId,costMicroUsd:0,message:'The added allowance gives this design answer more room to finish.',detail:{approvedAttempts:estimate.roles.director.requests,maxOutputTokens:cfg.maxOutputTokens}});
    // The AD sees that an answer is being written and since when (a long answer streams for minutes).
    state.activeCall={role,startedAt:Date.now()};note(`${role}: request sent${JSON.stringify(identity).includes('"retry"')?' (retry)':''}.`);await save();
-   try{const answer=await paidText({identity:id,role,model:config.modelId,prompt:prior?.prompt??prompt,snapshot:cfg,allowanceMicroUsd:admitted.remainingMicroUsd,images,ledger:directorLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,device,token:work.lease_token})});note(`${role}: answer received (${answer.text.length.toLocaleString('en-US')} characters, $${(answer.costMicroUsd/1e6).toFixed(3)}${answer.reused?', saved earlier':''}).`);return answer;}
+   try{const answer=await paidText({identity:id,role,model:prior?.model_id??config.modelId,prompt:prior?.prompt??prompt,snapshot:cfg,allowanceMicroUsd:admitted.remainingMicroUsd,images,ledger:directorLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,device,token:work.lease_token})});note(`${role}: answer received (${answer.text.length.toLocaleString('en-US')} characters, $${(answer.costMicroUsd/1e6).toFixed(3)}${answer.reused?', saved earlier':''}).`);return answer;}
    catch(error){note(`${role}: request failed — ${error instanceof Error?error.message:'unknown'}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}.`);throw error;}
    finally{delete state.activeCall;}
   };
@@ -155,7 +164,10 @@ export async function executeDirector(claim:DirectorClaim,device:string){
     const facts=Object.fromEntries((state.catalog??[]).filter(c=>c.image).map(c=>[c.url,c.image]));
     const inspect=async()=>{const options=(await latest())?.options??first.options,views=inspectionViews(input,options,design);
      const out=JSON.parse((await sandboxTool(folder,'inspect',{views},180000)).trim().split('\n').at(-1)!),raw=JSON.parse(await readFile(out.file,'utf8'));
-     return {summary:analyzeInspection(views,raw,input,facts),shots:views.flatMap(v=>{const r=raw.views.find((x:{key:string;shot?:string})=>x.key===v.key);return r?.shot?[{label:v.label,file:r.shot as string}]:[];})};};
+     return {summary:analyzeInspection(views,raw,input,facts),shots:views.flatMap(v=>{const r=raw.views.find((x:{key:string;shot?:string})=>x.key===v.key);return r?.shot?[{label:v.label,file:r.shot as string,key:v.key,sceneId:v.props.sceneId,width:v.props.width,height:v.props.height,group:v.group??'reference'}]:[];})};};
+    const findings=(summary:import('../../../packages/director/layout-inspection').InspectionSummary)=>summary.reports.flatMap(r=>r.findings);
+    // The coder sees its rendered views when its current model reads images; otherwise it repairs from the measurements.
+    const coderModel=(await effectiveRunAgents(admin,checked(await admin.from('studio_runs').select('id,config_snapshot').eq('id',input.runId).single())!)).find(a=>a.role===roleNames.assembler)?.model_id,coderSees=!!(await modelCatalog()).find(m=>m.id===coderModel)?.inputModalities?.includes('image');
     // Coder allowance left for repairs: requests counted locally, billed input read from the ledger. One repair needs at
     // least one request and the quote's average input per coder request.
     const remainingRequests=()=>estimate.roles.assembler.requests-((state.assembler?.turn??0)+(reviewState.repairTurns??0));
@@ -165,7 +177,8 @@ export async function executeDirector(claim:DirectorClaim,device:string){
      const available=await directorInputAllowance(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,role:'assembler',snapshot:{pricing:snapshot.models.assembler.pricing,cachePrompt:true} as Parameters<typeof directorInputAllowance>[1]['snapshot']});
      return available<perRequest?'The coder’s approved input allowance is used up.':undefined;
     };
-    const repair=async(note:string,kind:'gate'|'critic',round:number)=>{
+    const repair=async(note:string,kind:import('../../../packages/director/live-review').RepairKind,round:number,views?:import('../../../packages/director/live-review').ReviewViews)=>{
+     const images=coderSees&&views?(await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:2})).slice(0,6):[];
      const blocked=await repairBlocked(),remaining=remainingRequests();
      if(blocked)return {applied:false,reason:blocked};
      const backup=await staticSourceContext(folder,input.iterationId),loop={turn:0,startedAt:Date.now(),transcript:[] as {from:'agent'|'tool';text:string}[],complete:false},notes=[...(state.notes??[]),{recipient:'assembler' as const,text:note}];
@@ -173,8 +186,8 @@ export async function executeDirector(claim:DirectorClaim,device:string){
      try{
       await assembleStatic({state:loop,maxTurns:Math.min(2,remaining),timeMs:180000,
        filesContext:async()=>staticSourceContext(folder,input.iterationId),
-       call:async(l,mode,currentFiles,construction)=>{await controls();return (await call('assembler',JSON.stringify({toolResults:l.transcript,...(currentFiles?.length?{currentFiles}:{}),...(construction?{construction}:{})}),withCreativeHandoff(input,'coder',staticCoderInstructions)+(mode==='tools'?' Return calls using write, read, typecheck, bundle, listResources and finish. Image render tools are unavailable.':''),mode==='files'?staticFilesSchema:staticToolsSchema,assemblerContext(input,design,[...input.assets,...state.catalog!],notes),{turn:l.turn,mode,live:true,review:kind,round})).text;},
-       tool:async action=>events.tool(900000+(round*10+(kind==='gate'?0:5))*1000+loop.transcript.length,action,()=>tools.execute(action)),save:async()=>{}});
+       call:async(l,mode,currentFiles,construction)=>{await controls();return (await call('assembler',JSON.stringify({toolResults:l.transcript,...(currentFiles?.length?{currentFiles}:{}),...(construction?{construction}:{})}),withCreativeHandoff(input,'coder',staticCoderInstructions)+(mode==='tools'?' Return calls using write, read, typecheck, bundle, listResources and finish. Image render tools are unavailable.':''),mode==='files'?staticFilesSchema:staticToolsSchema,assemblerContext(input,design,[...input.assets,...state.catalog!],notes),{turn:l.turn,mode,live:true,review:kind,round},images)).text;},
+       tool:async action=>events.tool(900000+(round*10+(kind==='gate'?0:kind==='self'?3:5))*1000+loop.transcript.length,action,()=>tools.execute(action)),save:async()=>{}});
      }catch(error){await restore();const message=error instanceof Error?error.message:'REPAIR_FAILED';if(CONTROL_FAILURE.test(message)||transientExecutionFailure(message))throw error;return {applied:false,reason:message.slice(0,200)};}
      finally{reviewState.repairTurns=(reviewState.repairTurns??0)+loop.turn;await save();}
      if(!loop.complete){await restore();return {applied:false,reason:'The coder did not finish the repair within its bounded turns.'};}
@@ -182,7 +195,7 @@ export async function executeDirector(claim:DirectorClaim,device:string){
     };
     const criticConfig=snapshot.models.critic,canReview=estimate.roles.critic.requests>0&&!!criticConfig?.vision;
     return runLiveReview({inspect,repair,repairBlocked,criticRounds:canReview?Math.min(2,estimate.roles.critic.requests):0,state:reviewState,
-     critic:canReview?async(round,context,shots)=>{await controls();return (await call('critic','Review these live draft views and measurements.',liveCriticInstructions,liveCriticSchema,context,{review:'live',round},await reviewSheet(folder,shots))).text;}:undefined,
+     critic:canReview?async(round,context,views)=>{await controls();return (await call('critic','Review these rendered views of the live draft and the measurements.',liveCriticInstructions,liveCriticSchema,context,{review:'live',round},await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:6}))).text;}:undefined,selfReview:coderSees,
      context:()=>({concept:design.designDocument.slice(0,2500),keyFrames:design.keyFrames,resources:design.resources.map(r=>({id:r.id,scene:r.scene,purpose:r.purpose,proxy:r.proxy})),formats:input.formats.map(f=>({id:f.id,width:f.width,height:f.height})),brandTokens:input.brand.tokens}),
      save:async next=>{state.liveReview=next;await save();},
      emit:async(step,message,detail,file)=>{await events.emit(step,{stepId:step,kind:'review',status:'done',costMicroUsd:0,message,detail},file);}});

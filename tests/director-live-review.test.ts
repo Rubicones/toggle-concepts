@@ -67,9 +67,11 @@ test('a restarted review keeps used rounds and never repeats a paid critic round
 });
 
 test('the critic contract is compact, goal-based and never prescribes a layout recipe',()=>{
- assert.ok(liveCriticInstructions.length<2000);assert.ok(JSON.stringify(liveCriticSchema.schema).length<2400);
+ assert.ok(liveCriticInstructions.length<2600);assert.ok(JSON.stringify(liveCriticSchema.schema).length<2400);
  assert.match(liveCriticInstructions,/The technique is the agents' choice/);assert.match(liveCriticInstructions,/Never change approved words/);
- assert.throws(()=>readLiveCritique(JSON.stringify({accepted:true,summary:'ok',notes:Array.from({length:6},()=>critique().notes[0])})));
+ assert.ok(readLiveCritique(JSON.stringify({accepted:false,summary:'ok',notes:Array.from({length:10},()=>critique().notes[0])})).notes.length===10);
+ assert.throws(()=>readLiveCritique(JSON.stringify({accepted:true,summary:'ok',notes:Array.from({length:11},()=>critique().notes[0])})));
+ assert.doesNotMatch(liveCriticInstructions,/Trust the measurements/);assert.match(liveCriticInstructions,/every ordered format side by side/);
  assert.match(criticNote(critique(),1),/never change approved words/);
 });
 
@@ -78,10 +80,31 @@ test('only new live quotes include the bounded creative review; earlier quotes a
  const plain=estimateLiveDirection(pricing,40000,4,{id:'x'}),reviewed=estimateLiveDirection(pricing,40000,4,{id:'x'},{criticRequests:2});
  assert.equal(plain.roles.critic.requests,0);assert.equal(plain.roles.critic.maxCostMicroUsd,0);
  assert.deepEqual(plain,estimateLiveDirection(pricing,40000,4,{id:'x'},{criticRequests:0}));
- assert.equal(reviewed.roles.critic.requests,2);assert.ok(reviewed.roles.critic.maxCostMicroUsd>0&&reviewed.roles.critic.maxCostMicroUsd<10000);
+ assert.equal(reviewed.roles.critic.requests,2);assert.ok(reviewed.roles.critic.maxCostMicroUsd>0&&reviewed.roles.critic.maxCostMicroUsd<50000);assert.equal(reviewed.roles.critic.inputTokens,120000);
  assert.equal(reviewed.maxCostMicroUsd,plain.maxCostMicroUsd+reviewed.roles.critic.maxCostMicroUsd);
  assert.equal(reviewed.roles.assembler.requests,plain.roles.assembler.requests);assert.equal(reviewed.roles.assembler.timeMs,plain.roles.assembler.timeMs+180000);
  assert.notEqual(reviewed.quoteId,plain.quoteId);assert.equal(estimateLiveDirection(pricing,40000,4,{id:'x'},{criticRequests:9}).roles.critic.requests,2);
+ // Visual repairs add coder requests that carry the review images, priced at the coder's rates.
+ const visual=estimateLiveDirection(pricing,40000,4,{id:'x'},{criticRequests:2,visualRepairs:3});
+ assert.equal(visual.roles.assembler.requests,plain.roles.assembler.requests+3);assert.equal(visual.roles.assembler.inputTokens,plain.roles.assembler.inputTokens+135000);
+ assert.equal(visual.maxCostMicroUsd,reviewed.maxCostMicroUsd+(visual.roles.assembler.maxCostMicroUsd-plain.roles.assembler.maxCostMicroUsd));
+ assert.equal(estimateLiveDirection(pricing,40000,4,{id:'x'},{visualRepairs:9}).roles.assembler.requests,plain.roles.assembler.requests+3);
+});
+
+test('a coder that reads images reviews its own rendered views once before the critic, with the images attached',async()=>{
+ const views:{kind:string;hasViews:boolean}[]=[];let criticSaw:unknown;
+ const {d,calls}=deps({selfReview:true,criticRounds:1,inspections:[summary(0,2),summary(0,1),summary(0,1)],
+  repair:async(note,kind,_round,v)=>{views.push({kind,hasViews:!!v?.shots.length});calls.repairs.push({note,kind,round:1});return {applied:true};},
+  critic:async(_r,_c,v)=>{criticSaw=v;return JSON.stringify(critique({accepted:true,notes:[]}));}});
+ const record=(await runLiveReview(d))!;
+ assert.deepEqual(views,[{kind:'self',hasViews:true}]);assert.match(calls.repairs[0].note,/Visual self-review/);assert.match(calls.repairs[0].note,/strict art director/);
+ assert.equal(record.repairs[0].kind,'self');assert.ok((criticSaw as {shots:unknown[]}).shots.length>0,'the critic gets the rendered views and measurements');
+ // Once only, also after a restart.
+ const again=deps({selfReview:true,state:{...newReviewState(),selfReviewed:true}});await runLiveReview(again.d);assert.equal(again.calls.repairs.length,0);
+ // Skipped (visibly) when the coder has no allowance left.
+ const blocked=deps({selfReview:true,repairBlocked:async()=>'used up'});await runLiveReview(blocked.d);assert.equal(blocked.calls.repairs.length,0);assert.ok(blocked.calls.events.includes('review:self:skipped'));
+ // Without a vision coder there is no self-review.
+ const blind=deps({selfReview:false});await runLiveReview(blind.d);assert.equal(blind.calls.repairs.length,0);
 });
 
 test('a critic request for a 128-variant campaign stays inside the draft request cap',async()=>{

@@ -17,6 +17,19 @@ export function resourceRequest(resource:Resource,input:DirectionInput,perStillM
  return {key,prompt,references:[...(method?.source?[method.source.revisionId]:[]),...resource.referenceAssetIds],derivedPlan:method?.derived??[],purpose:resource.purpose,aspectRatio:aspect,resolution:'draft' as const,maxCostMicroUsd:perStillMicroUsd};
 }
 /**
+ * Checks a design answer's resource before the application has pinned its image-method hashes (the worker pins them
+ * only after the design is accepted, prepareImageMethods). Everything the model wrote is validated; the hashes the
+ * model never supplies are stood in for. The returned key is not a request identity.
+ */
+export function checkDesignResource(resource:Resource,input:DirectionInput,perStillMicroUsd:number){
+ const pending='0'.repeat(64),source={revisionId:'pending',sha256:pending,url:'',width:1,height:1};
+ return resourceRequest({...resource,
+  ...(resource.sketch?{sketch:{...resource.sketch,sha256:resource.sketch.sha256??pending}}:{}),
+  ...(resource.edit?{edit:{...resource.edit,source:resource.edit.source??source}}:{}),
+  ...(resource.extend?{extend:{...resource.extend,source:resource.extend.source??source,canvasSha256:resource.extend.canvasSha256??pending}}:{}),
+ },input,perStillMicroUsd);
+}
+/**
  * Image methods (blocks with brief.imageMethodsVersion 1): the prompt wrapper, the source picture and the
  * application-made references the request carries. Hashes are pinned by the worker before any request.
  */

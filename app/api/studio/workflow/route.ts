@@ -7,7 +7,7 @@ import {z} from "zod";
 function workflowError(error:{message:string;code?:string}|null){
  if(!error)return;
  if(schemaMissing(error))throw new ApiError(503,"WORKFLOW_SCHEMA_REQUIRED","Apply migration 006 in Settings first.");
- const messages:Record<string,string>={C1_REQUIRED:"Submit C1 first. Manual runs cannot start the production graph.",A1_REQUIRED:"Accept the Brand Kit through A1 before starting planning.",RETRY_BLOCKED:"Only a known failed job with fewer than three attempts can be retried. Unknown submissions require reconciliation.",WORKFLOW_CANCELLED:"This workflow was cancelled and cannot be resumed. Its history and cumulative charges are retained.",FORBIDDEN:"The studio actor cannot control this workflow."};
+ const messages:Record<string,string>={C1_REQUIRED:"Submit C1 first. Manual runs cannot start the production graph.",A1_REQUIRED:"Accept the Brand Kit through A1 before starting planning.",RETRY_ATTEMPTS_USED:"This step already had three paid attempts. Request a correction below or restart planning; no call was submitted.",RETRY_BLOCKED:"Only a known failed job with fewer than three attempts can be retried. Unknown submissions require reconciliation.",WORKFLOW_CANCELLED:"This workflow was cancelled and cannot be resumed. Its history and cumulative charges are retained.",FORBIDDEN:"The studio actor cannot control this workflow."};
  const code=Object.keys(messages).find(k=>error.message.includes(k));if(code)throw new ApiError(409,code,messages[code]);throw new Error(error.message);
 }
 export async function GET(request:Request){return api(async()=>{
