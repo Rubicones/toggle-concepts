@@ -1,5 +1,6 @@
 "use client";
 import {Disclosure} from '@/components/ui/disclosure';
+import { BriefFeelFields } from "./brief-feel-fields";
 import {Select} from '@/components/ui/select';
 import {usePersistedDraft} from "@/lib/use-persisted-draft";
 import {SaveStatus} from "./save-status";
@@ -172,9 +173,9 @@ function VariantRows({ rows, remove }: { rows: Omit<VariantEntry, "inputRevision
     </table>
   );
 }
-type TextKey = "product" | "objective" | "audience" | "markets" | "ownerName" | "ownerEmail" | "offer" | "cta" | "destination" | "deadline" | "immutables" | "synthesis" | "rightsNotes" | "price" | "currency" | "priceSource" | "variationNotes";
+type TextKey = "product" | "benefit" | "proof" | "audienceTension" | "objective" | "audience" | "markets" | "ownerName" | "ownerEmail" | "offer" | "cta" | "destination" | "deadline" | "immutables" | "synthesis" | "rightsNotes" | "price" | "currency" | "priceSource" | "variationNotes";
 const limits: Record<TextKey, number> = {
-  product: 1500, objective: 1200, audience: 1500, markets: 500, ownerName: 160, ownerEmail: 200, offer: 1000, cta: 300, destination: 500, deadline: 20,
+  product: 1500, benefit: 400, proof: 600, audienceTension: 600, objective: 1200, audience: 1500, markets: 500, ownerName: 160, ownerEmail: 200, offer: 1000, cta: 300, destination: 500, deadline: 20,
   immutables: 2000, synthesis: 1000, rightsNotes: 1500, price: 100, currency: 3, priceSource: 500, variationNotes: 3000,
 };
 /** Rows are exactly every combination of the chosen options. Existing rows keep their IDs. */
@@ -285,9 +286,9 @@ function BriefEditor({
     <label>
       {label}
       {opts.multiline ? (
-        <textarea rows={2} value={draft[key]} maxLength={limits[key]} placeholder={opts.placeholder} onChange={(e) => set(key, e.target.value)} />
+        <textarea rows={2} value={draft[key] ?? ""} maxLength={limits[key]} placeholder={opts.placeholder} onChange={(e) => set(key, e.target.value)} />
       ) : (
-        <input type={opts.type ?? "text"} value={draft[key]} maxLength={limits[key]} placeholder={opts.placeholder} onChange={(e) => set(key, e.target.value)} />
+        <input type={opts.type ?? "text"} value={draft[key] ?? ""} maxLength={limits[key]} placeholder={opts.placeholder} onChange={(e) => set(key, e.target.value)} />
       )}
       {opts.hint && <small className="muted">{opts.hint}</small>}
     </label>
@@ -366,13 +367,20 @@ function BriefEditor({
         <legend>The campaign</legend>
         <div className="brief-field-grid">
           {field("product", "What are we advertising?", { multiline: true })}
+          {field("benefit", "The main benefit, in one sentence", { placeholder: "What people get from it (optional)" })}
+          {field("proof", "Why should people believe it?", { multiline: true, placeholder: "A fact, number or feature that proves it (optional)" })}
           {field("objective", "What should the ad achieve?", { multiline: true })}
           {field("audience", "Who is it for?", { multiline: true })}
+          {field("audienceTension", "What gets in their way today?", { multiline: true, placeholder: "The problem or habit the product solves (optional)" })}
           {field("markets", "Where will it run?", { placeholder: "UK, Germany…" })}
           {field("offer", "Offer", { multiline: true, placeholder: "Free 14-day trial…" })}
           {field("cta", "Call to action", { placeholder: "Try it free" })}
           {field("destination", "Link the ad opens", { type: "url", placeholder: "https://" })}
         </div>
+      </fieldset>
+      <fieldset disabled={busy}>
+        <legend>How it should feel</legend>
+        <BriefFeelFields value={draft.feel} onChange={(feel) => set("feel", feel)} />
       </fieldset>
       <fieldset disabled={busy}>
         <legend>What to make</legend>

@@ -7,20 +7,20 @@ import {z} from 'zod';
  */
 export const SUGGEST='suggest' as const;
 
-/** Emotional territories. `hints` are an open sensory vocabulary for agents, not rules; the brand kit always wins. */
+/** What the viewer should feel. Labels only: agents translate a feeling into this brand's own look; no stock sensory recipe. */
 export const feelings=[
- {id:'warmth',label:'Warmth & care',hints:'soft warm light, close distance, rounded friendly forms, natural materials or a warm palette, unhurried rhythm, gentle words'},
- {id:'craft',label:'Tactile & crafted',hints:'visible texture (paper, wood, fabric, or tactile 3D materials), macro detail, honest imperfection, humanist type'},
- {id:'calm-confidence',label:'Calm confidence',hints:'even light, order and grid, restrained palette, precise interface or numbers, short certain sentences'},
- {id:'energy',label:'Energy & drive',hints:'diagonals and motion (camera or kinetic graphics), high contrast, tight crops, short punchy lines'},
- {id:'creative-freedom',label:'Creative freedom',hints:'unexpected angles, asymmetry, collage or generative forms, type as gesture, room for play'},
- {id:'premium',label:'Premium',hints:'space and slowness, light as material (photo or 3D), fine type, few words, one precious detail'},
- {id:'clarity',label:'Clarity & help',hints:'product or interface in focus, clear demonstration in steps, large readable type'},
- {id:'play',label:'Play & humour',hints:'bold colour, exaggeration, squishy or surprising forms, conversational tone, a wink'},
- {id:'bold',label:'Bold & challenging',hints:'hard contrast, big type, graphic shapes and shadows, provocative yet factual lines'},
- {id:'wonder',label:'Wonder',hints:'light and transformation, one magical reveal frame, depth, luminous 3D or real light'},
- {id:'belonging',label:'Belonging',hints:'people together or a visible community (avatars, shared moments), warm palette, shared rituals'},
- {id:'urgency',label:'Deal & urgency',hints:'offer first, clear numbers, decisive CTA, punchy graphics, only real conditions'},
+ {id:'warmth',label:'Warmth & care'},
+ {id:'craft',label:'Tactile & crafted'},
+ {id:'calm-confidence',label:'Calm confidence'},
+ {id:'energy',label:'Energy & drive'},
+ {id:'creative-freedom',label:'Creative freedom'},
+ {id:'premium',label:'Premium'},
+ {id:'clarity',label:'Clarity & help'},
+ {id:'play',label:'Play & humour'},
+ {id:'bold',label:'Bold & challenging'},
+ {id:'wonder',label:'Wonder'},
+ {id:'belonging',label:'Belonging'},
+ {id:'urgency',label:'Deal & urgency'},
 ] as const;
 export type FeelingId=(typeof feelings)[number]['id'];
 
@@ -38,7 +38,7 @@ export type AxisId=(typeof characterAxes)[number]['id'];
 export const lookOptions={
  stretch:[{id:'on-brand',label:'Strictly on brand',hint:'all three directions stay inside the usual brand style'},{id:'fresh',label:'Recognisable, but fresh',hint:'one direction at the brand core, two step aside'},{id:'bold',label:'Bold, try something new',hint:'directions may stretch the brand; kit rules still hold'}],
  light:[{id:'soft-daylight',label:'Soft daylight'},{id:'golden-hour',label:'Golden hour'},{id:'hard-sun',label:'Hard sun & graphic shadows'},{id:'dark-studio',label:'Dark studio, sculpted'},{id:'direct-flash',label:'Direct flash'},{id:'night-neon',label:'Night & city light'}],
- medium:[{id:'live',label:'Live photography'},{id:'digital',label:'Digital: 3D, motion graphics, interface'},{id:'mix',label:'A mix of both'}],
+ medium:[{id:'live',label:'Photographed'},{id:'digital',label:'Made, not photographed'},{id:'mix',label:'Both'}],
  world:[{id:'real-life',label:'Real life moments'},{id:'studio',label:'Studio & still life'},{id:'home',label:'Home'},{id:'city',label:'City'},{id:'nature',label:'Nature'},{id:'product-interface',label:'Interface as the hero'},{id:'motion-graphics',label:'Motion graphics'},{id:'object-3d',label:'3D objects & materials'},{id:'typography-led',label:'Type as the visual'},{id:'illustration',label:'Illustration'},{id:'data-diagrams',label:'Data & diagrams'},{id:'abstract-graphic',label:'Abstract & graphic'}],
  energy:[{id:'still',label:'Still and composed'},{id:'gentle',label:'Gentle movement'},{id:'dynamic',label:'Dynamic and fast'}],
  colour:[{id:'brand-only',label:'Brand colours only'},{id:'brand-natural',label:'Brand + natural colours'},{id:'bold-contrast',label:'Bold contrast'},{id:'soft-muted',label:'Soft and muted'}],
@@ -110,13 +110,13 @@ export function compileFeelingBrief(questionnaire:Record<string,unknown>|undefin
  const lines:string[]=[];
  const main=feel.feelings[0],more=feel.feelings.slice(1);
  const hint=(id:string)=>feelings.find(f=>f.id===id);
- lines.push(main?`Main feeling: ${hint(main)!.label} (sensory hints: ${hint(main)!.hints}).${more.length?` Also: ${more.map(id=>hint(id)!.label).join(', ')}.`:''}`:'Feeling: not chosen; derive it from the brand character and the product benefit, and state your choice.');
+ lines.push(main?`Main feeling: ${hint(main)!.label}. Translate it into this brand's own look; it is not a recipe.${more.length?` Also: ${more.map(id=>hint(id)!.label).join(', ')}.`:''}`:'Feeling: not chosen; derive it from the brand character and the product benefit, and state your choice.');
  const shifts=characterAxes.filter(a=>feel.character[a.id]!==undefined).map(a=>`${a.left}–${a.right} ${feel.character[a.id]}/5`);
  if(shifts.length)lines.push(`Campaign character (1 = first pole, 5 = second): ${shifts.join('; ')}.`);
  const stretch=lookOptions.stretch.find(s=>s.id===feel.stretch);
  lines.push(stretch?`How far from the usual style: ${stretch.label}: ${stretch.hint}.`:'How far from the usual style: suggest; make one direction the brand core and two clearly different.');
- const pick=(name:string,value:string|readonly string[],list:readonly {id:string;label:string}[])=>{const v=Array.isArray(value)?value:[value];const real=v.filter(x=>x!==SUGGEST);return `${name} ${real.length?real.map(x=>label(list,x)).join(' + '):'suggest'}`;};
- lines.push(`Look: ${[pick('imagery',feel.medium,lookOptions.medium),pick('light',feel.light,lookOptions.light),pick('world',feel.world,lookOptions.world),pick('energy',feel.energy,lookOptions.energy),pick('colour',feel.colour,lookOptions.colour),pick('type',feel.typeRole,lookOptions.typeRole),pick('product',feel.productRole,lookOptions.productRole),pick('people',feel.people,lookOptions.people)+(feel.peopleNote?` (${clip(feel.peopleNote,120)})`:''),pick('text on screen',feel.textAmount,lookOptions.textAmount),pick('humour',feel.humour,lookOptions.humour)].join('; ')}.`);
+ const answered=([['imagery',feel.medium,lookOptions.medium],['light',feel.light,lookOptions.light],['world',feel.world,lookOptions.world],['energy',feel.energy,lookOptions.energy],['colour',feel.colour,lookOptions.colour],['type',feel.typeRole,lookOptions.typeRole],['product',feel.productRole,lookOptions.productRole],['people',feel.people,lookOptions.people],['text on screen',feel.textAmount,lookOptions.textAmount],['humour',feel.humour,lookOptions.humour]] as [string,string|readonly string[],readonly {id:string;label:string}[]][]).map(([name,value,list])=>{const real=(Array.isArray(value)?value:[value]).filter(x=>x!==SUGGEST);return real.length?`${name} ${real.map(x=>label(list,x)).join(' + ')}${name==='people'&&feel.peopleNote?` (${clip(feel.peopleNote,120)})`:''}`:'';}).filter(Boolean);
+ lines.push(answered.length?`Client choices: ${answered.join('; ')}. Everything else is yours to propose from the brand kit.`:'Look: not chosen; propose it from the brand kit.');
  if(feel.endFeeling)lines.push(`Feeling at the end: "${clip(feel.endFeeling,200)}".`);
  if(feel.avoid.length||feel.avoidNote)lines.push(`Avoid: ${[...feel.avoid.map(a=>label(lookOptions.avoid,a)),clip(feel.avoidNote,200)].filter(Boolean).join(', ')}.`);
  const refs=(list:BriefFeel['likes'],word:string)=>list.length?`${list.length} reference(s) ${word}${list.flatMap(r=>r.aspects).length?` for ${[...new Set(list.flatMap(r=>r.aspects))].map(a=>label(lookOptions.referenceAspects,a)).join(', ')}`:''}${list.some(r=>r.note)?` (${list.map(r=>clip(r.note,80)).filter(Boolean).join('; ')})`:''}`:'';
@@ -125,7 +125,7 @@ export function compileFeelingBrief(questionnaire:Record<string,unknown>|undefin
  if(campaign.length)lines.push(`Campaign: ${campaign.join('; ')}.`);
  const kit=['voice.tone','voice.character','voice.copyRules','voice.samples','imagery.treatment','motion.motionSystem'].map(k=>brandTokens[k]?`${k}: ${clip(brandTokens[k],k==='voice.samples'?260:200)}`:'').filter(Boolean);
  lines.push(kit.length?`Brand kit (wins over every choice above): ${kit.join(' | ')}`:'Brand kit: no voice or imagery rules accepted yet; infer carefully from the supplied evidence and say so.');
- let text=`FEELING BRIEF (client choices; "suggest" means you propose from the brand kit):\n${lines.join('\n')}`;
+ let text=`FEELING BRIEF (client choices; an AD creative focus, when given, leads them; anything not chosen is yours to propose from the brand kit):\n${lines.join('\n')}`;
  if(text.length>1800)text=text.slice(0,1799)+'…';
  return {text,data:{feelings:feel.feelings,character:feel.character,stretch:feel.stretch,medium:feel.medium,light:feel.light,world:feel.world,energy:feel.energy,colour:feel.colour,typeRole:feel.typeRole,productRole:feel.productRole,people:feel.people,textAmount:feel.textAmount,humour:feel.humour,avoid:feel.avoid}};
 }

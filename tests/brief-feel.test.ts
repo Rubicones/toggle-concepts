@@ -26,8 +26,8 @@ test('the feeling brief is compact, explicit about suggest, and lets the brand k
  const kit={payload:{rules:[{category:'voice',key:'tone',value:'Direct, never decorative.',decision:'accepted'},{category:'voice',key:'samples',value:'"Every take, every version."',decision:'accepted'},{category:'color',key:'accent',value:'#DFFF00',decision:'accepted'},{category:'voice',key:'character',value:'rejected idea',decision:'rejected'}]}};
  const tokens=brandTokensFromKit(kit);assert.equal(tokens['voice.tone'],'Direct, never decorative.');assert.equal(tokens['voice.character'],undefined);
  const brief=compileFeelingBrief({benefit:'Find your best take in seconds.',feel:{feelings:['creative-freedom','calm-confidence'],medium:'digital',stretch:'fresh',character:{volume:2},avoid:['stock'],likes:[{aspects:['light'],note:'soft studio glow'}]}},tokens)!;
- assert.match(brief.text,/Main feeling: Creative freedom \(sensory hints:/);assert.match(brief.text,/Also: Calm confidence/);
- assert.match(brief.text,/imagery Digital: 3D, motion graphics, interface/);assert.match(brief.text,/light suggest/);
+ assert.match(brief.text,/Main feeling: Creative freedom\. Translate it into this brand's own look; it is not a recipe/);assert.doesNotMatch(brief.text,/sensory hints|soft warm light|asymmetry/,'no stock sensory recipe reaches the agents');assert.match(brief.text,/Also: Calm confidence/);
+ assert.match(brief.text,/Client choices: imagery Made, not photographed/);assert.doesNotMatch(brief.text,/light suggest/,'unanswered choices are left to the agents, not listed');
  assert.match(brief.text,/one direction at the brand core, two step aside/);assert.match(brief.text,/Quiet–Loud 2\/5/);
  assert.match(brief.text,/Avoid: Stock look/);assert.match(brief.text,/liked for Light/);assert.match(brief.text,/benefit: Find your best take/);
  assert.match(brief.text,/Brand kit \(wins over every choice above\): voice.tone: Direct, never decorative\./);assert.match(brief.text,/voice.samples/);
@@ -42,7 +42,7 @@ test('planning contracts read the brand and the feeling brief first and never li
  const all=['strategy','script','visual-direction'].map(r=>planningTransportTask(r)).join('\n');
  assert.doesNotMatch(all,/UI Card Proof|Studio Still Life|POV Lifestyle|Tactile Material Craft|highlight strips or signature accent|architectural color-block split/);
  assert.doesNotMatch(all,/Get paid for buying milk|TEST THE HOOK BEFORE IT'S DONE/,'no other brand copy as examples');
- assert.match(planningTransportTask('strategy'),/How far from the usual style/);assert.match(planningTransportTask('strategy'),/digital means worlds built from 3D, motion graphics, interface and type/);
+ assert.match(planningTransportTask('strategy'),/How far from the usual style/);assert.match(planningTransportTask('strategy'),/made means nothing is photographed and you invent how it is made/);
  assert.match(planningTransportTask('script'),/one decisive frame with one focal point and visible proof/);assert.match(planningTransportTask('script'),/brand's voice/);
  assert.match(planningTransportTask('visual-direction'),/square master/);assert.match(planningTransportTask('visual-direction'),/kit's shape language/);
  assert.match(liveCriticInstructions,/feels like the chosen feeling/);
@@ -55,4 +55,13 @@ test('guided planning gets the feeling brief from the stored brand revision (pay
  const ctx=withFeelingBrief<Record<string,unknown>>({submittedBrief:{questionnaire:{}},acceptedBrandKit:revision})!;
  assert.match(String(ctx.feelingBrief),/voice.tone: Direct, warm/);assert.doesNotMatch(String(ctx.feelingBrief),/proposed only/);
  assert.equal(withFeelingBrief({feelingBrief:'kept'})!.feelingBrief,'kept');assert.deepEqual(withFeelingBrief({mode:'manual'}),{mode:'manual'});
+});
+
+test('the questionnaire answers (feel and the sharper campaign fields) save in a draft and reach the feeling brief',async()=>{
+ const {briefDraftSchema,emptyBrief}=await import('../packages/contracts/brief');
+ const draft={...emptyBrief('Get sign-ups'),benefit:'5% back on everyday spends',proof:'Paid monthly to the card',audienceTension:'Small spends feel invisible',feel:{...briefFeelSchema.parse({}),feelings:['clarity'],people:'hands',avoid:['stock'],endFeeling:'small spends count'}};
+ const saved=briefDraftSchema.parse(draft);assert.equal(saved.feel?.people,'hands');
+ const text=compileFeelingBrief(saved as unknown as Record<string,unknown>,{})!.text;
+ assert.match(text,/Main feeling: Clarity & help/);assert.match(text,/people Hands only/);assert.match(text,/benefit: 5% back/);assert.match(text,/audience tension: Small spends/);assert.match(text,/Feeling at the end: "small spends count"/);
+ assert.ok(briefDraftSchema.safeParse(emptyBrief('x')).success,'a brief without the new answers stays valid');
 });

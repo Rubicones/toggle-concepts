@@ -1,0 +1,14 @@
+.feel { display: grid; gap: 22px; }
+.intro { margin: 0; color: var(--muted); font-size: 13px; }
+.group { display: grid; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.group > span { font-size: 14px; font-weight: 600; }
+.group > small { color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border: 1px solid #dfe7eb; border-radius: 999px; background: #fff; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.chip:hover:not(:disabled) { border-color: var(--ink); }
+.chip[aria-pressed="true"], .chip[aria-checked="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.chip:disabled { opacity: 0.45; cursor: default; }
+.chip:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.suggest { border-style: dashed; }
+.badge { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.inline { display: grid; gap: 6px; max-width: 520px; }
