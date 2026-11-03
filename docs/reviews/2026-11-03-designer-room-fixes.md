@@ -121,7 +121,7 @@
     - the worker logs `[brand-sheet] building…`, the page count and time, or the failure.
   - `lib/server/brand-sheet.ts`: the view adds `requestedAt` while a build is queued and `attempt` while it is being built.
   - `components/studio/brand-sheet.tsx`:
-    - queued for more than a minute → "Waiting for the studio computer to pick this up. Check that the local worker (worker:dev) is running…";
+    - queued for more than a minute → "Waiting for local processing to pick this up. Use Queue → Resume local processing…";
     - a retry shows "Attempt n of 3".
 - **Migrations:** none.
 - **Risk:** no digests or prompts change.

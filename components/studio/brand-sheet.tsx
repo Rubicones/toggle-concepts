@@ -31,7 +31,7 @@ export function BrandSheetStrip({ endpoint, busy, build }: { endpoint: string; b
   else if (!data) status = { text: "Loading the brand sheet…" };
   else if (!data.schemaReady) status = { text: "Showing the brand sheet needs a database update. Apply the brand sheet update in Settings.", tone: "warn" };
   else if (!data.submitted) status = { text: "Submit the brandbook to build the pages the agents will see." };
-  else if (data.state === "queued" && waited(data.requestedAt) > 60000) status = { text: "Waiting for the studio computer to pick this up. Check that the local worker (worker:dev) is running on the studio Mac; the build starts as soon as it is.", tone: "warn" };
+  else if (data.state === "queued" && waited(data.requestedAt) > 60000) status = { text: "Waiting for local processing to pick this up. Use Queue → Resume local processing on the studio Mac; the build starts as soon as it runs.", tone: "warn" };
   else if (building) status = { text: `${pages.length ? "Building a new version of the brand sheet… The pages below are the previous version." : "Building the brand sheet… It takes about a minute."}${(data.attempt ?? 1) > 1 ? ` Attempt ${data.attempt} of 3.` : ""}` };
   else if (data.state === "failed") status = { text: `The brand sheet could not be built${data.error ? ` (${plainError(data.error)})` : ""}. Try again; if it fails twice, check that the local studio app is running.`, tone: "warn", action: "Try again" };
   else if (data.state === "none") status = { text: "The brand sheet has not been built yet.", action: "Build the sheet" };
