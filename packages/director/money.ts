@@ -124,7 +124,8 @@ const quantile=(values:number[],q:number)=>{const v=[...values].sort((a,b)=>a-b)
  * 90th percentile of measured turns and tokens with 50 % headroom, never above the generous starting ceiling and never
  * below a floor that still lets one draft finish. Fewer than DESIGNER_MEASURED_RUNS runs: the starting ceiling.
  */
-export function designerMeasurements(runs:DesignerRun[]){
+export type DesignerMeasurements={runs:number;typicalCostMicroUsd?:number;turns?:{requests:number;inputTokens:number;outputTokens:number}};
+export function designerMeasurements(runs:DesignerRun[]):DesignerMeasurements{
  const measured=runs.filter((r):r is Required<DesignerRun>=>!!r.usage&&r.usage.requests>0);
  if(!measured.length)return {runs:0};
  const typicalCostMicroUsd=quantile(measured.map(r=>r.usage.costMicroUsd+r.usage.picturesMicroUsd),0.5);

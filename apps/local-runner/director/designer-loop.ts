@@ -7,7 +7,7 @@ import {readDesignerTurn,type DesignerPicture,type DesignerTurn} from '../../../
 import {applySourceEdits} from '../../../packages/director/source-edits';
 import {liveFormat} from '../../../packages/director/live-preview';
 import {propagateExecutionFailure} from '../../../packages/director/execution-failures';
-import type {InspectionView,InspectionSummary,Finding} from '../../../packages/director/layout-inspection';
+import type {InspectionView,InspectionSummary} from '../../../packages/director/layout-inspection';
 import type {DirectionInput,Variant} from '../../../packages/director/types';
 
 /** Saved render counts are keyed by scene and format. */
@@ -28,6 +28,9 @@ export type DesignerTools={
  render:(views:InspectionView[])=>Promise<{summary:InspectionSummary;shots:{key:string;file:string}[]}>;
  /** Records the picture in the work state, then buys it inside the approved count (admission decides). */
  requestImage:(picture:DesignerPicture)=>Promise<PictureResult>;
+ /** After a restart: recorded pictures whose result never reached the designer. `settle` returns the saved entry or
+  * finishes the purchase under the same identity, so a paid picture is reused, never bought twice. */
+ resumePictures?:(reported:string[])=>Promise<{id:string;settle:()=>Promise<PictureResult>}[]>;
  /** The live tools' finish: every ordered option implemented, typechecked and built. */
  finish:()=>Promise<{complete:true}|{complete:false;issue:string}>;
 };
@@ -63,7 +66,14 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
  let fatal:unknown;const stopIfFatal=()=>{if(fatal)throw fatal;};
  const log=async(entry:unknown)=>{state.transcript.push({from:'tool',text:short(entry)});await args.save(state);};
  // Pictures that arrived since the last turn are reported to the designer; `all` waits for the rest (before finishing).
- const collect=async(all=false)=>{if(all)await Promise.all(pending.values());for(const [key,result] of [...arrived]){arrived.delete(key);pending.delete(key);await log({picture:result});}};
+ const collect=async(all=false)=>{if(all)await Promise.all(pending.values());for(const [key,result] of [...arrived]){arrived.delete(key);pending.delete(key);if(result.id)(state.reported??=[]).push(result.id);await log({picture:result});}};
+ const track=(key:string,purchase:Promise<PictureResult>)=>{pending.set(key,purchase.then(result=>{arrived.set(key,result);return result;},error=>{
+  // A control or lease failure is not the picture's result: it stays unreported, so the next start settles it again.
+  if(propagateExecutionFailure(error)){fatal??=error;return {id:'',status:'failed' as const};}
+  const id=(error as {resourceId?:unknown})?.resourceId,result={id:typeof id==='string'?id:'',status:'failed' as const,detail:(error instanceof Error?error.message:'The picture could not be made.').slice(0,300)};
+  arrived.set(key,result);return result;}));};
+ // A restart loses the background purchases in memory; recorded pictures are settled again and reported as usual.
+ if(tools.resumePictures)for(const p of await tools.resumePictures(state.reported??[]))track(`resume:${p.id}`,p.settle());
  while(!state.complete&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   await collect();stopIfFatal();
   const files=await tools.files(),last=state.lastRender;
@@ -89,7 +99,7 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
    for(const picture of turn.pictures){
     if(state.pictures>=args.maxPictures){results.push({picture:'refused',detail:'The approved number of pictures is used. Build the rest in code or with the pictures you have.'});continue;}
     state.pictures++;await args.save(state);const key=`${state.turn}:${state.pictures}`;
-    pending.set(key,tools.requestImage(picture).catch(error=>{if(propagateExecutionFailure(error)){fatal??=error;}return {id:'',status:'failed' as const,detail:(error instanceof Error?error.message:'The picture could not be made.').slice(0,300)};}).then(result=>{arrived.set(key,result);return result;}));
+    track(key,tools.requestImage(picture));
     results.push({picture:'requested',scene:picture.scene,purpose:picture.purpose.slice(0,120)});
    }
    // 3. Render: only a building source; the first render designs the scene, later ones are revisions.

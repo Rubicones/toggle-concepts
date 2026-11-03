@@ -76,3 +76,31 @@ test('the designer reads the full kit and the brand sheet note, never the slimme
  assert.equal((context.brand.kit as {instructions:string}).instructions.length,3000);assert.ok((slim.brand.summary.instructions??'').length<=2000);
  assert.equal('compaction' in context,false);assert.equal('resourceIds' in context,false);assert.match(JSON.stringify(context.brand.sheet),/never a layout to copy/);
 });
+
+test('after a restart, recorded pictures that never reached the designer are settled again and reported once',async()=>{
+ const s=input().storyboard[0].id,scenes=input().storyboard.map(x=>({sceneId:x.id,moment:'Key frame'}));let seen:string[]|undefined;
+ const state=newDesignerState();state.pictures=2;state.reported=['res-1'];
+ const tools:DesignerTools={files:async()=>[],write:async()=>{},build:async()=>({ok:true}),render:async()=>{throw new Error('no render');},requestImage:async()=>{throw new Error('no new picture');},finish:async()=>({complete:true}),
+  resumePictures:async reported=>{seen=[...reported];return [{id:'res-2',settle:async()=>({id:'res-2',status:'ready'})}];}};
+ await runDesigner({input:input(),state,maxTurns:3,maxPictures:2,timeMs:600000,tools,save:async()=>{},call:async()=>{return JSON.stringify({focus:{sceneId:s,activity:'finishing',about:'done'},finish:{intent,scenes}});}});
+ assert.deepEqual(seen,['res-1']);assert.deepEqual(state.reported,['res-1','res-2']);
+ assert.match(JSON.stringify(state.transcript),/res-2.*ready/,'the resumed picture is reported like any arrival');assert.equal(state.complete,true);
+});
+
+test('a lease loss during a purchase stops the loop and leaves the picture unreported for the next start',async()=>{
+ const s=input().storyboard[0].id,state=newDesignerState();
+ const tools:DesignerTools={files:async()=>[],write:async()=>{},build:async()=>({ok:true}),render:async()=>{throw new Error('no render');},
+  requestImage:async()=>{throw Object.assign(new Error('STALE_DIRECTOR_LEASE'),{resourceId:'res-1'});},finish:async()=>({complete:true})};
+ await assert.rejects(runDesigner({input:input(),state,maxTurns:3,maxPictures:2,timeMs:600000,tools,save:async()=>{},
+  call:async()=>JSON.stringify({focus:{sceneId:s,activity:'designing',about:'pictures'},pictures:[{purpose:'one',scene:s,prompt:'An aluminium slab.',aspect:'1:1'}]})}),/STALE_DIRECTOR_LEASE/);
+ assert.equal(state.reported,undefined);assert.equal(state.pictures,1);
+});
+
+test('an ordinary failed purchase is reported with its id, so a restart does not retry it',async()=>{
+ const s=input().storyboard[0].id,scenes=input().storyboard.map(x=>({sceneId:x.id,moment:'Key frame'})),state=newDesignerState();let n=0;
+ const tools:DesignerTools={files:async()=>[],write:async()=>{},build:async()=>({ok:true}),render:async()=>{throw new Error('no render');},
+  requestImage:async()=>{throw Object.assign(new Error('The provider refused the prompt.'),{resourceId:'res-1'});},finish:async()=>({complete:true})};
+ await runDesigner({input:input(),state,maxTurns:3,maxPictures:2,timeMs:600000,tools,save:async()=>{},
+  call:async()=>JSON.stringify(n++===0?{focus:{sceneId:s,activity:'designing',about:'pictures'},pictures:[{purpose:'one',scene:s,prompt:'An aluminium slab.',aspect:'1:1'}]}:{focus:{sceneId:s,activity:'finishing',about:'done'},finish:{intent,scenes}})});
+ assert.deepEqual(state.reported,['res-1']);assert.match(JSON.stringify(state.transcript),/provider refused/);
+});

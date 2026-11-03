@@ -32,6 +32,11 @@ export function designerTools(args:{folder:string;input:DirectionInput;design:De
  /** Buys one recorded picture through the catalog, admission and ledger; returns its entry. */buy:(resource:Resource)=>Promise<CatalogEntry|undefined>;
  sandbox?:typeof sandboxTool}):DesignerTools{
  const {folder,input,design}=args,run=args.sandbox??sandboxTool,tools=()=>liveTools(folder,input,args.deadline(),args.preview,{sandbox:run});
+ const settle=async(resource:Resource):Promise<PictureResult>=>{
+  let entry:CatalogEntry|undefined;
+  try{entry=await args.buy(resource);}catch(error){if(error instanceof Error)Object.assign(error,{resourceId:resource.id});throw error;}
+  return entry?{id:resource.id,status:'ready',...(entry.cutout?{cutout:true}:entry.cutoutFailed?{cutout:false,detail:'The cutout failed; use the rectangle.'}:{})}:{id:resource.id,status:'failed',detail:'The picture could not be made.'};
+ };
  return {
   files:async()=>(await staticSourceContext(folder,input.iterationId)).files,
   write:async(path,source)=>tools().execute({tool:'write',path,source}),
@@ -43,9 +48,11 @@ export function designerTools(args:{folder:string;input:DirectionInput;design:De
   requestImage:async(picture):Promise<PictureResult>=>{
    const resource=pictureResource(picture,input,design.resources.map(r=>r.id));
    design.resources.push(resource);await args.save();
-   const entry=await args.buy(resource);
-   return entry?{id:resource.id,status:'ready',...(entry.cutout?{cutout:true}:entry.cutoutFailed?{cutout:false,detail:'The cutout failed; use the rectangle.'}:{})}:{id:resource.id,status:'failed',detail:'The picture could not be made.'};
+   return settle(resource);
   },
+  // Pictures recorded before a restart: the catalog's cached entry is reused, an unfinished purchase is resumed under
+  // the same resource id (the paid request is reused by its receipt), and the designer hears the result as usual.
+  resumePictures:async reported=>design.resources.filter(r=>!reported.includes(r.id)).map(resource=>({id:resource.id,settle:()=>settle(resource)})),
   finish:async()=>{try{const r=await tools().execute({tool:'finish'}) as {complete?:boolean};return r?.complete?{complete:true}:{complete:false,issue:'The draft is not complete yet.'};}catch(error){if(propagateExecutionFailure(error))throw error;return {complete:false,issue:error instanceof Error?error.message:'The draft is not complete yet.'};}},
  };
 }

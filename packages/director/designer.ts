@@ -95,4 +95,4 @@ export function designerTurnSummary(results:unknown[]):string[]{
 }
 
 /** The designer's saved progress in the work state (point 4b/4e). */
-export type DesignerLoopState={turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
+export type DesignerLoopState={turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
