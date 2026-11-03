@@ -159,6 +159,18 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
 - **Storage and access.** The alpha PNG is cropped to the object and stored at `public/<sha>-cutout.png` and `staging/director-derived/<sha>.png`. Frame code reads it as `resources[id].cutoutUrl` (with `cutoutWidth` and `cutoutHeight`). Saved previews and delivery reload it from staging, or make the same deterministic cutout again.
 - **Timeline.** Every picture shows its role ("Stand-in for a 3D render: …", "Product picture", "Picture"). A cutout gets its own entry with a checkerboard preview, or a sentence saying why it failed.
 
+### "In the final version" (designer pipeline plan, point 3, 3 November 2026)
+
+- Blocks quoted from now on also carry `brief.finalNotesVersion: 1`.
+- **What the director writes:**
+  - `keyFrames[].motion`: how the scene moves in the final, in one or two sentences;
+  - `keyFrames[].sound`: offered only when an audio file is supplied, since that is the only case a final has sound;
+  - `becomes` on each stand-in ("a 3D render of …", "a filmed shot of …").
+- **Request size.** A single FINAL rule replaces the earlier sentence about describing motion for the next stage, so the 128-variant director request still fits its target with one reference image (margin 2 units; point 6 is where that cap grows).
+- **Schemas.** `static_director_v4` / `v4r` (`n` = without cutout, `a` = with sound). Response strings carry no length limits; `readDesign` trims them.
+- **Display.** `packages/director/final-notes.ts` turns the design into plain sentences per scene, without ids, and omits scenes with nothing to add. `LivePreview.finalNotes` carries them, and `FinalVersionPanel` shows them under the frame in the AD's live and saved draft viewer, following the scene switcher.
+- **Client wording.** `clientFinalNote` gives the client wording ("This picture becomes …"). The client C2 view still shows compiled batches, not director drafts, so the client panel is ready but not mounted yet.
+
 ## 6. Current draft execution and handoff contracts
 
 Key modules: `lib/server/director-start.ts`, `apps/local-runner/director/worker.ts`, `apps/local-runner/director/static-assembler.ts`, `packages/director/creative-handoff.ts`, `packages/director/planning.ts`, `packages/director/inputs.ts`, `packages/director/source-edits.ts` and `packages/director/contract.ts`.

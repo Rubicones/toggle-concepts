@@ -27,7 +27,7 @@ import {resolve} from 'node:path';
 import {adminClient,checked,sharedTenant} from '../../../packages/data/shared-runtime';
 import {effectiveRunAgents} from '../../../packages/data/run-limits';
 import {directorPrompt,staticDirectorPrompt,imageMethodInstructions,staticDirectorInstructionsFor} from '../../../packages/agents/prompts/director-v1';
-import {staticDesignResponseFor} from '../../../packages/director/contract';
+import {staticDesignResponseFor,hasAudio} from '../../../packages/director/contract';
 import {assemblerInstructions,assemblerProviderSchema} from '../../../packages/agents/prompts/assembler-v1';
 import {readDesign} from '../../../packages/director/contract';
 import {paidText,requestId,roleNames,resumeBudgetClock,retryableProviderFailure,type Role} from '../../../packages/director/money';
@@ -141,7 +141,7 @@ export async function executeDirector(claim:DirectorClaim,device:string){
   if(!state.design&&!state.wrapUp){state.phase='director';state.directorFeedback??=[];await save();
    const protocol=input.stage==='draft'?staticDirectorPrompt:directorPrompt;
    await designDirection({input,state,approvedRequests:estimate.roles.director.requests,perStillMicroUsd:estimate.perStillMicroUsd,
-    call:async(attempt,feedback)=>call('director',directorTask(protocol.prompt,feedback),withCreativeHandoff(input,'director',input.stage==='draft'?staticDirectorInstructionsFor(input.brief):protocol.instructions)+(input.stage==='draft'&&input.brief.imageMethodsVersion===1?imageMethodInstructions(!!(state.previousDesign??input.brief.previousDesign)):''),input.stage==='draft'?staticDesignResponseFor(input,!!(state.previousDesign??input.brief.previousDesign)):protocol.responseSchema,{input:input.stage==='draft'?slimDirectorInput(input):input,notes:agentReviewNotes((state.notes??[]).filter(n=>n.recipient==='director')),previousDesign:state.previousDesign},{attempt},await visionImages(folder,input)),
+    call:async(attempt,feedback)=>call('director',directorTask(protocol.prompt,feedback),withCreativeHandoff(input,'director',input.stage==='draft'?staticDirectorInstructionsFor(input.brief,hasAudio(input)):protocol.instructions)+(input.stage==='draft'&&input.brief.imageMethodsVersion===1?imageMethodInstructions(!!(state.previousDesign??input.brief.previousDesign)):''),input.stage==='draft'?staticDesignResponseFor(input,!!(state.previousDesign??input.brief.previousDesign)):protocol.responseSchema,{input:input.stage==='draft'?slimDirectorInput(input):input,notes:agentReviewNotes((state.notes??[]).filter(n=>n.recipient==='director')),previousDesign:state.previousDesign},{attempt},await visionImages(folder,input)),
     ready:async design=>{if(design.materialMemory)input.materialMemory=design.materialMemory;await events.emit('design',{stepId:'design',kind:'design',status:'done',message:'The design document is ready.',detail:design});},save});
   }
 

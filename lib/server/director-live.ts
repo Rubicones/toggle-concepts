@@ -15,6 +15,7 @@ import type {CatalogEntry,DirectionInput} from '@/packages/director/types';
 import type {Design} from '@/packages/director/contract';
 import {previewMaterialAllowed} from '@/packages/director/material-memory';
 import {liveResourceBindings} from '@/packages/director/resources';
+import {finalVersionNotes} from '@/packages/director/final-notes';
 import type {LiveAsset,LivePreview,LiveOptions} from '@/packages/director/live-preview';
 import {liveReferenceVariant} from '@/packages/director/live-preview';
 import {squareReference} from '@/packages/director/construction';
@@ -66,7 +67,8 @@ export async function liveDirectorPreview(campaignId:string,directionId:string,i
  if(reviewRows.error&&!['42P01','PGRST205'].includes(reviewRows.error.code??''))throw new Error(reviewRows.error.message);
  const review={identity,enabled:!reviewRows.error,route:ctx.route,checks:await sourceChecks(ctx.folder,info!.revision,ctx.sourceChecks),records:(reviewRows.data??[]) as ReviewRecord[]};
  const options=info!.options,reference=liveReferenceVariant(ctx.input.variants,options)??squareReference(ctx.input.variants)!,legacyFormat=ctx.input.formats.find(f=>f.id===reference.format),scene=ctx.design?.keyFrames?.find(s=>s.sceneId===options.scenes[0])??ctx.design?.keyFrames?.[0];
- return {status:message?'updating':'ready',message,revision:info!.revision,assetRevision:identity.assetRevision,review,assets:pictures,resources,options,construction:ctx.construction??await draftConstruction(ctx.folder,ctx.input),legacy:info!.legacy,variants:ctx.input.variants,scenes,defaultProps:{format:info!.legacy?reference.format:'square',width:info!.legacy?legacyFormat?.width??1080:1080,height:info!.legacy?legacyFormat?.height??1080:1080,locale:reference.locale,hook:reference.hook,cta:reference.cta,length:reference.length,sceneId:options.scenes[0]??scene?.sceneId??ctx.input.storyboard[0].id,moment:scene?.moments[0]?.id??'key-frame'}};
+ const finalNotes=finalVersionNotes(ctx.design,ctx.input);
+ return {status:message?'updating':'ready',message,revision:info!.revision,assetRevision:identity.assetRevision,review,...(finalNotes.length?{finalNotes}:{}),assets:pictures,resources,options,construction:ctx.construction??await draftConstruction(ctx.folder,ctx.input),legacy:info!.legacy,variants:ctx.input.variants,scenes,defaultProps:{format:info!.legacy?reference.format:'square',width:info!.legacy?legacyFormat?.width??1080:1080,height:info!.legacy?legacyFormat?.height??1080:1080,locale:reference.locale,hook:reference.hook,cta:reference.cta,length:reference.length,sceneId:options.scenes[0]??scene?.sceneId??ctx.input.storyboard[0].id,moment:scene?.moments[0]?.id??'key-frame'}};
 }
 export async function liveDirectorArtifact(campaignId:string,directionId:string,args:{iterationId?:string;revision?:string;name?:string;kind:'bundle'|'asset'|'source'}){
  const ctx=await context(campaignId,directionId,args.iterationId);

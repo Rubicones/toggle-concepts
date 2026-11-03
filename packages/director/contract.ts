@@ -23,7 +23,14 @@ const staticResourceBase=resourceSchema.extend({kind:z.literal('still'),proxy:z.
 export const staticResourceSchema=staticResourceBase.extend({sketch:pinnedMethods.sketch.optional(),edit:pinnedMethods.edit.optional(),extend:pinnedMethods.extend.optional(),cutout:z.boolean().optional()});
 const staticResponseResourceSchema=staticResourceBase.extend({sketch:imageMethodSchemas.sketch.optional(),edit:imageMethodSchemas.edit.optional(),extend:imageMethodSchemas.extend.optional()});
 export const staticDesignSchema=designSchema.extend({designDocument:z.string().min(80).max(16000),keyFrames:keyFramesSchema,resources:z.array(staticResourceSchema).max(16),materialObservations:z.array(z.strictObject({source:z.string(),role:z.enum(['reference','product','interface','photo','logo','font','unknown']),description:z.string().max(2000)})).max(24).optional()});
-export type Design=Omit<z.infer<typeof designSchema>,'resources'>&{resources:Resource[]}&{keyFrames?:z.infer<typeof keyFramesSchema>;bindings?:{kind:string;id:string;aliases:string[]}[];materialMemory?:MaterialMemory;materialObservations?:z.infer<typeof staticDesignSchema>['materialObservations']};
+/** "In the final version" (designer pipeline plan, point 3; blocks with brief.finalNotesVersion 1): per scene, how it
+ * moves (and sounds, when an audio file is supplied) in the final; per stand-in, what it becomes. Short, in the brand's terms. */
+const noteText=(max:number)=>z.string().min(1).transform(t=>t.trim().replace(/\s+/g,' ').slice(0,max));
+const finalNoteFields={motion:noteText(240).optional(),sound:noteText(200).optional()};
+const keyFramesWithFinal=z.array(keyFramesSchema.element.extend(finalNoteFields)).min(1).max(40);
+const staticDesignWithNotes=staticDesignSchema.extend({keyFrames:keyFramesWithFinal,resources:z.array(staticResourceSchema.extend({becomes:noteText(160).optional()})).max(16)});
+export type FinalNote={motion?:string;sound?:string};
+export type Design=Omit<z.infer<typeof designSchema>,'resources'>&{resources:Resource[]}&{keyFrames?:(z.infer<typeof keyFramesSchema>[number]&FinalNote)[];bindings?:{kind:string;id:string;aliases:string[]}[];materialMemory?:MaterialMemory;materialObservations?:z.infer<typeof staticDesignSchema>['materialObservations']};
 /** Boundary adapters resolve only issued entities; creative values and facts stay exact. */
 export function readDesign(value:unknown,input:DirectionInput):Design{
  const normalized=input.stage==='draft'?normalizeDraftReferences(value,input):value;
@@ -35,7 +42,10 @@ export function readDesign(value:unknown,input:DirectionInput):Design{
   if(raw!==undefined){const imported=importMaterialObservations(raw,memory);memory.evidence=raw;memory.observations=imported.observations;memory.issues=[...new Set([...memory.issues,...imported.issues])];o.materialObservations=imported.observations.map(p=>({source:p.sourceId,role:p.role,description:p.description}));delete o.assetObservations;delete o.observations;}
  }
  if(input.stage==='draft'&&normalized&&typeof normalized==='object')delete (normalized as Record<string,unknown>).materialMemory;
- const design:Design=(input.stage==='draft'?staticDesignSchema:designSchema).parse(normalized),ids=new Set<string>();if(memory)design.materialMemory=memory;if(bindings)design.bindings=bindings;
+ const notes=input.stage==='draft'&&input.brief.finalNotesVersion===1;
+ // Earlier blocks never offered the notes; a stray field is dropped instead of failing a paid answer.
+ if(input.stage==='draft'&&!notes&&normalized&&typeof normalized==='object'){const o=normalized as {keyFrames?:unknown;resources?:unknown};if(Array.isArray(o.keyFrames))for(const k of o.keyFrames)if(k&&typeof k==='object'){delete (k as Record<string,unknown>).motion;delete (k as Record<string,unknown>).sound;}if(Array.isArray(o.resources))for(const r of o.resources)if(r&&typeof r==='object')delete (r as Record<string,unknown>).becomes;}
+ const design:Design=(input.stage==='draft'?notes?staticDesignWithNotes:staticDesignSchema:designSchema).parse(normalized),ids=new Set<string>();if(memory)design.materialMemory=memory;if(bindings)design.bindings=bindings;
  if(input.stage==='draft')for(const r of design.resources){
   // A reference the image model cannot take (over 2048 px a side or 2 MP, e.g. a retina UI screenshot) is dropped from
   // that picture instead of discarding the whole paid answer; the asset itself stays available to the frame code.
@@ -73,10 +83,25 @@ const withMethods={name:'static_director_v2r',schema:z.toJSONSchema(responseReso
 const cutout={cutout:z.boolean().optional()};
 const withSketchCutout={name:'static_director_v3',schema:z.toJSONSchema(responseResources(staticResourceBase.extend({sketch:imageMethodSchemas.sketch.optional(),...cutout}))) as Record<string,unknown>};
 const withMethodsCutout={name:'static_director_v3r',schema:z.toJSONSchema(responseResources(staticResponseResourceSchema.extend(cutout))) as Record<string,unknown>};
+const withNotes=new Map<string,{name:string;schema:Record<string,unknown>}>();
+/** Blocks with final notes: the same resources as before plus `becomes`, and keyFrames with `motion` (and `sound` only
+ * when an audio file is supplied, the only case a draft's final has sound). Response strings carry no length limits;
+ * readDesign trims instead of failing a paid answer. */
+function notesResponse(revision:boolean,cutouts:boolean,audio:boolean){
+ const name=`static_director_v4${cutouts?'':'n'}${audio?'a':''}${revision?'r':''}`,known=withNotes.get(name);if(known)return known;
+ const text=z.string(),resource=(revision?staticResponseResourceSchema:staticResourceBase.extend({sketch:imageMethodSchemas.sketch.optional()})).extend({...(cutouts?cutout:{}),becomes:text.optional()});
+ const keyFrames=z.array(keyFramesSchema.element.extend({motion:text.optional(),...(audio?{sound:text.optional()}:{})})).min(1).max(40);
+ const made={name,schema:z.toJSONSchema(staticDesignSchema.extend({keyFrames,resources:z.array(resource).max(16)})) as Record<string,unknown>};withNotes.set(name,made);return made;
+}
 /** Blocks started with image methods offer the sketch; edit and extend are offered only when earlier pictures exist.
- * Blocks started with the picture rules (brief.pictureRulesVersion 1) also offer cutout. */
-export function staticDesignResponseFor(input:Pick<DirectionInput,'brief'>,revision:boolean){
+ * Blocks started with the picture rules (brief.pictureRulesVersion 1) also offer cutout, and blocks with final notes
+ * (brief.finalNotesVersion 1) offer `final` per scene and `becomes` per stand-in. */
+/** A supplied audio file is the only way a draft's final has sound (brand kit policy). */
+export const hasAudio=(input:{assets?:{mime:string}[]})=>!!input.assets?.some(a=>a.mime.startsWith('audio/'));
+export function staticDesignResponseFor(input:Pick<DirectionInput,'brief'>&{assets?:{mime:string}[]},revision:boolean){
  if(input.brief.imageMethodsVersion!==1)return staticDesignResponseSchema;
+ if(input.brief.finalNotesVersion===1)return notesResponse(revision,input.brief.pictureRulesVersion===1,hasAudio(input));
  if(input.brief.pictureRulesVersion===1)return revision?withMethodsCutout:withSketchCutout;
  return revision?withMethods:withSketch;
 }
+

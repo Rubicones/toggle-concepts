@@ -22,3 +22,13 @@
 .previewContainer { container-type:inline-size; width:100%; min-width:0; }
 @container (max-width:850px) { .generator { grid-template-columns:minmax(0,1fr); } .stage { grid-row:1; position:static; } .controls { padding:22px; } .viewport { min-height:300px; } .frame { max-height:none; } }
 @media(max-width:850px) { .stage { position:static; } .frame { max-height:none; } }
+
+/* "In the final version": a calm note under the frame, in the caption's colours (designer pipeline plan, point 3). */
+.final{background:#ffffffb8;border-radius:16px;padding:14px 16px;color:#123344}
+.finalHead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}
+.finalHead h5{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#4d6674;font-weight:600}
+.finalHead span{font-size:11px;color:#536d7b}
+.final ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.final li{display:grid;grid-template-columns:15px 52px minmax(0,1fr);gap:8px;align-items:start;font-size:13px;line-height:1.45}
+.final li svg{margin-top:2px;color:#355869}
+.finalLabel{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#4d6674;padding-top:2px}

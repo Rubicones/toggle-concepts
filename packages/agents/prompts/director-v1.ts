@@ -16,9 +16,17 @@ export const imageMethodInstructions=(revision:boolean)=>`\nIMAGE METHODS (optio
  * They replace the earlier picture sentences instead of adding to them, so the request keeps its size. */
 export const pictureRuleInstructions=` PICTURES. Interfaces, data, type, charts and diagrams are code from the brand's components; stills only for the physical world. What the final renders in 3D or films is a still stand-in of that exact object or moment (proxy true, proxyFor 3d|video); a 3D brief fixes camera, light, material and pose at the decisive moment, a video one the decisive frame. Say what the final adds. cutout true: the app removes the background so the object crosses colour or type boxless; brief it whole, centred, on a plain contrasting ground, clear of edges.`;
 const replacedByPictureRules=[' Decide per scene what each part is: a generated still for photographic, material, product or 3D-looking content; code for type, graphics and any interface.',' Stills are opaque rectangles: a product needed as a cutout is staged in one scene still (reference in referenceAssetIds), never on plain white to cut out.',' All resources: kind still, resolution low; video/3D needs are still proxies (proxy true, proxyFor video|3d), others proxy false without proxyFor.'];
-export function staticDirectorInstructionsFor(brief:Record<string,unknown>){
- if(brief.pictureRulesVersion!==1)return staticDirectorInstructions;
- let text=staticDirectorInstructions;for(const sentence of replacedByPictureRules){if(!text.includes(sentence))throw new Error('PICTURE_RULES_OUT_OF_DATE');text=text.replace(sentence,'');}
- return text.replace(' Plain picture prompts only.',' All resources: kind still, resolution low.'+pictureRuleInstructions+' Plain picture prompts only.');
+/** "In the final version" notes (designer pipeline plan, point 3; brief.finalNotesVersion 1). */
+export const finalNoteInstructions=(audio:boolean)=>` FINAL. keyFrames[].motion: how the scene moves in the final, one or two plain sentences${audio?'; sound: what is heard':''}. A stand-in's becomes: "a 3D render of …" or "a filmed shot of …". No ids.`;
+const replacedByFinalNotes=[' describe motion, camera and transitions for the next stage, which adds GSAP timelines, Three.js 3D scenes and video to these frames.',' as a simplified mockup the coder builds in code, never a screenshot or a still;'];
+export function staticDirectorInstructionsFor(brief:Record<string,unknown>,audio=false){
+ const pictures=brief.pictureRulesVersion===1,notes=brief.finalNotesVersion===1;
+ if(!pictures&&!notes)return staticDirectorInstructions;
+ let text=staticDirectorInstructions;
+ if(pictures){for(const sentence of replacedByPictureRules){if(!text.includes(sentence))throw new Error('PICTURE_RULES_OUT_OF_DATE');text=text.replace(sentence,'');}
+  text=text.replace(' Plain picture prompts only.',' All resources: kind still, resolution low.'+(notes?pictureRuleInstructions.replace(' Say what the final adds.',''):pictureRuleInstructions)+' Plain picture prompts only.');}
+ if(notes){for(const sentence of replacedByFinalNotes)if(!text.includes(sentence))throw new Error('FINAL_NOTES_OUT_OF_DATE');
+  text=text.replace(';'+replacedByFinalNotes[0],'.').replace(replacedByFinalNotes[1],pictures?' as a simplified mockup in code;':replacedByFinalNotes[1]).replace(' Plain picture prompts only.',finalNoteInstructions(audio)+' Plain picture prompts only.');}
+ return text;
 }
 export const staticDirectorPrompt={instructions:staticDirectorInstructions,prompt:'Design pre-final Hero Styleframes for each approved scene and all ordered variant axes, with full visual craft now and explicit motion choreography for the next stage.',maxOutputTokens:12000,responseSchema:staticDesignResponseSchema};

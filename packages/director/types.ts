@@ -18,6 +18,8 @@ export type DerivedSource={revisionId:string;sha256:string;url:string;width:numb
 export type Resource = {id:string;kind:'still'|'3d-still';proxy?:boolean;proxyFor?:'video'|'3d';resolution?:'low';purpose:string;scene:string;prompt:string;aspect:string;referenceAssetIds:string[];mustNotContain:string[];
  /** Blocks with brief.pictureRulesVersion 1: the app removes the background locally after the picture arrives. */
  cutout?:boolean;
+ /** Blocks with brief.finalNotesVersion 1: what this stand-in becomes in the final ("a 3D render of …"). */
+ becomes?:string;
  /** Image methods; `source`/`sha256` fields are pinned by the application before the request, never by the model. */
  sketch?:{shapes:{role:'subject'|'object'|'horizon'|'copy'|'light';box:number[];tone:'light'|'mid'|'dark'}[];sha256?:string};
  edit?:{from:string;instruction:string;region?:number[];source?:DerivedSource};
