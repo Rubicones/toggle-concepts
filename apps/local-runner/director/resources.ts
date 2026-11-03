@@ -11,7 +11,9 @@ import {measureImageFacts} from '../../../packages/director/image-facts';
 export type PricedResource=CatalogEntry&{requestHash:string;stepId:string;costMicroUsd:number;fileId:string;imageSource?:{url:string;mime:string};method?:import('../../../packages/director/image-merge').MergeReport};
 export type ResourceProducer=(request:StillRequest,resource:Resource)=>Promise<{revisionId:string;sha256:string;mime:string;width?:number;height?:number;costMicroUsd:number;stepId:string;bytes:Uint8Array;reused?:boolean}>;
 /** Persist each collected receipt before moving on, so interrupted catalogs resume for free. */
-export async function buildResourceCatalog(args:{folder:string;input:DirectionInput;design:Design;maxStills:number;perStillMicroUsd:number;allowed:(resource:Resource)=>boolean;produce:ResourceProducer;cached:PricedResource[];loadCached?:(entry:PricedResource)=>Promise<Uint8Array>;save:(entry:PricedResource,meta?:{reused:boolean})=>Promise<void>;finish?:(resource:Resource,bytes:Uint8Array)=>Promise<{bytes:Uint8Array;report:import('../../../packages/director/image-merge').MergeReport}|undefined>}){
+export async function buildResourceCatalog(args:{folder:string;input:DirectionInput;design:Design;maxStills:number;perStillMicroUsd:number;allowed:(resource:Resource)=>boolean;produce:ResourceProducer;cached:PricedResource[];loadCached?:(entry:PricedResource)=>Promise<Uint8Array>;save:(entry:PricedResource,meta?:{reused:boolean})=>Promise<void>;finish?:(resource:Resource,bytes:Uint8Array)=>Promise<{bytes:Uint8Array;report:import('../../../packages/director/image-merge').MergeReport}|undefined>;
+ /** Local background removal for pictures marked cutout (free); a failure keeps the rectangle and is reported. */
+ cutout?:(resource:Resource,bytes:Uint8Array)=>Promise<{cutout?:import('../../../packages/director/types').Cutout;failed?:string}>}){
  if(args.design.resources.length>args.maxStills)throw new Error('RESOURCE_ESTIMATE_EXCEEDED');
  // Check all permissions before buying the first still.
  const independent=independentResourceBindings(args.input),plans=args.design.resources.map(resource=>({resource,request:resourceRequest(resource,args.input,args.perStillMicroUsd)}));
@@ -46,6 +48,7 @@ export async function buildResourceCatalog(args:{folder:string;input:DirectionIn
   if(independent)await atomicFile(resolve(args.folder,'public',sourceFile),result.bytes);
   await persist(resolve(args.folder,'public',filename),rendered);await persist(resolve(args.folder,'public',thumbnail),canvas.toBuffer('image/png'));
   const entry:PricedResource={id:resource.id,proxy:resource.proxy,proxyFor:resource.proxyFor,url:filename,thumbnail,width:renderWidth,height:renderHeight,sha256:result.sha256,renderSha256:createHash('sha256').update(rendered).digest('hex'),mime:resource.proxy||finished?'image/png':result.mime,revisionId:result.revisionId,requestHash:request.key,stepId:result.stepId,costMicroUsd:result.costMicroUsd,fileId:result.sha256,image:facts,...(finished?{method:finished.report}:{}),...(independent?{imageSource:{url:sourceFile,mime:result.mime}}:{})};
+  if(resource.cutout&&args.cutout){const made=await args.cutout(resource,finished?.bytes??result.bytes);if(made.cutout)entry.cutout=made.cutout;else if(made.failed)entry.cutoutFailed=made.failed;}
   await args.save(entry,{reused:!!prior||result.reused===true});catalog.push(entry);pool.push(entry);
  }
  await atomicFile(resolve(args.folder,'catalog.json'),JSON.stringify([...args.input.assets,...catalog],null,2));return catalog;

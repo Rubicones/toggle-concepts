@@ -1,4 +1,5 @@
 import {directorDeliveryEvents} from './events';
+import {cutoutImage} from './cutout';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {resolve,dirname} from 'node:path';
 import {createHash} from 'node:crypto';
@@ -21,6 +22,14 @@ export async function restoreIteration(iteration:SealedIteration,snapshot:BlockS
  for(const file of iteration.payload.source.files){if(sha(file.source)!==file.sha256)throw new Error('SEALED_SOURCE_CHANGED');const path=await confinedPath(folder,file.path);await mkdir(dirname(path),{recursive:true});await writeFile(path,file.source);}
  await materialize(folder,snapshot);
  for(const entry of iteration.payload.catalog??[]){const row=checked(await adminClient().from('asset_revisions').select('object_key,sha256').eq('id',entry.revisionId).eq('campaign_id',campaignId).eq('tenant_id',sharedTenant).single());if(!row||row.sha256!==entry.sha256)throw new Error('RESOURCE_BYTES_CHANGED');const bytes=(await objectStore().get(row.object_key)).body;if(sha(bytes)!==entry.sha256)throw new Error('RESOURCE_BYTES_CHANGED');if(entry.imageSource){if(!/^[a-f0-9]{64}\.(png|jpg|webp)$/.test(entry.imageSource.url)||!entry.imageSource.url.startsWith(entry.sha256+'.'))throw new Error('RESOURCE_SOURCE_REQUIRED');await writeFile(await confinedPath(folder,'public/'+entry.imageSource.url),bytes);}let rendered:Uint8Array=bytes;if(entry.proxy){const original=await loadImage(bytes),s=Math.min(1,512/Math.max(original.width,original.height)),proxy=createCanvas(Math.max(1,Math.round(original.width*s)),Math.max(1,Math.round(original.height*s)));proxy.getContext('2d').drawImage(original,0,0,proxy.width,proxy.height);rendered=proxy.toBuffer('image/png');}if(entry.renderSha256&&sha(rendered)!==entry.renderSha256)throw new Error('RESOURCE_BYTES_CHANGED');await writeFile(await confinedPath(folder,'public/'+entry.url),rendered);const img=await loadImage(rendered),scale=Math.min(1,320/img.width),canvas=createCanvas(Math.round(img.width*scale),Math.max(1,Math.round(img.height*scale)));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);await writeFile(await confinedPath(folder,'public/'+entry.thumbnail),canvas.toBuffer('image/png'));}
+ // Cutouts (designer pipeline plan, point 2c): the stored derived file, or the same deterministic cutout made again.
+ for(const entry of (iteration.payload.catalog??[]) as {url:string;proxy?:boolean;imageSource?:{url:string};cutout?:{url:string;sha256:string;objectKey?:string}}[]){
+  if(!entry.cutout)continue;let bytes:Uint8Array|undefined;
+  if(entry.cutout.objectKey)bytes=await objectStore().get(entry.cutout.objectKey).then(o=>o.body,()=>undefined);
+  if(!bytes||sha(bytes)!==entry.cutout.sha256){const made=await cutoutImage(await readFile(await confinedPath(folder,'public/'+(entry.proxy&&entry.imageSource?entry.imageSource.url:entry.url))));bytes=made.ok?made.png:undefined;}
+  if(!bytes||sha(bytes)!==entry.cutout.sha256)throw new Error('RESOURCE_BYTES_CHANGED');
+  await writeFile(await confinedPath(folder,'public/'+entry.cutout.url),bytes);
+ }
  if((await snapshotFolder(folder,iteration.id)).hash!==iteration.source_hash)throw new Error('SEALED_SOURCE_CHANGED');return {input,folder};
 }
 export async function storeDirectorFile(campaignId:string,iterationId:string,bytes:Uint8Array,mime:string,extension:string):Promise<CreativeFile>{const hash=sha(bytes),objectKey=`media/${sharedTenant}/${campaignId}/director/${iterationId}/${hash}.${extension}`;await objectStore().promote(objectKey,Buffer.from(bytes),mime).catch(async error=>{if(sha((await objectStore().get(objectKey)).body)!==hash)throw error;});return {objectKey,sha256:hash,mime,bytes:bytes.length};}

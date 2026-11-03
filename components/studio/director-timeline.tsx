@@ -5,6 +5,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {studioRequest} from '@/lib/shared-http';
 import {mergeDirectorEvents,type ActivityCursor,type DirectorActivityPage} from '@/packages/director/activity';
 import {Button} from '@/components/ui/button';
+import {TriangleAlert} from 'lucide-react';
 import type {DirectorEvent} from '@/packages/director/events';
 import {eventPriceLabel,latestSteps,publicStepMessage} from '@/packages/director/events';
 import {DeferredDetails} from './deferred-details';
@@ -37,13 +38,16 @@ function ActivityHistory({steps,events,scenes,hasMore=false,loading=false,onMore
 }
 function AuditTransitions({events}:{events:DirectorEvent[]}){const [limit,setLimit]=useState(25);return <><ol className="director-timeline-history">{[...events].reverse().slice(0,limit).map(event=><li key={event.id}><p><time dateTime={event.at}>{new Date(event.at).toLocaleString()}</time> · {event.kind} · {event.status}</p><p>{publicStepMessage(event.message,4000)}</p><Disclosure><summary>Original event</summary><pre className="director-timeline-technical">{JSON.stringify(event,null,2)}</pre></Disclosure></li>)}</ol>{events.length>limit&&<Button variant="outline" onClick={()=>setLimit(n=>n+25)}>Show earlier transitions</Button>}</>;}
 function EventFact({event,scenes,expanded=false}:{event:DirectorEvent;scenes:{sceneId:string}[];expanded?:boolean}){
- const writing=event.status==='running'&&event.kind==='request',role=(event.detail as {role?:string})?.role??'',price=eventPriceLabel(event);
+ const writing=event.status==='running'&&event.kind==='request',detailRole=(event.detail as {role?:unknown})?.role,role=typeof detailRole==='string'?detailRole:'',price=eventPriceLabel(event);
+ // Picture roles and cutouts (designer pipeline plan, point 2d); older events carry neither.
+ const picture=event.kind==='picture'?{role:detailRole&&typeof detailRole==='object'?detailRole as {kind:string;label:string}:undefined,cutout:(event.detail as {cutout?:boolean})?.cutout}:{role:undefined,cutout:undefined};
  return <><p className="director-timeline-meta"><strong>{event.status==='done'?'Complete':event.status==='failed'?'Needs repair':event.status==='running'?'In progress':'Queued'}</strong> · <time dateTime={event.at}>{new Date(event.at).toLocaleTimeString()}</time>{['request','picture'].includes(event.kind)&&event.model?` · ${event.model}`:''}{price?` · ${price}`:''}</p>
   <p>{writing?`${({assembler:'The coder',director:'The director',critic:'The critic',resources:'The picture model'} as Record<string,string>)[role]??'The agent'} is writing its answer since ${new Date(event.startedAt??event.at).toLocaleTimeString()}.`:publicStepMessage(event.message)}</p>
   {expanded&&event.startedAt&&<p className="director-timeline-meta">Started {new Date(event.startedAt).toLocaleTimeString()}{event.endedAt?` · finished ${new Date(event.endedAt).toLocaleTimeString()}`:''}</p>}
   {event.kind==='checks'&&<CheckNotes detail={event.detail}/>}{event.kind==='review'&&<ReviewNote detail={event.detail} scenes={scenes}/>}
   {event.kind==='critic'&&<ul>{((event.detail as {notes?:{recipient:string;text:string}[]})?.notes??[]).map((n,i)=><li key={i}>{n.recipient==='director'?'Director':'Coder'}: {publicStepMessage(n.text)}</li>)}</ul>}
-  {event.imageUrl&&<figure><img loading="lazy" src={event.imageUrl} alt={event.proxy?'Still proxy':event.kind==='render'?'Work in progress, not checked':'Picture resource'}/><figcaption>{event.proxy?'Still proxy · ':''}{event.kind==='render'?'Work in progress, not checked':event.prompt?publicStepMessage(event.prompt):''}</figcaption></figure>}
+  {event.kind==='picture'&&picture.cutout===false&&<p className="director-timeline-warning"><TriangleAlert size={14} aria-hidden/><span>Cutout failed. The picture is used as a rectangle.</span></p>}
+  {event.imageUrl&&<figure className={picture.cutout?'director-timeline-cutout':undefined}><img loading="lazy" src={event.imageUrl} alt={picture.cutout?'Cut-out picture on a checkerboard (transparent background)':picture.role?.label??(event.proxy?'Still proxy':event.kind==='render'?'Work in progress, not checked':'Picture resource')}/><figcaption>{picture.cutout?<strong>Cut out</strong>:picture.role?<><strong>{picture.role.kind}</strong>{picture.role.label.length>picture.role.kind.length?` · ${publicStepMessage(picture.role.label.slice(picture.role.kind.length+2))}`:''}</>:<>{event.proxy?'Still proxy · ':''}{event.kind==='render'?'Work in progress, not checked':event.prompt?publicStepMessage(event.prompt):''}</>}</figcaption></figure>}
   {expanded&&event.kind==='design'&&<Disclosure><summary>Design document</summary><p className="director-timeline-document">{publicStepMessage(String((event.detail as {designDocument?:string})?.designDocument??''),16000)}</p></Disclosure>}
   {expanded&&<DeferredDetails summary="Technical details"><pre className="director-timeline-technical">{JSON.stringify(event,null,2)}</pre></DeferredDetails>}
  </>;

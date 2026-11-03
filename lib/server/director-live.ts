@@ -48,6 +48,8 @@ function assets(ctx:Context){
  const rows=new Map<string,LiveAsset&{objectKey?:string;revisionId?:string;proxy?:boolean}>();
  for(const file of ctx.snapshot.files)if(/^(image\/|font\/)|woff|opentype|truetype/.test(file.mime))rows.set(file.url,{name:file.url,mime:file.mime,sha256:file.sha256,objectKey:file.objectKey});
  for(const file of ctx.catalog)rows.set(file.url,{name:file.url,mime:file.mime,sha256:file.renderSha256??file.sha256,revisionId:file.revisionId,proxy:file.proxy});
+ // A cutout is a derived, content-addressed file (designer pipeline plan, point 2c): loaded from staging when the workspace is gone.
+ for(const file of ctx.catalog)if(file.cutout)rows.set(file.cutout.url,{name:file.cutout.url,mime:'image/png',sha256:file.cutout.sha256,objectKey:file.cutout.objectKey});
  return [...rows.values()].filter(file=>previewMaterialAllowed(ctx.design?.materialMemory??ctx.input.materialMemory,file.name));
 }
 type Bundle={revision:string;options:LiveOptions;legacy:boolean};const builds=new Map<string,Promise<Bundle>>();

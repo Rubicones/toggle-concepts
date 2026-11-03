@@ -3,6 +3,8 @@ import {imageAspectRatios} from '../contracts/image-generation';
 import {digest} from './money';
 import type {CatalogEntry} from './types';
 export const resourcePrompt=(resource:Resource)=>`${resource.prompt}${resource.mustNotContain.length?'\nDo not include: '+resource.mustNotContain.join('; ')+'.':''}`;
+/** Added to the prompt of a picture the app will cut out: the object must separate cleanly from a plain ground. */
+export const CUTOUT_BRIEF='Show the whole object, centred, with clear space on every side, on a plain, flat, evenly lit background of one colour that contrasts strongly with the object; no cast shadow, reflection or anything else touching the edges.';
 export const independentResourceBindings=(input:DirectionInput)=>input.stage==='draft'&&input.brief.resourceBindingVersion===1;
 export function resourceRequest(resource:Resource,input:DirectionInput,perStillMicroUsd:number){
  if(input.stage==='draft'&&(resource.kind!=='still'||resource.resolution!=='low'||typeof resource.proxy!=='boolean'||!!resource.proxyFor!==resource.proxy))throw new Error('STATIC_STILL_REQUIRED');
@@ -12,8 +14,9 @@ export function resourceRequest(resource:Resource,input:DirectionInput,perStillM
  const refs=resource.referenceAssetIds.map(id=>{const asset=input.assets.find(a=>a.id===id);if(!asset)throw new Error('UNISSUED_REFERENCE_ID');if(!asset.mime.startsWith('image/'))throw new Error('IMAGE_REFERENCE_REQUIRED');if(asset.width>2048||asset.height>2048||asset.width*asset.height>2073600)throw new Error('IMAGE_REFERENCE_DIMENSIONS_UNAVAILABLE');return {id,sha256:asset.sha256};});
  const reconstruct=input.materialMemory?.reconstruction.allowed&&input.materialMemory.materials.some(m=>resource.referenceAssetIds.includes(m.id)&&m.role==='product');
  const base=resourcePrompt(resource)+(reconstruct?'\nCreate a fresh polished still from the attached identity reference, not an enlarged screenshot or a screenshot panel. Preserve the observed product shape, interface content and approved details; do not invent unseen features, copy, claims or people. Omit baked-in video/advertising overlays.':'');
- const method=imageMethod(resource,input,base);
- const prompt=method?.prompt??base,key=method?digest({protocol:'director-image-method@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refs.map(ref=>ref.sha256),method:method.identity}):independentResourceBindings(input)?digest({protocol:'director-image@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refs.map(ref=>ref.sha256)}):digest({protocol:'director@1',directionId:input.directionId,resource,refs,...(reconstruct?{reconstructionPrompt:prompt}:{})});
+ const plain=resource.cutout&&input.brief.pictureRulesVersion===1?base+'\n'+CUTOUT_BRIEF:base;
+ const method=imageMethod(resource,input,plain);
+ const prompt=method?.prompt??plain,key=method?digest({protocol:'director-image-method@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refs.map(ref=>ref.sha256),method:method.identity}):independentResourceBindings(input)?digest({protocol:'director-image@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refs.map(ref=>ref.sha256)}):digest({protocol:'director@1',directionId:input.directionId,resource,refs,...(reconstruct?{reconstructionPrompt:prompt}:{})});
  return {key,prompt,references:[...(method?.source?[method.source.revisionId]:[]),...resource.referenceAssetIds],derivedPlan:method?.derived??[],purpose:resource.purpose,aspectRatio:aspect,resolution:'draft' as const,maxCostMicroUsd:perStillMicroUsd};
 }
 /**
@@ -56,7 +59,14 @@ export function liveResourceBindings(input:DirectionInput,resources:Resource[],c
   if(!input.resourceIds.includes(resource.id))throw new Error('UNISSUED_RESOURCE_ID');
   const key=independentResourceBindings(input)?resourceRequest(resource,input,1).key:undefined;
   const ready=catalog.find(c=>c.id===resource.id&&(!key||c.requestHash===key));
-  bindings[resource.id]={id:resource.id,sceneId:resource.scene,url:ready?.url??'',proxy:resource.proxy,proxyFor:resource.proxyFor,ready:!!ready,...(ready?{revisionId:ready.revisionId,width:ready.width,height:ready.height,...(ready.image?{image:ready.image}:{})}:{}),...(key?{requestHash:key}:{})};
+  bindings[resource.id]={id:resource.id,sceneId:resource.scene,url:ready?.url??'',proxy:resource.proxy,proxyFor:resource.proxyFor,ready:!!ready,...(ready?.cutout?{cutoutUrl:ready.cutout.url,cutoutWidth:ready.cutout.width,cutoutHeight:ready.cutout.height}:{}),...(ready?.cutoutFailed?{cutoutFailed:ready.cutoutFailed}:{}),...(ready?{revisionId:ready.revisionId,width:ready.width,height:ready.height,...(ready.image?{image:ready.image}:{})}:{}),...(key?{requestHash:key}:{})};
  }
  return bindings;
+}
+
+/** What a picture is for, in the AD's words (activity timeline, designer pipeline plan point 2d). */
+export function pictureRole(resource:Pick<Resource,'proxy'|'proxyFor'|'cutout'|'purpose'|'referenceAssetIds'>,productIds:string[]=[]){
+ const what=resource.purpose.trim().replace(/\s+/g,' ').replace(/[.。]+$/,'');const short=what.length>90?what.slice(0,89)+'…':what;
+ const kind=resource.proxy&&resource.proxyFor==='3d'?'Stand-in for a 3D render':resource.proxy&&resource.proxyFor==='video'?'Stand-in for a filmed shot':resource.referenceAssetIds.some(id=>productIds.includes(id))?'Product picture':'Picture';
+ return {kind,label:short?`${kind}: ${short}`:kind,standIn:!!resource.proxy,cutout:!!resource.cutout};
 }

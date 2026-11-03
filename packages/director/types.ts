@@ -16,11 +16,16 @@ export type CompositionProps = {format:string;locale:string;hook:string;cta:stri
 export type FrameProps = CompositionProps & {width?:number;height?:number;sceneId:string;moment:string};
 export type DerivedSource={revisionId:string;sha256:string;url:string;width:number;height:number};
 export type Resource = {id:string;kind:'still'|'3d-still';proxy?:boolean;proxyFor?:'video'|'3d';resolution?:'low';purpose:string;scene:string;prompt:string;aspect:string;referenceAssetIds:string[];mustNotContain:string[];
+ /** Blocks with brief.pictureRulesVersion 1: the app removes the background locally after the picture arrives. */
+ cutout?:boolean;
  /** Image methods; `source`/`sha256` fields are pinned by the application before the request, never by the model. */
  sketch?:{shapes:{role:'subject'|'object'|'horizon'|'copy'|'light';box:number[];tone:'light'|'mid'|'dark'}[];sha256?:string};
  edit?:{from:string;instruction:string;region?:number[];source?:DerivedSource};
  extend?:{from:string;place?:number[];instruction?:string;source?:DerivedSource;canvasSha256?:string}};
-export type CatalogEntry = {id:string;url:string;thumbnail:string;width:number;height:number;sha256:string;mime:string;revisionId:string;renderSha256?:string;proxy?:boolean;proxyFor?:'video'|'3d';image?:import('./image-facts').ImageFacts};
+export type CatalogEntry = {id:string;url:string;thumbnail:string;width:number;height:number;sha256:string;mime:string;revisionId:string;renderSha256?:string;proxy?:boolean;proxyFor?:'video'|'3d';image?:import('./image-facts').ImageFacts;
+ /** The same picture with its background removed (transparent PNG cropped to the subject), or why that failed. */
+ cutout?:Cutout;cutoutFailed?:string};
+export type Cutout={url:string;sha256:string;width:number;height:number;box:[number,number,number,number];objectKey?:string};
 export type DirectionInput = {protocol:'director@1';stage?:'draft'|'motion';creativeHandoff?:import('./creative-handoff').CreativeHandoff;materialMemory?:import('./material-memory').MaterialMemory;runId:string;roundId:string;directionId:string;iterationId:string;storyboard:Scene[];brand:BrandKit;brief:Record<string,unknown>;assets:CatalogEntry[];formats:Format[];variants:Variant[];resourceIds:string[];variantFacts?:Record<string,{required:string[];sceneCopy:Record<string,string[]>;storyboard?:Scene[]}>};
 export type TextBox = {text:string;x:number;y:number;width:number;height:number;fontSize:number;fontFamily:string;color:string;opacity:number};
 export type LogoBox = {id:string;x:number;y:number;width:number;height:number};

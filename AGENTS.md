@@ -148,6 +148,17 @@ Recommended next improvements are: develop idea/hook/first-frame intent together
 
 Do not import universal five-word hooks, two-colour limits, product-in-every-beat, fixed eye order, an offer at 1.5 seconds or mandatory motion as hard failures. Use accepted brand rules first; optional defaults and departures need provenance. Signature devices are optional proposals and become accepted kit rules only after explicit AD approval. Do not require extra generations, approvals or agents for them.
 
+### Pictures, stand-ins and cutouts (designer pipeline plan, point 2, 3 November 2026)
+
+- Blocks quoted from now on carry `brief.pictureRulesVersion: 1`. Earlier blocks keep their exact prompts, schemas, request identities and event details.
+- **Rule.** Interfaces, data, type, charts and diagrams are drawn in code from the brand's components. A generated still is only for the physical world. Anything the final renders in 3D or films is shown in the draft as a still stand-in of that exact object or moment (`proxy: true`, `proxyFor: '3d' | 'video'`). A 3D stand-in brief fixes camera, light, material and pose at the decisive moment; a video stand-in is the decisive frame. The rule replaces the older picture sentences in `staticDirectorInstructionsFor` (it is not appended), so the director request keeps its size.
+- **Cutouts.** A resource may set `cutout: true`. The app adds a plain-ground brief to that picture's prompt (`CUTOUT_BRIEF`). After the still arrives, `apps/local-runner/director/cutout.ts` removes the background locally and for free:
+  - by default it keys out the plain ground from the edges inward, with soft, colour-unmixed edges;
+  - `DIRECTOR_CUTOUT_COMMAND` (for example `rembg i {in} {out}`) swaps in a segmentation tool.
+- **Cutout check.** The result is checked for coverage, edge contact and ragged edges. When the check fails, the reason is reported in plain words and the rectangle stays.
+- **Storage and access.** The alpha PNG is cropped to the object and stored at `public/<sha>-cutout.png` and `staging/director-derived/<sha>.png`. Frame code reads it as `resources[id].cutoutUrl` (with `cutoutWidth` and `cutoutHeight`). Saved previews and delivery reload it from staging, or make the same deterministic cutout again.
+- **Timeline.** Every picture shows its role ("Stand-in for a 3D render: …", "Product picture", "Picture"). A cutout gets its own entry with a checkerboard preview, or a sentence saying why it failed.
+
 ## 6. Current draft execution and handoff contracts
 
 Key modules: `lib/server/director-start.ts`, `apps/local-runner/director/worker.ts`, `apps/local-runner/director/static-assembler.ts`, `packages/director/creative-handoff.ts`, `packages/director/planning.ts`, `packages/director/inputs.ts`, `packages/director/source-edits.ts` and `packages/director/contract.ts`.

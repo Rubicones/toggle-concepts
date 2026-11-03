@@ -20,7 +20,7 @@ const derivedSource=z.strictObject({revisionId:z.string().min(1).max(100),sha256
 /** Saved designs may carry values the application pinned before a request; the model's response schema never offers them. */
 const pinnedMethods={sketch:imageMethodSchemas.sketch.extend({sha256:z.string().regex(/^[a-f0-9]{64}$/).optional()}),edit:imageMethodSchemas.edit.extend({source:derivedSource.optional()}),extend:imageMethodSchemas.extend.extend({source:derivedSource.optional(),canvasSha256:z.string().regex(/^[a-f0-9]{64}$/).optional()})};
 const staticResourceBase=resourceSchema.extend({kind:z.literal('still'),proxy:z.boolean(),proxyFor:z.enum(['video','3d']).optional(),resolution:z.literal('low')});
-export const staticResourceSchema=staticResourceBase.extend({sketch:pinnedMethods.sketch.optional(),edit:pinnedMethods.edit.optional(),extend:pinnedMethods.extend.optional()});
+export const staticResourceSchema=staticResourceBase.extend({sketch:pinnedMethods.sketch.optional(),edit:pinnedMethods.edit.optional(),extend:pinnedMethods.extend.optional(),cutout:z.boolean().optional()});
 const staticResponseResourceSchema=staticResourceBase.extend({sketch:imageMethodSchemas.sketch.optional(),edit:imageMethodSchemas.edit.optional(),extend:imageMethodSchemas.extend.optional()});
 export const staticDesignSchema=designSchema.extend({designDocument:z.string().min(80).max(16000),keyFrames:keyFramesSchema,resources:z.array(staticResourceSchema).max(16),materialObservations:z.array(z.strictObject({source:z.string(),role:z.enum(['reference','product','interface','photo','logo','font','unknown']),description:z.string().max(2000)})).max(24).optional()});
 export type Design=Omit<z.infer<typeof designSchema>,'resources'>&{resources:Resource[]}&{keyFrames?:z.infer<typeof keyFramesSchema>;bindings?:{kind:string;id:string;aliases:string[]}[];materialMemory?:MaterialMemory;materialObservations?:z.infer<typeof staticDesignSchema>['materialObservations']};
@@ -44,6 +44,8 @@ export function readDesign(value:unknown,input:DirectionInput):Design{
   // the director recognised as an interface is evidence for that mockup and never a still reference.
   r.referenceAssetIds=r.referenceAssetIds.filter(id=>!memory?.materials.some(m=>m.id===id&&m.role==='interface'));
   // Image methods exist only for blocks started with them; earlier blocks ignore them instead of failing an answer.
+  // Cutouts exist only for blocks started with the picture rules (designer pipeline plan, point 2).
+  if(input.brief.pictureRulesVersion!==1||r.cutout===false)delete r.cutout;
   if(input.brief.imageMethodsVersion!==1){delete r.sketch;delete r.edit;delete r.extend;continue;}
   const validBox=(b?:number[])=>!b||b[0]<b[2]&&b[1]<b[3];
   if(r.edit&&r.extend)throw new Error('IMAGE_METHOD_CONFLICT: use either edit or extend for one picture.');
@@ -68,5 +70,13 @@ const responseResources=(r:z.ZodType)=>staticDesignSchema.extend({resources:z.ar
 export const staticDesignResponseSchema={name:'static_director_v1',schema:z.toJSONSchema(responseResources(staticResourceBase)) as Record<string,unknown>};
 const withSketch={name:'static_director_v2',schema:z.toJSONSchema(responseResources(staticResourceBase.extend({sketch:imageMethodSchemas.sketch.optional()}))) as Record<string,unknown>};
 const withMethods={name:'static_director_v2r',schema:z.toJSONSchema(responseResources(staticResponseResourceSchema)) as Record<string,unknown>};
-/** Blocks started with image methods offer the sketch; edit and extend are offered only when earlier pictures exist. */
-export function staticDesignResponseFor(input:Pick<DirectionInput,'brief'>,revision:boolean){return input.brief.imageMethodsVersion!==1?staticDesignResponseSchema:revision?withMethods:withSketch;}
+const cutout={cutout:z.boolean().optional()};
+const withSketchCutout={name:'static_director_v3',schema:z.toJSONSchema(responseResources(staticResourceBase.extend({sketch:imageMethodSchemas.sketch.optional(),...cutout}))) as Record<string,unknown>};
+const withMethodsCutout={name:'static_director_v3r',schema:z.toJSONSchema(responseResources(staticResponseResourceSchema.extend(cutout))) as Record<string,unknown>};
+/** Blocks started with image methods offer the sketch; edit and extend are offered only when earlier pictures exist.
+ * Blocks started with the picture rules (brief.pictureRulesVersion 1) also offer cutout. */
+export function staticDesignResponseFor(input:Pick<DirectionInput,'brief'>,revision:boolean){
+ if(input.brief.imageMethodsVersion!==1)return staticDesignResponseSchema;
+ if(input.brief.pictureRulesVersion===1)return revision?withMethodsCutout:withSketchCutout;
+ return revision?withMethods:withSketch;
+}
