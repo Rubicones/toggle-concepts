@@ -11,7 +11,8 @@ import type {DirectionInput,Variant} from '../../../packages/director/types';
 
 /** First render of a scene plus at most three revisions. */
 export const DESIGNER_REVISIONS_PER_SCENE=3;
-export type DesignerLoopState={turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
+export type {DesignerLoopState} from '../../../packages/director/designer';
+import type {DesignerLoopState} from '../../../packages/director/designer';
 export const newDesignerState=(now=Date.now()):DesignerLoopState=>({turn:0,startedAt:now,complete:false,pictures:0,transcript:[],renders:{}});
 export type PictureResult={id:string;status:'ready'|'failed'|'refused';detail?:string;cutout?:boolean};
 export type DesignerTools={

@@ -4,6 +4,7 @@
 import {z} from 'zod';
 import {imageMethodSchemas} from './contract';
 import type {DirectionInput,Resource} from './types';
+import type {Finding} from './layout-inspection';
 
 /** Blocks quoted with the designer (brief.designerVersion 1). Earlier blocks keep the director and the coder. */
 export const usesDesigner=(input:Pick<DirectionInput,'brief'|'stage'>)=>input.stage==='draft'&&input.brief.designerVersion===1;
@@ -92,3 +93,6 @@ export function designerTurnSummary(results:unknown[]):string[]{
  if(asked)lines.push(`Asked for ${asked} picture${asked===1?'':'s'}.`);if(refused)lines.push('The approved number of pictures is used.');
  return lines;
 }
+
+/** The designer's saved progress in the work state (point 4b/4e). */
+export type DesignerLoopState={turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};

@@ -27,7 +27,7 @@ export function directionStatus(direction:DirectorView['directions'][number]){
  if(direction.question)return 'Needs your attention';
  if(direction.status==='queued')return 'Queued';
  if(direction.status==='done')return 'Saved for review';
- if(direction.status==='running')return ({director:'Designing the direction',resources:'Preparing pictures and component',assembler:'Building the component',assembled:'Preparing review',critic:'Reviewing',complete:'Finishing'} as Record<string,string>)[direction.progress?.phase??'']??'Working';
+ if(direction.status==='running')return ({director:'Designing the direction',designer:'The designer is working',resources:'Preparing pictures and component',assembler:'Building the component',assembled:'Preparing review',critic:'Reviewing',complete:'Finishing'} as Record<string,string>)[direction.progress?.phase??'']??'Working';
  return 'Saved';
 }
 

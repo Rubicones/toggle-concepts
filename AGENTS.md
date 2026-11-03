@@ -185,6 +185,23 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
 - **Display.** `packages/director/final-notes.ts` turns the design into plain sentences per scene, without ids, and omits scenes with nothing to add. `LivePreview.finalNotes` carries them, and `FinalVersionPanel` shows them under the frame in the AD's live and saved draft viewer, following the scene switcher.
 - **Client wording.** `clientFinalNote` gives the client wording ("This picture becomes …"). The client C2 view still shows compiled batches, not director drafts, so the client panel is ready but not mounted yet.
 
+### One designer per direction (designer pipeline plan, point 4, 3 November 2026)
+
+- **Choosing it.** On the draft start controls the AD chooses who makes the drafts: "Director and coder" (default, unchanged) or "One designer per direction (new)". A designer quote sets `brief.designerVersion: 1` and needs migration `20261103000300` (`studio_designer_policy_version() = 'designer@1'`).
+- **Who the designer is.** One agent per direction on the run's visual-direction agent and model. It has its own allowance key `designer` (`estimateDesignerDirection`: 24 turns, 960k input, 144k output, 1 h), a count of pictures, and its own request cap (`designerRequestInputCap`).
+- **Protocol** (`packages/agents/prompts/designer-v1.ts`). Principles only: the director's idea and craft rules, the coder's code, copy and brand rules, the picture rules and the final notes, without the per-format ban.
+- **Working loop** (`apps/local-runner/director/designer-loop.ts`). Scene by scene in one conversation: write → render (free browser measurement plus screenshots) → look → revise.
+  - At most three revisions per scene, and hard findings come back on every render.
+  - Pictures are bought in the background through the usual purchase path. They are recorded in the work state first, then admitted by count (`STILL_COUNT_EXHAUSTED` past it).
+  - `finish` gives the intent and the per-scene moments and notes.
+- **Inputs** (`designerContext`): the full accepted kit, the interface inventory, the treatment, the storyboard and the reference copy. The brand sheet and the supplied references travel as cached prefix images.
+- **In the worker.** No director design step and no coder. The provisional design (`provisionalDesign`) serves the preview and admission until finish. Live review findings and critic notes go to the designer, the single owner; there is no coder self-review.
+- **In the UI.**
+  - The timeline shows "Designing scene N: …" with the view the designer looked at.
+  - AD notes go to the designer without a recipient choice.
+  - The status reads "The designer is working".
+- **Earlier blocks.** They keep director + coder with their exact requests and quotes.
+
 ## 6. Current draft execution and handoff contracts
 
 Key modules: `lib/server/director-start.ts`, `apps/local-runner/director/worker.ts`, `apps/local-runner/director/static-assembler.ts`, `packages/director/creative-handoff.ts`, `packages/director/planning.ts`, `packages/director/inputs.ts`, `packages/director/source-edits.ts` and `packages/director/contract.ts`.
