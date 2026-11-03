@@ -22,7 +22,8 @@ import {watch as watchFolder} from "node:fs";
 import {studioChangeDirectory} from "../../packages/data/studio-changes";
 import type {ProviderErrorDetail} from "../../packages/contracts/provider-error";
 import {diagnoseIntakeOutput} from "../../packages/contracts/brand-intake";
-import {loadBrandVision} from "../../packages/brand/vision.local";
+import {processBrandSheet} from "./brand-sheet";
+import {loadBrandVision,loadBrandSheetVision} from "../../packages/brand/vision.local";
 import {processBrandFieldAnalysis,flushBrandReadReceipts} from "./brand-field-analysis";
 import {processBrandMaterial} from "./brand-materials";
 import {compileDraftClaim} from "./compile-drafts";
@@ -134,7 +135,7 @@ async function execute(claim:Claim){
    Object.assign(snapshot,initial.config_snapshot,{upstream});transportTask=initial.config_snapshot.transportTask??'';reservation=initial.reserve_micro_usd;
    if(model.inputPrice>snapshot.pricing.inputPrice*1.1||model.outputPrice>snapshot.pricing.outputPrice*1.1)throw new Error("MODEL_PRICE_CHANGED");
   }else{
-   const quote=textRequestQuote(job.payload.prompt,creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:snapshot,transportTask,creative?.stage==='critic'?creative.input.criticSceneCount??6:creative?.stage==='media'?Math.min(3,creative.input.assetAliases.length):((snapshot as unknown as {brandVisionImages?:unknown[]}).brandVisionImages?.length??0));
+   const quote=textRequestQuote(job.payload.prompt,creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:snapshot,transportTask,creative?.stage==='critic'?creative.input.criticSceneCount??6:creative?.stage==='media'?Math.min(3,creative.input.assetAliases.length):((snapshot as unknown as {brandVisionImages?:unknown[]}).brandVisionImages?.length??0)+((snapshot as unknown as {brandSheetImages?:unknown[]}).brandSheetImages?.length??0));
    if(quote.inputTokenBound+snapshot.maxOutputTokens>model.contextLength)throw new Error('PROMPT_TOO_LONG');
    reservation=quote.reservationMicroUsd;
 
@@ -148,7 +149,7 @@ async function execute(claim:Claim){
    requireRequestAllowance(reservation,allowance.data?.reservation_micro_usd??null);
   }
   protocolSchema=snapshot.responseSchema?.name??null;
-  const vision=creative?await loadCreativeVision(creative.stage,creative.input,job.campaign_id,upstream):await loadBrandVision(snapshot as unknown as Record<string,unknown>,job.campaign_id);
+  const vision=creative?await loadCreativeVision(creative.stage,creative.input,job.campaign_id,upstream):[...await loadBrandVision(snapshot as unknown as Record<string,unknown>,job.campaign_id),...await loadBrandSheetVision(snapshot as unknown as Record<string,unknown>)];
   if(stopping)throw new Error("LOCAL_PROCESS_STOPPING");
   const submittedStep=await rpc("studio_begin_workflow",{target_job:job.id,token:job.lease_token,device,snapshot,reservation});
   // From this point a crash/timeout is uncertain and can never be automatically resubmitted.
@@ -200,7 +201,7 @@ async function main(){
   let idle=Date.now(),checked_at=Date.now();const startedWith=await codeFingerprint();
   while(!stopping&&Date.now()-idle<60000){
    if(Date.now()-checked_at>5000){checked_at=Date.now();if(await codeFingerprint()!==startedWith){restartForNewCode=true;break;}}
-   await flushReceipts();await flushProviderAnchors();try{if(await processDirectorWork(device)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis()){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
+   await flushReceipts();await flushProviderAnchors();try{if(await processDirectorWork(device)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis()){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
    const claim=await rpc("studio_claim_workflow",{target_tenant:sharedTenant,device}) as Claim|null;
    if(claim){idle=Date.now();await execute(claim);}else await waitForWork(idleDelay(Date.now()-idle));
   }

@@ -9,6 +9,8 @@ export type BrandKit = {
  rawKit?:unknown;copy:Record<string,Record<string,string>>;facts:Record<string,string>;references:{id:string;url:string}[];
  /** The product's UI kit parts and screenshots: evidence for interface mockups built in code, never image references. */
  interface?:{id:string;url:string;role:'uikit'|'screenshot'}[];
+ /** Brand sheet pages for the live critic (blocks with brief.brandSheetVersion 1): pinned files, sent as cached images. */
+ sheet?:{section:string;slice:number;url:string;sha256:string;width:number;height:number}[];
 };
 export type CompositionProps = {format:string;locale:string;hook:string;cta:string;length:number};
 export type FrameProps = CompositionProps & {width?:number;height?:number;sceneId:string;moment:string};

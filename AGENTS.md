@@ -125,6 +125,15 @@ Use this sequence to solve a creative problem:
 - Each scenario direction lists `productData`: believable product content (names, versions, statuses, numbers, short comments) from confirmed facts. It is prop text shown inside product or interface mockups, never a headline, hook, claim or offer; in other locales only its language-neutral items are shown. Prop text (including example names from brand materials) is never the headline or the hook; the scenario critic sends such a direction back.
 - The questionnaire's "Ad shape" (one key frame, a short sequence of 2–3 scenes, a story of 4–6 scenes, or suggest) is a structural instruction for strategy, script and visual direction (`adShapeBlock`, sent with the task text) and reaches the director and coder as `creativeHandoff.intent.adShape`. Everything is animated later; durations stay as scoped. Briefs from before the question carry no ad shape.
 
+### Brand sheet (designer pipeline plan, point 1, 3 November 2026)
+
+- The brand sheet shows the agents how the brand looks. It has five neutral specimen pages: logo & colour, typography, interface components, product & photography, rules in use (`packages/brand/brand-sheet.ts`).
+- Pages are built only from the supplied files and the kit's own words. The local runner renders them to PNG with headless Chromium, offline (`apps/local-runner/brand-sheet.ts`). A model never redraws brand material, and the pages are deliberately not brand-like layouts.
+- Sheets are stored as `staging/brand-sheet/<sha>.png` with rows in `studio_brand_sheets`. Each brandbook submission gets a build automatically; the AD can rebuild from the brandbook step ("What the agents see").
+- The visual direction receives the sheet pinned in its frozen payload (`brandSheetImages`, set by `studio_start_workflow`, compared by `studio_begin_workflow`).
+- The live critic receives up to four pages as cached prefix images. This applies only to blocks with `brief.brandSheetVersion: 1`; their quotes reserve those images.
+- Strategy and script stay text-only. The text kit stays the source of truth for facts and checks.
+
 ### Source artwork versus identity evidence
 
 A product photo or video crop may be a reference to reconstruct, not finished advertising artwork. Interfaces are different (owner decision, 3 November 2026): a UI screenshot or a UI kit part (material role `uikit`) is evidence for an interface mockup built in code, never an image-model reference; the director receives them as `brand.interface`, apart from `brand.references`, together with the kit's `product.components` and `product.interfaceColors` rules. Interface colours never become the brand's paper, ink or accent. Where accepted permissions allow reconstruction, the director should request a fresh polished still using actual reference pixels and protected identity details. Keep official logos exact and marketing text separately editable. Do not invent interfaces, people, product features or hidden details. Missing evidence remains unknown.

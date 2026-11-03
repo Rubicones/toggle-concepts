@@ -15,9 +15,13 @@ import {singleChoiceFields} from '@/packages/brand/finding-selection';
 import {buildBrandCard} from '@/packages/brand/brand-card';
 import {inkColours,logoInkVariants} from '@/packages/brand/normalize';
 import {objectStore} from '@/packages/media/s3.server';
+import {brandSheetHtml,brandSheetSections} from '@/packages/brand/brand-sheet';
+import {loadBrandSheetSource} from '@/packages/brand/brand-sheet-data';
+import {brandSheetView,requestBrandSheet} from '@/lib/server/brand-sheet';
 const commands=z.discriminatedUnion('action',[
  z.strictObject({action:z.literal('submit'),requestId:z.uuid()}),
  z.strictObject({action:z.literal('prefill')}),
+ z.strictObject({action:z.literal('buildSheet')}),
  z.strictObject({action:z.literal('useBrand'),sourceCampaignId:z.uuid().nullable()}),
  z.strictObject({action:z.literal('setRole'),materialId:z.uuid(),role:z.enum(materialRoles).nullable()}),
  z.strictObject({action:z.literal('startSelected'),requestId:z.uuid(),materialIds:z.array(z.uuid()).min(1),requestCap:z.number().int().min(100).max(10000000),runCap:z.number().int().min(10000).max(10000000)}),
@@ -29,6 +33,21 @@ const commands=z.discriminatedUnion('action',[
 function analysisError(error:{code?:string;message:string}|null){if(!error)return;if(schemaMissing(error))throw new ApiError(503,'BRAND_FIELDS_SCHEMA_REQUIRED','Enable the required Brand Kit update in Settings. Submission and continuation use migration 014.');const messages:Record<string,string>={SOURCE_ALREADY_QUEUED:'This source already has saved work. Continue its existing analysis to retain its exact position.',INTAKE_BUILD_ACTIVE:'A source is currently being read. Wait for it to finish, then analyze the new notes only.',NO_BRAND_FINDINGS:'Collect or keep at least one finding before submitting the brandbook.',ANALYSIS_EXISTS:'An analysis already exists. Resume it to retain its budget and saved findings.',MATERIALS_NOT_READY:'Finish file reading or explicitly exclude unreadable files before analysis.',REVIEW_REQUIRED:'This part has an uncertain or invalid result. Saved findings are retained; inspect its activity before another paid request.',STALE_FINDING:'This finding changed. Reload before saving your decision.',RUN_NOT_ACTIVE:'The run is closed. Saved findings remain available; reconcile unknown charges before continuing.',RUN_CAP_REACHED:'The analysis budget is exhausted. All completed findings remain saved.',STEP_CAP_REACHED:'The cumulative brand-agent allowance is exhausted. All completed findings remain saved.'};const code=Object.keys(messages).find(c=>error.message.includes(c));if(code)throw new ApiError(409,code,messages[code]);throw new Error(error.message);}
 export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/brand-fields'>){return api(async()=>{
  const campaign=await campaignRecord((await ctx.params).id),{admin,tenant}=await studioContext(),url=new URL(request.url),scope=await brandScope(campaign.id);
+ // The brand sheet (designer pipeline plan, point 1): what the designing agents see, its pages and its images.
+ if(url.searchParams.has('sheets'))return json(await brandSheetView(admin,tenant,scope));
+ const sheetImage=url.searchParams.get('sheetImage');if(sheetImage){
+  const sha=z.string().regex(/^[a-f0-9]{64}$/).parse(sheetImage);
+  const own=(checked(await admin.from('studio_brand_sheet_builds').select('submission_id').eq('tenant_id',tenant).eq('campaign_id',scope).limit(50))??[]).map(b=>b.submission_id);
+  const row=own.length?checked(await admin.from('studio_brand_sheets').select('object_key').eq('sha256',sha).in('submission_id',own).limit(1).maybeSingle()):null;
+  if(!row)throw new ApiError(404,'BRAND_SHEET_NOT_FOUND','This sheet image is not part of this brand.');
+  return new Response(new Uint8Array((await objectStore().get(row.object_key)).body),{headers:{'Content-Type':'image/png','Cache-Control':'private, max-age=86400, immutable','X-Content-Type-Options':'nosniff'}});
+ }
+ const sheet=url.searchParams.get('sheet');if(sheet){
+  const section=z.enum(brandSheetSections).parse(sheet),self=`/api/studio/campaigns/${campaign.id}/brand-fields`;
+  const source=await loadBrandSheetSource(admin,tenant,scope,async key=>(await objectStore().get(key)).body);
+  const html=brandSheetHtml(section,source,{file:(id,ground)=>`${self}?asset=${id}${ground?`&ground=${ground}`:''}`});
+  return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; img-src 'self' data:; font-src 'self' data:; style-src 'unsafe-inline'; sandbox"}});
+ }
  const assetId=url.searchParams.get('asset');if(assetId){
   // Brand card previews: a logo (optionally with currentColor resolved for a ground) or a font file, from this brand only.
   const m=checked(await admin.from('studio_brand_materials').select('id,mime,object_key,sha256').eq('id',z.uuid().parse(assetId)).eq('tenant_id',tenant).eq('campaign_id',scope).eq('state','ready').maybeSingle());if(!m)throw new ApiError(404,'MATERIAL_NOT_FOUND','File not found in this brand.');
@@ -92,6 +111,11 @@ export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaig
   if(result.error){if(input.role==='uikit'&&/INVALID_MATERIAL_ROLE|role_check/.test(result.error.message))throw new ApiError(503,'MATERIAL_ROLE_SCHEMA_REQUIRED','Apply migration 20261103000100_brand_uikit_components first.');if(/studio_set_brand_material_role|schema cache/.test(result.error.message))throw new ApiError(503,'MATERIAL_ROLE_SCHEMA_REQUIRED','Apply migration 20261102000300_brand_material_roles first.');analysisError(result.error);}
   const n=Number(result.data??0);return json({message:`Saved.${n?` ${n} unreviewed ${n===1?'finding':'findings'} this kind of file cannot state ${n===1?'was':'were'} excluded; you can bring any back.`:''} Files read from now on use this role.`});
  }
+ if(input.action==='buildSheet'){
+  const scope=await brandScope(campaign.id);
+  if(!await requestBrandSheet(admin,scope,actorId))throw new ApiError(409,'BRAND_SHEET_UNAVAILABLE','Submit the brandbook first. If it is submitted, apply migration 20261103000200_brand_sheet in Settings.');
+  await startLocalWorkflow();return json({message:'Building the brand sheet. It appears here in about a minute.'});
+ }
  if(input.action!=='review'&&await brandScope(campaign.id)!==campaign.id)throw new ApiError(409,'BRAND_FROM_SOURCE','This campaign uses a brand from the library. Edit that brand, or stop using it here first.');
  if(input.action==='review'){
   const finding=checked(await admin.from('studio_brand_findings').select('id').eq('id',input.findingId).eq('tenant_id',tenant).eq('campaign_id',campaign.id).maybeSingle());if(!finding)throw new ApiError(404,'FINDING_NOT_FOUND','Finding not found in this campaign.');
@@ -102,7 +126,9 @@ export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaig
  }
  if(input.action==='submit'||input.action==='prefill'){
   let submission;
-  if(input.action==='submit'){const result=await admin.rpc('studio_submit_brandbook',{target_campaign:campaign.id,request_key:input.requestId,acting_user:actorId});analysisError(result.error);submission=result.data;}
+  if(input.action==='submit'){const result=await admin.rpc('studio_submit_brandbook',{target_campaign:campaign.id,request_key:input.requestId,acting_user:actorId});analysisError(result.error);submission=result.data;
+   // Every submission gets its brand sheet; a missing migration only means no sheet yet.
+   if(await requestBrandSheet(admin,campaign.id,actorId).catch(()=>false))await startLocalWorkflow().catch(()=>undefined);}
   else {const head=checked(await admin.from('studio_brandbook_heads').select('submission_id').eq('campaign_id',campaign.id).maybeSingle());submission=head?checked(await admin.from('studio_brandbook_submissions').select('id,created_at,version_no,is_partial').eq('id',head.submission_id).eq('tenant_id',tenant).eq('campaign_id',campaign.id).single()):null;if(!submission)throw new ApiError(409,'BRANDBOOK_REQUIRED','Submit your current brandbook first.');}
   const prefill=await prefillBrandbookBrief(campaign,submission);
   const message=prefill.fixed?'C1 is already submitted; its questionnaire stays fixed.':`${prefill.filled.length} unanswered brief ${prefill.filled.length===1?'field':'fields'} filled from saved evidence.${prefill.conflicts.length?` ${prefill.conflicts.length} conflicting answers left for review.`:''} Existing answers and approvals are unchanged.`;

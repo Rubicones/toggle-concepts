@@ -16,6 +16,7 @@ import { brandAnalysisCanContinue, brandAnalysisNotice } from "@/packages/brand/
 import { flushCampaignSaves } from "@/lib/use-persisted-draft";
 import { WorkflowMigration } from "./brief-workspace";
 import { BrandCard, BrandDisagreements, BrandFileRoles, BrandLibraryPicker } from "./brand-card";
+import { BrandSheetStrip } from "./brand-sheet";
 export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { campaignId: string; sourcesReady: boolean; onContinue?: () => void }) {
   const router = useRouter();
   const endpoint = `/api/studio/campaigns/${campaignId}/brand-fields`,
@@ -414,6 +415,7 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
           review={(finding, value) => command({ action: "review", findingId: finding.findingId, expectedVersion: finding.version, decision: "keep", editedValue: value })}
         />
       )}
+      {count > 0 && <BrandSheetStrip endpoint={endpoint} busy={busy} build={() => command({ action: "buildSheet" })} />}
       <div className="step-footer">
         <p>
           {data.submission

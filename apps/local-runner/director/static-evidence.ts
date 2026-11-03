@@ -7,8 +7,10 @@ import type {TextSnapshot} from '../../../packages/agents/text-provider';
 import {compactDraftRequest} from '../../../packages/director/request-size';
 
 /** Packing changes review sheets only, retaining every format instead of dropping mandatory evidence. */
-export async function packCriticImages(images:{url:string;label:string}[],count:number){
- if(count>=images.length)return images;
+export async function packCriticImages(all:{url:string;label:string;prefix?:boolean}[],total:number){
+ // Brand sheet pages (prefix) stay as they are; only the review sheets are packed into what is left.
+ const fixed=all.filter(i=>i.prefix),images=all.filter(i=>!i.prefix),count=total-fixed.length;
+ if(count>=images.length)return all;
  if(count<1)throw new Error('CRITIC_RENDER_EVIDENCE_REQUIRED');
  const packed=[];
  for(let group=0;group<count;group++){
@@ -21,13 +23,14 @@ export async function packCriticImages(images:{url:string;label:string}[],count:
   const bytes=canvas.toBuffer('image/jpeg',65);if(bytes.length>524288)throw new Error('CRITIC_IMAGE_SIZE_CAP');
   packed.push({url:`data:image/jpeg;base64,${bytes.toString('base64')}`,label:`Combined format grids in reading order: ${source.map(i=>i.label).join(' | ')}`});
  }
- return packed;
+ return [...fixed,...packed];
 }
-export async function compactStaticCriticRequest(prompt:string,snapshot:TextSnapshot,images:{url:string;label:string}[]){
- if(!images.length)throw new Error('CRITIC_RENDER_EVIDENCE_REQUIRED');let failure:unknown;
- for(let count=images.length;count>=1;count--){
+export async function compactStaticCriticRequest(prompt:string,snapshot:TextSnapshot,images:{url:string;label:string;prefix?:boolean}[]){
+ const fixed=images.filter(i=>i.prefix).length;
+ if(images.length<=fixed)throw new Error('CRITIC_RENDER_EVIDENCE_REQUIRED');let failure:unknown;
+ for(let count=images.length;count>=fixed+1;count--){
   const packed=await packCriticImages(images,count),context=snapshot.campaignContext as {compaction?:{actions?:string[]}}|undefined;
-  const actions=[...(context?.compaction?.actions??[]),...(count<images.length?[`Packed all ${images.length} format grids into ${count} review images; no format was omitted.`]:[])];
+  const actions=[...(context?.compaction?.actions??[]),...(count<images.length?[`Packed all ${images.length-fixed} format grids into ${count-fixed} review images; no format was omitted.`]:[])];
   try{return compactDraftRequest(prompt,{...snapshot,preserveImages:true,visionPacking:'all-formats',campaignContext:{...snapshot.campaignContext as object,compaction:{actions}}},packed);}catch(error){if(!(error instanceof Error&&error.message==='DRAFT_REQUEST_SIZE_CAP'))throw error;failure=error;}
  }
  throw failure;

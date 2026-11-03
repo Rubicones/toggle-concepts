@@ -195,7 +195,7 @@ export async function executeDirector(claim:DirectorClaim,device:string){
     };
     const criticConfig=snapshot.models.critic,canReview=estimate.roles.critic.requests>0&&!!criticConfig?.vision;
     return runLiveReview({inspect,repair,repairBlocked,criticRounds:canReview?Math.min(2,estimate.roles.critic.requests):0,state:reviewState,
-     critic:canReview?async(round,context,views)=>{await controls();return (await call('critic','Review these rendered views of the live draft and the measurements.',liveCriticInstructions,liveCriticSchema,context,{review:'live',round},await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:6}))).text;}:undefined,selfReview:coderSees,
+     critic:canReview?async(round,context,views)=>{await controls();return (await call('critic','Review these rendered views of the live draft and the measurements.',liveCriticInstructions,liveCriticSchema,context,{review:'live',round},[...await brandSheetImages(folder,input),...await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:6})])).text;}:undefined,selfReview:coderSees,
      context:()=>({concept:design.designDocument.slice(0,2500),...(input.creativeHandoff?.intent.feeling?{feeling:input.creativeHandoff.intent.feeling}:{}),keyFrames:design.keyFrames,resources:design.resources.map(r=>({id:r.id,scene:r.scene,purpose:r.purpose,proxy:r.proxy})),formats:input.formats.map(f=>({id:f.id,width:f.width,height:f.height})),brandTokens:input.brand.tokens}),
      save:async next=>{state.liveReview=next;await save();},
      emit:async(step,message,detail,file)=>{await events.emit(step,{stepId:step,kind:'review',status:'done',costMicroUsd:0,message,detail},file);}});
@@ -263,3 +263,11 @@ export async function executeDirector(claim:DirectorClaim,device:string){
  finally{clearInterval(beat);}
 }
 export async function processDirectorWork(device:string){await flushDirectorReceipts(adminClient());if(await processDirectorDelivery(device))return true;const result=await adminClient().rpc('studio_claim_director',{target_tenant:sharedTenant,device});if(result.error){if(['PGRST202','PGRST205','42883','42P01'].includes(result.error.code??''))return false;throw new Error(result.error.message);}if(!result.data)return false;await executeDirector(result.data as DirectorClaim,device);return true;}
+
+/** Brand sheet pages (blocks with brief.brandSheetVersion 1) read from the block's pinned files; the same bytes on every
+ * request, so they sit in the cached prefix of each live critic request. */
+async function brandSheetImages(folder:string,input:import('../../../packages/director/types').DirectionInput){
+ if(input.brief.brandSheetVersion!==1||!input.brand.sheet?.length)return [];
+ const {readFile}=await import('node:fs/promises'),{resolve}=await import('node:path');
+ return Promise.all(input.brand.sheet.map(async p=>({url:`data:image/png;base64,${(await readFile(resolve(folder,'public',p.url))).toString('base64')}`,label:`Brand sheet · ${p.section}: how this brand looks, rendered from its own files. Judge the frames against it; never copy the sheet's layout.`,prefix:true as const})));
+}
