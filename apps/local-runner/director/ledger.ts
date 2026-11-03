@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {TextReceipt,TextSnapshot} from '../../../packages/agents/text-provider';
 import {textRequestQuote} from '../../../packages/agents/text-quote';
-import {roleNames,accountedTokens,freeRejection,type Role,type SavedRequest,type TextLedger} from '../../../packages/director/money';
+import {roleNames,accountedTokens,freeRejection,type Role,type AllowanceRole,type SavedRequest,type TextLedger} from '../../../packages/director/money';
 import {checked} from '../../../packages/data/shared-runtime';
 import type {BlockSnapshot} from '../../../packages/director/state';
 export function directorLedger(admin:SupabaseClient,context:{runId:string;blockId:string;directionId:string;device:string;token:number}):TextLedger{
@@ -27,12 +27,12 @@ export function directorLedger(admin:SupabaseClient,context:{runId:string;blockI
   async settle(id:string,r:TextReceipt){const receipt={target_step:id,final_state:r.outcome,actual_cost:r.cost,result_text:r.text,provider_generation:r.generation,token_usage:r.usage,failure:r.failure},dir=resolve('artifacts/m08/receipts');await mkdir(dir,{recursive:true,mode:0o700});const path=resolve(dir,id+'.json');await writeFile(path+'.tmp',JSON.stringify(receipt),{mode:0o600});await rename(path+'.tmp',path);checked(await admin.rpc('studio_finish_step',receipt));await unlink(path);}
  };
 }
-export async function directorTextConfig(admin:SupabaseClient,args:{runId:string;blockId:string;directionId:string;role:Exclude<Role,'resources'>;snapshot:TextSnapshot;prompt:string;visionCount:number}){
+export async function directorTextConfig(admin:SupabaseClient,args:{runId:string;blockId:string;directionId:string;role:AllowanceRole;snapshot:TextSnapshot;prompt:string;visionCount:number}){
  const rows=checked(await admin.from('studio_agent_steps').select('reserve_micro_usd,cost_micro_usd,status,config_snapshot,usage').eq('run_id',args.runId).eq('config_snapshot->>directorBlockId',args.blockId).eq('config_snapshot->>directorDirectionId',args.directionId).eq('config_snapshot->>directorRole',args.role))??[];
- const block=checked(await admin.from('studio_director_blocks').select('estimates:snapshot->estimates').eq('id',args.blockId).single());if(!block)throw new Error('DIRECTOR_BLOCK_MISSING');const allowance=(block.estimates as BlockSnapshot['estimates'])[args.directionId].roles[args.role];
+ const block=checked(await admin.from('studio_director_blocks').select('estimates:snapshot->estimates').eq('id',args.blockId).single());if(!block)throw new Error('DIRECTOR_BLOCK_MISSING');const allowance=(block.estimates as BlockSnapshot['estimates'])[args.directionId].roles[args.role];if(!allowance)throw new Error('DIRECTOR_ALLOWANCE_REQUIRED');
  const inputUsed=rows.reduce((n,r)=>n+accountedTokens(r).input,0),outputUsed=rows.reduce((n,r)=>n+accountedTokens(r).output,0),spent=rows.reduce((n,r)=>n+(['reserved','running','unknown'].includes(r.status)||r.cost_micro_usd===null?r.reserve_micro_usd:r.cost_micro_usd),0);
  const remainingOutput=allowance.outputTokens-outputUsed;
- const fullAnswer=args.role==='director'||args.role==='assembler'&&['static_files_v1','static_tools_v1'].includes(args.snapshot.responseSchema?.name??'');
+ const fullAnswer=args.role==='director'||args.role==='designer'||args.role==='assembler'&&['static_files_v1','static_tools_v1'].includes(args.snapshot.responseSchema?.name??'');
  if(fullAnswer&&remainingOutput<args.snapshot.maxOutputTokens)throw Object.assign(new Error('ROLE_ALLOWANCE_EXHAUSTED'),{detail:`${args.role}: output ${outputUsed.toLocaleString('en-US')} of ${allowance.outputTokens.toLocaleString('en-US')}; ${remainingOutput} output tokens remain; a complete request needs its priced ${args.snapshot.maxOutputTokens}-token answer allowance. No shortened request was sent.`});
  const snapshot={...args.snapshot,maxOutputTokens:fullAnswer?args.snapshot.maxOutputTokens:Math.min(args.snapshot.maxOutputTokens,remainingOutput)};
  const quoted=textRequestQuote(args.prompt,snapshot,'',args.visionCount);
@@ -43,13 +43,13 @@ export async function directorTextConfig(admin:SupabaseClient,args:{runId:string
 }
 
 /** Compact in raw units against the same billed equivalents enforced by admission and SQL. */
-export async function directorInputAllowance(admin:SupabaseClient,args:{runId:string;blockId:string;directionId:string;role:Exclude<Role,'resources'>;snapshot:TextSnapshot}){
+export async function directorInputAllowance(admin:SupabaseClient,args:{runId:string;blockId:string;directionId:string;role:AllowanceRole;snapshot:TextSnapshot}){
  const [steps,block]=await Promise.all([
   admin.from('studio_agent_steps').select('status,cost_micro_usd,config_snapshot,usage').eq('run_id',args.runId).eq('config_snapshot->>directorBlockId',args.blockId).eq('config_snapshot->>directorDirectionId',args.directionId).eq('config_snapshot->>directorRole',args.role),
   admin.from('studio_director_blocks').select('estimates:snapshot->estimates').eq('id',args.blockId).single(),
  ]);
  const rows=checked(steps)??[],saved=checked(block);if(!saved)throw new Error('DIRECTOR_BLOCK_MISSING');
- const remaining=Math.max(0,(saved.estimates as BlockSnapshot['estimates'])[args.directionId].roles[args.role].inputTokens-rows.reduce((sum,row)=>sum+accountedTokens(row).input,0));
+ const remaining=Math.max(0,((saved.estimates as BlockSnapshot['estimates'])[args.directionId].roles[args.role]?.inputTokens??0)-rows.reduce((sum,row)=>sum+accountedTokens(row).input,0));
  const pricing=args.snapshot.pricing,multiplier=pricing.inputPrice>0?cacheWriteRate(pricing,args.snapshot.cachePrompt)/pricing.inputPrice:1;
  return Math.floor(remaining/multiplier);
 }

@@ -2,7 +2,7 @@
 
 - **Date:** 2026-11-03
 - **Branch:** `feat/designer-tools`
-- **Base Commit:** `ce3da1a` (`feat/designer-protocol`, 4a) plus the merge `3b29c49` of creative quality plan steps 3–4 (`feat/review-execution`)
+- **Base Commit:** `ef10831` (`feat/designer-protocol`, 4a) plus the merge `3b29c49` of creative quality plan steps 3–4 (`feat/review-execution`)
 
 ## 1. Database Migrations to Apply (ACTION REQUIRED BY OWNER)
 

@@ -4,9 +4,14 @@ import {canonicalJson} from '../contracts/common';
 import {textRequestQuote} from '../agents/text-quote';
 import {submitText,type TextReceipt,type TextSnapshot} from '../agents/text-provider';
 export const roleNames={director:'visual-direction',assembler:'creative-code',critic:'critic',resources:'image'} as const;
+/** The designer (designer pipeline plan, point 4) runs on the visual-direction agent and model, accounted separately
+ * under its own allowance key 'designer' (config_snapshot.directorRole; migration 20261103000300). */
+export type AllowanceRole=Exclude<Role,'resources'>|'designer';
 export type Role=keyof typeof roleNames;
 export type RoleAllowance={maxCostMicroUsd:number;inputTokens:number;outputTokens:number;timeMs:number;requests:number};
-export type Estimate={quoteId:string;maxCostMicroUsd:number;roles:Record<Role,RoleAllowance>;perStillMicroUsd:number;maxStills:number;maxCriticRounds:2};
+export type Estimate={quoteId:string;maxCostMicroUsd:number;roles:Record<Role,RoleAllowance>&{designer?:RoleAllowance};perStillMicroUsd:number;maxStills:number;maxCriticRounds:2;
+ /** Designer blocks: the largest request the database admits for the designer role (migration 20261103000300). */
+ designerRequestInputCap?:number};
 export function estimateDirection(pricing:Record<Exclude<Role,'resources'>,{inputPrice:number;outputPrice:number}>,perStillMicroUsd:number,maxStills:number,identity:unknown):Estimate{
  if(!Number.isSafeInteger(perStillMicroUsd)||perStillMicroUsd<0||!Number.isInteger(maxStills)||maxStills<0||maxStills>40)throw new Error('INVALID_RESOURCE_ESTIMATE');
  const specs={director:{inputTokens:360000,outputTokens:65536,timeMs:1200000,requests:4},assembler:{inputTokens:1500000,outputTokens:131072,timeMs:5400000,requests:30},critic:{inputTokens:300000,outputTokens:32768,timeMs:1200000,requests:2}};
@@ -85,4 +90,26 @@ export function estimateLiveDirection(pricing:Parameters<typeof estimateStaticDi
  if(m>0){const a=quote.roles.assembler,inputTokens=LIVE_VISUAL_REPAIR.inputTokens*m,outputTokens=LIVE_VISUAL_REPAIR.outputTokens*m,cost=price(pricing.assembler,inputTokens,outputTokens);
   quote.roles.assembler={...a,requests:a.requests+m,inputTokens:a.inputTokens+inputTokens,outputTokens:a.outputTokens+outputTokens,timeMs:a.timeMs+LIVE_VISUAL_REPAIR.timeMs*m,maxCostMicroUsd:a.maxCostMicroUsd+cost};quote.maxCostMicroUsd+=cost;}
  quote.quoteId=digest({identity,quote,presentation:'live'});return quote;
+}
+
+/**
+ * Designer blocks (brief.designerVersion 1, designer pipeline plan point 4c): one designer allowance replaces the
+ * director and the coder. The quote approves a number of design turns with their input and output tokens, a COUNT of
+ * pictures at a per-picture price (synthesis permission maps to that count: none when the brief does not permit
+ * generated pictures), and the same bounded live critic as other live drafts. Earlier quotes are unchanged.
+ */
+export const DESIGNER_TURNS={requests:24,inputTokens:960000,outputTokens:144000,timeMs:3600000};
+export function estimateDesignerDirection(pricing:{designer:TextSnapshot['pricing'];critic:TextSnapshot['pricing']},perStillMicroUsd:number,maxStills:number,identity:unknown,options:{criticRequests?:number;brandSheetImages?:number;requestInputCap?:number;turns?:Partial<typeof DESIGNER_TURNS>}={}):Estimate{
+ if(!Number.isSafeInteger(perStillMicroUsd)||perStillMicroUsd<0||!Number.isInteger(maxStills)||maxStills<0||maxStills>4)throw new Error('INVALID_RESOURCE_ESTIMATE');
+ for(const p of [pricing.designer,pricing.critic])if(!Number.isFinite(p.inputPrice)||!Number.isFinite(p.outputPrice)||p.inputPrice<0||p.outputPrice<0)throw new Error('MODEL_PRICE_UNAVAILABLE');
+ const price=(p:{inputPrice:number;outputPrice:number},inputTokens:number,outputTokens:number)=>Math.max(1,Math.ceil((p.inputPrice*inputTokens+p.outputPrice*outputTokens)*1e6*1.1));
+ const none={maxCostMicroUsd:0,inputTokens:0,outputTokens:0,timeMs:0,requests:0},turns={...DESIGNER_TURNS,...options.turns};
+ const designer={...turns,maxCostMicroUsd:price(pricing.designer,turns.inputTokens,turns.outputTokens)};
+ const n=Math.max(0,Math.min(2,Math.floor(options.criticRequests??0))),sheet=Math.max(0,Math.min(6,Math.floor(options.brandSheetImages??0)));
+ const criticSpec={inputTokens:(LIVE_CRITIC_REQUEST.inputTokens+sheet*IMAGE_INPUT_TOKENS)*n,outputTokens:LIVE_CRITIC_REQUEST.outputTokens*n,timeMs:n?180000:0,requests:n};
+ const roles:Estimate['roles']={director:none,assembler:none,critic:n?{...criticSpec,maxCostMicroUsd:price(pricing.critic,criticSpec.inputTokens,criticSpec.outputTokens)}:none,resources:{maxCostMicroUsd:perStillMicroUsd*maxStills,inputTokens:0,outputTokens:0,timeMs:1200000,requests:maxStills},designer};
+ const cap=Math.max(32768,Math.min(1048576,Math.floor(options.requestInputCap??65536)));
+ const quote={roles,maxCostMicroUsd:Object.values(roles).reduce((sum,r)=>sum+(r?.maxCostMicroUsd??0),0),perStillMicroUsd,maxStills,maxCriticRounds:2 as const,designerRequestInputCap:cap};
+ if(!Number.isSafeInteger(quote.maxCostMicroUsd)||quote.maxCostMicroUsd>1e8)throw new Error('ESTIMATE_EXCEEDS_RUN_LIMIT');
+ return {quoteId:digest({identity,quote,presentation:'designer'}),...quote};
 }

@@ -3,7 +3,7 @@
 // measured and the screenshots on the next turn. `finish` closes the draft with the intent and point 3's notes.
 import {z} from 'zod';
 import {imageMethodSchemas} from './contract';
-import type {DirectionInput} from './types';
+import type {DirectionInput,Resource} from './types';
 
 /** Blocks quoted with the designer (brief.designerVersion 1). Earlier blocks keep the director and the coder. */
 export const usesDesigner=(input:Pick<DirectionInput,'brief'|'stage'>)=>input.stage==='draft'&&input.brief.designerVersion===1;
@@ -62,4 +62,16 @@ export function designerActivityLine(turn:Pick<DesignerTurn,'focus'>,sceneNumber
  const n=sceneNumber(turn.focus.sceneId),scene=n>0?`scene ${n}`:'the scene';
  const lead={designing:`Designing ${scene}`,looking:`Looking at ${scene}`,revising:`Revising ${scene}`,recomposing:`Recomposing ${scene}`,finishing:'Finishing the draft'}[turn.focus.activity];
  return turn.focus.about?`${lead}: ${turn.focus.about}`:lead;
+}
+
+/**
+ * A requested picture as a director resource (point 4c), under the next issued id that no picture used yet. It is saved
+ * in the work state before admission, which checks the saved resource, the count left and the price.
+ */
+export function pictureResource(picture:DesignerPicture,input:Pick<DirectionInput,'resourceIds'|'brief'>,used:string[]):Resource{
+ const id=input.resourceIds.find(r=>!used.includes(r));if(!id)throw new Error('STILL_COUNT_EXHAUSTED');
+ return {id,kind:'still',resolution:'low',proxy:!!picture.proxyFor,...(picture.proxyFor?{proxyFor:picture.proxyFor}:{}),purpose:picture.purpose,scene:picture.scene,prompt:picture.prompt,aspect:picture.aspect,
+  referenceAssetIds:picture.referenceAssetIds,mustNotContain:picture.mustNotContain,
+  ...(picture.cutout&&input.brief.pictureRulesVersion===1?{cutout:true}:{}),...(picture.becomes&&picture.proxyFor?{becomes:picture.becomes}:{}),
+  ...(picture.sketch&&input.brief.imageMethodsVersion===1?{sketch:{shapes:picture.sketch.shapes}}:{})};
 }

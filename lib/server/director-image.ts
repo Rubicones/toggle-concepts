@@ -17,7 +17,15 @@ export async function directorImageAdmission(admin:SupabaseClient,tenant:string,
  // The saved resource (with the sketch, source and canvas hashes the worker pinned) defines the exact request.
  let expected:ReturnType<typeof resourceRequest>;try{expected=resourceRequest(resource,input,estimate.perStillMicroUsd);}catch{throw new ApiError(409,'STALE_DIRECTOR_RESOURCE','This still must match the saved director request.');}
  if(expected.prompt!==prompt||JSON.stringify(expected.references)!==JSON.stringify(image.referenceAssetIds)||JSON.stringify(expected.derivedPlan.map(d=>d.sha256))!==JSON.stringify(image.derivedSha256??[]))throw new ApiError(409,'STALE_DIRECTOR_RESOURCE','This still must match the saved director request.');
- if(input.brief.synthesisAllowed!==true&&!block.approved_resource_ids.includes(resourceRequest(resource,input,estimate.perStillMicroUsd).key))throw new ApiError(409,'RESOURCE_PERMISSION_REQUIRED','The brief does not yet permit this still.');
+ // Designer blocks (point 4c): the quote approved a COUNT of pictures, and the brief's synthesis permission was mapped
+ // to that count at quote time (none when generated pictures are not permitted). Retrying the same picture is not a new one.
+ const designer=input.brief.designerVersion===1;
+ if(!designer&&input.brief.synthesisAllowed!==true&&!block.approved_resource_ids.includes(resourceRequest(resource,input,estimate.perStillMicroUsd).key))throw new ApiError(409,'RESOURCE_PERMISSION_REQUIRED','The brief does not yet permit this still.');
+ if(designer){
+  const steps=checked(await admin.from('studio_agent_steps').select('config_snapshot').eq('run_id',runId).eq('config_snapshot->>directorBlockId',block.id).eq('config_snapshot->>directorDirectionId',meta.directionId).eq('config_snapshot->>directorRole','resources'))??[];
+  const used=new Set((steps as {config_snapshot?:{directorResourceId?:string}}[]).map(s=>s.config_snapshot?.directorResourceId).filter((id):id is string=>!!id&&id!==resource.id));
+  if(used.size>=estimate.maxStills)throw new ApiError(409,'STILL_COUNT_EXHAUSTED','The approved number of pictures for this direction is used.');
+ }
  if(meta.maxCostMicroUsd>estimate.perStillMicroUsd||reservation>meta.maxCostMicroUsd)throw new ApiError(409,'MEDIA_PRICE_CHANGED','Review the current still price.');
  const spec=resourceRequest(resource,input,estimate.perStillMicroUsd),ids=Array.from({length:3},(_,attempt)=>{const h=createHash('sha256').update(`${runId}:${input.roundId}:${spec.key}:${createHash('sha256').update(`still-request@2\n${prompt}`).digest('hex')}${attempt?`:retry${attempt}`:''}`).digest('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;});
  if(!ids.includes(requestId))throw new ApiError(409,'UNISSUED_REQUEST_ID','The application must issue the resource request identity.');
