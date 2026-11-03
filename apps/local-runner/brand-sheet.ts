@@ -2,6 +2,8 @@
 // to PNG with headless Chromium, offline (every request except the page itself is refused), at 1280 px wide; taller
 // pages are cut into slices of at most 1600 px. Images are stored content-addressed in staging/brand-sheet/<sha>.png.
 import {createHash} from 'node:crypto';
+import {existsSync} from 'node:fs';
+import {resolve} from 'node:path';
 import {chromium} from '@playwright/test';
 import {adminClient,checked,sharedTenant} from '../../packages/data/shared-runtime';
 import {objectStore} from '../../packages/media/s3.server';
@@ -11,8 +13,21 @@ import {inlineSheetAssets,loadBrandSheetSource} from '../../packages/brand/brand
 export type SheetImage={section:BrandSheetSection;position:number;slice:number;sha256:string;objectKey:string;width:number;height:number};
 const MAX_SLICES=4,PAGE_URL='http://brand-sheet.invalid/';
 
+/**
+ * The browser the studio Mac already has: CHROME_PATH, else the headless shell the live inspection uses
+ * (DIRECTOR_CHROME_PATH or Remotion's download). Playwright's own download is only the last resort; the studio does not
+ * install it.
+ */
+export function sheetBrowserPath(env:Record<string,string|undefined>=process.env,platform=process.platform,arch=process.arch,exists=existsSync){
+ if(env.CHROME_PATH)return env.CHROME_PATH;
+ if(env.DIRECTOR_CHROME_PATH)return env.DIRECTOR_CHROME_PATH;
+ if(platform!=='darwin')return undefined;
+ const a=arch==='arm64'?'arm64':'x64',shell=resolve(`node_modules/.remotion/chrome-headless-shell/mac-${a}/chrome-headless-shell-mac-${a}/chrome-headless-shell`);
+ return exists(shell)?shell:undefined;
+}
+
 /** Renders one HTML page offline and returns PNG slices of at most SHEET_MAX_HEIGHT px. */
-export async function renderSheetPage(html:string,launch=()=>chromium.launch({executablePath:process.env.CHROME_PATH,headless:true,chromiumSandbox:false})){
+export async function renderSheetPage(html:string,launch=()=>chromium.launch({executablePath:sheetBrowserPath(),headless:true,chromiumSandbox:false})){
  const browser=await launch();
  try{
   const page=await browser.newPage({viewport:{width:SHEET_WIDTH,height:SHEET_MAX_HEIGHT},deviceScaleFactor:1});

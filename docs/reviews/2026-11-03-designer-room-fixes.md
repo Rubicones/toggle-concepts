@@ -92,3 +92,20 @@
   - `brand-sheet.sql`
   - `designer-role.sql`
 - Pre-existing, not touched: `supabase/tests/director-approval.sql` already fails on this branch with `NEW_STATIC_QUOTE_REQUIRED` (stale fixture).
+
+## 5. Follow-up: brand sheet browser (same day)
+
+- **Symptom:** on the studio Mac, the brand sheet failed with "the local browser could not start".
+  - `renderSheetPage` launched Playwright with `CHROME_PATH` only.
+  - The studio Mac does not set `CHROME_PATH` and has no Playwright browser download.
+- **Fix:** `apps/local-runner/brand-sheet.ts` `sheetBrowserPath()` looks for a browser in this order:
+  1. `CHROME_PATH`;
+  2. `DIRECTOR_CHROME_PATH`;
+  3. the Remotion headless shell in `node_modules/.remotion/…`, which the live inspection already uses on macOS;
+  4. Playwright's default, as a last resort.
+- **Migrations:** none.
+- **Risk:** no digests or prompts change. The pages are rendered by the same Chromium build as the layout inspection.
+- **Verification:**
+  - `npm run typecheck`: passed.
+  - `npm run lint`: passed.
+  - `node --import tsx --test tests/brand-sheet.test.ts`: 9 passed (one new test for the browser choice).

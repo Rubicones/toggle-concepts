@@ -93,3 +93,12 @@ test('the migration pins the sheet in the visual direction payload and admission
  assert.match(sql,/if spec->>'key'='asset-plan' and sheet is not null then p:=jsonb_set\(p,'\{snapshot,brandSheetImages\}',sheet\)/);
  assert.match(sql,/snapshot->'brandSheetImages' is distinct from j\.payload->'snapshot'->'brandSheetImages' then raise exception 'STALE_WORKFLOW'/);
 });
+
+test('the sheet uses the browser the studio Mac already has',async()=>{
+ const {sheetBrowserPath}=await import('../apps/local-runner/brand-sheet');
+ assert.equal(sheetBrowserPath({CHROME_PATH:'/c'},'darwin','arm64',()=>true),'/c');
+ assert.equal(sheetBrowserPath({DIRECTOR_CHROME_PATH:'/d'},'darwin','arm64',()=>true),'/d');
+ assert.match(sheetBrowserPath({},'darwin','arm64',()=>true)!,/\.remotion\/chrome-headless-shell\/mac-arm64\/chrome-headless-shell-mac-arm64\/chrome-headless-shell$/);
+ assert.equal(sheetBrowserPath({},'darwin','x64',()=>false),undefined,'no download: Playwright decides');
+ assert.equal(sheetBrowserPath({},'linux','x64',()=>true),undefined);
+});
