@@ -132,6 +132,13 @@ Use this sequence to solve a creative problem:
 - Studio rules for strategy, script and visual direction (`studioRules` in `packages/agents/creative-method.ts`): no text or logo inside a generated picture; a world built on generated pictures keeps one camera angle per scene across formats (recompose by crop and layout).
 - The director prompt sits close to the 128-variant request-size target (`tests/director-image-methods.test.ts`): any addition must be paid for by cuts elsewhere.
 
+### Review and execution (creative quality plan step 4, 3 November 2026)
+
+- A coder that sees images reviews its rendered views up to twice (`MAX_SELF_REVIEW_ROUNDS`); the second look is about finish, one format group at a time. New live quotes fund both looks (`visualRepairs` up to 4); approved quotes keep their allowance, and `repairBlocked` stops any look the allowance cannot pay for.
+- The live critic and the self-review also judge brand components and colours, precise finish (one grid, even spacing, equal sizes for equal roles), believable mockup data, the brand's rules for buttons, labels and the CTA, text or logos inside generated pictures, and words drawn in two fonts.
+- The browser measurement reports `FONT_MIXED_IN_WORD` (hard): a word whose letters come from two fonts. The coder sets the whole line in one font that has every letter. When supplied font files lack letters a campaign locale needs (`localeLetters`), the full family is fetched from Google Fonts at draft start; the draft adds font faces in list order.
+- The idea critic also checks execution technique: no text or logo planned inside a generated picture, one camera angle per scene across formats.
+
 ### Source artwork versus identity evidence
 
 A product photo or video crop may be a reference to reconstruct, not finished advertising artwork. Interfaces are different (owner decision, 3 November 2026): a UI screenshot or a UI kit part (material role `uikit`) is evidence for an interface mockup built in code, never an image-model reference; the director receives them as `brand.interface`, apart from `brand.references`, together with the kit's `product.components` and `product.interfaceColors` rules. Interface colours never become the brand's paper, ink or accent. Where accepted permissions allow reconstruction, the director should request a fresh polished still using actual reference pixels and protected identity details. Keep official logos exact and marketing text separately editable. Do not invent interfaces, people, product features or hidden details. Missing evidence remains unknown.

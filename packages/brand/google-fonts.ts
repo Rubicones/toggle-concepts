@@ -31,6 +31,29 @@ export function familyNeedsWeights(family:string,materials:{metadata:Record<stri
  return !(weights.some(w=>w<=500)&&weights.some(w=>w>=700));
 }
 
+/** Letters each campaign language needs beyond basic Latin (lower and upper case are both checked). */
+const LOCALE_LETTERS:Record<string,string>={
+ ru:'абвгдеёжзийклмнопрстуфхцчшщъыьэюя',uk:'абвгґдеєжзиіїйклмнопрстуфхцчшщьюя',be:'абвгдеёжзійклмнопрстуўфхцчшыьэюя',bg:'абвгдежзийклмнопрстуфхцчшщъьюя',sr:'абвгдђежзијклљмнњопрстћуфхцчџш',mk:'абвгдѓежзѕијклљмнњопрстќуфхцчџш',
+ kk:'аәбвгғдеёжзийкқлмнңоөпрстуұүфхһцчшщъыіьэюя',ky:'абвгдеёжзийклмңнооөпрстуүфхцчшщъыьэюя',mn:'абвгдеёжзийклмноөпрстуүфхцчшщъыьэюя',
+ tr:'çğıiöşü',az:'çəğıiöşü',pl:'ąćęłńóśźż',cs:'áčďéěíňóřšťúůýž',sk:'áäčďéíĺľňóôŕšťúýž',hu:'áéíóöőúüű',ro:'ăâîșț',de:'äöüß',fr:'àâæçéèêëîïôœùûüÿ',es:'áéíñóúü¿¡',pt:'ãõçáâêéíóôú',it:'àèéìòù',
+ nl:'ëï',sv:'åäö',da:'æøå',nb:'æøå',no:'æøå',fi:'äö',is:'áðéíóúýþæö',lt:'ąčęėįšųūž',lv:'āčēģīķļņšūž',et:'äöõüšž',hr:'čćđšž',sl:'čšž',el:'αβγδεζηθικλμνξοπρστυφχψωάέήίόύώ',vi:'ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ',
+};
+/** The letters a campaign's locales need from its brand fonts ("kk-KZ" → Kazakh Cyrillic, "tr-TR" → ç ğ ı ö ş ü). */
+export function localeLetters(locales:readonly string[]){
+ const set=new Set<string>();
+ for(const locale of locales){const letters=LOCALE_LETTERS[locale.toLowerCase().split(/[-_]/)[0]]??'';for(const ch of letters){set.add(ch);set.add(ch.toLocaleUpperCase(locale));}}
+ // "ı" upper-cases to "I" and "ß" to "SS": keep single letters only.
+ return [...set].filter(ch=>[...ch].length===1).join('');
+}
+/** True when no supplied file of this family has every letter the campaign's locales need. */
+export function familyMissesLetters(family:string,materials:{metadata:Record<string,unknown>}[],letters:string){
+ if(!letters)return false;
+ const own=materials.filter(m=>typeof m.metadata.family==='string'&&normalizeFamily(String(m.metadata.family))===normalizeFamily(family)&&Array.isArray(m.metadata.glyphCoverage));
+ if(!own.length)return false;
+ const need=[...letters].map(ch=>ch.codePointAt(0)!);
+ return !own.some(m=>{const have=new Set(m.metadata.glyphCoverage as number[]);return need.every(n=>have.has(n));});
+}
+
 export const googleFontCssUrl=(family:string,weight:number)=>`https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g,'+')}:wght@${weight}`;
 
 /** Reads a css2 response. Only a single, unsplit file per weight is usable (the draft loader has no unicode-range). */

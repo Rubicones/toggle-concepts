@@ -73,7 +73,7 @@ export function estimateStaticDirection(pricing:Record<Exclude<Role,'resources'>
 export const LIVE_CRITIC_REQUEST={inputTokens:60000,outputTokens:8000},LIVE_VISUAL_REPAIR={inputTokens:45000,outputTokens:4000,timeMs:120000};
 export function estimateLiveDirection(pricing:Parameters<typeof estimateStaticDirection>[0],perStillMicroUsd:number,maxStills:number,identity:unknown,options:{criticRequests?:number;visualRepairs?:number}={}){
  const quote=estimateStaticDirection(pricing,perStillMicroUsd,maxStills,identity);quote.maxCostMicroUsd-=quote.roles.critic.maxCostMicroUsd;
- const n=Math.max(0,Math.min(2,Math.floor(options.criticRequests??0))),m=Math.max(0,Math.min(3,Math.floor(options.visualRepairs??0)));
+ const n=Math.max(0,Math.min(2,Math.floor(options.criticRequests??0))),m=Math.max(0,Math.min(4,Math.floor(options.visualRepairs??0)));
  const price=(p:{inputPrice:number;outputPrice:number},inputTokens:number,outputTokens:number)=>Math.max(1,Math.ceil((p.inputPrice*inputTokens+p.outputPrice*outputTokens)*1e6*1.1));
  if(n>0){const spec={inputTokens:LIVE_CRITIC_REQUEST.inputTokens*n,outputTokens:LIVE_CRITIC_REQUEST.outputTokens*n,timeMs:180000,requests:n},cost=price(pricing.critic,spec.inputTokens,spec.outputTokens);
   quote.roles.critic={...spec,maxCostMicroUsd:cost};quote.maxCostMicroUsd+=cost;quote.roles.assembler={...quote.roles.assembler,timeMs:quote.roles.assembler.timeMs+180000};}

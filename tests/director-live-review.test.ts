@@ -88,19 +88,23 @@ test('only new live quotes include the bounded creative review; earlier quotes a
  const visual=estimateLiveDirection(pricing,40000,4,{id:'x'},{criticRequests:2,visualRepairs:3});
  assert.equal(visual.roles.assembler.requests,plain.roles.assembler.requests+3);assert.equal(visual.roles.assembler.inputTokens,plain.roles.assembler.inputTokens+135000);
  assert.equal(visual.maxCostMicroUsd,reviewed.maxCostMicroUsd+(visual.roles.assembler.maxCostMicroUsd-plain.roles.assembler.maxCostMicroUsd));
- assert.equal(estimateLiveDirection(pricing,40000,4,{id:'x'},{visualRepairs:9}).roles.assembler.requests,plain.roles.assembler.requests+3);
+ assert.equal(estimateLiveDirection(pricing,40000,4,{id:'x'},{visualRepairs:9}).roles.assembler.requests,plain.roles.assembler.requests+4,'two self-review looks and two critic repairs at most');
 });
 
-test('a coder that reads images reviews its own rendered views once before the critic, with the images attached',async()=>{
+test('a coder that reads images reviews its own rendered views twice before the critic (the second time for finish), with the images attached',async()=>{
  const views:{kind:string;hasViews:boolean}[]=[];let criticSaw:unknown;
  const {d,calls}=deps({selfReview:true,criticRounds:1,inspections:[summary(0,2),summary(0,1),summary(0,1)],
-  repair:async(note,kind,_round,v)=>{views.push({kind,hasViews:!!v?.shots.length});calls.repairs.push({note,kind,round:1});return {applied:true};},
+  repair:async(note,kind,_round,v)=>{views.push({kind,hasViews:!!v?.shots.length});calls.repairs.push({note,kind,round:_round});return {applied:true};},
   critic:async(_r,_c,v)=>{criticSaw=v;return JSON.stringify(critique({accepted:true,notes:[]}));}});
  const record=(await runLiveReview(d))!;
- assert.deepEqual(views,[{kind:'self',hasViews:true}]);assert.match(calls.repairs[0].note,/Visual self-review/);assert.match(calls.repairs[0].note,/strict art director/);
+ assert.deepEqual(views,[{kind:'self',hasViews:true},{kind:'self',hasViews:true}]);assert.match(calls.repairs[0].note,/Visual self-review/);assert.match(calls.repairs[0].note,/strict art director/);
+ assert.match(calls.repairs[1].note,/^Second look, one format group at a time/);assert.match(calls.repairs[1].note,/edges and baselines off one grid/);assert.deepEqual(calls.repairs.map(r=>r.round),[1,2]);
  assert.equal(record.repairs[0].kind,'self');assert.ok((criticSaw as {shots:unknown[]}).shots.length>0,'the critic gets the rendered views and measurements');
- // Once only, also after a restart.
- const again=deps({selfReview:true,state:{...newReviewState(),selfReviewed:true}});await runLiveReview(again.d);assert.equal(again.calls.repairs.length,0);
+ // Two looks at most, also after a restart; a state saved before rounds were counted had one look.
+ const again=deps({selfReview:true,state:{...newReviewState(),selfReviewed:true,selfReviewRounds:2}});await runLiveReview(again.d);assert.equal(again.calls.repairs.length,0);
+ const legacy=deps({selfReview:true,state:{...newReviewState(),selfReviewed:true}});await runLiveReview(legacy.d);assert.deepEqual(legacy.calls.repairs.map(r=>r.round),[2]);
+ // No second look when the first could not be applied.
+ const failed=deps({selfReview:true,repair:async(note,kind,round)=>{failed.calls.repairs.push({note,kind,round});return {applied:false,reason:'x'};}});await runLiveReview(failed.d);assert.equal(failed.calls.repairs.length,1);
  // Skipped (visibly) when the coder has no allowance left.
  const blocked=deps({selfReview:true,repairBlocked:async()=>'used up'});await runLiveReview(blocked.d);assert.equal(blocked.calls.repairs.length,0);assert.ok(blocked.calls.events.includes('review:self:skipped'));
  // Without a vision coder there is no self-review.

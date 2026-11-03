@@ -50,7 +50,7 @@ test('scripts carry a reading order, a product-data set, and never use prop text
 test('the scenario critic checks the reading order and sends back prop text used as a headline',()=>{
  const script={deliverable:{threeDirections:[{conceptId:'concept-1',name:'Snap',premise:'p',hook:{primary:'Taking my dog'},timedStoryboard:[{copy:'Taking my dog\nv11 applied',visualNotes:'v'}],productData:['Master v11 · applied','alt-bridge · MAREK']}]}};
  const prompt=ideaReviewPrompt('script',{script});
- assert.match(prompt,/6\) no headline or hook is prop text/);assert.match(prompt,/a headline or hook that is prop text, or a direction/);
+ assert.match(prompt,/6\) no headline or hook is prop text/);assert.match(prompt,/a headline or hook that is prop text, text or a logo planned inside a generated picture, or a direction/);
  assert.match(prompt,/Master v11/,'the critic sees the product data');
  assert.match(ideaReviewPrompt('strategy',{}),/STRATEGY REVIEW/);
 });
