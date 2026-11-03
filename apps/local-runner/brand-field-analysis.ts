@@ -7,7 +7,9 @@ import {objectStore} from '../../packages/media/s3.server';
 import {modelCatalog} from '../../packages/agents/catalog';
 import {submitText,type TextReceipt} from '../../packages/agents/text-provider';
 import {fieldExtractionRequest,parseFieldResponse,splitBrandText} from '../../packages/brand/field-extraction';
+import {effectiveMaterialRole,findingsForRole,roleReadingNotes} from '../../packages/brand/material-roles';
 import type {AgentSetting} from '../../packages/contracts/shared';
+import {effectiveRunAgents} from '../../packages/data/run-limits';
 const directory=resolve('artifacts/brand-fields/receipts');
 async function rpc(name:string,args:Record<string,unknown>){return checked(await adminClient().rpc(name,args));}
 export async function flushBrandReadReceipts(){
@@ -18,13 +20,16 @@ export async function processBrandFieldAnalysis():Promise<boolean>{
  const {analysis,part,file}=claim;let submitted=false;
  const beat=setInterval(()=>{void rpc('studio_heartbeat_brand_read',{target_part:part.id,token:part.lease_token}).catch(()=>{});},15000);
  try{
-  const material=checked(await admin.from('studio_brand_materials').select('id,extraction_sha,included,state,filename').eq('id',file.material_id).eq('tenant_id',sharedTenant).single());if(!material||material.extraction_sha!==file.source_sha||!material.included||material.state!=='ready')throw new Error('BRAND_SOURCE_CHANGED');
-  const run=checked(await admin.from('studio_runs').select('config_snapshot,status').eq('id',analysis.run_id).eq('tenant_id',sharedTenant).single());if(run?.status!=='active')throw new Error('RUN_NOT_ACTIVE');
-  const agent=(run.config_snapshot as AgentSetting[]).find(a=>a.role==='brand-kit');if(!agent?.model_id)throw new Error('AGENT_NOT_CONFIGURED');
+  const material=checked(await admin.from('studio_brand_materials').select('id,extraction_sha,included,state,filename,relative_path,mime,extraction').eq('id',file.material_id).eq('tenant_id',sharedTenant).single());if(!material||material.extraction_sha!==file.source_sha||!material.included||material.state!=='ready')throw new Error('BRAND_SOURCE_CHANGED');
+  // What the file is decides how it is read and how far it is trusted (absent before the material-role migration).
+  const roleRow=await admin.from('studio_brand_materials').select('role').eq('id',material.id).maybeSingle(),fileRole=effectiveMaterialRole({...material,role:roleRow.error?null:(roleRow.data as {role?:string|null}|null)?.role});
+  const run=checked(await admin.from('studio_runs').select('id,config_snapshot,status').eq('id',analysis.run_id).eq('tenant_id',sharedTenant).single());if(run?.status!=='active')throw new Error('RUN_NOT_ACTIVE');
+  // Frozen instructions and limits, with the model currently chosen in Models & agents (same rule as admission).
+  const agent=(await effectiveRunAgents(admin,run as {id:string;config_snapshot:AgentSetting[]},{directorOverrides:false})).find(a=>a.role==='brand-kit');if(!agent?.model_id)throw new Error('AGENT_NOT_CONFIGURED');
   const model=(await modelCatalog()).find(m=>m.id===agent.model_id);if(!model||model.outputModalities.length!==1||model.outputModalities[0]!=='text')throw new Error('MODEL_UNAVAILABLE');
   const saved=[];let after=0;while(true){const batch=checked(await admin.from('studio_brand_findings').select('seq,field,value,locator').eq('part_id',part.id).gt('seq',after).order('seq').limit(100))??[];saved.push(...batch.map(({seq,...finding})=>{after=seq;return finding;}));if(batch.length<100)break;}
   const checkpoint=checked(await admin.from('studio_c1_checkpoints').select('id').eq('run_id',analysis.run_id).eq('tenant_id',sharedTenant).maybeSingle());
-  const context={checkpointId:checkpoint?.id??null,source:{filename:file.filename,materialId:file.material_id,extractionSha:file.source_sha},part:part.payload,page:part.page_no,alreadySaved:saved};
+  const context={checkpointId:checkpoint?.id??null,source:{filename:file.filename,materialId:file.material_id,extractionSha:file.source_sha,role:fileRole.role},readAs:roleReadingNotes[fileRole.role],part:part.payload,page:part.page_no,alreadySaved:saved};
   const briefReady=!(await admin.from('studio_brand_brief_findings').select('id').limit(0)).error;
   if(briefReady){let cursor=0;while(true){const batch=checked(await admin.from('studio_brand_brief_findings').select('seq,field,value,locator').eq('part_id',part.id).gt('seq',cursor).order('seq').limit(100))??[];saved.push(...batch.map(({seq,...finding})=>{cursor=seq;return {...finding,field:`brief.${finding.field}`};}));if(batch.length<100)break;}}
   const {prompt,responseSchema}=fieldExtractionRequest(briefReady);const images:{url:string;label:string}[]=[];
@@ -36,7 +41,7 @@ export async function processBrandFieldAnalysis():Promise<boolean>{
   const snapshot={instructions:agent.instructions,maxOutputTokens,pricing:model,campaignContext:context,outputFormat:'json_schema',responseSchema,disableReasoning:agent.model_id==='google/gemini-2.5-flash',stepCapMicroUsd:agent.step_cap_micro_usd,modelId:agent.model_id,requestPriceCapMicroUsd:analysis.request_cap_micro_usd,budgetScopeId:checkpoint?`budget-step-${analysis.run_id}-brand-kit`:null,brandFieldAnalysis:{analysisId:analysis.id,partId:part.id,page:part.page_no,sourceSha:file.source_sha}};
   const step=await rpc('studio_begin_brand_read',{target_part:part.id,token:part.lease_token,request_key:randomUUID(),snapshot,prompt_text:prompt,reservation});submitted=true;
   const result:TextReceipt=await submitText(agent.model_id,prompt,snapshot,images,step.id);
-  const parsed=result.text?parseFieldResponse(result.text,result.finishReason):{findings:[],more:false,partial:false,invalid:0};
+  const read=result.text?parseFieldResponse(result.text,result.finishReason):{findings:[],more:false,partial:false,invalid:0},parsed=fileRole.sure?{...read,findings:findingsForRole(fileRole.role,read.findings)}:read;
   let split_payloads=null;
   if(result.failure==='OUTPUT_TOKEN_LIMIT'&&!parsed.findings.length&&typeof part.payload.text==='string'&&part.payload.text.length>512&&!part.payload.image){const pieces=splitBrandText(part.payload.text,Math.ceil(part.payload.text.length/2));split_payloads=pieces.map(p=>({...p,start:(part.payload.start??0)+p.start,end:(part.payload.start??0)+p.end}));}
   const outcome=result.outcome==='succeeded'&&parsed.partial?'failed':result.outcome,failure=result.outcome==='succeeded'&&parsed.partial?'INVALID_FIELD_RESPONSE':result.failure;

@@ -4,7 +4,7 @@ export type Variant = {id:string;format:string;locale:string;hook:string;cta:str
 export type Scene = {id:string;sourceSceneId?:string;start:number;end:number;copy:string[];visualNotes:string;motionNotes:string;maxStaticSeconds:number};
 export type BrandKit = {
  tokens:Record<string,string|number>;fonts:{family:string;url:string;weight?:string;style?:string}[];
- logos:{id:string;url:string;clearSpacePx:number;required?:boolean}[];
+ logos:{id:string;url:string;clearSpacePx:number;required?:boolean;/** Same drawing with currentColor resolved: for dark and for light grounds. */variants?:{onDark:string;onLight:string}}[];
  rules:{allowedFonts:string[];forbiddenColours:string[];minimumContrast:number;logoRequired?:boolean};
  rawKit?:unknown;copy:Record<string,Record<string,string>>;facts:Record<string,string>;references:{id:string;url:string}[];
 };

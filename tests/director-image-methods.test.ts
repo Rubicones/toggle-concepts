@@ -101,6 +101,9 @@ test('the worker pins sources, writes small references, uploads them and merges 
   assert.equal(design.resources[3].edit,undefined);assert.equal(notes.length,1,'a missing source falls back to a fresh picture with a note');
   const canvas=await loadImage(await readFile(join(folder,'.reports','derived',`${design.resources[1].extend!.canvasSha256}.png`)));assert.ok(Math.max(canvas.width,canvas.height)<=768);
   const uploads:string[]=[];const refs=await derivedReferences(folder,design.resources[1],async key=>{uploads.push(key);});assert.equal(refs[0].objectKey,`staging/director-derived/${design.resources[1].extend!.canvasSha256}.png`);assert.deepEqual(uploads,[refs[0].objectKey]);
+  // A retry finds the content-addressed object already uploaded (storage says Precondition): it is reused, other failures still stop.
+  assert.deepEqual(await derivedReferences(folder,design.resources[1],async()=>{throw new Error('Precondition');}),refs);
+  await assert.rejects(derivedReferences(folder,design.resources[1],async()=>{throw new Error('STORAGE_UNAVAILABLE');}),/STORAGE_UNAVAILABLE/);
   const edited=await picture(512,512,4,0.05),e=createCanvas(512,512),eg=e.getContext('2d'),ed=eg.createImageData(512,512);ed.data.set(edited.data);eg.putImageData(ed,0,0);eg.fillStyle='#2a6';eg.fillRect(140,310,240,70);
   const finished=await finishImageMethod(folder,design.resources[0],e.toBuffer('image/png'));assert.equal(finished?.report.accepted,true);
   const merged=await loadImage(finished!.bytes),mg=createCanvas(512,512).getContext('2d');mg.drawImage(merged,0,0);const px=mg.getImageData(10,10,1,1).data;assert.deepEqual([...px],[...src.data.subarray((10*512+10)*4,(10*512+10)*4+4)]);

@@ -1,4 +1,5 @@
 import {briefDraftSchema, briefSuggestionFields} from '../contracts/brief';
+import {selectFindings} from './finding-selection';
 type BriefField = typeof briefSuggestionFields[number];
 export type BriefEvidence = {kind: 'finding' | 'brief'; id: string; locator: string; evidence: string};
 export type BriefCandidate = {field: BriefField; value: string; sources: BriefEvidence[]};
@@ -13,7 +14,8 @@ export function brandbookBriefCandidates(findings: SubmittedFinding[], briefEvid
   const candidates: BriefCandidate[] = [], conflicts: string[] = [];
   const add = (field: BriefField, value: string, source: BriefEvidence) => {if (value.trim()) candidates.push({field, value: value.trim(), sources: [source]});};
   for (const row of briefEvidence) if (fields.has(row.field)) add(row.field as BriefField, row.value, {kind: 'brief', id: row.id, locator: row.locator, evidence: row.evidence});
-  const kept = findings.filter(f => f.decision !== 'reject');
+  // Everything found carries forward unless excluded; a picked brand name replaces the others.
+  const kept = selectFindings(findings);
   for (const row of kept) {
     if (!eligible.has(row.field)) continue;
     const source: BriefEvidence = {kind: 'finding', id: row.findingId, locator: row.locator, evidence: row.evidence};
@@ -35,9 +37,10 @@ export function brandbookBriefCandidates(findings: SubmittedFinding[], briefEvid
     if (candidates.some(c => c.field === target) || !rows.length) return;
     candidates.push({field: target, value: [...new Set(rows.map(r => r.value.trim()))].join('\n\n'), sources: rows.map(r => ({kind: 'finding', id: r.findingId, locator: r.locator, evidence: r.evidence}))});
   };
-  const names = kept.filter(r => r.field === 'brandName'), chosenNames = names.filter(r => r.decision === 'keep');
+  const names = kept.filter(r => r.field === 'brandName');
   const descriptions = kept.filter(r => r.field === 'brandDescription');
-  fallback('product', descriptions.length ? descriptions : chosenNames.length ? chosenNames : new Set(names.map(r => r.value.trim())).size === 1 ? names : []);
+  // Disagreeing brand names are left for the AD; never pick one silently.
+  fallback('product', descriptions.length ? descriptions : new Set(names.map(r => r.value.trim())).size === 1 ? names : []);
   fallback('immutables', kept.filter(r => r.field === 'productIdentity'));
   const suggestions: BriefCandidate[] = [];
   for (const field of briefSuggestionFields) {

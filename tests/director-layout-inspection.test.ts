@@ -7,7 +7,7 @@ import recorded from '../fixtures/director/static/input.json';
 import {createWorkspace} from '../apps/local-runner/director/workspace';
 import {buildLivePreview} from '../apps/local-runner/director/live-bundle';
 import {inspectLivePreview} from '../apps/local-runner/director/live-inspect';
-import {inspectionViews,analyzeView,analyzeInspection,missingRequiredCopy,visibleSourceRect,findingDigest,gateNote,type RawView,type InspectionView} from '../packages/director/layout-inspection';
+import {MAX_SHOTS,inspectionViews,analyzeView,analyzeInspection,missingRequiredCopy,visibleSourceRect,findingDigest,gateNote,type RawView,type InspectionView} from '../packages/director/layout-inspection';
 import type {DirectionInput} from '../packages/director/types';
 import type {LiveOptions} from '../packages/director/live-preview';
 
@@ -23,13 +23,15 @@ function view(over:Partial<InspectionView['props']>={},ordered=true):InspectionV
 const text=(t:string,b:ReturnType<typeof box>,extra:Partial<RawView['texts'][number]>={})=>({text:t,box:b,fontSize:64,color:'rgb(19, 52, 69)',element:Math.random(),clipped:false,lines:1,background:'rgb(244, 234, 207)',complexBackground:false,overImage:null,...extra});
 const ctx=(i:DirectionInput,v=view())=>({view:v,input:i,minTextPx:32,safe:{top:54,right:54,bottom:54,left:54},facts:{}});
 
-test('the view matrix covers every ordered format and scene, the longest copy and adaptive sizes, with at most six screenshots',()=>{
+test('the view matrix covers every ordered format and scene, the longest copy and adaptive sizes; screenshots show every format of every scene',()=>{
  const i=input(),views=inspectionViews(i,options,design);
  assert.ok(views.length<=60&&views.length>=i.formats.length*4);
  for(const f of i.formats)for(const scene of options.scenes)assert.ok(views.some(v=>v.props.width===f.width&&v.props.height===f.height&&v.props.sceneId===scene&&v.ordered));
  assert.ok(views.some(v=>v.props.locale==='de-DE'),'the longest (German) copy binding is measured');
  assert.ok(views.some(v=>!v.ordered),'intermediate canvases test continuous adaptation');
- const shots=views.filter(v=>v.shot);assert.ok(shots.length>=4&&shots.length<=6);
+ const shots=views.filter(v=>v.shot);assert.ok(shots.length<=MAX_SHOTS);
+ for(const f of i.formats)for(const scene of options.scenes)assert.ok(shots.some(v=>v.variantId!=='alternate'&&v.props.width===f.width&&v.props.height===f.height&&v.props.sceneId===scene),'every ordered format of every scene is seen');
+ assert.ok(shots.some(v=>v.props.locale==='de-DE'),'the longest copy is seen');
  assert.equal(new Set(views.map(v=>v.key)).size,views.length);
  assert.deepEqual(inspectionViews(i,{...options,hooks:[],ctas:[]},design),[]);
 });
@@ -94,6 +96,19 @@ test('a view that does not build is a hard finding and the coder note names view
  assert.equal(summary.reports[0].findings[0].code,'RENDER_ERROR');assert.equal(summary.hard,3);
  const note=gateNote(summary);assert.match(note,/Choose any technique that fits the design/);assert.match(note,/1:1|9:16|4:5|16:9/);
  assert.ok(findingDigest(summary,'hard').length<=24);
+});
+
+test('broken words and a logo that disappears on its ground are objective findings',()=>{
+ const i=input();
+ const raw:RawView={width:1080,height:1080,images:[],logos:[{id:'logo0',box:box(800,40,200,80),ink:0.012,background:'rgb(13, 13, 13)',overImage:null}],texts:[
+  text('YOUR BAND. YOUR TRACKS.',box(80,200,700,200),{element:1,brokenWords:['TRACKS']}),
+  text('mono label',box(80,700,300,40),{element:2,brokenWords:['label']}),
+ ]};
+ const findings=analyzeView(raw,ctx(i)),code=(c:string)=>findings.filter(f=>f.code===c);
+ assert.deepEqual(code('WORD_BROKEN').map(f=>f.severity),['hard','soft'],'approved copy is hard, other text is for the critic');
+ assert.equal(code('LOGO_LOW_CONTRAST')[0]?.severity,'hard');
+ const light=analyzeView({...raw,logos:[{...raw.logos[0],ink:0.9}]},ctx(i));assert.ok(!light.some(f=>f.code==='LOGO_LOW_CONTRAST'),'a light logo on black reads');
+ const unknown=analyzeView({...raw,logos:[{id:'logo0',box:box(800,40,200,80)}]},ctx(i));assert.ok(!unknown.some(f=>f.code==='LOGO_LOW_CONTRAST'),'no measurement, no finding');
 });
 
 test('the browser probe measures a real compiled Frame offline and screenshots only the critic views',async t=>{

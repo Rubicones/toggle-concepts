@@ -1,11 +1,13 @@
+import {compileFeelingBrief} from '../contracts/brief-feel';
 import {createHash} from 'node:crypto';
+import {creativeFocusBlock,normalizeCreativeFocus} from '../contracts/creative-focus';
 import {readKnowledge,resolveReference} from '../agents/knowledge';
 import {planningObject,planningField,planningNodes,type PlanningDirection,type PlanningJob} from './planning';
 import type {DirectionInput} from './types';
 import {squareFirstDraft} from './construction';
 import {independentResourceBindings} from './resources';
 const hash=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
-export type CreativeHandoff={version:1;owner:'draft-director';revision:string;intent:{goal:unknown;audience:unknown;adNotes:unknown;direction:{id:string;name?:string;premise?:unknown}};strategy:unknown;visual:unknown;sources:{id:string;role:string;hash:string;contentHash:string;raw:unknown}[];referenceAssetIds:string[];issues:string[];actions:string[]};
+export type CreativeHandoff={version:1;owner:'draft-director';revision:string;intent:{goal:unknown;audience:unknown;adNotes:unknown;creativeFocus?:string;feeling?:string;direction:{id:string;name?:string;premise?:unknown}};strategy:unknown;visual:unknown;sources:{id:string;role:string;hash:string;contentHash:string;raw:unknown}[];referenceAssetIds:string[];issues:string[];actions:string[]};
 const content=(v:unknown)=>readKnowledge(v).content;
 function scopeEvidence(raw:unknown,direction:PlanningDirection,directions:PlanningDirection[],source:'visual'|'strategy'='visual'){
  const entities=directions.map(d=>({id:d.id,aliases:d.aliases})),fragments:{path:string;evidence:unknown}[]=[];let matched=0,foreign=0,unknown=0;
@@ -47,10 +49,12 @@ function deliverable(raw:unknown){
  if(envelope){const o=envelope.value;return {content:o.deliverable,...(Array.isArray(o.assumptions)&&o.assumptions.length?{assumptions:o.assumptions}:{}),...(Array.isArray(o.blockingQuestions)&&o.blockingQuestions.length?{questions:o.blockingQuestions}:{}),...(Array.isArray(o.warnings)&&o.warnings.length?{warnings:o.warnings}:{})};}
  return parsed;
 }
-export function buildCreativeHandoff(args:{brief:Record<string,unknown>;direction:PlanningDirection;directions:PlanningDirection[];script:PlanningJob;visual:PlanningJob;strategy?:PlanningJob;input:DirectionInput}):CreativeHandoff{
+export function buildCreativeHandoff(args:{creativeFocus?:string;brief:Record<string,unknown>;direction:PlanningDirection;directions:PlanningDirection[];script:PlanningJob;visual:PlanningJob;strategy?:PlanningJob;input:DirectionInput}):CreativeHandoff{
  const {direction}=args,visual=scopeEvidence(deliverable(args.visual.output),direction,args.directions),strategy=args.strategy?scopeEvidence(deliverable(args.strategy.output),direction,args.directions,'strategy'):undefined;
  const sources=[args.script,args.visual,...(args.strategy?[args.strategy]:[])].filter((job,index,all)=>all.findIndex(j=>j.id===job.id)===index).map(j=>({id:j.id,role:j.job_key,hash:j.output_hash??hash(j.output),contentHash:hash(j.output),raw:j.output}));
- const intent={goal:args.brief.objective??args.brief.goal??null,audience:args.brief.audience??null,adNotes:args.brief.variationNotes??null,direction:{id:direction.id,...(typeof planningField(direction.value,['name','title'])==='string'?{name:String(planningField(direction.value,['name','title']))}:{}),premise:planningField(direction.value,['premise','idea','concept','summary'])}};
+ // Briefs with Feel/Look answers carry the same compact feeling brief the planning roles saw (with the accepted brand voice).
+ const feeling=args.brief.feel?compileFeelingBrief(args.brief,args.input.brand.tokens as Record<string,unknown>)?.text:undefined;
+ const intent={goal:args.brief.objective??args.brief.goal??null,audience:args.brief.audience??null,adNotes:args.brief.variationNotes??null,...(feeling?{feeling}:{}),...(normalizeCreativeFocus(args.creativeFocus)?{creativeFocus:normalizeCreativeFocus(args.creativeFocus)}:{}),direction:{id:direction.id,...(typeof planningField(direction.value,['name','title'])==='string'?{name:String(planningField(direction.value,['name','title']))}:{}),premise:planningField(direction.value,['premise','idea','concept','summary'])}};
  const assetEntities=args.input.assets.filter(a=>a.mime.startsWith('image/')).map(a=>({id:a.id,aliases:[a.url,a.sha256,...(args.input.materialMemory?.materials.find(m=>m.id===a.id)?.aliases??[])]})),references=new Set<string>();
  for(const passage of readKnowledge(visual.scoped).passages){const found=resolveReference(passage.text,assetEntities);if(found.status==='resolved')references.add(found.id);}
  const actions:string[]=[],pack=(source:typeof visual,role:string)=>{
@@ -77,5 +81,5 @@ export function withCreativeHandoff(input:DirectionInput,role:'director'|'coder'
  if(!input.creativeHandoff)return instructions;
  const construction=squareFirstDraft(input)?role==='director'?' Resolve each scene as a strong square first: hierarchy, product staging, typography, image/copy relationship and spacing. Explain how these relationships change continuously with width/height. Keep later motion intent separate from static implementation.':' Work square first, then adapt that design in the same source. construction.focus identifies the next step; it is technical progress, not visual approval. A complete first request is allowed. Preserve working design during repairs.':'';
  const images=independentResourceBindings(input)?role==='director'?' Keep existing image prompts, references and aspect unchanged for copy/layout edits. Change an image brief only when its visual material must change; do not multiply photographs for variant axes.':' Image arrivals update resources data; do not rewrite source just to insert a URL.':'';
- return instructions+'\n'+(role==='director'?'You own this direction. Develop the selected creativeHandoff treatment and intent; do not invent a competing territory. Current approved facts/copy, scope, generation permissions and AD notes outrank older planning hypotheses. Explain necessary departures and reasons in the design document. Planning slot IDs are evidence, never runtime resource IDs.':'Implement the director design and creativeHandoff intent. Do not reinterpret raw planning into a second direction. Use application IDs and report conflicts.')+construction+images;
+ return instructions+'\n'+(role==='director'?'You own this direction. Develop the selected creativeHandoff treatment and intent; do not invent a competing territory. Current approved facts/copy, scope, generation permissions and AD notes outrank older planning hypotheses. Explain necessary departures and reasons in the design document. Planning slot IDs are evidence, never runtime resource IDs.':'Implement the director design and creativeHandoff intent. Do not reinterpret raw planning into a second direction. Use application IDs and report conflicts.')+construction+images+(creativeFocusBlock(input.creativeHandoff.intent.creativeFocus)?'\n'+creativeFocusBlock(input.creativeHandoff.intent.creativeFocus):'');
 }

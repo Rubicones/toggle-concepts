@@ -17,8 +17,23 @@ test('planning retains C1 model/instructions and audited current limits while th
  const original:AgentSetting[]=[{role:'visual-direction',model_id:'planning-model',instructions:'Plan the visual treatment.',max_output_tokens:3200,step_cap_micro_usd:500000}],before=structuredClone(original),calls:string[]=[];
  const admin=createClient('http://127.0.0.1:9999','recorded',{global:{fetch:async input=>{const path=new URL(String(input)).pathname;calls.push(path);return Response.json(path.endsWith('studio_run_agent_limits')?[{role:'visual-direction',max_output_tokens:32768,cap_micro_usd:1000000}]:[{role:'visual-direction',model_id:'draft-model',instructions:'Design the static frames.'}]);}}});
  const run={id:'run',config_snapshot:original},planning=await effectiveRunAgents(admin,run,{directorOverrides:false});
- assert.deepEqual(planning,[{...original[0],max_output_tokens:32768,step_cap_micro_usd:1000000}]);assert.equal(calls.length,1);assert.ok(!calls.some(p=>p.endsWith('studio_run_agent_overrides')));
+ assert.deepEqual(planning,[{...original[0],max_output_tokens:32768,step_cap_micro_usd:1000000}]);assert.equal(calls.filter(p=>!p.includes('/rpc/')).length,1,'without the agents-tab migration only the limits are read');assert.ok(!calls.some(p=>p.endsWith('studio_run_agent_overrides')));
  const drafts=await effectiveRunAgents(admin,run);assert.equal(drafts[0].model_id,'draft-model');assert.equal(drafts[0].instructions,'Design the static frames.');assert.equal(drafts[0].step_cap_micro_usd,1000000);assert.deepEqual(original,before);
+});
+
+test('after the agents-tab migration every role takes its model from Models & agents; instructions and limits stay frozen',async()=>{
+ const original:AgentSetting[]=[{role:'visual-direction',model_id:'planning-model',instructions:'Plan the visual treatment.',max_output_tokens:3200,step_cap_micro_usd:500000},{role:'video',model_id:null,instructions:'No provider.',max_output_tokens:2400,step_cap_micro_usd:50000}];
+ const admin=createClient('http://127.0.0.1:9999','recorded',{global:{fetch:async input=>{const path=new URL(String(input)).pathname;
+  if(path.endsWith('/rpc/studio_agent_models_version'))return Response.json('agents-tab@1');
+  if(path.endsWith('studio_runs'))return Response.json({tenant_id:'tenant'});
+  if(path.endsWith('studio_agents'))return Response.json([{role:'visual-direction',model_id:'tab-model'},{role:'video',model_id:null}]);
+  if(path.endsWith('studio_run_agent_limits'))return Response.json([{role:'visual-direction',max_output_tokens:32768,cap_micro_usd:1000000}]);
+  return Response.json([{role:'visual-direction',model_id:'draft-model',instructions:'Design the static frames.'}]);}}});
+ const run={id:'run',config_snapshot:original};
+ const planning=await effectiveRunAgents(admin,run,{directorOverrides:false});
+ assert.equal(planning[0].model_id,'tab-model');assert.equal(planning[0].instructions,'Plan the visual treatment.');assert.equal(planning[0].max_output_tokens,32768);assert.equal(planning[1].model_id,null,'a role without a model keeps none');
+ const drafts=await effectiveRunAgents(admin,run);
+ assert.equal(drafts[0].model_id,'tab-model','the tab model wins over the draft override model');assert.equal(drafts[0].instructions,'Design the static frames.','the draft brief stays');
 });
 
 test('planning configuration recovery is a strict explicit command without a new cap, model or output allowance',()=>{

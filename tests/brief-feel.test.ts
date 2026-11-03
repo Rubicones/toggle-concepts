@@ -1,0 +1,84 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {briefDraftSchema,emptyBrief} from '../packages/contracts/brief';
+import {briefFeelSchema,compileFeelingBrief,brandTokensFromKit,feelings,lookOptions,SUGGEST} from '../packages/contracts/brief-feel';
+import {planningTransportTask} from '../packages/contracts/localization';
+import {liveCriticInstructions} from '../packages/agents/prompts/director-critic-v1';
+
+test('earlier briefs stay valid and the new answers are optional',()=>{
+ const base=emptyBrief() as Record<string,unknown>;
+ assert.equal(briefDraftSchema.safeParse(base).success,true);
+ const v2={...base,goal:'sign-ups',benefit:'Find your best take in seconds.',proof:'Every version is saved with its bars.',audienceAwareness:'knows-category',platforms:['meta','tiktok'],feel:{feelings:['creative-freedom','calm-confidence'],medium:'digital',character:{temperature:4},light:[SUGGEST],avoid:['stock','ai-look']},synthesisChoices:['backgrounds','abstract-light']};
+ assert.equal(briefDraftSchema.safeParse(v2).success,true);
+ assert.equal(briefDraftSchema.safeParse({...v2,feel:{feelings:['warmth','craft','play','bold']}}).success,false,'at most three feelings');
+ assert.equal(briefDraftSchema.safeParse({...v2,feel:{character:{temperature:7}}}).success,false);
+ const empty=briefFeelSchema.parse({});assert.equal(empty.stretch,SUGGEST);assert.equal(empty.medium,SUGGEST);assert.deepEqual(empty.feelings,[]);
+});
+
+test('every single choice offers suggest and the catalogue covers digital brands without live imagery',()=>{
+ for(const key of ['stretch','medium','energy','colour','people','textAmount','humour'] as const)assert.equal(briefFeelSchema.shape[key].parse(undefined),SUGGEST,key);
+ for(const key of ['world','typeRole','productRole'] as const)assert.deepEqual(briefFeelSchema.shape[key].parse(undefined),[],`${key} is an open-to list, empty by default`);
+ assert.deepEqual(briefFeelSchema.shape.typeRole.parse('type-led'),['type-led'],'an older single answer reads as a one-item list');
+ const worlds=lookOptions.world.map(w=>w.id);for(const id of ['motion-graphics','object-3d','product-interface','typography-led','data-diagrams'])assert.ok(worlds.includes(id as never),id);
+ assert.equal(feelings.length,12);
+ assert.doesNotMatch(JSON.stringify([feelings,lookOptions]),/[Ѐ-ӿ]/,'no Russian text in the client questionnaire');
+});
+
+test('the feeling brief is compact, explicit about suggest, and lets the brand kit win',()=>{
+ const kit={payload:{rules:[{category:'voice',key:'tone',value:'Direct, never decorative.',decision:'accepted'},{category:'voice',key:'samples',value:'"Every take, every version."',decision:'accepted'},{category:'color',key:'accent',value:'#DFFF00',decision:'accepted'},{category:'voice',key:'character',value:'rejected idea',decision:'rejected'}]}};
+ const tokens=brandTokensFromKit(kit);assert.equal(tokens['voice.tone'],'Direct, never decorative.');assert.equal(tokens['voice.character'],undefined);
+ const brief=compileFeelingBrief({benefit:'Find your best take in seconds.',feel:{feelings:['creative-freedom','calm-confidence'],medium:'digital',stretch:'fresh',character:{volume:2},avoid:['stock'],likes:[{aspects:['light'],note:'soft studio glow'}]}},tokens)!;
+ assert.match(brief.text,/Main feeling: Creative freedom\. Translate it into this brand's own look; it is not a recipe/);assert.doesNotMatch(brief.text,/sensory hints|soft warm light|asymmetry/,'no stock sensory recipe reaches the agents');assert.match(brief.text,/Also: Calm confidence/);
+ assert.match(brief.text,/Boundaries \(hold these\): pictures made, not photographed/);assert.doesNotMatch(brief.text,/light suggest/,'unanswered choices are left to the agents, not listed');
+ assert.match(brief.text,/one direction at the brand core, two step aside/);assert.match(brief.text,/Quiet–Loud 2\/5/);
+ assert.match(brief.text,/Avoid: Stock look/);assert.match(brief.text,/liked for Light/);assert.match(brief.text,/benefit: Find your best take/);
+ assert.match(brief.text,/Brand kit \(wins over every choice above\): voice.tone: Direct, never decorative\./);assert.match(brief.text,/voice.samples/);
+ assert.ok(brief.text.length<=1800);
+ const blank=compileFeelingBrief({},{})!;assert.match(blank.text,/not chosen; derive it from the brand character/);assert.match(blank.text,/no voice or imagery rules accepted yet/);
+ const long=compileFeelingBrief({feel:{feelings:['warmth','craft','play'],endFeeling:'x'.repeat(300),avoidNote:'y'.repeat(500),peopleNote:'z'.repeat(300),likes:[{note:'n'.repeat(300),aspects:['colour','light','type']},{note:'m'.repeat(300),aspects:[]}]},proof:'p'.repeat(600),audienceTension:'t'.repeat(600)},{'voice.tone':'v'.repeat(2000),'voice.samples':'s'.repeat(2000),'imagery.treatment':'i'.repeat(2000)})!;
+ assert.ok(long.text.length<=1800);
+});
+
+test('planning contracts read the brand and the feeling brief first and never list stock ad formats',()=>{
+ for(const role of ['strategy','script','visual-direction'])assert.match(planningTransportTask(role),/READ THE BRAND FIRST: campaignContext.feelingBrief/,role);
+ const all=['strategy','script','visual-direction'].map(r=>planningTransportTask(r)).join('\n');
+ assert.doesNotMatch(all,/UI Card Proof|Studio Still Life|POV Lifestyle|Tactile Material Craft|highlight strips or signature accent|architectural color-block split/);
+ assert.doesNotMatch(all,/Get paid for buying milk|TEST THE HOOK BEFORE IT'S DONE/,'no other brand copy as examples');
+ assert.match(planningTransportTask('strategy'),/How far from the usual style/);assert.match(planningTransportTask('strategy'),/made means nothing is photographed and you invent how it is made/);
+ assert.match(planningTransportTask('script'),/one decisive frame with one focal point and visible proof/);assert.match(planningTransportTask('script'),/brand's voice/);
+ assert.match(planningTransportTask('visual-direction'),/square master/);assert.match(planningTransportTask('visual-direction'),/kit's shape language/);
+ assert.match(liveCriticInstructions,/feels like the chosen feeling/);
+});
+
+test('guided planning gets the feeling brief from the stored brand revision (payload.kit.rules), accepted rules only',async()=>{
+ const {feelingBriefForContext,brandTokensFromKit}=await import('../packages/contracts/brief-feel');
+ const revision={id:'r',payload:{kit:{rules:[{category:'voice',key:'tone',value:'Direct, warm',decision:'accepted'},{category:'voice',key:'character',value:'proposed only',decision:'proposed'}]}}};
+ assert.deepEqual(brandTokensFromKit(revision),{'voice.tone':'Direct, warm'});
+ const context={submittedBrief:{questionnaire:{}},acceptedBrandKit:revision},frozen=JSON.stringify(context),text=feelingBriefForContext(context)!;assert.equal(JSON.stringify(context),frozen,'the frozen campaign context is never modified (admission compares it byte for byte)');
+ assert.match(text,/voice.tone: Direct, warm/);assert.doesNotMatch(text,/proposed only/);
+ assert.equal(feelingBriefForContext({feelingBrief:'already in the context'}),undefined);assert.equal(feelingBriefForContext({mode:'manual'}),undefined);
+});
+
+test('the questionnaire answers (feel and the sharper campaign fields) save in a draft and reach the feeling brief',async()=>{
+ const {briefDraftSchema,emptyBrief}=await import('../packages/contracts/brief');
+ const draft={...emptyBrief('Get sign-ups'),benefit:'5% back on everyday spends',proof:'Paid monthly to the card',audienceTension:'Small spends feel invisible',feel:{...briefFeelSchema.parse({}),feelings:['clarity'],people:'hands',avoid:['stock'],endFeeling:'small spends count'}};
+ const saved=briefDraftSchema.parse(draft);assert.equal(saved.feel?.people,'hands');
+ const text=compileFeelingBrief(saved as unknown as Record<string,unknown>,{})!.text;
+ assert.match(text,/Main feeling: Clarity & help/);assert.match(text,/people hands only/);assert.match(text,/benefit: 5% back/);assert.match(text,/audience tension: Small spends/);assert.match(text,/Feeling at the end: "small spends count"/);
+ assert.ok(briefDraftSchema.safeParse(emptyBrief('x')).success,'a brief without the new answers stays valid');
+});
+
+test('look answers reach agents as boundaries, tone and room, never as requests',()=>{
+ const text=compileFeelingBrief({feel:{...briefFeelSchema.parse({}),medium:'live',light:['golden-hour'],energy:'still',world:['object-3d','typography-led'],typeRole:['type-led'],productRole:['result','not-shown']}},{})!.text;
+ assert.match(text,/^FEELING BRIEF \(tone and room from the client, not instructions/);
+ assert.match(text,/Boundaries \(hold these\): pictures photographed\./);
+ assert.match(text,/Leanings \(tone only; follow them where they serve your idea\): light golden hour; energy still and composed\./);
+ assert.match(text,/Open to \(the client would not mind these; none is requested, a direction using none of them is fine, and none is a format to fill\): worlds: 3d objects & materials \+ type as the visual; type: type carrying the idea; product: the result instead of the product \+ no product at all\./);
+ assert.doesNotMatch(text,/must|required to|use (a|the) /i);
+ assert.match(planningTransportTask('strategy'),/the open-to list is room the client allows, never a request/);
+});
+
+test('the worker never rewrites the frozen campaign context of a planning job (admission compares it byte for byte)',async()=>{
+ const {readFileSync}=await import('node:fs');const source=readFileSync('apps/local-runner/workflow.ts','utf8');
+ assert.doesNotMatch(source,/snapshot\.campaignContext\s*=(?!=)/,'add per-request text to the task instead');
+});

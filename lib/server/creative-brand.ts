@@ -2,6 +2,7 @@ import {logoSvg} from '@/packages/brand/logo-svg';
 import 'server-only';
 import {studioContext,checked} from './studio';
 import {ApiError} from './api';
+import {brandScope} from './brand-source';
 import {resolveBrandSystem,type CreativeMaterial} from '@/packages/brand/resolve-system';
 import type {BrandDraft} from '@/packages/contracts/brand-kit';
 import {readFile} from 'node:fs/promises';
@@ -13,7 +14,7 @@ import {draftFonts} from '@/packages/creative/compiler';
 const metadataCache=new Map<string,Promise<Record<string,unknown>>>();
 export async function creativeBrand(campaignId:string,revision:{id:string;kit:BrandDraft}){
  const {admin,tenant}=await studioContext();
- const rows=checked(await admin.from('studio_brand_materials').select('id,sha256,mime,object_key,state,extraction').eq('tenant_id',tenant).eq('campaign_id',campaignId).eq('state','ready'))??[];
+ const rows=checked(await admin.from('studio_brand_materials').select('id,sha256,mime,object_key,state,extraction').eq('tenant_id',tenant).eq('campaign_id',await brandScope(campaignId)).eq('state','ready'))??[];
  const materials:CreativeMaterial[]=rows.map(m=>({id:m.id,sha256:m.sha256,mime:m.mime,objectKey:m.object_key,state:m.state,metadata:m.extraction?.metadata??{}}));
  for(const material of materials){
   if(material.metadata.family&&!material.metadata.unitsPerEm||material.mime==='image/svg+xml'&&!material.metadata.svg){

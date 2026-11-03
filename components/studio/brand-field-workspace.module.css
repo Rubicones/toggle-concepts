@@ -559,7 +559,8 @@
   border-left: 3px solid #5baf8c
 }
 
-.workspace :global(.brandbook-finding.is-reject) {
+.workspace :global(.brandbook-finding.is-reject),
+.workspace :global(.brandbook-finding.is-unused) {
   background: #f8fafb;
   color: #738a96
 }

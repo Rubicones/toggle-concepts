@@ -66,14 +66,19 @@ export function estimateStaticDirection(pricing:Record<Exclude<Role,'resources'>
 
 /**
  * Live drafts never reserve screenshot sweeps. A new quote may include a bounded creative review (at most two critic
- * requests over a few labelled views) plus coder time for the repairs it asks for. Without criticRequests the quote is
+ * requests over the rendered review sheets and zoomed crops) and visual repairs: coder requests that carry those images
+ * (one self-review when the coder reads images, plus one repair per critic round). Without options the quote is
  * identical to earlier live quotes; existing frozen allowances are never changed.
  */
-export function estimateLiveDirection(pricing:Parameters<typeof estimateStaticDirection>[0],perStillMicroUsd:number,maxStills:number,identity:unknown,options:{criticRequests?:number}={}){
+export const LIVE_CRITIC_REQUEST={inputTokens:60000,outputTokens:8000},LIVE_VISUAL_REPAIR={inputTokens:45000,outputTokens:4000,timeMs:120000};
+export function estimateLiveDirection(pricing:Parameters<typeof estimateStaticDirection>[0],perStillMicroUsd:number,maxStills:number,identity:unknown,options:{criticRequests?:number;visualRepairs?:number}={}){
  const quote=estimateStaticDirection(pricing,perStillMicroUsd,maxStills,identity);quote.maxCostMicroUsd-=quote.roles.critic.maxCostMicroUsd;
- const n=Math.max(0,Math.min(2,Math.floor(options.criticRequests??0)));
- if(n>0){const p=pricing.critic,spec={inputTokens:24000*n,outputTokens:4000*n,timeMs:180000,requests:n},cost=Math.max(1,Math.ceil((p.inputPrice*spec.inputTokens+p.outputPrice*spec.outputTokens)*1e6*1.1));
+ const n=Math.max(0,Math.min(2,Math.floor(options.criticRequests??0))),m=Math.max(0,Math.min(3,Math.floor(options.visualRepairs??0)));
+ const price=(p:{inputPrice:number;outputPrice:number},inputTokens:number,outputTokens:number)=>Math.max(1,Math.ceil((p.inputPrice*inputTokens+p.outputPrice*outputTokens)*1e6*1.1));
+ if(n>0){const spec={inputTokens:LIVE_CRITIC_REQUEST.inputTokens*n,outputTokens:LIVE_CRITIC_REQUEST.outputTokens*n,timeMs:180000,requests:n},cost=price(pricing.critic,spec.inputTokens,spec.outputTokens);
   quote.roles.critic={...spec,maxCostMicroUsd:cost};quote.maxCostMicroUsd+=cost;quote.roles.assembler={...quote.roles.assembler,timeMs:quote.roles.assembler.timeMs+180000};}
  else quote.roles.critic={maxCostMicroUsd:0,inputTokens:0,outputTokens:0,timeMs:0,requests:0};
+ if(m>0){const a=quote.roles.assembler,inputTokens=LIVE_VISUAL_REPAIR.inputTokens*m,outputTokens=LIVE_VISUAL_REPAIR.outputTokens*m,cost=price(pricing.assembler,inputTokens,outputTokens);
+  quote.roles.assembler={...a,requests:a.requests+m,inputTokens:a.inputTokens+inputTokens,outputTokens:a.outputTokens+outputTokens,timeMs:a.timeMs+LIVE_VISUAL_REPAIR.timeMs*m,maxCostMicroUsd:a.maxCostMicroUsd+cost};quote.maxCostMicroUsd+=cost;}
  quote.quoteId=digest({identity,quote,presentation:'live'});return quote;
 }

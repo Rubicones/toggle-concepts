@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { canonicalJson, id } from "./common";
 import { campaignScopeSchema, validateVariantManifest, variantTuple, type VariantEntry } from "./campaign";
+import { briefFeelSchema, briefCampaignExtrasSchema } from "./brief-feel";
 
 const text = (max: number) => z.string().max(max);
 export const briefPlacementOptions = [
@@ -25,6 +26,12 @@ export const briefDraftSchema = z.strictObject({
   referenceLocale: text(160), referencePlacement: z.enum(["vertical", "portrait", "square", "wide"]),
   finalConceptCount: z.number().int().min(1).max(3), runCapMicroUsd: z.number().int().min(10000).max(100000000),
   entries: z.array(rowSchema).max(128),
+  // Optional (brief v2): sharper campaign answers, the Feel/Look choices and typed source images.
+  // Earlier drafts and frozen C1 snapshots simply lack them.
+  ...briefCampaignExtrasSchema,
+  feel: briefFeelSchema.optional(),
+  sourceAssetRoles: z.record(z.uuid(), z.enum(["logo", "product", "interface", "brand-photo", "past-ad-liked", "past-ad-disliked", "other"])).optional(),
+  synthesisChoices: z.array(z.enum(["backgrounds", "environments", "abstract-light", "people-hands", "people", "product-from-reference"])).max(6).optional(),
 });
 export type BriefDraft = z.infer<typeof briefDraftSchema>;
 export type BriefRow = BriefDraft["entries"][number];

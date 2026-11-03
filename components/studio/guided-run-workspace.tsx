@@ -1,4 +1,6 @@
 "use client";
+import {ideaReviewLines} from "@/packages/contracts/idea-review";
+import { CreativeFocusField } from "./creative-focus-field";
 import {Disclosure} from '@/components/ui/disclosure';
 import {Select} from '@/components/ui/select';
 import { RunStepOutput } from "./run-step-output";
@@ -51,6 +53,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
   }, [message]);
   const [creativeQuote,setCreativeQuote]=useState<{quoteId:string;maxCostMicroUsd:number}|null>(null);
   const [confirmRestart,setConfirmRestart]=useState(false);
+  const [focusDraft,setFocusDraft]=useState<string|null>(null);
   async function startCreative() {
     setBusy(true);
     setMessage("");
@@ -131,8 +134,10 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
     active = runMilestones.find((step) => ["active", "review", "blocked"].includes(states[step.id])),
     attention = runAttention(control?.blocker),
     lastError = control?.cursor.lastError as { code?: string; message?: string | null; at?: string } | undefined,
+    ideaReview = ideaReviewLines(control?.cursor.ideaReview),
     run = data.run;
   const cap = Number(run?.cap_micro_usd ?? 0);
+  const savedFocus = data.creativeFocus?.text ?? "", focusValue = focusDraft ?? savedFocus, focusReady = !!data.creativeFocus?.ready;
   const targetRole = role || (data.failureStep?.role === "creative-code" ? "script" : data.failureStep?.role) || "script";
   const scenarioOutput=data.jobs.find(j=>j.job_key==='script'&&j.state==='succeeded')?.output,scenarioData=scenarioOutput?readableOutput(scenarioOutput).deliverable:null,directions=scenarioPresentation(scenarioData)??[];
   return (
@@ -178,9 +183,12 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
                 "We prepare your brand rules, then write three scenarios and build previews. You only step in when a decision is needed."
               )}
             </p>
+            {data.book && data.brief && focusReady && (
+              <CreativeFocusField id="creative-focus-start" value={focusValue} disabled={busy} onChange={setFocusDraft} />
+            )}
           </div>
           <div>
-            <Button disabled={busy || !data.book || !data.brief} onClick={() => void command({ action: "start" })}>
+            <Button disabled={busy || !data.book || !data.brief} onClick={async () => { if (await command({ action: "start", ...(focusReady ? { creativeFocus: focusValue } : {}) })) setFocusDraft(null); }}>
               <Play size={15} />
               {busy ? "Starting…" : "Start run"}
               <ArrowRight size={16} />
@@ -223,9 +231,32 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
                     Continue work
                   </Button>
                 )}
+                {ideaReview.length > 0 && (
+                  <Disclosure><summary>Idea review · {ideaReview.map(line => `${line.label} ${line.status}`).join(" · ")}</summary>
+                    {ideaReview.map(({key, label, status, state}) => (
+                      <div key={key}>
+                        <p><strong>{label} · {status}</strong>{state.reason ? ` — ${state.reason}` : ""}</p>
+                        {state.result?.summary && <p>{state.result.summary}</p>}
+                        {state.result?.directions.map(d => <p key={d.conceptId}>{d.conceptId} · {d.verdict === "strong" ? "strong" : "needs work"}{d.problems ? ` — ${d.problems}` : ""}</p>)}
+                        {status === "sent back for one revision" && state.result?.note && <p>Sent back: {state.result.note}</p>}
+                      </div>
+                    ))}
+                    <small>An independent critic checks strategy, scenarios and visual direction, each right after it is written; the next step waits for that check. At most one automatic correction per step; a check that cannot run never stops the run.</small>
+                  </Disclosure>
+                )}
+                {focusReady && (
+                  <Disclosure>
+                    <summary>Creative focus · {savedFocus ? (savedFocus.length > 60 ? savedFocus.slice(0, 60) + "…" : savedFocus) : "open, the agents choose"}</summary>
+                    <CreativeFocusField id="creative-focus-run" value={focusValue} disabled={busy} onChange={setFocusDraft} />
+                    <p>Steps that have not started yet use the saved focus. Use Start run over to apply it to everything.</p>
+                    <Button variant="outline" disabled={busy || focusValue.trim() === savedFocus.trim()} onClick={async () => { if (await command({ action: "focus", creativeFocus: focusValue })) setFocusDraft(null); }}>
+                      Save focus
+                    </Button>
+                  </Disclosure>
+                )}
                 {data.run?.status === "active" && control.stage !== "brand" && (
-                  <Disclosure onToggle={event=>{if(!event.currentTarget.open)setConfirmRestart(false);}}><summary>Restart planning</summary><p>Repeats planning and draft work from the approved brief and brand. Earlier costs stay counted toward the run cap.</p><Button variant="outline" disabled={busy} onClick={async () => {
-                    if (!confirmRestart) { setConfirmRestart(true); setMessage("Start over from planning? Research, scenarios, plans and drafts are made again from the same brief and Brand Kit. Their requests are charged again; spent costs stay counted toward the run cap. Click again to restart."); return; }
+                  <Disclosure onToggle={event=>{if(!event.currentTarget.open)setConfirmRestart(false);}}><summary>Restart planning</summary><p>Repeats planning and draft work from the approved brief and brand, with the current creative focus and the current models, instructions and limits from Models & agents. Earlier costs stay counted toward the run cap.</p><Button variant="outline" disabled={busy} onClick={async () => {
+                    if (!confirmRestart) { setConfirmRestart(true); setMessage("Start over from planning? Research, scenarios, plans and drafts are made again from the same brief and Brand Kit, using the current Models & agents settings. Their requests are charged again; spent costs stay counted toward the run cap. Click again to restart."); return; }
                     setConfirmRestart(false);
                     await command({ action: "restart", confirm: true });
                   }}>

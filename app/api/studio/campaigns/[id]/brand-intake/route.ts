@@ -124,7 +124,8 @@ export async function GET(
                 );
             const key =
                     visual?.objectKey ??
-                    `media/${tenant}/${saved.campaign.id}/brand/${material.id}/source`,
+                    // A library brand's files live under the brand's own campaign.
+                    ((material as { object_key?: string }).object_key || `media/${tenant}/${saved.campaign.id}/brand/${material.id}/source`),
                 bytes = (await objectStore().get(key)).body;
             if (
                 createHash("sha256").update(bytes).digest("hex") !==

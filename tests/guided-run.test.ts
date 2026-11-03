@@ -68,3 +68,22 @@ test('one-click review fills missing required rules with recorded defaults',asyn
  const draft=applyRunBrandReview(emptyBrandDraft(['en-GB']),{reviewerName:'AD',note:'ok',fallbackRuleId:null});
  assert.deepEqual(brandAcceptanceBlockers(draft,['en-GB'],c1.id,[],[]),[]);assert.ok(draft.rules.every(r=>r.decision==='accepted'&&r.value));
 });
+test('everything found carries forward unless excluded; excluded findings never reach the kit',()=>{
+ const excluded=(field:string,value:string)=>({...item(field,value),decision:'reject'});
+ const rows=[item('primaryColors','{"name":"accent","hex":"#dfff00"}'),item('secondaryColors','{"name":"bg","hex":"#070707"}'),item('secondaryColors','{"name":"fg","hex":"#e8e8e8"}'),excluded('primaryColors','{"name":"old","hex":"#ff0000"}'),item('wordmark','<svg viewBox="0 0 10 10"></svg>'),excluded('voice','Loud and punchy'),item('imagery','Grainy film photography'),excluded('photography','Glossy studio packshots')];
+ const result=importBrandbookToA1(emptyBrandDraft(['en-GB']),book,rows,c1,randomUUID),rule=(c:string,k:string)=>result.rules.find(r=>r.category===c&&r.key===k);
+ assert.equal(rule('color','accent')?.value,'#dfff00');assert.ok(!result.rules.some(r=>r.value.includes('#ff0000')));
+ assert.ok(result.rules.some(r=>r.category==='logo'&&r.key==='wordmark'&&r.provenance.kind==='material'));
+ assert.equal(rule('voice','tone')?.value,'');assert.equal(rule('imagery','treatment')?.value,'Grainy film photography');
+ assert.doesNotMatch(result.instructions,/Loud and punchy|Glossy/);
+});
+test('single-choice fields use only the “Use this” pick; with no pick every found option is used',()=>{
+ const keep=(field:string,value:string)=>({...item(field,value),decision:'keep'});
+ const picked=importBrandbookToA1(emptyBrandDraft(['en-GB']),book,[item('displayFonts','Archivo'),keep('displayFonts','Fraunces'),item('wordmark','<svg id="a"></svg>'),keep('wordmark','<svg id="b"></svg>'),item('primaryColors','{"hex":"#dfff00"}'),keep('primaryColors','{"hex":"#070707"}'),item('secondaryColors','{"hex":"#e8e8e8"}')],c1,randomUUID);
+ assert.equal(picked.rules.find(r=>r.category==='typography'&&r.key==='headlineFamily')?.value,'Fraunces');
+ assert.equal(picked.rules.filter(r=>r.category==='logo'&&r.key.startsWith('wordmark')).length,1);
+ assert.deepEqual(picked.rules.filter(r=>r.category==='color').map(r=>r.value).sort(),['#070707','#dfff00','#e8e8e8']);
+ const open=importBrandbookToA1(emptyBrandDraft(['en-GB']),book,[item('wordmark','<svg id="a"></svg>'),{...item('icon','<svg id="i"></svg>'),materialId:randomUUID()},item('displayFonts','Archivo')],c1,randomUUID);
+ assert.equal(open.rules.filter(r=>r.category==='logo'&&r.key!=='usage').length,2);
+ assert.equal(open.rules.find(r=>r.category==='typography'&&r.key==='headlineFamily')?.value,'Archivo');
+});

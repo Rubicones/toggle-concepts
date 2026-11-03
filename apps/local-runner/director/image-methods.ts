@@ -63,7 +63,10 @@ export async function derivedReferences(folder:string,resource:Resource,put:(key
  const items=[...(resource.sketch?.sha256?[{sha256:resource.sketch.sha256,ext:'jpg' as const,mime:'image/jpeg' as const}]:[]),...(resource.extend?.canvasSha256?[{sha256:resource.extend.canvasSha256,ext:'png' as const,mime:'image/png' as const}]:[])];
  const out:DerivedReference[]=[];
  for(const item of items){const bytes=await readFile(resolve(derivedDir(folder),`${item.sha256}.${item.ext}`));if(sha(bytes)!==item.sha256)throw new Error('DERIVED_REFERENCE_CHANGED');const image=await loadImage(bytes),objectKey=`staging/director-derived/${item.sha256}.${item.ext}`;
-  await put(objectKey,bytes,item.mime);out.push({sha256:item.sha256,mime:item.mime,bytes:bytes.length,width:image.width,height:image.height,objectKey});}
+  // Keys are content-addressed, so an object left by an earlier attempt (a retry) already holds these exact bytes;
+  // the image step re-verifies the sha256 when it loads the reference.
+  try{await put(objectKey,bytes,item.mime);}catch(error){if(!(error instanceof Error&&error.message==='Precondition'))throw error;}
+  out.push({sha256:item.sha256,mime:item.mime,bytes:bytes.length,width:image.width,height:image.height,objectKey});}
  return out;
 }
 

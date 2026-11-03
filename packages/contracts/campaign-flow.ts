@@ -1,6 +1,6 @@
 /** The art director's whole path: drop the brandbook, choose in each field, answer the questionnaire, start the run. */
 export type CampaignFlow = {
-  brandbook: { files: number; readyFiles: number; findings: number; chosen: number; reading: boolean; submitted: { version: number; at: string } | null };
+  brandbook: { files: number; readyFiles: number; findings: number; excluded: number; reading: boolean; submitted: { version: number; at: string } | null };
   questionnaire: { saved: boolean; submitted: boolean };
   images: number;
   run: { started: boolean; stage: string | null; status: string | null; blocker: string | null };

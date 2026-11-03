@@ -1,4 +1,6 @@
 import {processDirectorWork} from './director/worker';
+import {CREATIVE_FOCUS_ROLES,creativeFocusBlock,normalizeCreativeFocus} from '../../packages/contracts/creative-focus';
+import {feelingBriefForContext} from '../../packages/contracts/brief-feel';
 import {processCreativeDelivery} from './creative-delivery';
 import {creativeExecutionSnapshot} from '../../packages/creative/request-snapshot';
 import {compileCreativeClaim} from './creative-compile';
@@ -16,6 +18,8 @@ import {variantAuditTask} from '../../packages/contracts/variant-identities';
 import {transientExecutionFailure} from '../../packages/director/execution-failures';
 // Trusted local dispatcher. Never imported by Next.js; never executes generated code.
 import {processGuidedCampaign} from "./guided-campaign";
+import {watch as watchFolder} from "node:fs";
+import {studioChangeDirectory} from "../../packages/data/studio-changes";
 import type {ProviderErrorDetail} from "../../packages/contracts/provider-error";
 import {diagnoseIntakeOutput} from "../../packages/contracts/brand-intake";
 import {loadBrandVision} from "../../packages/brand/vision.local";
@@ -48,6 +52,15 @@ async function codeFingerprint(){
 }
 let restartForNewCode=false;
 const wait=(ms:number)=>new Promise(r=>setTimeout(r,ms));
+// An idle worker sleeps longer between empty queue sweeps (each sweep is ~9 API calls) but wakes as soon
+// as Next.js or another worker publishes a work/workspace change, so new work still starts immediately.
+const idleDelay=(quietMs:number)=>quietMs<5000?2000:quietMs<15000?5000:10000;
+function waitForWork(ms:number){return new Promise<void>(done=>{
+ let watcher:ReturnType<typeof watchFolder>|undefined;
+ const finish=()=>{clearTimeout(timer);watcher?.close();done();};
+ const timer=setTimeout(finish,ms);
+ try{watcher=watchFolder(studioChangeDirectory,(_,name)=>{const topic=name?.toString();if(topic==='work'||topic==='workspace')finish();});watcher.on('error',()=>{watcher?.close();watcher=undefined;});}catch{/* Without a change folder the timer alone decides. */}
+});}
 async function rpc(name:string,args:Record<string,unknown>){return checked(await admin.rpc(name,args));}
 async function flushProviderAnchors(){
  for(const file of await readdir(resolve(directory,'provider-ids'))){if(!file.endsWith('.json'))continue;
@@ -82,7 +95,10 @@ async function execute(claim:Claim){
   if(dependencies?.length){const parents=checked(await admin.from("studio_workflow_jobs").select("id,job_key,output,output_hash,state").in("id",dependencies.map(d=>d.requires_id)).eq("tenant_id",sharedTenant).order("job_key"));
    if(!parents||parents.some(p=>p.state!=="succeeded"||!p.output_hash))throw new Error("STALE_WORKFLOW");
    upstream=parents.map(p=>({jobId:p.id,sha256:p.output_hash,output:p.output}));}
-  const model=(await modelCatalog()).find(m=>m.id===agent.model_id);
+  // A request reserved before this run (manual quote) keeps the model recorded on its step; a new one uses the tab model.
+  const reserved=job.initial_step_id?checked(await admin.from("studio_agent_steps").select("status,model_id").eq("id",job.initial_step_id).single()):null;
+  const modelId:string=reserved?.status==="reserved"&&reserved.model_id?reserved.model_id:agent.model_id;
+  const model=(await modelCatalog()).find(m=>m.id===modelId);
   if(!model||model.outputModalities.length!==1||model.outputModalities[0]!=="text")throw new Error("MODEL_UNAVAILABLE");
   const snapshot:Snapshot={...job.payload.snapshot,upstream,pricing:model,stepCapMicroUsd:agent.step_cap_micro_usd,maxOutputTokens:retryOutputLimit((job.payload.snapshot as unknown as {previewProtocol?:string}).previewProtocol,job.payload.snapshot.maxOutputTokens,agent.max_output_tokens,model.maxOutput),disableReasoning:model.id==="google/gemini-2.5-flash"};
   const creative=job.payload.creativeInputs?{input:job.payload.creativeInputs,stage:(job.payload.snapshot as unknown as {creativeStage:Exclude<CreativeStage,'compile'>}).creativeStage}:null;
@@ -91,11 +107,22 @@ async function execute(claim:Claim){
   // role, status and deliverable shape cannot drift (earlier only Gemini 2.5 Flash was pinned).
   const envelope=claim.round.kind==='draft'&&!snapshot.responseSchema;
   const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest):null;
-  if(schema&&planningEnvelopeSchema({id:agent.model_id,supportedParameters:model.supportedParameters},schema)){
-   snapshot.responseSchema=agent.model_id==='google/gemini-2.5-flash'?schema:{name:schema.name,schema:typeArraysAsAnyOf(providerJsonSchema(schema.schema)) as Record<string,unknown>};snapshot.outputFormat='json_schema';
+  if(schema&&planningEnvelopeSchema({id:modelId,supportedParameters:model.supportedParameters},schema)){
+   snapshot.responseSchema=modelId==='google/gemini-2.5-flash'?schema:{name:schema.name,schema:typeArraysAsAnyOf(providerJsonSchema(schema.schema)) as Record<string,unknown>};snapshot.outputFormat='json_schema';
   }
   let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count)):'';
   if(envelope)transportTask=envelopeRoleInstruction(job.role)+(transportTask?'\n'+transportTask:'');
+  // Guided planning contexts are built in SQL without the feeling brief; it travels with the task text, because the
+  // frozen campaignContext is compared byte for byte at admission (studio_begin_workflow) and must stay unchanged.
+  if(claim.round.kind==='draft'&&!creative&&(CREATIVE_FOCUS_ROLES as readonly string[]).includes(job.role)){
+   const feeling=feelingBriefForContext(snapshot.campaignContext as Record<string,unknown>|undefined);
+   if(feeling)transportTask=(transportTask?transportTask+'\n':'')+feeling;
+  }
+  // The AD's creative focus reaches each creative planning step when it starts (packages/contracts/creative-focus.ts).
+  if(claim.round.kind==='draft'&&!creative&&(CREATIVE_FOCUS_ROLES as readonly string[]).includes(job.role)){
+   const saved=await admin.from('studio_run_creative_focus').select('focus').eq('run_id',job.run_id).maybeSingle(),block=saved.error?'':creativeFocusBlock(saved.data?.focus);
+   if(block){transportTask=(transportTask?transportTask+'\n':'')+block;(snapshot as unknown as {creativeFocus?:string}).creativeFocus=normalizeCreativeFocus(saved.data?.focus);}
+  }
   if(transportTask)snapshot.transportTask=transportTask;
   let reservation:number;
   // Manual requests already have a frozen quote/reservation. Don't change the admitted request on restart.
@@ -124,7 +151,7 @@ async function execute(claim:Claim){
   // From this point a crash/timeout is uncertain and can never be automatically resubmitted.
   submitted=true;
   outputLimit=snapshot.maxOutputTokens;
-  result=await submitText(agent.model_id,job.payload.prompt+(transportTask?'\n'+transportTask:''),creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:snapshot,vision,submittedStep.id,async generation=>{
+  result=await submitText(modelId,job.payload.prompt+(transportTask?'\n'+transportTask:''),creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:snapshot,vision,submittedStep.id,async generation=>{
    // Durable provider identity only: replaying this anchor cannot submit or activate output.
    const path=resolve(directory,'provider-ids',`${attempt.id}.json`),tmp=path+'.tmp';
    await writeFile(tmp,JSON.stringify({attemptId:attempt.id,receipt:{target_job:job.id,token:job.lease_token,device,expected_input:job.input_hash,expected_config:job.config_hash,outcome:'unknown',actual_cost:null,result_text:null,provider_generation:generation,token_usage:null,failure:'PROCESS_INTERRUPTED'}}),{mode:0o600});await rename(tmp,path);
@@ -172,7 +199,7 @@ async function main(){
    if(Date.now()-checked_at>5000){checked_at=Date.now();if(await codeFingerprint()!==startedWith){restartForNewCode=true;break;}}
    await flushReceipts();await flushProviderAnchors();try{if(await processDirectorWork(device)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis()){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
    const claim=await rpc("studio_claim_workflow",{target_tenant:sharedTenant,device}) as Claim|null;
-   if(claim){idle=Date.now();await execute(claim);}else await wait(2000);
+   if(claim){idle=Date.now();await execute(claim);}else await waitForWork(idleDelay(Date.now()-idle));
   }
  }finally{if(timer)clearInterval(timer);await rpc("studio_workflow_device",{device,target_tenant:sharedTenant,online:false}).catch(()=>{});await unlink(lock).catch(()=>{});
   // Hand over to a worker that loads the current code; it takes the lock and continues the queue.

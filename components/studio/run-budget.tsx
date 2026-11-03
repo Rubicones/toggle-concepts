@@ -104,7 +104,17 @@ export function RunBudgetCard({ data, busy, command }: { data: GuidedRunView; bu
           {quote ? "Use Continue anyway below to see the price and go on." : "Raise the budget to continue."}
         </p>
       )}
-      {editable && <RaiseBudgetDialog key={`${data.run.id}-${data.limits?.version ?? 0}`} open={open} onOpenChange={setOpen} data={data} budget={b} busy={busy} command={command} />}
+      {editable && (
+        <RaiseBudgetDialog
+          // Allowances can also change outside this dialog (Models & agents step caps), so any change starts the form from current values.
+          key={`${data.run.id}-${data.limits?.version ?? 0}-${(data.limits?.agents ?? []).map((a) => `${a.role}:${a.step_cap_micro_usd}:${a.max_output_tokens}`).join(",")}`}
+          open={open} onOpenChange={setOpen}
+          data={data}
+          budget={b}
+          busy={busy}
+          command={command}
+        />
+      )}
     </section>
   );
 }

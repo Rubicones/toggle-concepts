@@ -10,11 +10,24 @@ export function resourceRequest(resource:Resource,input:DirectionInput,perStillM
  if(!input.resourceIds.includes(resource.id))throw new Error('UNISSUED_RESOURCE_ID');
  const aspect=imageAspectRatios.find(a=>a===resource.aspect);if(!aspect)throw new Error('IMAGE_ASPECT_UNAVAILABLE');
  const refs=resource.referenceAssetIds.map(id=>{const asset=input.assets.find(a=>a.id===id);if(!asset)throw new Error('UNISSUED_REFERENCE_ID');if(!asset.mime.startsWith('image/'))throw new Error('IMAGE_REFERENCE_REQUIRED');if(asset.width>2048||asset.height>2048||asset.width*asset.height>2073600)throw new Error('IMAGE_REFERENCE_DIMENSIONS_UNAVAILABLE');return {id,sha256:asset.sha256};});
- const reconstruct=input.materialMemory?.reconstruction.allowed&&input.materialMemory.materials.some(m=>resource.referenceAssetIds.includes(m.id)&&['product','interface'].includes(m.role));
+ const reconstruct=input.materialMemory?.reconstruction.allowed&&input.materialMemory.materials.some(m=>resource.referenceAssetIds.includes(m.id)&&m.role==='product');
  const base=resourcePrompt(resource)+(reconstruct?'\nCreate a fresh polished still from the attached identity reference, not an enlarged screenshot or a screenshot panel. Preserve the observed product shape, interface content and approved details; do not invent unseen features, copy, claims or people. Omit baked-in video/advertising overlays.':'');
  const method=imageMethod(resource,input,base);
  const prompt=method?.prompt??base,key=method?digest({protocol:'director-image-method@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refs.map(ref=>ref.sha256),method:method.identity}):independentResourceBindings(input)?digest({protocol:'director-image@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refs.map(ref=>ref.sha256)}):digest({protocol:'director@1',directionId:input.directionId,resource,refs,...(reconstruct?{reconstructionPrompt:prompt}:{})});
  return {key,prompt,references:[...(method?.source?[method.source.revisionId]:[]),...resource.referenceAssetIds],derivedPlan:method?.derived??[],purpose:resource.purpose,aspectRatio:aspect,resolution:'draft' as const,maxCostMicroUsd:perStillMicroUsd};
+}
+/**
+ * Checks a design answer's resource before the application has pinned its image-method hashes (the worker pins them
+ * only after the design is accepted, prepareImageMethods). Everything the model wrote is validated; the hashes the
+ * model never supplies are stood in for. The returned key is not a request identity.
+ */
+export function checkDesignResource(resource:Resource,input:DirectionInput,perStillMicroUsd:number){
+ const pending='0'.repeat(64),source={revisionId:'pending',sha256:pending,url:'',width:1,height:1};
+ return resourceRequest({...resource,
+  ...(resource.sketch?{sketch:{...resource.sketch,sha256:resource.sketch.sha256??pending}}:{}),
+  ...(resource.edit?{edit:{...resource.edit,source:resource.edit.source??source}}:{}),
+  ...(resource.extend?{extend:{...resource.extend,source:resource.extend.source??source,canvasSha256:resource.extend.canvasSha256??pending}}:{}),
+ },input,perStillMicroUsd);
 }
 /**
  * Image methods (blocks with brief.imageMethodsVersion 1): the prompt wrapper, the source picture and the

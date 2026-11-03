@@ -6,6 +6,7 @@ import {canonicalJson} from '../../packages/contracts/common';
 import {publishStudioChange} from '../../packages/data/studio-changes';
 import {manualAttempt} from '../../packages/data/manual-attempt';
 import {recoverPlanningFailure} from './planning-recovery';
+import {ideaReviewGates} from './idea-review';
 class RunFailure extends Error{constructor(code:string,public detail?:string){super(code);}}
 async function local<T>(path:string,method='GET',body?:unknown):Promise<T>{
  const base=new URL(process.env.NEXT_PUBLIC_APP_URL??'http://127.0.0.1:3100');
@@ -64,6 +65,11 @@ export async function processGuidedCampaign():Promise<boolean>{
    const round=checked(await admin.from('studio_workflow_rounds').select('id,blocker,status').eq('run_id',control.run_id).eq('kind','draft').order('round_no',{ascending:false}).limit(1).maybeSingle());
    if(!round){await local('/api/studio/workflow','POST',{action:'start',runId:control.run_id});await finish();return true;}
    const jobs=checked(await admin.from('studio_workflow_jobs').select('id,role,job_key,state,blocker,input_hash,config_hash,active_attempt').eq('round_id',round.id))??[];
+   // Per-step idea review (packages/contracts/idea-review.ts): strategy, script and visual direction are each reviewed
+   // right after they succeed; the next step waits for that review. A review never fails the run on its own.
+   const gate=await ideaReviewGates({admin,control,cursor,roundId:round.id,local,step});
+   if(gate==='hold'){await finish();return true;}
+   if(gate==='revise'){await finish('planning');return true;}
    if(planningKeys.every(key=>jobs.some(j=>j.job_key===key&&j.state==='succeeded'))){await finish('assembly');return true;}
    const failed=jobs.find(j=>planningKeys.includes(j.job_key)&&['failed','blocked'].includes(j.state));
    if(failed){if(await recoverPlanningFailure(admin,control,failed)){

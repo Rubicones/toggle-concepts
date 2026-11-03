@@ -11,9 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { studioRequest, useShared } from "@/lib/shared-http";
 import { money } from "@/packages/contracts/shared";
 import type { BrandAnalysisView, SavedBrandFinding } from "@/packages/brand/field-extraction";
+import { singleChoiceFields } from "@/packages/brand/finding-selection";
 import { brandAnalysisCanContinue, brandAnalysisNotice } from "@/packages/brand/workspace-metrics";
 import { flushCampaignSaves } from "@/lib/use-persisted-draft";
 import { WorkflowMigration } from "./brief-workspace";
+import { BrandCard, BrandDisagreements, BrandFileRoles, BrandLibraryPicker } from "./brand-card";
 export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { campaignId: string; sourcesReady: boolean; onContinue?: () => void }) {
   const router = useRouter();
   const endpoint = `/api/studio/campaigns/${campaignId}/brand-fields`,
@@ -70,6 +72,34 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
     );
   if (!data) return <p>Loading brand fields…</p>;
   if (!data.schemaReady) return <WorkflowMigration stage="Incremental brand fields" />;
+  if (data.brandSource)
+    return (
+      <section className={styles.workspace}>
+        <header className="brandbook-heading">
+          <div>
+            <p className="eyebrow">BRAND FROM THE LIBRARY</p>
+            <h2>{data.brandSource.brand}</h2>
+            <p>
+              This campaign uses the brand prepared in “{data.brandSource.name}”
+              {data.submission ? ` (brandbook version ${data.submission.version_no})` : ""}. Files, findings and edits live there.
+            </p>
+          </div>
+        </header>
+        {message && <p role="status">{message}</p>}
+        <div className="step-footer">
+          <div className="step-footer-actions">
+            <a className="text-link" href={`/campaigns/${data.brandSource.id}`}>Open that brand</a>
+            <Button variant="outline" disabled={busy} onClick={() => void command({ action: "useBrand", sourceCampaignId: null })}>
+              Use this campaign’s own files instead
+            </Button>
+            <Button disabled={busy || !data.submission} onClick={() => { onContinue?.(); router.push(`/campaigns/${campaignId}/brief`); }}>
+              Continue to questionnaire
+              <ArrowRight size={15} />
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
   const active = data.analyses.find((a) => !["completed", "cancelled"].includes(a.status)),
     latest = active ?? data.analyses[0],
     files = data.files.filter((f) => f.analysis_id === latest?.id),
@@ -78,14 +108,13 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
     skipped = files.filter((f) => f.status === "skipped").length,
     cap = chosenCap ?? (latest ? latest.request_cap_micro_usd / 1000000 : 0.03),
     filled = data.fields.filter((f) => f.count > 0).length,
-    chosen = data.fields.reduce((n, f) => n + f.kept, 0),
+    excludedTotal = data.fields.reduce((n, f) => n + (f.rejected ?? 0), 0),
     continuable = brandAnalysisCanContinue(latest);
   const visible = data.fields.filter(
     (f) =>
       (filter === "all" ||
         (filter === "populated" && f.count > 0) ||
-        (filter === "review" && (f.unreviewed ?? f.count - f.kept) > 0) ||
-        (filter === "chosen" && f.kept > 0)) &&
+        (filter === "excluded" && (f.rejected ?? 0) > 0)) &&
       `${f.label} ${f.key}`.toLowerCase().includes(search.toLowerCase()),
   );
   const stopNotice = brandAnalysisNotice(latest, data.usage?.lastRequestOutputLimit);
@@ -119,18 +148,41 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
       )}
       <header className="brandbook-heading">
         <div>
-          <p className="eyebrow">CHOOSE WHAT FITS</p>
-          <h2>Pick your brand, field by field.</h2>
-          <p>Open a field and press “Use this” on what fits. Undecided fields are fine.</p>
+          <p className="eyebrow">CHECK WHAT WE FOUND</p>
+          <h2>Your brand, field by field.</h2>
+          <p>Everything found in your files is used. Exclude anything wrong or outdated; the agents build what is missing.</p>
         </div>
         <div className="brandbook-total">
           <strong>
             {filled}
             <span>/28</span>
           </strong>
-          <small>fields found · {chosen} choices made</small>
+          <small>fields found · {excludedTotal} excluded</small>
         </div>
       </header>
+      {!!data.brandOptions?.length && <BrandLibraryPicker options={data.brandOptions} busy={busy} choose={(id) => void command({ action: "useBrand", sourceCampaignId: id })} />}
+      {!!data.decisions?.length && (
+        <BrandDisagreements
+          decisions={data.decisions}
+          fields={data.fields}
+          busy={busy}
+          keep={(o) => void command({ action: "review", findingId: o.findingId, expectedVersion: o.version, decision: "keep", editedValue: null })}
+        />
+      )}
+      {!!data.materials?.length &&
+        (data.materials.some((m) => !m.sure) ? (
+          <BrandFileRoles materials={data.materials} busy={busy} setRole={(id, role) => void command({ action: "setRole", materialId: id, role })} />
+        ) : (
+          <Disclosure className="brandbook-files">
+            <summary>
+              <FileText size={17} />
+              <strong>What each file is</strong>
+              <span>{data.materials.length} files, each read as its kind</span>
+              <ChevronDown size={16} />
+            </summary>
+            <BrandFileRoles materials={data.materials} busy={busy} setRole={(id, role) => void command({ action: "setRole", materialId: id, role })} />
+          </Disclosure>
+        ))}
       <div className="brandbook-overview">
         <section className="brandbook-work-card">
           <div className="brandbook-status">
@@ -281,8 +333,7 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
       <div className="brandbook-filter-row" aria-label="Filter brand fields">
         {[
           ["populated", `Found (${filled})`],
-          ["review", "Not decided"],
-          ["chosen", "Chosen"],
+          ["excluded", "Excluded"],
           ["all", "All fields"],
         ].map(([key, label]) => (
           <button type="button" aria-pressed={filter === key} key={key} onClick={() => setFilter(key)}>
@@ -306,7 +357,7 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
                 <span>
                   <small>{field.merge === "array" ? "CANDIDATES" : "ACCUMULATED TEXT"}</small>
                   <strong>{field.label}</strong>
-                  <span>{field.count ? `${field.count} ${field.count === 1 ? "finding" : "findings"} · ${field.kept} chosen` : "No findings yet"}</span>
+                  <span>{field.count ? `${field.count} ${field.count === 1 ? "finding" : "findings"}${singleChoiceFields.has(field.key) && field.kept ? ` · ${field.kept} selected` : ""}${field.rejected ? ` · ${field.rejected} excluded` : ""}` : "No findings yet"}</span>
                 </span>
                 <ChevronDown size={19} />
               </button>
@@ -356,13 +407,20 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
           </button>
         </p>
       )}
+      {count > 0 && (
+        <BrandCard
+          endpoint={endpoint}
+          busy={busy}
+          review={(finding, value) => command({ action: "review", findingId: finding.findingId, expectedVersion: finding.version, decision: "keep", editedValue: value })}
+        />
+      )}
       <div className="step-footer">
         <p>
           {data.submission
-            ? `Saved as version ${data.submission.version_no}. Continuing saves your latest choices.`
-            : chosen
-              ? `${chosen} choices made. You can come back and change them.`
-              : "Choose at least the logo, colors and fonts, then continue."}
+            ? `Saved as version ${data.submission.version_no}. Continuing saves your latest changes.`
+            : count
+              ? `${count - excludedTotal} findings in use. Exclude anything wrong, then continue.`
+              : "Add your brand files so we can find the logo, colors and fonts."}
         </p>
         <div className="step-footer-actions">
           {data.submission && (
@@ -370,6 +428,9 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
               <Download size={14} /> Download
             </a>
           )}
+          <a href={`/api/studio/campaigns/${campaignId}/brand-export`} download className="text-link" title="Everything the brandbook reading produced, as one JSON file">
+            <Download size={14} /> Export full JSON
+          </a>
           <Button disabled={busy || count === 0 || !data.workspaceReady || !data.updatesReady} onClick={() => void continueToBrief()}>
             Continue to questionnaire
             <ArrowRight size={15} />
@@ -465,16 +526,24 @@ function FindingList({ endpoint, field, merge, onChanged }: { endpoint: string; 
     [message, setMessage] = useState(""),
     [loading, setLoading] = useState(false);
   const all = [...(data?.findings ?? []), ...(extra?.items ?? [])].map((f) => (patches[f.id]?.version > f.version ? patches[f.id] : f)),
-    next = extra ? extra.next : data?.next;
+    next = extra ? extra.next : data?.next,
+    single = singleChoiceFields.has(field),
+    picked = single && all.some((f) => f.decision === "keep");
   return (
     <section className={`brandbook-finding-list ${["primaryColors", "secondaryColors", "semanticColors"].includes(field) ? "is-palette" : ""}`}>
       <p>
-        {merge === "array" ? "Use the option(s) that are right. The rest are kept but ignored." : "Statements from all your files. Exclude anything wrong or outdated."}
+        {single
+          ? picked
+            ? "Only the selected option is used."
+            : "Press “Use this” on the one to use. If nothing is selected, every option found is used."
+          : merge === "array"
+            ? "All options found are used. Exclude the ones that don't fit."
+            : "Statements from all your files. Exclude anything wrong or outdated."}
       </p>
       {error && <p role="alert">{error}</p>}
       {merge === "concat" && (
         <Disclosure>
-          <summary>Combined statements currently loaded</summary>
+          <summary>Combined statements that will be used</summary>
           <div style={{ whiteSpace: "pre-wrap" }}>
             {all
               .filter((f) => f.decision !== "reject")
@@ -491,6 +560,8 @@ function FindingList({ endpoint, field, merge, onChanged }: { endpoint: string; 
           finding={f}
           endpoint={endpoint}
           sources={data?.visualSources ?? []}
+          single={single}
+          unused={picked && f.decision === "unreviewed"}
           onSaved={(value) => {
             setPatches((p) => ({ ...p, [value.id]: value }));
             refresh();
@@ -525,11 +596,15 @@ function FindingEditor({
   finding: f,
   endpoint,
   sources,
+  single,
+  unused,
   onSaved,
 }: {
   finding: SavedBrandFinding;
   endpoint: string;
   sources: BrandVisualSource[];
+  single: boolean;
+  unused: boolean;
   onSaved: (f: SavedBrandFinding) => void;
 }) {
   const [value, setValue] = useState(f.edited_value ?? f.value),
@@ -553,23 +628,28 @@ function FindingEditor({
     }
   }
   return (
-    <article className={`brandbook-finding is-${f.decision}`}>
-      {f.decision !== "unreviewed" && <Badge variant={f.decision === "keep" ? "blue" : "outline"}>{f.decision === "keep" ? "Used" : "Excluded"}</Badge>}
+    <article className={`brandbook-finding is-${f.decision === "keep" && !single ? "unreviewed" : f.decision}${unused ? " is-unused" : ""}`}>
+      {f.decision === "reject" && <Badge variant="outline">Excluded</Badge>}
+      {single && f.decision === "keep" && <Badge variant="blue">Selected</Badge>}
+      {unused && <Badge variant="outline">Not used</Badge>}
       <BrandFindingValue finding={f} endpoint={endpoint} sources={sources} />
       <small title={f.locator}>
         From {f.material?.relative_path ?? "a source file"}
         {f.evidence === "inferred" ? " · inferred" : ""}
       </small>
       <div className="data-heading-actions">
-        <Button variant={f.decision === "keep" ? "default" : "outline"} disabled={busy} onClick={() => void save("keep")}>
-          Use this
-        </Button>
-        <Button variant="outline" disabled={busy} onClick={() => void save("reject")}>
-          Exclude
-        </Button>
-        {f.decision !== "unreviewed" && (
-          <Button variant="ghost" disabled={busy} onClick={() => void save("unreviewed")}>
-            Undo
+        {single && f.decision !== "reject" && (
+          <Button variant={f.decision === "keep" ? "default" : "outline"} disabled={busy} onClick={() => void save(f.decision === "keep" ? "unreviewed" : "keep")}>
+            {f.decision === "keep" ? "Selected · undo" : "Use this"}
+          </Button>
+        )}
+        {f.decision === "reject" ? (
+          <Button variant="outline" disabled={busy} onClick={() => void save("unreviewed")}>
+            Include again
+          </Button>
+        ) : (
+          <Button variant="outline" disabled={busy} onClick={() => void save("reject")}>
+            Exclude
           </Button>
         )}
       </div>

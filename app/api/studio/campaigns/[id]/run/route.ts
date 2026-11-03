@@ -26,6 +26,7 @@ import {api,body,json,ApiError} from '@/lib/server/api';
 import {studioContext,campaignRecord,checked} from '@/lib/server/studio';
 import {schemaMissing} from '@/lib/server/brief';
 import {guidedRunCommand} from '@/packages/contracts/guided-run';
+import {normalizeCreativeFocus} from '@/packages/contracts/creative-focus';
 import {guidedDbError,approveRunBrand,resumeGuidedCreative} from '@/lib/server/guided-run';
 import {submittedBrandbook} from '@/lib/server/brandbook-a1';
 import {startLocalWorkflow,requireLocalDevice} from '@/lib/server/local-compute';
@@ -108,8 +109,15 @@ export async function GET(_:Request,ctx:RouteContext<'/api/studio/campaigns/[id]
    creativeWaits[job.job_key]=run?.status!=='active'?`run ${run?.status}`:round.status!=='active'?`round ${round.status}`:round.blocker?`round blocked: ${round.blocker}`:job.attempt_count>=job.attempt_allowance?`attempt limit ${job.attempt_count}/${job.attempt_allowance}`:pending.length?`after ${pending.map(p=>p!.job_key.replace(/^creative\./,'')).join(', ')}`:new Date(job.available_at).getTime()>Date.now()?'retry scheduled':!devices?.length?'worker offline':'ready for the worker';
   }
  }
- return json({planningConfigRecovery,directorActive,directorReady,creativeWaits,creative,creativeReadiness,limits,budget,failureStep,assemblyRetry:retryAction,assemblyContinuation,continuationError,uncertainMicroUsd,brandResult,schemaReady:!ready.error,workerOnline:!!devices?.length,brief:cp?{id:cp.id,orderedVariants:cp.payload.variantManifest.entries.length,locales:cp.payload.scope.locales,reviewerName}:null,book:book?{id:book.id,version_no:book.version_no,findings:book.summary.findings}:null,run,control:visibleRunControl(directorReady?visibleDraftControl(control,round,{active:directorActive,status:currentDirector?.status}):control,run,assembly?.pending?steps.filter(s=>s.role!=='creative-code'):steps),round,jobs:(jobs??[]).map(j=>{if(!j.job_key.startsWith('creative.')||!j.output)return j;try{const result=JSON.parse(j.output);return {...j,output:JSON.stringify({stage:result.stage,issues:result.issues,repairLog:result.repairLog})};}catch{return j;}}),changes:changes??[],steps:steps??[]});
+ const focusRow=cp?await admin.from('studio_run_creative_focus').select('focus,updated_at').eq('run_id',cp.run_id).eq('tenant_id',tenant).maybeSingle():null;
+ const creativeFocus={text:focusRow?.data?.focus??'',updatedAt:focusRow?.data?.updated_at??null,ready:!!focusRow&&!focusRow.error};
+ return json({creativeFocus,planningConfigRecovery,directorActive,directorReady,creativeWaits,creative,creativeReadiness,limits,budget,failureStep,assemblyRetry:retryAction,assemblyContinuation,continuationError,uncertainMicroUsd,brandResult,schemaReady:!ready.error,workerOnline:!!devices?.length,brief:cp?{id:cp.id,orderedVariants:cp.payload.variantManifest.entries.length,locales:cp.payload.scope.locales,reviewerName}:null,book:book?{id:book.id,version_no:book.version_no,findings:book.summary.findings}:null,run,control:visibleRunControl(directorReady?visibleDraftControl(control,round,{active:directorActive,status:currentDirector?.status}):control,run,assembly?.pending?steps.filter(s=>s.role!=='creative-code'):steps),round,jobs:(jobs??[]).map(j=>{if(!j.job_key.startsWith('creative.')||!j.output)return j;try{const result=JSON.parse(j.output);return {...j,output:JSON.stringify({stage:result.stage,issues:result.issues,repairLog:result.repairLog})};}catch{return j;}}),changes:changes??[],steps:steps??[]});
 });}
+function focusDbError(error:{code?:string;message:string}):never{
+ if(schemaMissing(error)||error.code==='PGRST202')throw new ApiError(503,'CREATIVE_FOCUS_SCHEMA_REQUIRED','Apply migration 20261102000100_creative_focus.sql to save a creative focus.');
+ if(/CREATIVE_FOCUS_TOO_LONG/.test(error.message))throw new ApiError(400,'CREATIVE_FOCUS_TOO_LONG','Keep the creative focus under 2,000 characters.');
+ guidedDbError(error);throw new ApiError(500,'CREATIVE_FOCUS_FAILED','The creative focus could not be saved.');
+}
 export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/run'>){return api(async()=>{
  const {id}=await ctx.params;await campaignRecord(id);const input=await body(request,guidedRunCommand),{admin,tenant,actorId}=await studioContext();requireLocalDevice();
  const cp=checked(await admin.from('studio_c1_checkpoints').select('run_id').eq('campaign_id',id).eq('tenant_id',tenant).maybeSingle());if(!cp)throw new ApiError(409,'C1_REQUIRED','Submit the questionnaire first.');
@@ -175,21 +183,28 @@ export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaig
  }
  if(input.action==='stop'){guidedDbError((await admin.rpc('studio_stop_guided_run',{target_run:cp.run_id,acting_user:actorId})).error);return json({message:'Stopped. No new requests will start. Submitted requests may finish; their actual costs remain counted.'});}
  if(input.action==='restart'){
-  // Same brief, Brand Kit, agents and caps; planning and drafts are made again. History and charges are kept.
+  // Same brief and Brand Kit with the current Models & agents settings (migration 20261101000300); planning and drafts are
+  // made again. History and charges are kept.
   const result=await admin.rpc('studio_restart_guided_run',{target_run:cp.run_id,acting_user:actorId});
-  if(result.error){const known:Record<string,string>={RUN_NOT_STARTED:'Planning has not started yet; there is nothing to restart.',CHECKPOINT_CHANGE_REQUIRED:'These drafts are already with the client. Request changes through the client review instead.',DRAFT_REVIEW_LOCKED:'These drafts were already accepted. Request changes through the client review instead.',RUN_BUSY:'A step is running right now. Wait for it to finish, then restart.',UNRESOLVED_PROVIDER_RECEIPT:'A paid request has not settled yet. Wait for it, then restart.',RUN_NOT_ACTIVE:'This run is closed and cannot be restarted.'};
+  if(result.error){const known:Record<string,string>={AGENT_NOT_CONFIGURED:'Every role used by this run needs a saved model in Models & agents before it can restart.',RUN_NOT_STARTED:'Planning has not started yet; there is nothing to restart.',CHECKPOINT_CHANGE_REQUIRED:'These drafts are already with the client. Request changes through the client review instead.',DRAFT_REVIEW_LOCKED:'These drafts were already accepted. Request changes through the client review instead.',RUN_BUSY:'A step is running right now. Wait for it to finish, then restart.',UNRESOLVED_PROVIDER_RECEIPT:'A paid request has not settled yet. Wait for it, then restart.',RUN_NOT_ACTIVE:'This run is closed and cannot be restarted.'};
    if(['42883','PGRST202'].includes(result.error.code??''))throw new ApiError(503,'RESTART_SCHEMA_REQUIRED','Apply supabase/migrations/20261028003400_restart_guided_run.sql to enable restarting a run.');
    const key=Object.keys(known).find(k=>result.error!.message.includes(k));if(key)throw new ApiError(409,key,known[key]);guidedDbError(result.error);}
   await startLocalWorkflow();return json({message:'Run restarted from planning with the same brief and Brand Kit. Earlier results and costs stay in its history.'},202);
  }
  if(input.action==='limits'){
   const config=checked(await admin.from('studio_runs').select('id,config_snapshot').eq('id',cp.run_id).eq('tenant_id',tenant).single());
-  const catalog=await modelCatalog();for(const change of input.agents){const agent=config?.config_snapshot.find((a:{role:string})=>a.role===change.role),model=catalog.find(m=>m.id===agent?.model_id);if(!model||change.maxOutputTokens>model.maxOutput)throw new ApiError(409,'MODEL_OUTPUT_LIMIT',`The selected ${change.role} model cannot use that output allowance. Maximum: ${model?.maxOutput??'unavailable'} tokens.`);}
+  const catalog=await modelCatalog(),current=config?await effectiveRunAgents(admin,config):[];for(const change of input.agents){const agent=current.find(a=>a.role===change.role),model=catalog.find(m=>m.id===agent?.model_id);if(!model||change.maxOutputTokens>model.maxOutput)throw new ApiError(409,'MODEL_OUTPUT_LIMIT',`The selected ${change.role} model cannot use that output allowance. Maximum: ${model?.maxOutput??'unavailable'} tokens.`);}
   const result=await admin.rpc('studio_amend_run_limits',{target_run:cp.run_id,request_key:input.requestId,expected_version:input.expectedVersion,run_cap:input.runCapMicroUsd,agents:input.agents,continue_run:input.continueRun,retry_job:input.retryJobId,acting_user:actorId});guidedDbError(result.error);
   if(input.continueRun)await startLocalWorkflow();return json({message:input.continueRun?'Limits authorized. Continuing from the stopped step; earlier charges remain counted.':'Limits updated. No request was started.',version:result.data});
  }
  if(input.action==='wake'){const run=checked(await admin.from('studio_runs').select('status').eq('id',cp.run_id).eq('tenant_id',tenant).single());if(run?.status!=='active')throw new ApiError(409,'UNRESOLVED_PROVIDER_RECEIPT','Check the provider receipt and reopen this run before continuing.');await resumeGuidedCreative(id).catch(()=>false);await startLocalWorkflow();return json({message:'Local processing resumed from the saved position.'},202);}
+ if(input.action==='focus'){
+  const saved=await admin.rpc('studio_set_creative_focus',{target_run:cp.run_id,focus_text:input.creativeFocus,acting_user:actorId});if(saved.error)focusDbError(saved.error);
+  return json({message:normalizeCreativeFocus(input.creativeFocus)?'Creative focus saved. Steps that have not started yet use it; Start run over applies it to everything.':'Creative focus cleared. The agents choose the direction themselves.'});
+ }
  if(input.action==='start'){
+  // The focus is saved before the run starts, so the first creative step already receives it.
+  if(input.creativeFocus!==undefined){const saved=await admin.rpc('studio_set_creative_focus',{target_run:cp.run_id,focus_text:input.creativeFocus,acting_user:actorId});if(saved.error)focusDbError(saved.error);}
   const result=await admin.rpc('studio_start_guided_run',{target_run:cp.run_id,acting_user:actorId});guidedDbError(result.error);await startLocalWorkflow();return json({message:'Run started. Submitted inputs are carried forward automatically.',control:result.data},202);
  }
  const control=checked(await admin.from('studio_campaign_run_controls').select('*').eq('run_id',cp.run_id).eq('tenant_id',tenant).single());

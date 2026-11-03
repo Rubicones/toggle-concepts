@@ -3,7 +3,7 @@ import type {WorkState} from '../../../packages/director/state';
 import type {Design} from '../../../packages/director/contract';
 import {recoverSavedDesign} from '../../../packages/director/saved-design';
 import {readDesign} from '../../../packages/director/contract';
-import {resourceRequest} from '../../../packages/director/resources';
+import {checkDesignResource} from '../../../packages/director/resources';
 import {directorAttemptAvailable,DIRECTOR_OUTPUT_FEEDBACK} from '../../../packages/director/design-attempts';
 /** Saved attempts keep their identities across restarts and additional priced allowances. */
 export async function designDirection(args:{input:DirectionInput;state:WorkState;approvedRequests:number;perStillMicroUsd:number;call:(attempt:number,feedback:string[])=>Promise<{text:string}>;ready:(design:Design)=>Promise<void>;save:()=>Promise<void>}){
@@ -17,7 +17,7 @@ export async function designDirection(args:{input:DirectionInput;state:WorkState
    state.directorFeedback.push(JSON.stringify({error:'OUTPUT_TOKEN_LIMIT',detail:DIRECTOR_OUTPUT_FEEDBACK}));await args.save();continue;
   }
   let design:Design;
-  try{design=readDesign(JSON.parse(response.text),input);for(const resource of design.resources)resourceRequest(resource,{...input,materialMemory:design.materialMemory??input.materialMemory},args.perStillMicroUsd);}
+  try{design=readDesign(JSON.parse(response.text),input);for(const resource of design.resources)checkDesignResource(resource,{...input,materialMemory:design.materialMemory??input.materialMemory},args.perStillMicroUsd);}
   catch(error){state.directorFeedback.push(JSON.stringify({savedOutput:response.text,error:error instanceof Error?error.message:'Invalid contract'}));await args.save();continue;}
   state.design=design;await args.ready(design);await args.save();
  }

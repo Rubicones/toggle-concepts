@@ -34,3 +34,14 @@ test('incremental reader can save questionnaire answers alongside brand fields w
  assert.ok(!JSON.stringify(fieldExtractionRequest(false).responseSchema).includes('brief.audience'));
  assert.match(fieldExtractionRequest(true).prompt,/never derive an audience/);
 });
+test('everything found prefills the brief unless excluded; conflicting brand names stay unfilled',()=>{
+ const found=brandbookBriefCandidates([finding('productIdentity','Keep the logo upright.')],[]);
+ assert.deepEqual(found.suggestions.map(s=>[s.field,s.value]),[['immutables','Keep the logo upright.']]);
+ assert.equal(brandbookBriefCandidates([finding('productIdentity','Old rule','reject')],[]).suggestions.length,0);
+ const names=[{...finding('brandName','Sonicdesk'),findingId:'a'},{...finding('brandName','SonicDesk Pro'),findingId:'b'}];
+ assert.ok(!brandbookBriefCandidates(names,[]).suggestions.some(s=>s.field==='product'));
+});
+test('a brand name picked with “Use this” wins over the other names found',()=>{
+ const names=[{...finding('brandName','Sonicdesk','keep'),findingId:'a'},{...finding('brandName','SonicDesk Pro'),findingId:'b'}];
+ assert.equal(brandbookBriefCandidates(names,[]).suggestions.find(s=>s.field==='product')?.value,'Sonicdesk');
+});
