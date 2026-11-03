@@ -55,6 +55,8 @@ export const lookOptions={
 export const campaignOptions={
  goal:[{id:'awareness',label:'Get known'},{id:'installs',label:'App installs'},{id:'sign-ups',label:'Sign-ups'},{id:'sales',label:'Sales'},{id:'engagement',label:'Engagement'},{id:'retention',label:'Bring people back'}],
  awareness:[{id:'new-to-category',label:'New to the category'},{id:'knows-category',label:'Knows the category, not us'},{id:'knows-us',label:'Knows us'},{id:'customers',label:'Our customers'}],
+ // Ad shape (creative quality plan C1): how many scenes carry the idea. Everything is animated later either way.
+ adShape:[{id:'key-frame',label:'One key frame',hint:'One frame carries the headline, the product proof, the brand and the call to action.'},{id:'sequence',label:'Short sequence (2–3 scenes)',hint:'Every scene still reads on its own.'},{id:'story',label:'Story (4–6 scenes)',hint:'Scenes build to the offer; each still reads on its own.'}],
  platforms:[{id:'meta',label:'Instagram & Facebook'},{id:'tiktok',label:'TikTok'},{id:'youtube',label:'YouTube'},{id:'google',label:'Google Ads'},{id:'app-stores',label:'App stores'},{id:'programmatic',label:'Display & programmatic'},{id:'other',label:'Other'}],
 } as const;
 
@@ -96,7 +98,21 @@ export const briefCampaignExtrasSchema={
  audienceTension:z.string().max(600).optional(),
  audienceAwareness:choice(campaignOptions.awareness).optional(),
  platforms:z.array(z.enum(ids(campaignOptions.platforms))).max(7).optional(),
+ adShape:choice(campaignOptions.adShape).optional(),
 };
+
+/**
+ * The ad shape as an instruction for the planning roles, the director and the coder. Unlike the feeling brief it is a
+ * structural requirement: the number of scenes. Briefs from before the question have none (undefined).
+ */
+export function adShapeBlock(questionnaire:Record<string,unknown>|undefined):string|undefined{
+ const shape=questionnaire?.adShape;if(typeof shape!=='string')return undefined;
+ const after='Everything is animated later; durations stay as scoped.';
+ if(shape==='key-frame')return `AD SHAPE (client choice): one key frame. Each direction's timedStoryboard has exactly one scene spanning the whole duration; that frame carries the headline, a supporting line where it helps, proof from the product, the brand and the call to action. ${after}`;
+ if(shape==='sequence')return `AD SHAPE (client choice): a short sequence of 2–3 scenes. Every scene still reads on its own; the call to action goes where the script puts it. ${after}`;
+ if(shape==='story')return `AD SHAPE (client choice): a story of 4–6 scenes that builds to the offer. Every scene still reads on its own; the call to action goes where the script puts it. ${after}`;
+ return `AD SHAPE: not chosen by the client. Choose it per direction (one key frame, a short sequence of 2–3 scenes or a story of 4–6 scenes) and say why in the premise. ${after}`;
+}
 
 const label=<T extends readonly {id:string;label:string}[]>(list:T,id:string)=>list.find(x=>x.id===id)?.label??id;
 const clip=(s:unknown,n:number)=>typeof s==='string'&&s.trim()?(s.trim().length>n?s.trim().slice(0,n-1)+'…':s.trim()):'';
@@ -151,6 +167,11 @@ export function brandTokensFromKit(kit:unknown):Record<string,string>{
  * their context in SQL). It travels with the task text: the frozen campaignContext is checked at admission and must
  * stay byte-identical, so it is never modified.
  */
+/** The ad shape block for a planning context (strategy, script, visual direction); it travels with the task text. */
+export function adShapeForContext(context:Record<string,unknown>|undefined){
+ const submitted=context?.submittedBrief as {questionnaire?:Record<string,unknown>}|undefined;
+ return submitted&&typeof submitted==='object'?adShapeBlock(submitted.questionnaire):undefined;
+}
 export function feelingBriefForContext(context:Record<string,unknown>|undefined){
  if(!context||typeof context.feelingBrief==='string')return undefined;
  const submitted=context.submittedBrief as {questionnaire?:Record<string,unknown>}|undefined;

@@ -106,6 +106,8 @@ export function collectLayout(size:{width:number;height:number}):RawView{
  return {width:size.width,height:size.height,texts,images,logos};
 }
 
+/** Approved copy line by line: a headline and its supporting line (after a line break) are checked separately. */
+const lines=(copy:string[])=>copy.flatMap(c=>c.split('\n')).map(l=>l.trim()).filter(Boolean);
 const normal=(s:string)=>s.normalize('NFKC').replace(/­/g,'').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/\s+/g,' ').trim().toLowerCase();
 function rgb(color:string){const m=/rgba?\(([^)]+)\)/.exec(color);if(!m)return null;const p=m[1].split(/[ ,/]+/).filter(Boolean).map(Number);return p.length>=3?p.slice(0,3):null;}
 function luminance(c:number[]){const f=(v:number)=>{v/=255;return v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4;};return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);}
@@ -127,7 +129,7 @@ export type AnalysisContext={view:InspectionView;input:DirectionInput;minTextPx:
 /** Objective findings for one view. Hard findings are defects any design must avoid; soft ones go to the critic/AD. */
 export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
  const out:Finding[]=[],view=ctx.view.key,add=(code:FindingCode,severity:'hard'|'soft',detail:string,box?:Box)=>{if(!out.some(f=>f.code===code&&f.detail===detail))out.push({code,severity,view,detail,...(box?{box}:{})});};
- const facts=ctx.input.variantFacts?.[ctx.view.variantId],approved=(facts?.sceneCopy?.[ctx.view.props.sceneId]??[]).filter(Boolean);
+ const facts=ctx.input.variantFacts?.[ctx.view.variantId],approved=lines(facts?.sceneCopy?.[ctx.view.props.sceneId]??[]);
  const approvedNorm=approved.map(normal),isApproved=(t:string)=>{const n=normal(t);return n.length>0&&approvedNorm.some(a=>a.includes(n)||n.includes(a));};
  const visible=normal(raw.texts.map(t=>t.text).join(' '));
  if(!facts?.storyboard)for(const line of approved)if(!visible.includes(normal(line)))add('COPY_MISSING','hard',`Approved copy is not visible: ${quote(line)}`);
@@ -204,8 +206,8 @@ export function missingRequiredCopy(views:InspectionView[],raw:{key:string;raw?:
   const measured=group.map(v=>raw.find(r=>r.key===v.key)?.raw);
   if(new Set(group.map(v=>v.props.sceneId)).size<scenes.size||measured.some(r=>!r))continue;
   const visible=normal(measured.flatMap(r=>r!.texts.map(t=>t.text)).join(' '));
-  const perScene=facts.storyboard?[]:Object.values(facts.sceneCopy).flat().map(normal);
-  for(const line of facts.required){const n=normal(line);if(!n||perScene.includes(n)||visible.includes(n))continue;
+  const perScene=facts.storyboard?[]:lines(Object.values(facts.sceneCopy).flat()).map(normal);
+  for(const line of lines(facts.required)){const n=normal(line);if(!n||perScene.includes(n)||visible.includes(n))continue;
    out.push({code:'COPY_MISSING',severity:'hard',view:group[0].key,detail:`Approved copy does not appear in any scene: ${quote(line)}`});}
  }
  return out;

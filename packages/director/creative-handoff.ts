@@ -1,4 +1,4 @@
-import {compileFeelingBrief} from '../contracts/brief-feel';
+import {adShapeBlock,compileFeelingBrief} from '../contracts/brief-feel';
 import {createHash} from 'node:crypto';
 import {creativeFocusBlock,normalizeCreativeFocus} from '../contracts/creative-focus';
 import {readKnowledge,resolveReference} from '../agents/knowledge';
@@ -7,7 +7,7 @@ import type {DirectionInput} from './types';
 import {squareFirstDraft} from './construction';
 import {independentResourceBindings} from './resources';
 const hash=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
-export type CreativeHandoff={version:1;owner:'draft-director';revision:string;intent:{goal:unknown;audience:unknown;adNotes:unknown;creativeFocus?:string;feeling?:string;direction:{id:string;name?:string;premise?:unknown}};strategy:unknown;visual:unknown;sources:{id:string;role:string;hash:string;contentHash:string;raw:unknown}[];referenceAssetIds:string[];issues:string[];actions:string[]};
+export type CreativeHandoff={version:1;owner:'draft-director';revision:string;intent:{goal:unknown;audience:unknown;adNotes:unknown;creativeFocus?:string;feeling?:string;adShape?:string;direction:{id:string;name?:string;premise?:unknown;productData?:string[]}};strategy:unknown;visual:unknown;sources:{id:string;role:string;hash:string;contentHash:string;raw:unknown}[];referenceAssetIds:string[];issues:string[];actions:string[]};
 const content=(v:unknown)=>readKnowledge(v).content;
 function scopeEvidence(raw:unknown,direction:PlanningDirection,directions:PlanningDirection[],source:'visual'|'strategy'='visual'){
  const entities=directions.map(d=>({id:d.id,aliases:d.aliases})),fragments:{path:string;evidence:unknown}[]=[];let matched=0,foreign=0,unknown=0;
@@ -54,7 +54,10 @@ export function buildCreativeHandoff(args:{creativeFocus?:string;brief:Record<st
  const sources=[args.script,args.visual,...(args.strategy?[args.strategy]:[])].filter((job,index,all)=>all.findIndex(j=>j.id===job.id)===index).map(j=>({id:j.id,role:j.job_key,hash:j.output_hash??hash(j.output),contentHash:hash(j.output),raw:j.output}));
  // Briefs with Feel/Look answers carry the same compact feeling brief the planning roles saw (with the accepted brand voice).
  const feeling=args.brief.feel?compileFeelingBrief(args.brief,args.input.brand.tokens as Record<string,unknown>)?.text:undefined;
- const intent={goal:args.brief.objective??args.brief.goal??null,audience:args.brief.audience??null,adNotes:args.brief.variationNotes??null,...(feeling?{feeling}:{}),...(normalizeCreativeFocus(args.creativeFocus)?{creativeFocus:normalizeCreativeFocus(args.creativeFocus)}:{}),direction:{id:direction.id,...(typeof planningField(direction.value,['name','title'])==='string'?{name:String(planningField(direction.value,['name','title']))}:{}),premise:planningField(direction.value,['premise','idea','concept','summary'])}};
+ // The ad shape (scene count) and the scenario's product data reach the director and the coder; briefs and scenarios
+ // from before them have none, so earlier handoffs keep their shape.
+ const shape=adShapeBlock(args.brief),rawData=planningField(direction.value,['productData']),productData=(Array.isArray(rawData)?rawData:[]).filter((v):v is string=>typeof v==='string'&&!!v.trim()).map(v=>v.trim().slice(0,200)).slice(0,24);
+ const intent={goal:args.brief.objective??args.brief.goal??null,audience:args.brief.audience??null,adNotes:args.brief.variationNotes??null,...(feeling?{feeling}:{}),...(shape?{adShape:shape}:{}),...(normalizeCreativeFocus(args.creativeFocus)?{creativeFocus:normalizeCreativeFocus(args.creativeFocus)}:{}),direction:{id:direction.id,...(typeof planningField(direction.value,['name','title'])==='string'?{name:String(planningField(direction.value,['name','title']))}:{}),premise:planningField(direction.value,['premise','idea','concept','summary']),...(productData.length?{productData}:{})}};
  const assetEntities=args.input.assets.filter(a=>a.mime.startsWith('image/')).map(a=>({id:a.id,aliases:[a.url,a.sha256,...(args.input.materialMemory?.materials.find(m=>m.id===a.id)?.aliases??[])]})),references=new Set<string>();
  for(const passage of readKnowledge(visual.scoped).passages){const found=resolveReference(passage.text,assetEntities);if(found.status==='resolved')references.add(found.id);}
  const actions:string[]=[],pack=(source:typeof visual,role:string)=>{

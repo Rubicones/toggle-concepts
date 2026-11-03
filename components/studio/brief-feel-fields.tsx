@@ -2,7 +2,7 @@
 import styles from "./brief-feel-fields.module.css";
 import { useState } from "react";
 import { Disclosure } from "@/components/ui/disclosure";
-import { briefFeelSchema, feelings, lookOptions, SUGGEST, type BriefFeel } from "@/packages/contracts/brief-feel";
+import { briefFeelSchema, campaignOptions, feelings, lookOptions, SUGGEST, type BriefFeel } from "@/packages/contracts/brief-feel";
 import { moodPicture } from "@/packages/contracts/brief-moods";
 
 const emptyFeel = (): BriefFeel => briefFeelSchema.parse({});
@@ -88,6 +88,11 @@ const photographedWorlds = new Set(["real-life", "studio", "home", "city", "natu
  * fine-tune gives leanings (tone) and "open to" lists (room). Agents receive them as such, never as requests, and never
  * receive the mood pictures (packages/contracts/brief-feel.ts compileFeelingBrief).
  */
+/** Ad shape: how many scenes carry the idea (one key frame, a short sequence or a story). Everything is animated later. */
+export function AdShapeField({ value, onChange }: { value: string | undefined; onChange: (id: string) => void }) {
+  return <ChoiceChips label="Ad shape" hint="Everything is animated later." options={campaignOptions.adShape} value={value ?? SUGGEST} onChange={onChange} />;
+}
+
 export function BriefFeelFields({ value, onChange }: { value: BriefFeel | undefined; onChange: (next: BriefFeel) => void }) {
   const feel = value ?? emptyFeel();
   const update = (patch: Partial<BriefFeel>) => onChange({ ...feel, ...patch });

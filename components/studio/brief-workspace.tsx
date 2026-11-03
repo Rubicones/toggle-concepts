@@ -1,6 +1,6 @@
 "use client";
 import {Disclosure} from '@/components/ui/disclosure';
-import { BriefFeelFields } from "./brief-feel-fields";
+import { AdShapeField, BriefFeelFields } from "./brief-feel-fields";
 import {Select} from '@/components/ui/select';
 import {usePersistedDraft} from "@/lib/use-persisted-draft";
 import {SaveStatus} from "./save-status";
@@ -384,6 +384,7 @@ function BriefEditor({
       </fieldset>
       <fieldset disabled={busy}>
         <legend>What to make</legend>
+        <AdShapeField value={draft.adShape} onChange={(id) => set("adShape", id as NonNullable<typeof draft.adShape>)} />
         <div className="brief-field-grid">
           <AxisField label="Languages" hint="Comma separated, e.g. en-GB, ru-RU" values={draft.locales} onChange={(v) => set("locales", v)} />
           <AxisField label="Lengths, seconds" hint="e.g. 15, 6" values={draft.durationsSeconds} onChange={(v) => set("durationsSeconds", v.map(Number).filter((n) => n > 0))} />

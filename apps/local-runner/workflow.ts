@@ -1,6 +1,6 @@
 import {processDirectorWork} from './director/worker';
 import {CREATIVE_FOCUS_ROLES,creativeFocusBlock,normalizeCreativeFocus} from '../../packages/contracts/creative-focus';
-import {feelingBriefForContext} from '../../packages/contracts/brief-feel';
+import {adShapeForContext,feelingBriefForContext} from '../../packages/contracts/brief-feel';
 import {processCreativeDelivery} from './creative-delivery';
 import {creativeExecutionSnapshot} from '../../packages/creative/request-snapshot';
 import {compileCreativeClaim} from './creative-compile';
@@ -117,6 +117,9 @@ async function execute(claim:Claim){
   if(claim.round.kind==='draft'&&!creative&&(CREATIVE_FOCUS_ROLES as readonly string[]).includes(job.role)){
    const feeling=feelingBriefForContext(snapshot.campaignContext as Record<string,unknown>|undefined);
    if(feeling)transportTask=(transportTask?transportTask+'\n':'')+feeling;
+   // The ad shape (number of scenes) travels the same way, for every creative planning role.
+   const shape=adShapeForContext(snapshot.campaignContext as Record<string,unknown>|undefined);
+   if(shape)transportTask=(transportTask?transportTask+'\n':'')+shape;
   }
   // The AD's creative focus reaches each creative planning step when it starts (packages/contracts/creative-focus.ts).
   if(claim.round.kind==='draft'&&!creative&&(CREATIVE_FOCUS_ROLES as readonly string[]).includes(job.role)){

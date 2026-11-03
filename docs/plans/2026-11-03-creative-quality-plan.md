@@ -56,6 +56,11 @@ The latest sonicdesk run ("Snap to the grid") reached the brand (black canvas, o
 - **E2. Font coverage.** When the brand font lacks a locale's letters (Kazakh ғ қ ұ ә with latin-only Archivo files), the whole line uses the fallback — never mixed fonts inside a word. Coder rule; measured check "mixed fonts inside a word" in `layout-inspection.ts` (collector can compare computed font per glyph run); fetch the family's Cyrillic subset in `lib/server/google-fonts.ts` when Google Fonts has it.
 - **E3.** The idea critic for scripts and visual direction also checks execution technique (text/logo inside generated material, prop text as headline).
 
+## Status
+
+- Step 1 (A + A5): on `feat/brand-uikit-components` (separate branch, with inspection notes).
+- Step 2 (B + C): implemented on `feat/copy-hierarchy-ad-shape`, see `docs/reviews/2026-11-03-copy-hierarchy-ad-shape.md`. No migration. The script schema keeps its 2 400-character budget by replacing the unused script `proxyContracts` (visual direction keeps its own) with `productData`.
+
 ## Order
 
 1. A + A5 (one migration).
