@@ -129,3 +129,20 @@
   - `npm run typecheck`: passed.
   - `npm run lint`: passed.
   - `tests/brand-sheet.test.ts`: 9 passed.
+
+## 7. Follow-up: STEP_CAP_REACHED on the first designer request (2026-11-04)
+
+- **Symptom:** the first live designer block stopped with `STEP_CAP_REACHED`.
+- **Cause:** when a director quote is approved, `app_private.approve_director_before_role_models` (from `20261028004000`) raises each agent's run cap by its role allowance. It only reads the role keys `director`, `assembler`, `critic` and `resources`.
+  - A designer quote has a `designer` allowance and no `director` allowance, so the visual-direction cap stayed at its planning value (200 000 µ$ in the fixture).
+  - The designer migration `20261103000300` patched the allowance guard and the continuation function, but not approval.
+- **Fix:** `supabase/migrations/20261104000100_designer_approval_caps.sql` edits that function in place.
+  - The visual-direction cap now rises by the director allowance plus the designer allowance.
+  - The migration is safe to run twice, and stops without changes on an unexpected function version.
+- **Test:** `supabase/tests/designer-approval.sql` approves a designer quote on a draft round and checks the visual-direction cap.
+  - Without the migration: `DESIGNER_CAP_NOT_RAISED 200000`.
+  - With it: passes.
+- **Blocks approved before the migration:** keep their caps. Raise the visual-direction cap in Run limits by the quote's designer amount, then "Retry within approved allowance". The designer is still bounded by its role allowance in `guard_director_allowance`.
+- **Risk:**
+  - The run cap was already raised by the full block maximum at approval, so no money beyond the approved quote is admitted.
+  - Director-and-coder quotes have no `designer` key: unchanged.
