@@ -27,8 +27,11 @@ function planningExcerpt(value:unknown,budget:number){
 export function compactDraftTranscript(entries:LoopState['transcript']){
  return entries.slice(-10).map(entry=>{let text=entry.text;try{const value=JSON.parse(text);if(entry.from==='agent'){const files=value.files??value.calls?.filter((c:{tool:string})=>c.tool==='write');if(files)text=JSON.stringify({written:files.map((f:{path:string;source?:string})=>({path:f.path,characters:f.source?.length??0})),note:'Source is on disk. Read only your own files if needed.'});}}catch{/* retain a bounded observation */}return {...entry,text:text.slice(0,1400)};});
 }
-export function compactDraftRequest(prompt:string,snapshot:TextSnapshot,images:{url:string;label:string;required?:boolean}[],cap=Math.min(snapshot.requestInputCap??DRAFT_INPUT_CAP,DRAFT_INPUT_CAP),allowanceInputCap=cap){
- const ceiling=Math.min(cap,Math.max(0,allowanceInputCap)),target=Math.min(ceiling,DRAFT_INPUT_TARGET);
+/** Designer requests (designer pipeline plan, point 6a): the cap follows the model's context, and the request is
+ * compacted only when it does not fit that cap; there is no smaller preferred target. */
+export function designerRequestCap(contextLength:number,maxOutputTokens:number){return Math.max(DRAFT_INPUT_TARGET,Math.min(1048576,Math.floor(contextLength*0.5)-maxOutputTokens));}
+export function compactDraftRequest(prompt:string,snapshot:TextSnapshot,images:{url:string;label:string;required?:boolean}[],cap=Math.min(snapshot.requestInputCap??DRAFT_INPUT_CAP,DRAFT_INPUT_CAP),allowanceInputCap=cap,options:{fullCap?:boolean}={}){
+ const ceiling=Math.min(cap,Math.max(0,allowanceInputCap)),target=options.fullCap?ceiling:Math.min(ceiling,DRAFT_INPUT_TARGET);
  const cfg=structuredClone(snapshot),pictures=[...images],actions:string[]=[],bound=()=>textRequestQuote(prompt,cfg,'',pictures.length).inputTokenBound,before=bound();
  if(cfg.campaignContext&&typeof cfg.campaignContext==='object'){
   const context=cfg.campaignContext as {compaction?:{actions?:unknown[]};input?:{compaction?:{actions?:unknown[]}};previousDesign?:Record<string,unknown>};

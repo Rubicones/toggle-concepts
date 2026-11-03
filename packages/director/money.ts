@@ -113,3 +113,23 @@ export function estimateDesignerDirection(pricing:{designer:TextSnapshot['pricin
  if(!Number.isSafeInteger(quote.maxCostMicroUsd)||quote.maxCostMicroUsd>1e8)throw new Error('ESTIMATE_EXCEEDS_RUN_LIMIT');
  return {quoteId:digest({identity,quote,presentation:'designer'}),...quote};
 }
+
+/** One measured designer direction (sealed with the draft, point 6c). */
+export type DesignerRun={turns:number;usage?:{costMicroUsd:number;picturesMicroUsd:number;requests:number;inputTokens:number;outputTokens:number}};
+/** Runs measured before the quote learns from them. */
+export const DESIGNER_MEASURED_RUNS=5;
+const quantile=(values:number[],q:number)=>{const v=[...values].sort((a,b)=>a-b);return v.length?v[Math.min(v.length-1,Math.floor(q*(v.length-1)+0.5))]:0;};
+/**
+ * Point 6c/6d: the typical (median) cost per direction once runs are measured, and the allowance the quote uses: the
+ * 90th percentile of measured turns and tokens with 50 % headroom, never above the generous starting ceiling and never
+ * below a floor that still lets one draft finish. Fewer than DESIGNER_MEASURED_RUNS runs: the starting ceiling.
+ */
+export function designerMeasurements(runs:DesignerRun[]){
+ const measured=runs.filter((r):r is Required<DesignerRun>=>!!r.usage&&r.usage.requests>0);
+ if(!measured.length)return {runs:0};
+ const typicalCostMicroUsd=quantile(measured.map(r=>r.usage.costMicroUsd+r.usage.picturesMicroUsd),0.5);
+ if(measured.length<DESIGNER_MEASURED_RUNS)return {runs:measured.length,typicalCostMicroUsd};
+ const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,Math.ceil(v)));
+ const turns={requests:clamp(quantile(measured.map(r=>r.usage.requests),0.9)*1.5,8,DESIGNER_TURNS.requests),inputTokens:clamp(quantile(measured.map(r=>r.usage.inputTokens),0.9)*1.5,200000,DESIGNER_TURNS.inputTokens),outputTokens:clamp(quantile(measured.map(r=>r.usage.outputTokens),0.9)*1.5,40000,DESIGNER_TURNS.outputTokens)};
+ return {runs:measured.length,typicalCostMicroUsd,turns};
+}

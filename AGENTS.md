@@ -206,6 +206,11 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
   - Revisions are counted per scene and format (`renderKey`), so recomposing a format is a first design.
   - After the full inspection matrix, the designer gets only the failing combinations (`failingCombinations`), each with its own screenshot, and fixes those branches only.
   - In the viewer, the format control lists the designed formats with their state ("designed", "being designed", "not designed yet", "N open issues"). The slider snaps to the nearest designed format and says so.
+- **Room** (point 6).
+  - A designer request's cap follows the model context (`designerRequestCap`: 50 % of the context minus the output) and is quoted as `designerRequestInputCap`. It is compacted only above that cap, so the full kit, the brand sheet and the screenshots travel uncompacted. Earlier roles keep 32K / 64K.
+  - Screenshots go to the designer as JPEG at about 1080 px on the long side.
+  - Each sealed designer draft records its real usage (`designer.usage`), which the timeline shows. After `DESIGNER_MEASURED_RUNS` measured runs the quote takes its allowance from the 90th percentile with 50 % headroom, never above the starting ceiling.
+  - The price panel says "up to N design rounds and up to M pictures" and the typical measured cost.
 
 ## 6. Current draft execution and handoff contracts
 

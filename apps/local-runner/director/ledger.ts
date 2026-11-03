@@ -56,3 +56,13 @@ export async function directorInputAllowance(admin:SupabaseClient,args:{runId:st
 
 /** Replay only idempotent financial settlement, never provider submission. */
 export async function flushDirectorReceipts(admin:SupabaseClient){const dir=resolve('artifacts/m08/receipts');await mkdir(dir,{recursive:true,mode:0o700});for(const file of await readdir(dir)){if(!/^[a-f0-9-]{36}\.json$/.test(file))continue;const path=resolve(dir,file),receipt=JSON.parse(await readFile(path,'utf8'));checked(await admin.rpc('studio_finish_step',receipt));await unlink(path);}}
+
+/** What one designer direction really used (designer pipeline plan, point 6c): billed cost, tokens and requests of the
+ * designer role, and the pictures bought. Recorded with the sealed draft so quotes can learn from measured runs. */
+export async function designerUsage(admin:SupabaseClient,args:{runId:string;blockId:string;directionId:string}){
+ const rows=checked(await admin.from('studio_agent_steps').select('status,cost_micro_usd,reserve_micro_usd,config_snapshot,usage').eq('run_id',args.runId).eq('config_snapshot->>directorBlockId',args.blockId).eq('config_snapshot->>directorDirectionId',args.directionId).in('config_snapshot->>directorRole',['designer','resources']))??[];
+ const role=(r:{config_snapshot:unknown})=>(r.config_snapshot as {directorRole?:string})?.directorRole;
+ const designer=rows.filter(r=>role(r)==='designer'),pictures=rows.filter(r=>role(r)==='resources'&&!freeRejection(r));
+ const cost=(list:typeof rows)=>list.reduce((n,r)=>n+(r.cost_micro_usd??r.reserve_micro_usd??0),0);
+ return {costMicroUsd:cost(designer),picturesMicroUsd:cost(pictures),pictures:pictures.length,requests:designer.filter(r=>!freeRejection(r)).length,inputTokens:designer.reduce((n,r)=>n+accountedTokens(r).input,0),outputTokens:designer.reduce((n,r)=>n+accountedTokens(r).output,0)};
+}

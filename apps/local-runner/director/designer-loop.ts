@@ -2,6 +2,7 @@
 // write → render → look → revise. Every tool is injected, so the loop is tested without paid calls; the worker (4e)
 // supplies the real ones (live build, browser inspection, priced pictures inside the approved count).
 import {readFile} from 'node:fs/promises';
+import {createCanvas,loadImage} from '@napi-rs/canvas';
 import {readDesignerTurn,type DesignerPicture,type DesignerTurn} from '../../../packages/director/designer';
 import {applySourceEdits} from '../../../packages/director/source-edits';
 import {liveFormat} from '../../../packages/director/live-preview';
@@ -45,7 +46,14 @@ export function designerViews(input:Pick<DirectionInput,'variants'|'formats'|'va
  return [...wanted.map(f=>view(reference,f,true)),...(longest&&longest.id!==reference.id?wanted.map(f=>view(longest,f,false)):[])];
 }
 
-const jpeg=async(file:string)=>`data:image/jpeg;base64,${(await readFile(file)).toString('base64')}`;
+/** Screenshots go to the designer as JPEG at about 1080 px on the long side (point 6b): enough to judge, cheap to send. */
+export async function screenshotForDesigner(file:string,maxSide=1080){
+ const bytes=await readFile(file);let image;try{image=await loadImage(bytes);}catch{return `data:image/jpeg;base64,${bytes.toString('base64')}`;}
+ const scale=Math.min(1,maxSide/Math.max(image.width,image.height));if(scale===1)return `data:image/jpeg;base64,${bytes.toString('base64')}`;
+ const canvas=createCanvas(Math.max(1,Math.round(image.width*scale)),Math.max(1,Math.round(image.height*scale)));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+ return `data:image/jpeg;base64,${canvas.toBuffer('image/jpeg',82).toString('base64')}`;
+}
+const jpeg=(file:string)=>screenshotForDesigner(file);
 const short=(value:unknown,max=4096)=>JSON.stringify(value).slice(0,max);
 
 export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;save:(state:DesignerLoopState)=>Promise<void>;/** For the timeline: the turn, its results and the screenshot the designer looked at when it wrote the turn. */onTurn?:(turn:DesignerTurn,results:unknown[],looked?:string)=>Promise<void>;now?:()=>number}){
