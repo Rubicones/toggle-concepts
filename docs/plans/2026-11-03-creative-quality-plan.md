@@ -21,6 +21,21 @@ The latest sonicdesk run ("Snap to the grid") reached the brand (black canvas, o
 4. Interfaces are always simplified mockups built in code, never screenshots or generated stills (already implemented).
 5. Never give agents example styles or layouts in instructions (they copy them); principles only.
 
+## Inspection notes (3 November, before step 1)
+
+Checked against the code on `main` (`43ba6d0`). Corrections and gaps, in plan order:
+
+- **Start branch.** `feat/brief-feel-ui` is already merged into `main` (PR #4); each step branches from `main`.
+- **A2 storage.** Use kit rules, not a new kit field: `product.components` and `product.interfaceColors`. `BrandDraft` is a strict schema; a new field would change saved A1 drafts. Category `product` avoids the exact-hex acceptance rule of `color.*`. Limits: 40 rules, 2000 characters per value, so the components rule is a compact list and thumbnails are linked by file, not text.
+- **A3 is mostly re-routing.** `semanticColors` already means interface colours, and screenshot colours are already moved there. Two places mix them into the brand palette: `a1-handoff.ts` maps `semanticColors` into `color.ink/paper/accent`, and `source-priority.ts` puts them in the same one-source palette group, so a screenshot's interface colours were dropped whenever the brandbook had colours.
+- **Gap: interface files reached the image model.** Every brand image that is not a logo became a `brand.references` entry, which the director may send to the image model. That contradicts owner decision 4. UI kit parts and screenshots must reach the director as interface evidence only.
+- **Gap: deploy order.** The reader would save `components` findings before the owner applies the migration, the database would refuse them, and brand reading would stop. The reader must ask for `components` only once the migration is applied.
+- **A5 colour labels.** The cause is in `finding-presentation.ts`: a colour in prose ("Accent color – #dfff00") lost its words, so `pickBrandColors` had no role names and fell back to luminance. Keep the words of the colour's own line.
+- **A5 logos.** `importBrandbookToA1` has no file type; use the material role (`logo`) or drawn artwork in the finding itself.
+- **B1 schema budget.** The script response schema is already 2 268 of 2 400 characters (strategy 1 864, visual direction 2 008). Supporting lines and a product-data set do not fit as new schema properties: carry them in an existing free-form part of the deliverable or shorten the schema first.
+- **D2 version bump.** `AGENT_INSTRUCTION_VERSION` is part of the instructions text; check that active runs keep their saved instructions and config hash before bumping.
+- **E1 allowances.** Live review requests are quoted at start (`estimateLiveDirection`); more rounds change new quotes only, never an approved one.
+
 ## A. Brand inputs read for what they are  (one migration)
 
 - **A1. Role `uikit`.** Add to `packages/brand/material-roles.ts` (roles, labels, reading note, allowed fields, auto-guess from name/folder: `uikit`, `ui-kit`, `components`, `button`, `card`, `tokens` folder …). Distinct from `screenshot`. Reading note: name the component, its parts, states, sizes, token colours and the text it carries; it is the visual vocabulary for interface mockups, never brand copy or the brand palette. Update the role check in `supabase/migrations/…_brand_material_roles.sql` via a new migration.
@@ -55,6 +70,10 @@ The latest sonicdesk run ("Snap to the grid") reached the brand (black canvas, o
 - **E1. Coder loop and critic.** More iterations on rendered views per scene and format group (`apps/local-runner/director/worker.ts`, `packages/director/live-review.ts`, allowances in `packages/director/money.ts` — quote changes must stay inside the approved allowance rules). Critic criteria (`liveCriticInstructions`): the visual idea is visible; brand language and components used; hierarchy and reading order; finish (grid alignment, spacing rhythm, consistent sizes); product data believable; brand rules for buttons/labels respected (this run set the CTA in large Archivo and the offer in mono — reversed); no text or logo inside generated pictures.
 - **E2. Font coverage.** When the brand font lacks a locale's letters (Kazakh ғ қ ұ ә with latin-only Archivo files), the whole line uses the fallback — never mixed fonts inside a word. Coder rule; measured check "mixed fonts inside a word" in `layout-inspection.ts` (collector can compare computed font per glyph run); fetch the family's Cyrillic subset in `lib/server/google-fonts.ts` when Google Fonts has it.
 - **E3.** The idea critic for scripts and visual direction also checks execution technique (text/logo inside generated material, prop text as headline).
+
+## Status
+
+- Step 1 (A + A5): implemented on `feat/brand-uikit-components`, see `docs/reviews/2026-11-03-brand-uikit-components.md`. Migration `20261103000100_brand_uikit_components.sql` for the owner.
 
 ## Order
 

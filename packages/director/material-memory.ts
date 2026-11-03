@@ -20,7 +20,7 @@ export function createMaterialMemory(input:DirectionInput):MaterialMemory{
   const referenceOnly=role==='reference'||/screen[ _-]?(?:shot|record)|video[ _-]?frame|скриншот|кадр/i.test(name);
   materials.push({id,sha256,url:source.url,name,mime:source.mime??(role==='font'?'font/unknown':'image/unknown'),aliases:[...new Set(aliases)],role,referenceOnly,width:source.width,height:source.height,issues:referenceOnly?['Source reference; inspect its subject before choosing a new representation.']:[]});
  };
- input.assets.forEach(a=>add(a,'unknown'));input.brand.references.forEach(r=>add(r,'reference'));input.brand.logos.forEach(l=>add(l,'logo'));input.brand.fonts.forEach(f=>add(f,'font'));
+ input.assets.forEach(a=>add(a,'unknown'));input.brand.references.forEach(r=>add(r,'reference'));input.brand.logos.forEach(l=>add(l,'logo'));(input.brand.interface??[]).forEach(i=>{add(i,'interface');const m=materials.find(x=>x.url===i.url);if(m){m.role='interface';m.referenceOnly=true;}});input.brand.fonts.forEach(f=>add(f,'font'));
  const rules=(Array.isArray(raw.rules)?raw.rules:[]).filter(value=>record(value).decision==='accepted'),issues:string[]=[],seen=new Map<string,string>();
  for(const value of rules){const r=record(value),key=`${r.category}.${r.key}`,text=string(r.value);if(seen.has(key)&&seen.get(key)!==text)issues.push(`Conflicting accepted values for ${key}.`);seen.set(key,text);if(r.sourceVerified===false)issues.push(`Accepted rule ${key} has no verified source.`);}
  const allowed=input.brief.referenceReconstructionAllowed===true;

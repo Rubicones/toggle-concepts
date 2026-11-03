@@ -108,8 +108,41 @@ export function BrandCard({ endpoint, busy, review: save }: { endpoint: string; 
         <div className={styles.section}>
           <h4>Product</h4>
           <Editable finding={data.product} busy={busy} review={review} empty="No product description found" />
-          {!!data.screenshots.length && <p className={styles.source}>Evidence for interface mockups: {data.screenshots.map((s) => s.file).join(", ")}</p>}
         </div>
+        {(data.interfaceFiles.length > 0 || data.components.length > 0 || data.interfaceColours.length > 0) && (
+          <div className={styles.section}>
+            <h4>Interface components</h4>
+            <p className={styles.source}>The vocabulary for interface mockups built in code. Never brand copy, never the brand palette.</p>
+            {data.interfaceFiles.length > 0 && (
+              <div className={styles.logos}>
+                {data.interfaceFiles.map((f) => (
+                  <figure key={f.id} className={styles.ground}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={asset(f.id)} alt={`${f.role === "uikit" ? "UI kit" : "Screenshot"}: ${f.file}`} />
+                    <figcaption>{f.file}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            )}
+            {data.components.map((f) => (
+              <Editable key={f.findingId} finding={f} busy={busy} review={review} />
+            ))}
+            {data.interfaceColours.length > 0 && (
+              <div className={styles.swatches}>
+                {data.interfaceColours.map((c) => (
+                  <figure key={c.value} className={styles.swatch}>
+                    <span style={{ background: c.value }} />
+                    <figcaption>
+                      <strong>{c.label || "Interface"}</strong> {c.value}
+                      <br />
+                      <small>{c.file}</small>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {lists.map(([label, list]) =>
           list.length ? (
             <div key={label} className={styles.section}>

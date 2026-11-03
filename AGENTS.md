@@ -121,7 +121,7 @@ Use this sequence to solve a creative problem:
 
 ### Source artwork versus identity evidence
 
-A product photo, video crop or UI screenshot may be a reference to reconstruct, not finished advertising artwork. Where accepted permissions allow reconstruction, the director should request a fresh polished still using actual reference pixels and protected identity details. Keep official logos exact and marketing text separately editable. Do not invent interfaces, people, product features or hidden details. Missing evidence remains unknown.
+A product photo or video crop may be a reference to reconstruct, not finished advertising artwork. Interfaces are different (owner decision, 3 November 2026): a UI screenshot or a UI kit part (material role `uikit`) is evidence for an interface mockup built in code, never an image-model reference; the director receives them as `brand.interface`, apart from `brand.references`, together with the kit's `product.components` and `product.interfaceColors` rules. Interface colours never become the brand's paper, ink or accent. Where accepted permissions allow reconstruction, the director should request a fresh polished still using actual reference pixels and protected identity details. Keep official logos exact and marketing text separately editable. Do not invent interfaces, people, product features or hidden details. Missing evidence remains unknown.
 
 Material memory carries provenance, classifications, observed properties, reference-only flags, font capabilities and issues. Image arrivals should update the existing resource binding without a new coder request solely to insert a URL.
 

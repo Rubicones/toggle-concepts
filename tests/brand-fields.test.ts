@@ -5,8 +5,8 @@ import {tmpdir} from 'node:os';
 import {resolve} from 'node:path';
 import {brandFields,fieldResponseSchema,fieldExtractionRequest,parseFieldResponse,splitBrandText} from '../packages/brand/field-extraction';
 const finding={field:'voice',value:'Direct, thoughtful and precise.',locator:'Voice, paragraph 2',evidence:'provided'};
-test('28 stable fields retain all findings without the former forty-rule or short-text ceiling',()=>{
- assert.equal(brandFields.length,28);assert.equal(new Set(brandFields.map(f=>f[0])).size,28);assert.equal(brandFields.find(f=>f[0]==='voice')?.[2],'concat');assert.equal(brandFields.find(f=>f[0]==='primaryColors')?.[2],'array');
+test('29 stable fields retain all findings without the former forty-rule or short-text ceiling',()=>{
+ assert.equal(brandFields.length,29);assert.equal(new Set(brandFields.map(f=>f[0])).size,29);assert.equal(brandFields.find(f=>f[0]==='components')?.[2],'array');assert.equal(brandFields.find(f=>f[0]==='voice')?.[2],'concat');assert.equal(brandFields.find(f=>f[0]==='primaryColors')?.[2],'array');
  const findings=Array.from({length:300},(_,i)=>({...finding,value:`Color ${i}: #102030`,field:'primaryColors'}));assert.equal(fieldResponseSchema.parse({findings,more:false}).findings.length,300);
  assert.equal(parseFieldResponse(JSON.stringify({findings:[{...finding,value:'Long statement. '.repeat(1000)}],more:false})).findings[0].value.length,16000);
  const native=JSON.stringify(fieldExtractionRequest().responseSchema.schema);for(const key of ['maxItems','maxLength','minItems'])assert.ok(!native.includes(key));

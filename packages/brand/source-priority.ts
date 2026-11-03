@@ -5,9 +5,11 @@ import {singleChoiceFields} from './finding-selection';
 import {fontFamilyOf} from './normalize';
 const FONT_FIELDS=new Set(['displayFonts','bodyFonts','monoFonts']);
 
-const rank:Record<MaterialRole,number>={brandbook:0,tokens:1,logo:2,font:2,licence:2,unknown:3,screenshot:3,photo:4,reference:4};
+const rank:Record<MaterialRole,number>={brandbook:0,tokens:1,logo:2,font:2,licence:2,unknown:3,screenshot:3,uikit:3,photo:4,reference:4};
 export const rolePriority=(role:MaterialRole|undefined)=>rank[role??'unknown'];
-const COLOUR_FIELDS=['primaryColors','secondaryColors','semanticColors'];
+// The brand palette is one group. Interface colours (semanticColors, read from tokens, a UI kit or screenshots) are a
+// separate list and never compete with it: every source keeps them for the interface palette.
+const COLOUR_FIELDS=['primaryColors','secondaryColors'];
 /** Fields where one source's answer is used: the single-choice fields, and the palette as one group. */
 const groupOf=(field:string)=>COLOUR_FIELDS.includes(field)?'colours':singleChoiceFields.has(field)?field:null;
 

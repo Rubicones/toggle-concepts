@@ -1,6 +1,8 @@
 // The brand as the agents will receive it, built from the same priority rules as the A1 import, for the AD to check and
 // correct before submitting. It reads findings and files only; it never approves or changes anything.
-import {choicesFor,pickBrandColors,type BrandbookItem} from './a1-handoff';
+import {brandPalette,type BrandbookItem} from './a1-handoff';
+import {findingPresentation} from './finding-presentation';
+import {cssColorToHex} from './normalize';
 import {prioritizeFindings} from './source-priority';
 import {selectFindings} from './finding-selection';
 import {normalizeFontFamily,fontFamilyOf} from './normalize';
@@ -14,6 +16,8 @@ export type BrandCard={
  palette:{role:'paper'|'ink'|'accent';value:string;file:string}[];contrast:{inkOnPaper:number|null;accentOnPaper:number|null};
  fonts:{family:string;weights:number[];files:{id:string;weight:number;style:string}[]}[];
  screenshots:{id:string;file:string}[];
+ /** The product's interface vocabulary: components read from a UI kit or screenshots, their files and interface colours. */
+ components:CardFinding[];interfaceFiles:{id:string;file:string;role:'uikit'|'screenshot'}[];interfaceColours:{value:string;label:string;file:string}[];
  checks:{ok:boolean;text:string}[];
 };
 type Finding={id:string;field:string;value:string;edited_value:string|null;decision:string;version:number;material_id:string;evidence:string;locator:string};
@@ -31,7 +35,7 @@ export function buildBrandCard(findings:Finding[],materials:Material[]):BrandCar
  const card=(i:BrandbookItem,n=400):CardFinding=>({findingId:i.findingId,version:version.get(i.findingId)??1,value:clip(i.value.trim(),n),file:file(i.materialId)});
  const of=(...fields:string[])=>usable.filter(i=>fields.includes(i.field)&&!/<svg\b|^data:image\//i.test(i.value));
  const first=(...fields:string[])=>{const i=of(...fields)[0];return i?card(i):null;};
- const picks=pickBrandColors(choicesFor('color.ink',usable)),palette=(['paper','ink','accent'] as const).flatMap(role=>{const p=picks[role];return p?[{role,value:p.value.slice(0,7),file:file(p.materialId)}]:[];});
+ const picks=brandPalette(usable,roleOf),palette=(['paper','ink','accent'] as const).flatMap(role=>{const p=picks[role];return p?[{role,value:p.value.slice(0,7),file:file(p.materialId)}]:[];});
  const hex=(role:string)=>palette.find(p=>p.role===role)?.value;
  const ratio=(a?:string,b?:string)=>a&&b?Math.round(contrastRatio(a,b)*10)/10:null;
  const logos=materials.filter(m=>m.role==='logo').map(m=>({id:m.id,file:m.filename,svg:m.mime==='image/svg+xml',delegatesColour:!!m.svgText&&/currentColor/i.test(m.svgText)}));
@@ -47,6 +51,12 @@ export function buildBrandCard(findings:Finding[],materials:Material[]):BrandCar
  for(const family of named){const key=(v:string)=>v.toLowerCase().replace(/[^a-z0-9]/g,''),f=[...families.values()].find(x=>key(x.family)===key(family));checks.push(f?{ok:true,text:`${family}: font files in ${f.weights.join(', ')}.`}:{ok:false,text:`${family}: no font file. If it is on Google Fonts it is fetched for drafts; otherwise add the files.`});}
  checks.push(hex('accent')?{ok:true,text:`One accent colour: ${hex('accent')}.`}:{ok:false,text:'No accent colour found. Mark the brand colours or add the tokens file.'});
  const c=ratio(hex('ink'),hex('paper'));if(c!==null)checks.push({ok:c>=4.5,text:`Text on background contrast ${c}:1${c>=4.5?'.':' — below 4.5:1.'}`});
+ // Interface mockups are built in code from the product's own components and colours: say when there is nothing to build from.
+ const interfaceFiles=materials.filter(m=>m.role==='uikit'||m.role==='screenshot').map(m=>({id:m.id,file:m.filename,role:m.role as 'uikit'|'screenshot'}));
+ const interfaceColours:BrandCard['interfaceColours']=[];
+ for(const i of of('semanticColors'))for(const col of findingPresentation(i.value,i.field).colors){const value=/^#[0-9a-f]{6}/i.test(col.value)?col.value.slice(0,7).toUpperCase():cssColorToHex(col.value);if(value&&!interfaceColours.some(x=>x.value===value))interfaceColours.push({value,label:[col.label,col.context].filter(Boolean).join(' · '),file:file(i.materialId)});}
+ checks.push(interfaceFiles.length?{ok:true,text:`Interface evidence: ${interfaceFiles.length} UI kit or screenshot file${interfaceFiles.length===1?'':'s'}.`}:{ok:false,text:'No interface evidence (UI kit or screenshots). If the product has an interface, add them: mockups are built from them.'});
+ checks.push(interfaceColours.length?{ok:true,text:`${interfaceColours.length} interface colour${interfaceColours.length===1?'':'s'}, kept apart from the brand palette.`}:{ok:false,text:'No interface colours. Add the UI kit, tokens or screenshots if the product has an interface.'});
  return {name:first('brandName'),description:first('brandDescription'),voice:of('voice','tone').slice(0,3).map(i=>card(i,300)),vocabulary:of('copyRules').slice(0,4).map(i=>card(i,300)),rules:of('prohibitions').slice(0,5).map(i=>card(i,240)),product:first('productIdentity'),
-  logos,palette,contrast:{inkOnPaper:c,accentOnPaper:ratio(hex('accent'),hex('paper'))},fonts:[...families.values()],screenshots:materials.filter(m=>m.role==='screenshot').map(m=>({id:m.id,file:m.filename})),checks};
+  logos,palette,contrast:{inkOnPaper:c,accentOnPaper:ratio(hex('accent'),hex('paper'))},fonts:[...families.values()],screenshots:materials.filter(m=>m.role==='screenshot').map(m=>({id:m.id,file:m.filename})),components:of('components').slice(0,12).map(i=>card(i,300)),interfaceFiles,interfaceColours:interfaceColours.slice(0,24),checks};
 }

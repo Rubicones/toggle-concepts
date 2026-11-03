@@ -2,11 +2,11 @@
 // trusted, not what may be taken from it: a product screenshot may still name the product when nothing else does.
 import {brandFieldKeys} from './field-extraction';
 
-export const materialRoles=['brandbook','tokens','logo','font','licence','screenshot','photo','reference','unknown'] as const;
+export const materialRoles=['brandbook','tokens','logo','font','licence','screenshot','uikit','photo','reference','unknown'] as const;
 export type MaterialRole=typeof materialRoles[number];
 type Field=typeof brandFieldKeys[number];
 
-export const materialRoleLabels:Record<MaterialRole,string>={brandbook:'Brandbook / guidelines',tokens:'Design tokens',logo:'Logo / wordmark / icon',font:'Font file',licence:'Font licence',screenshot:'Product screenshot',photo:'Photo',reference:'Reference / moodboard',unknown:'Not sure yet'};
+export const materialRoleLabels:Record<MaterialRole,string>={brandbook:'Brandbook / guidelines',tokens:'Design tokens',logo:'Logo / wordmark / icon',font:'Font file',licence:'Font licence',screenshot:'Product screenshot',uikit:'UI kit / interface components',photo:'Photo',reference:'Reference / moodboard',unknown:'Not sure yet'};
 
 /** Fields a file of this role may state; null means any field. */
 const allowed:Record<MaterialRole,readonly Field[]|null>={
@@ -16,17 +16,19 @@ const allowed:Record<MaterialRole,readonly Field[]|null>={
  font:['displayFonts','bodyFonts','monoFonts','fontLicenses'],
  licence:['fontLicenses'],
  // A screenshot shows the product: its name and interface, never the brand's copy rules or primary palette.
- screenshot:['brandName','brandDescription','productIdentity','semanticColors','layout','imagery'],
+ screenshot:['brandName','brandDescription','productIdentity','components','semanticColors','layout','imagery'],
+ // A UI kit shows the product's interface parts: components and their interface colours, never brand copy or the palette.
+ uikit:['components','semanticColors','spacing','layout','typographyRules'],
  photo:['imagery','photography','productIdentity'],
  reference:['imagery','photography','illustration','motion','layout'],
 };
 /** Fields a role may never state (rejected from its findings when the role is set or confirmed). */
 export function fieldsOutsideRole(role:MaterialRole):Field[]{const list=allowed[role];return list?brandFieldKeys.filter(f=>!list.includes(f)):[];}
 
-/** Applied to one read: screenshot colours are interface colours; anything else outside the role is dropped. */
+/** Applied to one read: screenshot and UI kit colours are interface colours; anything else outside the role is dropped. */
 export function findingsForRole<T extends {field:string}>(role:MaterialRole,findings:T[]):T[]{
  const list=allowed[role];if(!list)return findings;
- return findings.map(f=>role==='screenshot'&&(f.field==='primaryColors'||f.field==='secondaryColors')?{...f,field:'semanticColors'}:f).filter(f=>f.field.startsWith('brief.')?role==='brandbook':list.includes(f.field as Field));
+ return findings.map(f=>(role==='screenshot'||role==='uikit')&&(f.field==='primaryColors'||f.field==='secondaryColors')?{...f,field:'semanticColors'}:f).filter(f=>f.field.startsWith('brief.')?role==='brandbook':list.includes(f.field as Field));
 }
 
 export const roleReadingNotes:Record<MaterialRole,string>={
@@ -36,9 +38,10 @@ export const roleReadingNotes:Record<MaterialRole,string>={
  font:'This file is a font: report the family, weights and licence facts it contains.',
  licence:'This file is a font licence: report only licence facts.',
  screenshot:'This file is a screenshot of the product: its name, interface and interface colours are product evidence; its on-screen texts are product vocabulary, never brand copy rules or voice; its colours are interface colours, not the brand palette.',
+ uikit:'This file is part of the product\'s UI kit: an interface component, not a screenshot to imitate and not a brand rule. Name each component, its parts, states and sizes, the token or interface colours it uses and the kind of text it carries. It is the visual vocabulary for interface mockups built in code; its texts are never brand copy and its colours are interface colours, never the brand palette.',
  photo:'This file is a photograph: report only what it shows about imagery and the product.',
  reference:'This file is a reference or moodboard image: report only visual treatment; it is not the brand\'s own artwork or copy.',
- unknown:'What this file is has not been decided: first judge whether it is guidelines, artwork, a product screenshot, a photo or a reference, and report only what such a file can state.',
+ unknown:'What this file is has not been decided: first judge whether it is guidelines, artwork, a product screenshot, a UI kit component, a photo or a reference, and report only what such a file can state.',
 };
 
 type MaterialLike={filename:string;relative_path?:string|null;mime:string;extraction?:{kind?:string;text?:string;metadata?:Record<string,unknown>}|null};
@@ -48,6 +51,9 @@ export function autoMaterialRole(m:MaterialLike):{role:MaterialRole;sure:boolean
  if(kind==='font'||typeof m.extraction?.metadata?.family==='string'||/\.(woff2?|ttf|otf)$/.test(name))return {role:'font',sure:true};
  if(/(^|[\s/_-])(ofl|licen[cs]e)/.test(name)||/SIL OPEN FONT LICEN[CS]E|font software/i.test(text))return {role:'licence',sure:true};
  if(m.mime==='application/json'||/\.json$/.test(name))return {role:'tokens',sure:/token|theme|colou?r|design/.test(name)||(text.match(/#[0-9a-f]{6}\b/gi)?.length??0)>=3};
+ // UI kit parts: a named kit or components folder is sure; a single button/card/chip file name or a tokens folder asks.
+ const kit=/ui[-_ ]?kit|(^|[\s/_-])components?([\s/_.-]|$)/.test(name),part=/(^|[\s/_-])(buttons?|cards?|chips?|inputs?|toggles?|tabs?)([\s/_.-]|$)|(^|[\s/])tokens\//.test(name);
+ if(m.mime.startsWith('image/')&&(kit||part))return {role:'uikit',sure:kit};
  if(m.mime==='image/svg+xml'){const named=/logo|wordmark|lockup|icon|mark|symbol/.test(name);return {role:'logo',sure:named};}
  if(m.mime.startsWith('image/')){
   if(/screen|screenshot|(^|[\s/_-])ui([\s/_.-]|$)|interface|dashboard|app[-_ ]?shot|mockup/.test(name))return {role:'screenshot',sure:true};

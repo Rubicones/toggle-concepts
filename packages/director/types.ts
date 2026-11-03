@@ -7,6 +7,8 @@ export type BrandKit = {
  logos:{id:string;url:string;clearSpacePx:number;required?:boolean;/** Same drawing with currentColor resolved: for dark and for light grounds. */variants?:{onDark:string;onLight:string}}[];
  rules:{allowedFonts:string[];forbiddenColours:string[];minimumContrast:number;logoRequired?:boolean};
  rawKit?:unknown;copy:Record<string,Record<string,string>>;facts:Record<string,string>;references:{id:string;url:string}[];
+ /** The product's UI kit parts and screenshots: evidence for interface mockups built in code, never image references. */
+ interface?:{id:string;url:string;role:'uikit'|'screenshot'}[];
 };
 export type CompositionProps = {format:string;locale:string;hook:string;cta:string;length:number};
 export type FrameProps = CompositionProps & {width?:number;height?:number;sceneId:string;moment:string};
