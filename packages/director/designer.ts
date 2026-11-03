@@ -75,3 +75,20 @@ export function pictureResource(picture:DesignerPicture,input:Pick<DirectionInpu
   ...(picture.cutout&&input.brief.pictureRulesVersion===1?{cutout:true}:{}),...(picture.becomes&&picture.proxyFor?{becomes:picture.becomes}:{}),
   ...(picture.sketch&&input.brief.imageMethodsVersion===1?{sketch:{shapes:picture.sketch.shapes}}:{})};
 }
+
+/** A turn's results as short lines for the timeline (point 4d): what was saved, asked for, seen and decided. */
+export function designerTurnSummary(results:unknown[]):string[]{
+ const lines:string[]=[],written:string[]=[];let asked=0,refused=0;
+ for(const value of results){const r=value as Record<string,unknown>;
+  if(typeof r.written==='string')written.push(r.written.split('/').at(-1)!);
+  else if(r.build==='failed')lines.push('The code does not build yet; the designer repairs it next.');
+  else if(r.picture==='requested')asked++;else if(r.picture==='refused')refused++;
+  else if(typeof r.render==='string'&&typeof r.views==='number'){const hard=Number(r.hard??0);lines.push(`Rendered ${r.views} view${r.views===1?'':'s'}: ${hard?`${hard} objective issue${hard===1?'':'s'} to fix`:'no objective issues'}.`);}
+  else if(r.render==='refused')lines.push('No more revisions for this scene; the designer moves on.');
+  else if(r.finish==='complete')lines.push('The draft is finished.');else if(r.finish==='refused')lines.push('Not finished yet: some options still need work.');
+  else if(typeof r.error==='string')lines.push('This step needs another attempt.');
+ }
+ if(written.length)lines.unshift(`Saved ${written.join(', ')}.`);
+ if(asked)lines.push(`Asked for ${asked} picture${asked===1?'':'s'}.`);if(refused)lines.push('The approved number of pictures is used.');
+ return lines;
+}

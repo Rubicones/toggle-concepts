@@ -45,7 +45,7 @@ export function designerViews(input:Pick<DirectionInput,'variants'|'formats'|'va
 const jpeg=async(file:string)=>`data:image/jpeg;base64,${(await readFile(file)).toString('base64')}`;
 const short=(value:unknown,max=4096)=>JSON.stringify(value).slice(0,max);
 
-export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;save:(state:DesignerLoopState)=>Promise<void>;onTurn?:(turn:DesignerTurn,results:unknown[])=>Promise<void>;now?:()=>number}){
+export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;save:(state:DesignerLoopState)=>Promise<void>;/** For the timeline: the turn, its results and the screenshot the designer looked at when it wrote the turn. */onTurn?:(turn:DesignerTurn,results:unknown[],looked?:string)=>Promise<void>;now?:()=>number}){
  const {input,state,tools}=args,now=args.now??Date.now,scenes=input.storyboard.map(s=>s.id);
  const pending=new Map<string,Promise<PictureResult>>(),arrived=new Map<string,PictureResult>();
  // A control or lease failure inside a background purchase stops the loop at the next step instead of escaping unseen.
@@ -63,7 +63,7 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
    toolResults:state.transcript.slice(-12),currentFiles:files,
    ...(last?{lastRender:{sceneId:last.sceneId,views:last.views.map(v=>v.label),findings:last.findings.slice(0,30).map(f=>({view:f.view,severity:f.severity,detail:f.detail}))}}:{})},images);}
   catch(error){if(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'){state.turn++;await log({error:'Your answer was cut off. Return a smaller turn: fewer files, exact edits.'});continue;}throw error;}
-  state.turn++;state.transcript.push({from:'agent',text:text.slice(0,2000)});delete state.lastRender;await args.save(state);
+  const looked=last?.views[0]?.file;state.turn++;state.transcript.push({from:'agent',text:text.slice(0,2000)});delete state.lastRender;await args.save(state);
   let turn:DesignerTurn;
   try{turn=readDesignerTurn(JSON.parse(text),input);}catch(error){await log({error:(error instanceof Error?error.message:'Unreadable answer').slice(0,600)});continue;}
   const results:unknown[]=[];
@@ -98,7 +98,7 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
     if(done.complete){state.finish=turn.finish;state.complete=true;results.push({finish:'complete'});}else results.push({finish:'refused',issue:done.issue.slice(0,1200)});
    }
   }catch(error){if(propagateExecutionFailure(error))throw error;results.push({error:(error instanceof Error?error.message:'This step needs repair').slice(0,1200)});}
-  await log({results});await args.onTurn?.(turn,results);
+  await log({results});await args.onTurn?.(turn,results,looked);
  }
  await collect(true);stopIfFatal();
  return state;

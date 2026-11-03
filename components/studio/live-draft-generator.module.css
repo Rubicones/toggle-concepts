@@ -15,6 +15,7 @@
 .generator :global(.live-review-review) select,.generator :global(.live-review-review) textarea { width:100%; padding:10px; border:1px solid #ccdce3; border-radius:10px; background:white; color:#123344; font:inherit; }
 .generator :global(.live-review-review) textarea { min-height:100px; resize:vertical; }
 .generator :global(.live-review-review) textarea:focus-visible,.generator :global(.live-review-review) select:focus-visible { outline:2px solid #457887; outline-offset:2px; }
+.generator :global(.live-review-recipient) { margin:0 0 8px; font-size:12px; line-height:1.5; color:#355869; }
 .generator :global(.live-review-target) { margin:0; font-size:11px; line-height:1.6; color:#536d7b; overflow-wrap:anywhere; }
 
 .stage { align-self:start; position:sticky; top:16px; }
