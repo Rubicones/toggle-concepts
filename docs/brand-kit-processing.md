@@ -6,15 +6,22 @@ are proposed evidence; choosing a candidate does not grant A1 or confirm licensi
 
 ## Fields (catalog `brand-fields-v1`)
 
-Candidate arrays: brand name, wordmark, icon/symbol, primary colors, secondary
-colors, semantic/UI colors, display fonts, body fonts, monospace fonts, font files
+Candidate arrays: brand name, wordmark, icon/symbol, interface components, primary
+colors, secondary colors, semantic/UI colors, display fonts, body fonts, monospace fonts, font files
 and licenses, image treatment, photography, illustration, sound.
 
 Accumulated text: brand description, logo usage, product identity/protected
 details, typography rules, spacing, grid/layout, safe areas, motion, brand voice,
 tone, copy rules, prohibitions, accessibility, localization.
 
-There are 28 fields. Each holds any number of separately cited findings. Original
+There are 29 fields (catalog `brand-fields-v2` adds interface components; the
+local reader asks for them once migration `20261103000100_brand_uikit_components.sql`
+is applied). A file marked **UI kit** is read as interface components and interface
+colours only: never brand copy, never the brand palette. Interface colours (from a
+UI kit, tokens or screenshots) are kept from every source and go to the kit's
+`product.interfaceColors` rule; they never compete with or become paper, ink or accent.
+
+Each field holds any number of separately cited findings. Original
 wording, color notation and source-specific names stay together. Alternative
 candidates are retained for the AD; later evidence does not overwrite earlier
 findings or human decisions. Text can be combined for reading, while its separate

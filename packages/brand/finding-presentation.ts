@@ -15,6 +15,16 @@ function strings(value: unknown): string[] {
   return [];
 }
 
+/** The words around one colour on its own line or clause, without other colour values: "Accent color – #dfff00" → "Accent color". */
+function lineLabel(text: string, start: number, length: number): string {
+  const before = text.slice(0, start), after = text.slice(start + length);
+  const left = Math.max(before.lastIndexOf('\n'), before.lastIndexOf(';'), before.lastIndexOf('. '), before.lastIndexOf(', ')) + 1;
+  const ends = ['\n', ';', '. ', ', '].map(d => after.indexOf(d)).filter(i => i >= 0);
+  const segment = before.slice(left) + ' ' + after.slice(0, ends.length ? Math.min(...ends) : after.length);
+  const label = segment.replace(colorPattern, ' ').replace(/^[\s\-–—*•·:=|]+|[\s\-–—*•·:=|.]+$/g, '').replace(/\s+/g, ' ').trim();
+  return label.length > 60 ? label.slice(0, 59) + '…' : label;
+}
+
 function svgImage(text: string): string | null {
   const match = text.match(/<svg\b[\s\S]*?<\/svg\s*>/i);
   if (!match) return null;
@@ -65,8 +75,9 @@ export function findingPresentation(value: string, field: string, sources: Brand
       continue;
     }
     if (typeof current !== 'string') continue;
-    // Only treat colors as swatches in color fields, not hex fills inside artwork.
-    if (colorFields.has(field)) for (const match of current.matchAll(colorPattern)) addColor(match[0], item.label, item.context);
+    // Only treat colors as swatches in color fields, not hex fills inside artwork. Prose keeps the words of the colour's
+    // own line ("Accent color – #dfff00" is the accent) so its role is not lost on the way to the kit.
+    if (colorFields.has(field)) for (const match of current.matchAll(colorPattern)) addColor(match[0], item.label || lineLabel(current, match.index ?? 0, match[0].length), item.context);
     const svg = svgImage(current);
     if (svg) addImage({src: svg, label: item.label || 'SVG artwork', kind: 'svg'});
     else {

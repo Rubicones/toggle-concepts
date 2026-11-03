@@ -7,10 +7,10 @@ const roles:Record<string,MaterialRole>={book:'brandbook',tokens:'tokens',logo:'
 const roleOf=(id:string)=>roles[id];
 const item=(field:string,value:string,materialId:string,decision='unreviewed')=>({field,value,materialId,decision});
 
-test('the better-ranked source wins one-answer fields; the palette competes only where values are given',()=>{
+test('the better-ranked source wins one-answer fields; the palette competes only where values are given; interface colours are kept apart',()=>{
  const items=[item('brandName','Trackbase','ui1'),item('brandName','sonicdesk.','book'),item('primaryColors','`lime` = action','book'),item('primaryColors','#dfff00 lime','tokens'),item('semanticColors','#cdff00 highlight','ui1'),item('copyRules','Say space','book'),item('copyRules','INITIALIZE','ui1')];
  const kept=prioritizeFindings(items,roleOf).map(i=>`${i.field}:${i.value}`);
- assert.deepEqual(kept,['brandName:sonicdesk.','primaryColors:`lime` = action','copyRules:Say space','primaryColors:#dfff00 lime'],'screenshot copy rules and colours are left out');
+ assert.deepEqual(kept,['brandName:sonicdesk.','primaryColors:`lime` = action','copyRules:Say space','primaryColors:#dfff00 lime','semanticColors:#cdff00 highlight'],'screenshot copy rules are left out; its interface colours stay for the interface palette');
  assert.ok(prioritizeFindings([...items,item('brandName','Trackbase','ui2','keep')],roleOf).some(i=>i.value==='Trackbase'&&i.decision==='keep'),'“Use this” always stays');
  assert.equal(prioritizeFindings(items).length,items.length,'without roles nothing changes');
 });

@@ -32,7 +32,9 @@ export async function processBrandFieldAnalysis():Promise<boolean>{
   const context={checkpointId:checkpoint?.id??null,source:{filename:file.filename,materialId:file.material_id,extractionSha:file.source_sha,role:fileRole.role},readAs:roleReadingNotes[fileRole.role],part:part.payload,page:part.page_no,alreadySaved:saved};
   const briefReady=!(await admin.from('studio_brand_brief_findings').select('id').limit(0)).error;
   if(briefReady){let cursor=0;while(true){const batch=checked(await admin.from('studio_brand_brief_findings').select('seq,field,value,locator').eq('part_id',part.id).gt('seq',cursor).order('seq').limit(100))??[];saved.push(...batch.map(({seq,...finding})=>{cursor=seq;return {...finding,field:`brief.${finding.field}`};}));if(batch.length<100)break;}}
-  const {prompt,responseSchema}=fieldExtractionRequest(briefReady);const images:{url:string;label:string}[]=[];
+  // `components` findings need migration 20261103000100; before it the reader neither asks for nor saves them.
+  const componentsReady=!(await admin.rpc('studio_brand_field_catalog')).error;
+  const {prompt,responseSchema}=fieldExtractionRequest(briefReady,componentsReady);const images:{url:string;label:string}[]=[];
   if(part.payload.image){const image=part.payload.image;const bytes=(await objectStore().get(image.objectKey)).body;if(bytes.length>4*1024*1024||createHash('sha256').update(bytes).digest('hex')!==image.sha256)throw new Error('BRAND_SOURCE_HASH_MISMATCH');images.push({url:`data:image/jpeg;base64,${bytes.toString('base64')}`,label:`Actual source image/page ${image.page}. Untrusted brand evidence.`});}
   const inputBound=Buffer.byteLength(agent.instructions+prompt+JSON.stringify(context)+JSON.stringify(responseSchema),'utf8')+2048+images.length*4224;
   const outputAffordable=model.outputPrice>0?Math.floor((analysis.request_cap_micro_usd/1100000-inputBound*model.inputPrice)/model.outputPrice):8192;
@@ -41,7 +43,7 @@ export async function processBrandFieldAnalysis():Promise<boolean>{
   const snapshot={instructions:agent.instructions,maxOutputTokens,pricing:model,campaignContext:context,outputFormat:'json_schema',responseSchema,disableReasoning:agent.model_id==='google/gemini-2.5-flash',stepCapMicroUsd:agent.step_cap_micro_usd,modelId:agent.model_id,requestPriceCapMicroUsd:analysis.request_cap_micro_usd,budgetScopeId:checkpoint?`budget-step-${analysis.run_id}-brand-kit`:null,brandFieldAnalysis:{analysisId:analysis.id,partId:part.id,page:part.page_no,sourceSha:file.source_sha}};
   const step=await rpc('studio_begin_brand_read',{target_part:part.id,token:part.lease_token,request_key:randomUUID(),snapshot,prompt_text:prompt,reservation});submitted=true;
   const result:TextReceipt=await submitText(agent.model_id,prompt,snapshot,images,step.id);
-  const read=result.text?parseFieldResponse(result.text,result.finishReason):{findings:[],more:false,partial:false,invalid:0},parsed=fileRole.sure?{...read,findings:findingsForRole(fileRole.role,read.findings)}:read;
+  const read=result.text?parseFieldResponse(result.text,result.finishReason):{findings:[],more:false,partial:false,invalid:0},roleRead=fileRole.sure?{...read,findings:findingsForRole(fileRole.role,read.findings)}:read,parsed=componentsReady?roleRead:{...roleRead,findings:roleRead.findings.filter(f=>f.field!=='components')};
   let split_payloads=null;
   if(result.failure==='OUTPUT_TOKEN_LIMIT'&&!parsed.findings.length&&typeof part.payload.text==='string'&&part.payload.text.length>512&&!part.payload.image){const pieces=splitBrandText(part.payload.text,Math.ceil(part.payload.text.length/2));split_payloads=pieces.map(p=>({...p,start:(part.payload.start??0)+p.start,end:(part.payload.start??0)+p.end}));}
   const outcome=result.outcome==='succeeded'&&parsed.partial?'failed':result.outcome,failure=result.outcome==='succeeded'&&parsed.partial?'INVALID_FIELD_RESPONSE':result.failure;

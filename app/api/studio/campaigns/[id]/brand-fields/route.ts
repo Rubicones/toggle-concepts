@@ -5,7 +5,7 @@ import {z} from 'zod';
 import {api,body,json,ApiError} from '@/lib/server/api';
 import {campaignRecord,studioContext,checked} from '@/lib/server/studio';
 import {schemaMissing} from '@/lib/server/brief';
-import {brandFields,brandFieldKeys,type BrandAnalysisView} from '@/packages/brand/field-extraction';
+import {brandFields,brandFieldKeys,fieldCatalogVersion,type BrandAnalysisView} from '@/packages/brand/field-extraction';
 import {startLocalWorkflow,requireLocalDevice} from '@/lib/server/local-compute';
 import {brandScope} from '@/lib/server/brand-source';
 import {fieldsOutsideRole,materialRoles} from '@/packages/brand/material-roles';
@@ -57,7 +57,7 @@ export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaign
   return json({findings,visualSources,next:findings.length===100?findings.at(-1)?.seq:null});}
  if(url.searchParams.has('export')){
   const encoder=new TextEncoder();let after=0,buffer:Record<string,unknown>[]=[],finished=false,header=false;
-  const stream=new ReadableStream({async pull(controller){try{if(!header){header=true;controller.enqueue(encoder.encode(JSON.stringify({catalog:'brand-fields-v1',fields:brandFields,campaignId:campaign.id})+'\n'));return;}if(!buffer.length&&!finished){buffer=checked(await admin.from('studio_brand_findings').select('*,material:studio_brand_materials(relative_path)').eq('tenant_id',tenant).eq('campaign_id',campaign.id).gt('seq',after).order('seq').limit(100))??[];finished=buffer.length<100;}const finding=buffer.shift();if(finding){after=Number(finding.seq);controller.enqueue(encoder.encode(JSON.stringify(finding)+'\n'));}else controller.close();}catch(error){controller.error(error);}}});return new Response(stream,{headers:{'Content-Type':'application/x-ndjson','Content-Disposition':'attachment; filename="brand-kit-findings.ndjson"','Cache-Control':'private, no-store'}});
+  const stream=new ReadableStream({async pull(controller){try{if(!header){header=true;controller.enqueue(encoder.encode(JSON.stringify({catalog:fieldCatalogVersion,fields:brandFields,campaignId:campaign.id})+'\n'));return;}if(!buffer.length&&!finished){buffer=checked(await admin.from('studio_brand_findings').select('*,material:studio_brand_materials(relative_path)').eq('tenant_id',tenant).eq('campaign_id',campaign.id).gt('seq',after).order('seq').limit(100))??[];finished=buffer.length<100;}const finding=buffer.shift();if(finding){after=Number(finding.seq);controller.enqueue(encoder.encode(JSON.stringify(finding)+'\n'));}else controller.close();}catch(error){controller.error(error);}}});return new Response(stream,{headers:{'Content-Type':'application/x-ndjson','Content-Disposition':'attachment; filename="brand-kit-findings.ndjson"','Cache-Control':'private, no-store'}});
  }
  const brandOptions=await brandSourceOptions(admin,tenant,campaign.id);
  if(scope!==campaign.id){
@@ -89,7 +89,7 @@ export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaig
   const material=checked(await admin.from('studio_brand_materials').select('id').eq('id',input.materialId).eq('tenant_id',tenant).eq('campaign_id',campaign.id).maybeSingle());if(!material)throw new ApiError(404,'MATERIAL_NOT_FOUND','File not found in this brand.');
   const reject=input.role&&input.role!=='unknown'?fieldsOutsideRole(input.role):[];
   const result=await admin.rpc('studio_set_brand_material_role',{target_material:input.materialId,material_role:input.role,reject_fields:reject,acting_user:actorId});
-  if(result.error){if(/studio_set_brand_material_role|schema cache/.test(result.error.message))throw new ApiError(503,'MATERIAL_ROLE_SCHEMA_REQUIRED','Apply migration 20261102000300_brand_material_roles first.');analysisError(result.error);}
+  if(result.error){if(input.role==='uikit'&&/INVALID_MATERIAL_ROLE|role_check/.test(result.error.message))throw new ApiError(503,'MATERIAL_ROLE_SCHEMA_REQUIRED','Apply migration 20261103000100_brand_uikit_components first.');if(/studio_set_brand_material_role|schema cache/.test(result.error.message))throw new ApiError(503,'MATERIAL_ROLE_SCHEMA_REQUIRED','Apply migration 20261102000300_brand_material_roles first.');analysisError(result.error);}
   const n=Number(result.data??0);return json({message:`Saved.${n?` ${n} unreviewed ${n===1?'finding':'findings'} this kind of file cannot state ${n===1?'was':'were'} excluded; you can bring any back.`:''} Files read from now on use this role.`});
  }
  if(input.action!=='review'&&await brandScope(campaign.id)!==campaign.id)throw new ApiError(409,'BRAND_FROM_SOURCE','This campaign uses a brand from the library. Edit that brand, or stop using it here first.');
