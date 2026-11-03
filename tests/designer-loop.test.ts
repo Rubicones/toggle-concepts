@@ -33,14 +33,14 @@ test('write, build, render and look: the screenshots and hard findings reach the
  ]);
  assert.equal(files.get('Frame.tsx'),'export default function Frame(){return <div>B</div>;}');
  assert.equal(renders.length,1);assert.equal(calls[1].images,1,'the rendered view is attached to the next turn');
- assert.match(JSON.stringify(calls[1].request.lastRender),/headline is clipped/);assert.equal(calls[1].request.scenes[0].renders,1);
+ assert.match(JSON.stringify(calls[1].request.lastRender),/headline is clipped/);assert.equal(calls[1].request.scenes[0].formats[0].renders,1);
  assert.equal(state.complete,true);assert.equal(state.finish!.intent,intent);
 });
 
 test('at most three revisions per scene; a refused render says why',async()=>{
  const s=input().storyboard[0].id,turn={focus:{sceneId:s,activity:'revising',about:'again'},render:{sceneId:s,formats:[]}};
  const {renders,state}=await harness([turn],{},DESIGNER_REVISIONS_PER_SCENE+3);
- assert.equal(renders.length,DESIGNER_REVISIONS_PER_SCENE+1);assert.match(state.transcript.at(-1)!.text,/Three revisions of this scene are used/);
+ assert.equal(renders.length,DESIGNER_REVISIONS_PER_SCENE+1);assert.match(state.transcript.at(-1)!.text,/Three revisions of this scene in .* are used/);
 });
 
 test('pictures are bought in the background inside the approved count and reported when they arrive',async()=>{

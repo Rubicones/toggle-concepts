@@ -14,6 +14,8 @@ export function designerContext(input:DirectionInput){
    ...(input.brand.interface?.length?{interface:input.brand.interface.map(i=>({id:i.id,role:i.role,file:i.url}))}:{}),
    ...(input.brand.sheet?.length?{sheet:input.brand.sheet.map(p=>({section:p.section,page:p.slice+1,note:'Attached as an image: the brand as it looks. Evidence, never a layout to copy.'}))}:{}),
   },
+  // Point 5: every scene is designed in the reference format first, then recomposed per ordered format.
+  referenceFormat:input.variants[0]?.format,
   copyFor:{locale:input.variants[0]?.locale,hook:input.variants[0]?.hook,cta:input.variants[0]?.cta,length:input.variants[0]?.length},
  };
 }

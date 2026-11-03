@@ -201,6 +201,11 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
   - AD notes go to the designer without a recipient choice.
   - The status reads "The designer is working".
 - **Earlier blocks.** They keep director + coder with their exact requests and quotes.
+- **Formats** (point 5).
+  - The designer designs every scene in the reference format first. It then recomposes each ordered format as an explicit branch of the same component; hooks, locales, CTAs and lengths stay data.
+  - Revisions are counted per scene and format (`renderKey`), so recomposing a format is a first design.
+  - After the full inspection matrix, the designer gets only the failing combinations (`failingCombinations`), each with its own screenshot, and fixes those branches only.
+  - In the viewer, the format control lists the designed formats with their state ("designed", "being designed", "not designed yet", "N open issues"). The slider snaps to the nearest designed format and says so.
 
 ## 6. Current draft execution and handoff contracts
 

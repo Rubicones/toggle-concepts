@@ -9,7 +9,9 @@ import {propagateExecutionFailure} from '../../../packages/director/execution-fa
 import type {InspectionView,InspectionSummary,Finding} from '../../../packages/director/layout-inspection';
 import type {DirectionInput,Variant} from '../../../packages/director/types';
 
-/** First render of a scene plus at most three revisions. */
+/** Saved render counts are keyed by scene and format. */
+export const renderKey=(sceneId:string,format:string)=>`${sceneId}@${format}`;
+/** First render of a scene in a format plus at most three revisions. */
 export const DESIGNER_REVISIONS_PER_SCENE=3;
 export type {DesignerLoopState} from '../../../packages/director/designer';
 import type {DesignerLoopState} from '../../../packages/director/designer';
@@ -28,7 +30,7 @@ export type DesignerTools={
  /** The live tools' finish: every ordered option implemented, typechecked and built. */
  finish:()=>Promise<{complete:true}|{complete:false;issue:string}>;
 };
-export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number};scenes:{sceneId:string;renders:number;revisionsLeft:number}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
+export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number};scenes:{sceneId:string;formats:{format:string;renders:number;revisionsLeft:number}[]}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
 
 /** The views the designer asked for: the reference copy in each requested format (default: the reference format),
  * plus the longest copy in the same formats so overflow shows up while the scene is designed. Screenshots only for
@@ -47,7 +49,7 @@ const jpeg=async(file:string)=>`data:image/jpeg;base64,${(await readFile(file)).
 const short=(value:unknown,max=4096)=>JSON.stringify(value).slice(0,max);
 
 export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;save:(state:DesignerLoopState)=>Promise<void>;/** For the timeline: the turn, its results and the screenshot the designer looked at when it wrote the turn. */onTurn?:(turn:DesignerTurn,results:unknown[],looked?:string)=>Promise<void>;now?:()=>number}){
- const {input,state,tools}=args,now=args.now??Date.now,scenes=input.storyboard.map(s=>s.id);
+ const {input,state,tools}=args,now=args.now??Date.now,scenes=input.storyboard.map(s=>s.id),referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  const pending=new Map<string,Promise<PictureResult>>(),arrived=new Map<string,PictureResult>();
  // A control or lease failure inside a background purchase stops the loop at the next step instead of escaping unseen.
  let fatal:unknown;const stopIfFatal=()=>{if(fatal)throw fatal;};
@@ -60,7 +62,7 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
   const images=last?await Promise.all(last.views.map(async v=>({url:await jpeg(v.file),label:`${v.label} (rendered, scene ${scenes.indexOf(last.sceneId)+1})`}))):[];
   let text:string;
   try{text=await args.call({turn:state.turn,budget:{turnsLeft:args.maxTurns-state.turn,picturesLeft:Math.max(0,args.maxPictures-state.pictures)},
-   scenes:scenes.map(sceneId=>({sceneId,renders:state.renders[sceneId]??0,revisionsLeft:Math.max(0,DESIGNER_REVISIONS_PER_SCENE+1-(state.renders[sceneId]??0))})),
+   scenes:scenes.map(sceneId=>({sceneId,formats:input.formats.map(f=>({format:f.id,renders:state.renders[renderKey(sceneId,f.id)]??0,revisionsLeft:Math.max(0,DESIGNER_REVISIONS_PER_SCENE+1-(state.renders[renderKey(sceneId,f.id)]??0))})).filter(f=>f.renders>0||f.format===referenceFormat)})),
    toolResults:state.transcript.slice(-12),currentFiles:files,
    ...(last?{lastRender:{sceneId:last.sceneId,views:last.views.map(v=>v.label),findings:last.findings.slice(0,30).map(f=>({view:f.view,severity:f.severity,detail:f.detail}))}}:{})},images);}
   catch(error){if(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'){state.turn++;await log({error:'Your answer was cut off. Return a smaller turn: fewer files, exact edits.'});continue;}throw error;}
@@ -84,10 +86,11 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
    }
    // 3. Render: only a building source; the first render designs the scene, later ones are revisions.
    if(turn.render&&built.ok){
-    const sceneId=turn.render.sceneId,count=state.renders[sceneId]??0;
-    if(count>DESIGNER_REVISIONS_PER_SCENE)results.push({render:'refused',detail:'Three revisions of this scene are used. Move on and say in the finish what remains.'});
+    // Revisions count per scene AND format (point 5): recomposing a new format is a first design, not a revision.
+    const sceneId=turn.render.sceneId,formats=turn.render.formats.length?turn.render.formats:[referenceFormat],spent=formats.filter(f=>(state.renders[renderKey(sceneId,f)]??0)>DESIGNER_REVISIONS_PER_SCENE);
+    if(spent.length)results.push({render:'refused',detail:`Three revisions of this scene in ${spent.join(', ')} are used. Move on and say in the finish what remains.`});
     else{
-     const views=designerViews(input,sceneId,turn.render.formats),out=await tools.render(views);state.renders[sceneId]=count+1;
+     const views=designerViews(input,sceneId,formats),out=await tools.render(views);for(const f of formats)state.renders[renderKey(sceneId,f)]=(state.renders[renderKey(sceneId,f)]??0)+1;
      const findings=out.summary.reports.flatMap(r=>r.findings).sort((a,b)=>Number(b.severity==='hard')-Number(a.severity==='hard'));
      state.lastRender={sceneId,findings,views:views.filter(v=>v.shot).flatMap(v=>{const shot=out.shots.find(s=>s.key===v.key);return shot?[{label:v.label,file:shot.file,width:v.props.width,height:v.props.height}]:[];})};
      results.push({render:sceneId,views:views.length,hard:out.summary.hard,soft:out.summary.soft});

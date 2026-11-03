@@ -26,7 +26,7 @@ export type LiveReviewRecord={version:1;inspection:{revision:string;views:number
 export type Shot={label:string;file:string;key?:string;sceneId?:string;width?:number;height?:number;group?:'reference'|'longest'};
 /** What the reviewers look at: the rendered views and the measured findings with their element boxes. */
 export type ReviewViews={shots:Shot[];summary:InspectionSummary};
-export type LiveReviewDeps={
+export type LiveReviewDeps={/** Who fixes (point 4/5): the coder, or the designer of a designer block. */owner?:'coder'|'designer';
  /** Free browser measurement. A failure here never blocks delivery: the review stops and the draft is delivered. */
  inspect:()=>Promise<{summary:InspectionSummary;shots:Shot[]}>;
  /** Why the coder cannot take another repair request (allowance used up), or undefined when it can. Checked before
@@ -83,7 +83,7 @@ export async function runLiveReview(deps:LiveReviewDeps):Promise<LiveReviewRecor
    const result=await deps.repair(gateNote(summary),'gate',state.gateRounds,{shots,summary});state.repairs.push({kind:'gate',round:state.gateRounds,...result});await deps.save(state);
    if(!result.applied){await deps.emit(`review:gate:${state.gateRounds}`,'The automatic layout fix could not be completed; the previous working version is kept.',result);break;}
    if(!await remeasure())break;
-   await deps.emit(`review:gate:${state.gateRounds}`,`The coder fixed measured layout issues; ${plural(summary.hard,'objective issue')} remain.`,{hard:summary.hard,soft:summary.soft});
+   await deps.emit(`review:gate:${state.gateRounds}`,`${deps.owner==='designer'?'The designer':'The coder'} fixed measured layout issues; ${plural(summary.hard,'objective issue')} remain.`,{hard:summary.hard,soft:summary.soft});
   }
  };
  await gate();

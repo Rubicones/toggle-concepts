@@ -17,17 +17,17 @@ import {previewMaterialAllowed} from '@/packages/director/material-memory';
 import {liveResourceBindings} from '@/packages/director/resources';
 import {finalVersionNotes} from '@/packages/director/final-notes';
 import type {LiveAsset,LivePreview,LiveOptions} from '@/packages/director/live-preview';
-import {liveReferenceVariant} from '@/packages/director/live-preview';
+import {liveReferenceVariant,designedFormats} from '@/packages/director/live-preview';
 import {squareReference} from '@/packages/director/construction';
 import {draftConstruction} from '@/apps/local-runner/director/construction';
 import type {DraftConstruction} from '@/packages/director/construction';
 import {sourceChecks,recordPreviewEvidence} from '@/apps/local-runner/director/review-evidence';
 import type {SourceChecks,ReviewRecord} from '@/packages/director/review';
 const hash=(value:Uint8Array|string)=>createHash('sha256').update(value).digest('hex');
-type Context={blockId:string;route:'live'|'paused'|'quote';sourceChecks?:SourceChecks;folder:string;input:DirectionInput;snapshot:Pick<BlockSnapshot,'files'>;catalog:CatalogEntry[];design?:Design;construction?:DraftConstruction};
+type Context={blockId:string;route:'live'|'paused'|'quote';sourceChecks?:SourceChecks;folder:string;input:DirectionInput;snapshot:Pick<BlockSnapshot,'files'>;catalog:CatalogEntry[];design?:Design;construction?:DraftConstruction;designer?:{renders?:Record<string,number>;findings?:{views:string[]}[]}};
 async function context(campaignId:string,directionId:string,iterationId?:string):Promise<Context>{
  await campaignRecord(campaignId);const {admin,tenant}=await studioContext();
- const iteration=iterationId?checked(await admin.from('studio_director_iterations').select('id,block_id,source_hash,design:payload->design,catalog:payload->catalog,construction:payload->construction,sourceChecks:payload->sourceChecks').eq('id',iterationId).eq('direction_id',directionId).maybeSingle()):null;
+ const iteration=iterationId?checked(await admin.from('studio_director_iterations').select('id,block_id,source_hash,design:payload->design,catalog:payload->catalog,construction:payload->construction,sourceChecks:payload->sourceChecks,designer:payload->designer,review:payload->review').eq('id',iterationId).eq('direction_id',directionId).maybeSingle()):null;
  const query=admin.from('studio_director_blocks').select('id,inputs:snapshot->inputs,files:snapshot->files').eq('campaign_id',campaignId).eq('tenant_id',tenant).neq('status','quoted');
  const block=checked(await (iteration?query.eq('id',iteration.block_id):query.contains('snapshot',{inputs:[{directionId}]})).order('created_at',{ascending:false}).limit(1).maybeSingle());
  if(!block||iterationId&&!iteration)throw new ApiError(404,'DIRECTION_NOT_FOUND','This direction is not available.');
@@ -38,12 +38,12 @@ async function context(campaignId:string,directionId:string,iterationId?:string)
    const archive=checked(await admin.from('studio_director_iterations').select('source:payload->source').eq('id',iteration.id).eq('block_id',block.id).eq('direction_id',directionId).eq('source_hash',iteration.source_hash).single());
    return archive!.source as {hash:string;files:{path:string;source:string;sha256:string}[]};
   });
-  input.iterationId=iteration.id;return {blockId:block.id,route:'quote',sourceChecks:iteration.sourceChecks as SourceChecks|undefined,folder,input,snapshot,catalog:(iteration.catalog??[]) as CatalogEntry[],design:iteration.design as Design,construction:iteration.construction as DraftConstruction|undefined};
+  input.iterationId=iteration.id;return {blockId:block.id,route:'quote',sourceChecks:iteration.sourceChecks as SourceChecks|undefined,folder,input,snapshot,catalog:(iteration.catalog??[]) as CatalogEntry[],design:iteration.design as Design,construction:iteration.construction as DraftConstruction|undefined,designer:{renders:(iteration.designer as {renders?:Record<string,number>}|null)?.renders,findings:((iteration.review as {inspection?:{findings?:{severity:string;views:string[]}[]}}|null)?.inspection?.findings??[]).filter(f=>f.severity==='hard')}};
  }
  const work=checked(await admin.from('studio_director_work').select('state,iteration_id,status').eq('block_id',block.id).eq('direction_id',directionId).maybeSingle());if(!work)throw new ApiError(404,'DIRECTION_NOT_FOUND','This direction is not available.');
  const state=work.state as WorkState;input.iterationId=work.iteration_id;
  const folder=resolve('artifacts/m08/workspaces',input.runId,input.roundId,input.directionId,input.iterationId);
- return {blockId:block.id,route:['queued','running'].includes(work.status)?'live':['review','waiting'].includes(work.status)?'paused':'quote',folder,input,snapshot,catalog:state.catalog??[],design:state.design};
+ return {blockId:block.id,route:['queued','running'].includes(work.status)?'live':['review','waiting'].includes(work.status)?'paused':'quote',folder,input,snapshot,catalog:state.catalog??[],design:state.design,designer:{renders:state.designer?.renders,findings:state.designer?.lastRender?state.designer.lastRender.findings.filter(f=>f.severity==='hard').map(f=>({views:[f.view]})):[]}};
 }
 function assets(ctx:Context){
  const rows=new Map<string,LiveAsset&{objectKey?:string;revisionId?:string;proxy?:boolean}>();
@@ -68,7 +68,8 @@ export async function liveDirectorPreview(campaignId:string,directionId:string,i
  const review={identity,enabled:!reviewRows.error,route:ctx.route,checks:await sourceChecks(ctx.folder,info!.revision,ctx.sourceChecks),records:(reviewRows.data??[]) as ReviewRecord[]};
  const options=info!.options,reference=liveReferenceVariant(ctx.input.variants,options)??squareReference(ctx.input.variants)!,legacyFormat=ctx.input.formats.find(f=>f.id===reference.format),scene=ctx.design?.keyFrames?.find(s=>s.sceneId===options.scenes[0])??ctx.design?.keyFrames?.[0];
  const finalNotes=finalVersionNotes(ctx.design,ctx.input);
- return {status:message?'updating':'ready',message,revision:info!.revision,assetRevision:identity.assetRevision,review,...(finalNotes.length?{finalNotes}:{}),...(ctx.input.brief.designerVersion===1?{designer:true}:{}),assets:pictures,resources,options,construction:ctx.construction??await draftConstruction(ctx.folder,ctx.input),legacy:info!.legacy,variants:ctx.input.variants,scenes,defaultProps:{format:info!.legacy?reference.format:'square',width:info!.legacy?legacyFormat?.width??1080:1080,height:info!.legacy?legacyFormat?.height??1080:1080,locale:reference.locale,hook:reference.hook,cta:reference.cta,length:reference.length,sceneId:options.scenes[0]??scene?.sceneId??ctx.input.storyboard[0].id,moment:scene?.moments[0]?.id??'key-frame'}};
+ const formats=ctx.input.brief.designerVersion===1?designedFormats(ctx.input.formats,(ctx.design?.keyFrames??[]).map(k=>k.sceneId),ctx.designer?.renders??{},ctx.designer?.findings??[]):[];
+ return {status:message?'updating':'ready',message,revision:info!.revision,assetRevision:identity.assetRevision,review,...(finalNotes.length?{finalNotes}:{}),...(ctx.input.brief.designerVersion===1?{designer:true,formats}:{}),assets:pictures,resources,options,construction:ctx.construction??await draftConstruction(ctx.folder,ctx.input),legacy:info!.legacy,variants:ctx.input.variants,scenes,defaultProps:{format:info!.legacy?reference.format:'square',width:info!.legacy?legacyFormat?.width??1080:1080,height:info!.legacy?legacyFormat?.height??1080:1080,locale:reference.locale,hook:reference.hook,cta:reference.cta,length:reference.length,sceneId:options.scenes[0]??scene?.sceneId??ctx.input.storyboard[0].id,moment:scene?.moments[0]?.id??'key-frame'}};
 }
 export async function liveDirectorArtifact(campaignId:string,directionId:string,args:{iterationId?:string;revision?:string;name?:string;kind:'bundle'|'asset'|'source'}){
  const ctx=await context(campaignId,directionId,args.iterationId);

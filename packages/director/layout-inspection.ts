@@ -232,3 +232,8 @@ export function analyzeInspection(views:InspectionView[],raw:{revision:string;vi
  for(const finding of missingRequiredCopy(views,raw.views,input)){const report=reports.find(r=>r.view===finding.view);if(report&&!report.findings.some(f=>f.code===finding.code&&f.detail===finding.detail))report.findings.push(finding);}
  return summarizeInspection(raw.revision,reports);
 }
+
+/** Point 5b: the views with hard findings, one line per view and finding, for the designer to fix branch by branch. */
+export function failingCombinations(summary:InspectionSummary){
+ return summary.reports.flatMap(r=>r.findings.filter(f=>f.severity==='hard').map(f=>({view:r.view,label:r.label,detail:f.detail})));
+}
