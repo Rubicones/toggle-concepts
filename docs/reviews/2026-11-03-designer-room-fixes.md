@@ -109,3 +109,23 @@
   - `npm run typecheck`: passed.
   - `npm run lint`: passed.
   - `node --import tsx --test tests/brand-sheet.test.ts`: 9 passed (one new test for the browser choice).
+
+## 6. Follow-up: a brand sheet build that never finishes (same day)
+
+- **Symptom:** "Building the brand sheet…" stayed for several minutes. Two causes are possible, and the AD could not tell them apart:
+  - **No worker claimed the build.** The UI showed queued and building the same way.
+  - **The browser hung.** The heartbeat kept the lease alive with no overall limit.
+- **Fix:**
+  - `apps/local-runner/brand-sheet.ts`:
+    - the whole build is limited to `SHEET_BUILD_MS` (150 s), then it finishes as failed with `BUILD_TIMED_OUT`, so the queue retries it (up to 3 attempts);
+    - the worker logs `[brand-sheet] building…`, the page count and time, or the failure.
+  - `lib/server/brand-sheet.ts`: the view adds `requestedAt` while a build is queued and `attempt` while it is being built.
+  - `components/studio/brand-sheet.tsx`:
+    - queued for more than a minute → "Waiting for the studio computer to pick this up. Check that the local worker (worker:dev) is running…";
+    - a retry shows "Attempt n of 3".
+- **Migrations:** none.
+- **Risk:** no digests or prompts change.
+- **Verification:**
+  - `npm run typecheck`: passed.
+  - `npm run lint`: passed.
+  - `tests/brand-sheet.test.ts`: 9 passed.

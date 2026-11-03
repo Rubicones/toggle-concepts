@@ -11,6 +11,8 @@ export type BrandSheetView={
  /** the shown sheet was built from an earlier submission than the latest one */
  stale:boolean;
  error:string|null;builtAt:string|null;
+ /** while queued: when it was asked for; while building: the attempt (1–3) */
+ requestedAt?:string;attempt?:number;
  sections:{section:BrandSheetSection;label:string;images:{sha256:string;width:number;height:number}[]}[];
 };
 const missing=(e:{code?:string}|null)=>!!e&&['42P01','PGRST205','PGRST202'].includes(e.code??'');
@@ -18,10 +20,10 @@ const missing=(e:{code?:string}|null)=>!!e&&['42P01','PGRST205','PGRST202'].incl
 /** The sheet the agents receive for this brand, and the state of its latest build. */
 export async function brandSheetView(admin:SupabaseClient,tenant:string,scope:string):Promise<BrandSheetView>{
  const empty:BrandSheetView={schemaReady:true,submitted:false,state:'none',stale:false,error:null,builtAt:null,sections:[]};
- const builds=await admin.from('studio_brand_sheet_builds').select('submission_id,state,error_code,built_at,requested_at').eq('tenant_id',tenant).eq('campaign_id',scope).order('requested_at',{ascending:false}).limit(10);
+ const builds=await admin.from('studio_brand_sheet_builds').select('submission_id,state,error_code,built_at,requested_at,attempts').eq('tenant_id',tenant).eq('campaign_id',scope).order('requested_at',{ascending:false}).limit(10);
  if(missing(builds.error))return {...empty,schemaReady:false};if(builds.error)throw new Error(builds.error.message);
  const head=await admin.from('studio_brandbook_heads').select('submission_id').eq('campaign_id',scope).maybeSingle(),headId=(head.data as {submission_id?:string}|null)?.submission_id??null;
- const rows=(builds.data??[]) as {submission_id:string;state:BrandSheetView['state'];error_code:string|null;built_at:string|null}[];
+ const rows=(builds.data??[]) as {submission_id:string;state:BrandSheetView['state'];error_code:string|null;built_at:string|null;requested_at:string;attempts:number}[];
  const current=rows.find(r=>r.submission_id===headId)??rows[0],ready=rows.find(r=>r.state==='ready');
  if(!current)return {...empty,submitted:!!headId};
  const shown=current.state==='ready'?current:ready;
@@ -29,6 +31,7 @@ export async function brandSheetView(admin:SupabaseClient,tenant:string,scope:st
  if(images?.error)throw new Error(images.error.message);
  const list=(images?.data??[]) as {section:BrandSheetSection;sha256:string;width:number;height:number}[];
  return {schemaReady:true,submitted:!!headId,state:current.state,stale:!!shown&&shown.submission_id!==headId,error:current.state==='failed'?current.error_code:null,builtAt:shown?.built_at??null,
+  ...(current.state==='queued'?{requestedAt:current.requested_at}:{}),...(current.state==='building'?{attempt:current.attempts}:{}),
   sections:brandSheetSections.map(section=>({section,label:brandSheetLabels[section],images:list.filter(i=>i.section===section).map(({sha256,width,height})=>({sha256,width,height}))})).filter(s=>s.images.length)};
 }
 

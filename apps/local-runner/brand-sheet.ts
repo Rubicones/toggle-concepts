@@ -57,6 +57,8 @@ export async function buildBrandSheet(admin:ReturnType<typeof adminClient>,tenan
  return out;
 }
 
+/** Whole build, all sections; longer means the browser hung. */
+export const SHEET_BUILD_MS=150000;
 export async function processBrandSheet(){
  const admin=adminClient();
  const claimed=await admin.rpc('studio_claim_brand_sheet',{target_tenant:sharedTenant});
@@ -64,9 +66,13 @@ export async function processBrandSheet(){
  const job=claimed.data as {submission_id?:string;campaign_id:string;tenant_id:string;lease_token:number}|null;if(!job?.submission_id)return false;
  const beat=setInterval(()=>{void admin.rpc('studio_heartbeat_brand_sheet',{target_submission:job.submission_id,token:job.lease_token});},15000);
  let sheets:SheetImage[]|null=null,failure:string|null=null;
- try{sheets=await buildBrandSheet(admin,job.tenant_id,job.campaign_id);}
- catch(error){failure=(error instanceof Error?error.message:'BUILD_FAILED').slice(0,200);}
- finally{clearInterval(beat);}
+ // A hung browser must not hold the lease forever: the heartbeat stops with the build after SHEET_BUILD_MS.
+ let timer:ReturnType<typeof setTimeout>|undefined;const started=Date.now();
+ console.log(`[brand-sheet] building the sheet for campaign ${job.campaign_id}`);
+ try{sheets=await Promise.race([buildBrandSheet(admin,job.tenant_id,job.campaign_id),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('BUILD_TIMED_OUT: the local browser did not finish the pages in time')),SHEET_BUILD_MS);})]);
+  console.log(`[brand-sheet] ${sheets.length} page${sheets.length===1?'':'s'} built in ${Math.round((Date.now()-started)/1000)} s`);}
+ catch(error){failure=(error instanceof Error?error.message:'BUILD_FAILED').slice(0,200);console.error('[brand-sheet] build failed:',failure);}
+ finally{clearInterval(beat);clearTimeout(timer);}
  checked(await admin.rpc('studio_finish_brand_sheet',{target_submission:job.submission_id,token:job.lease_token,sheets:sheets??[],failure}));
  return true;
 }
