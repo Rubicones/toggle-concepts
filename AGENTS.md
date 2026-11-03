@@ -125,6 +125,20 @@ Use this sequence to solve a creative problem:
 - Each scenario direction lists `productData`: believable product content (names, versions, statuses, numbers, short comments) from confirmed facts. It is prop text shown inside product or interface mockups, never a headline, hook, claim or offer; in other locales only its language-neutral items are shown. Prop text (including example names from brand materials) is never the headline or the hook; the scenario critic sends such a direction back.
 - The questionnaire's "Ad shape" (one key frame, a short sequence of 2–3 scenes, a story of 4–6 scenes, or suggest) is a structural instruction for strategy, script and visual direction (`adShapeBlock`, sent with the task text) and reaches the director and coder as `creativeHandoff.intent.adShape`. Everything is animated later; durations stay as scoped. Briefs from before the question carry no ad shape.
 
+### Brand language instead of emptiness (creative quality plan step 3, 3 November 2026)
+
+- Shared craft principle: a clear hierarchy (the headline reads in two seconds, the detail rewards a longer look); nothing that belongs neither to the brand nor to the idea; an empty frame is not a finished one. "One focal point" wording is retired.
+- Director and coder build frames from the brand's own language where it serves the idea: for interfaces the kit's `product.components`, `product.interfaceColors` and `brand.interface`, with the scenario's `productData`. Vocabulary, never a template.
+- Studio rules for strategy, script and visual direction (`studioRules` in `packages/agents/creative-method.ts`): no text or logo inside a generated picture; a world built on generated pictures keeps one camera angle per scene across formats (recompose by crop and layout).
+- The director prompt sits close to the 128-variant request-size target (`tests/director-image-methods.test.ts`): any addition must be paid for by cuts elsewhere.
+
+### Review and execution (creative quality plan step 4, 3 November 2026)
+
+- A coder that sees images reviews its rendered views up to twice (`MAX_SELF_REVIEW_ROUNDS`); the second look is about finish, one format group at a time. New live quotes fund both looks (`visualRepairs` up to 4); approved quotes keep their allowance, and `repairBlocked` stops any look the allowance cannot pay for.
+- The live critic and the self-review also judge brand components and colours, precise finish (one grid, even spacing, equal sizes for equal roles), believable mockup data, the brand's rules for buttons, labels and the CTA, text or logos inside generated pictures, and words drawn in two fonts.
+- The browser measurement reports `FONT_MIXED_IN_WORD` (hard): a word whose letters come from two fonts. The coder sets the whole line in one font that has every letter. When supplied font files lack letters a campaign locale needs (`localeLetters`), the full family is fetched from Google Fonts at draft start; the draft adds font faces in list order.
+- The idea critic also checks execution technique: no text or logo planned inside a generated picture, one camera angle per scene across formats.
+
 ### Brand sheet (designer pipeline plan, point 1, 3 November 2026)
 
 - The brand sheet shows the agents how the brand looks. It has five neutral specimen pages: logo & colour, typography, interface components, product & photography, rules in use (`packages/brand/brand-sheet.ts`).

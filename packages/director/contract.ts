@@ -56,6 +56,8 @@ export function readDesign(value:unknown,input:DirectionInput):Design{
   // Image methods exist only for blocks started with them; earlier blocks ignore them instead of failing an answer.
   // Cutouts exist only for blocks started with the picture rules (designer pipeline plan, point 2).
   if(input.brief.pictureRulesVersion!==1||r.cutout===false)delete r.cutout;
+  // The picture rules name only proxyFor; a stand-in is a proxy by definition, so the label is completed, never refused.
+  if(input.brief.pictureRulesVersion===1&&r.proxyFor&&!r.proxy)r.proxy=true;
   if(input.brief.imageMethodsVersion!==1){delete r.sketch;delete r.edit;delete r.extend;continue;}
   const validBox=(b?:number[])=>!b||b[0]<b[2]&&b[1]<b[3];
   if(r.edit&&r.extend)throw new Error('IMAGE_METHOD_CONFLICT: use either edit or extend for one picture.');

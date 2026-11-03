@@ -45,7 +45,7 @@ test('planning contracts read the brand and the feeling brief first and never li
  assert.doesNotMatch(all,/UI Card Proof|Studio Still Life|POV Lifestyle|Tactile Material Craft|highlight strips or signature accent|architectural color-block split/);
  assert.doesNotMatch(all,/Get paid for buying milk|TEST THE HOOK BEFORE IT'S DONE/,'no other brand copy as examples');
  assert.match(planningTransportTask('strategy'),/How far from the usual style/);assert.match(planningTransportTask('strategy'),/made means nothing is photographed and you invent how it is made/);
- assert.match(planningTransportTask('script'),/one decisive frame with one focal point and visible proof/);assert.match(planningTransportTask('script'),/brand's voice/);
+ assert.match(planningTransportTask('script'),/one decisive frame with a clear hierarchy and visible proof/);assert.match(planningTransportTask('script'),/brand's voice/);
  assert.match(planningTransportTask('visual-direction'),/square master/);assert.match(planningTransportTask('visual-direction'),/kit's shape language/);
  assert.match(liveCriticInstructions,/feels like the chosen feeling/);
 });

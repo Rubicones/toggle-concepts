@@ -75,7 +75,7 @@ export const LIVE_CRITIC_REQUEST={inputTokens:60000,outputTokens:8000},LIVE_VISU
 export const IMAGE_INPUT_TOKENS=4224;
 export function estimateLiveDirection(pricing:Parameters<typeof estimateStaticDirection>[0],perStillMicroUsd:number,maxStills:number,identity:unknown,options:{criticRequests?:number;visualRepairs?:number;brandSheetImages?:number}={}){
  const quote=estimateStaticDirection(pricing,perStillMicroUsd,maxStills,identity);quote.maxCostMicroUsd-=quote.roles.critic.maxCostMicroUsd;
- const n=Math.max(0,Math.min(2,Math.floor(options.criticRequests??0))),m=Math.max(0,Math.min(3,Math.floor(options.visualRepairs??0)));
+ const n=Math.max(0,Math.min(2,Math.floor(options.criticRequests??0))),m=Math.max(0,Math.min(4,Math.floor(options.visualRepairs??0)));
  const price=(p:{inputPrice:number;outputPrice:number},inputTokens:number,outputTokens:number)=>Math.max(1,Math.ceil((p.inputPrice*inputTokens+p.outputPrice*outputTokens)*1e6*1.1));
  // Brand sheet pages ride on every critic request (blocks with brief.brandSheetVersion 1); without them quotes are unchanged.
  const sheet=Math.max(0,Math.min(6,Math.floor(options.brandSheetImages??0)));

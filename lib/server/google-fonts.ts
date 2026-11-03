@@ -4,7 +4,7 @@ import {objectStore} from '@/packages/media/s3.server';
 import type {BrandDraft} from '@/packages/contracts/brand-kit';
 import type {BrandMaterial} from '@/packages/director/inputs';
 import {fontMetadata} from '@/packages/brand/font-metadata';
-import {brandFontFamilies,familyNeedsWeights,googleFontCssUrl,parseGoogleFontCss,normalizeFamily,GOOGLE_FONT_WEIGHTS} from '@/packages/brand/google-fonts';
+import {brandFontFamilies,familyMissesLetters,familyNeedsWeights,googleFontCssUrl,parseGoogleFontCss,normalizeFamily,GOOGLE_FONT_WEIGHTS} from '@/packages/brand/google-fonts';
 
 const MAX_FONT_BYTES=3*1024*1024;
 type Fetch=typeof fetch;
@@ -14,10 +14,11 @@ type Store={putStaging:(key:string,body:Buffer,mime:string)=>Promise<unknown>;he
  * Completes the brand's named fonts from Google Fonts before a draft starts (see packages/brand/google-fonts.ts).
  * Any failure (offline, family not on Google Fonts, unexpected response) leaves the materials unchanged.
  */
-export async function googleFontMaterials(kit:Pick<BrandDraft,'rules'>,materials:BrandMaterial[],id:(seed:unknown)=>string,deps:{fetch?:Fetch;store?:Store}={}){
+/** `letters`: what the campaign's locales need (localeLetters). When supplied files lack them, Google's full file (every script the family supports) is added: the browser combines faces of one family, so the missing letters come from it while shared letters keep a fixed order (apps/local-runner/director/workspace.ts adds faces in list order). */
+export async function googleFontMaterials(kit:Pick<BrandDraft,'rules'>,materials:BrandMaterial[],id:(seed:unknown)=>string,deps:{fetch?:Fetch;store?:Store}={},letters=''){
  const get=deps.fetch??fetch,added:BrandMaterial[]=[],notes:string[]=[];
  for(const family of brandFontFamilies(kit)){
-  if(!familyNeedsWeights(family,materials))continue;
+  if(!familyNeedsWeights(family,materials)&&!familyMissesLetters(family,materials,letters))continue;
   const found=await Promise.all(GOOGLE_FONT_WEIGHTS.map(async weight=>{
    try{
     const css=await get(googleFontCssUrl(family,weight),{headers:{'User-Agent':'curl/8.4.0'},signal:AbortSignal.timeout(8000)});if(!css.ok)return null;

@@ -20,7 +20,7 @@ export function readLiveCritique(text:string):LiveCritique{
 }
 
 export type RepairKind='gate'|'self'|'critic';
-export type LiveReviewState={version:1;gateRounds:number;criticRounds:number;critiques:LiveCritique[];skipped?:string;repairTurns?:number;selfReviewed?:boolean;repairs:{kind:RepairKind;round:number;applied:boolean;reason?:string}[]};
+export type LiveReviewState={version:1;gateRounds:number;criticRounds:number;critiques:LiveCritique[];skipped?:string;repairTurns?:number;selfReviewed?:boolean;selfReviewRounds?:number;repairs:{kind:RepairKind;round:number;applied:boolean;reason?:string}[]};
 export type LiveReviewRecord={version:1;inspection:{revision:string;views:number;hard:number;soft:number;findings:ReturnType<typeof findingDigest>};gateRounds:number;criticRounds:number;critiques:LiveCritique[];directorNotes:LiveCritique['notes'];repairs:LiveReviewState['repairs'];skipped?:string};
 /** A rendered view: its label, file and, for review sheets, its view key, scene, size and whether it shows the longest copy. */
 export type Shot={label:string;file:string;key?:string;sceneId?:string;width?:number;height?:number;group?:'reference'|'longest'};
@@ -53,9 +53,10 @@ export function newReviewState():LiveReviewState{return {version:1,gateRounds:0,
 
 /** The coder note for critic findings routed to implementation; the technique stays the coder's choice. */
 /** The coder's own look at its rendered views, before the critic: find every defect and fix them in one change. */
-export function selfReviewNote(summary:InspectionSummary){
+export const MAX_SELF_REVIEW_ROUNDS=2;
+export function selfReviewNote(summary:InspectionSummary,round=1){
  const measured=findingDigest(summary,'all',12);
- return `Visual self-review. The attached images are real renders of your current Frame.tsx: one sheet per scene with every ordered format side by side, one for the longest copy, and zoomed crops of measured problems. Look at them as a strict art director who did not build this, against the director's design and visual idea. Find every defect: the logo or any word hard to see or read; type with no clear hierarchy or with lines run together that the design separates; anything clipped, overlapping, off the canvas or in a safe margin; pictures cut through the subject, stretched or soft; dead or cramped space; a format that is only the square squeezed instead of recomposed; graphics, products or marks that look invented or unfinished. Then fix all of them in one coherent change; keep the concept, options and approved words.${measured.length?`\nMeasured in the browser:\n${measured.map((f,i)=>`${i+1}. [${f.severity}] ${f.detail} — ${f.views.join('; ')}`).join('\n')}`:''}`;
+ return `${round>1?'Second look, one format group at a time (tall, then square, then wide) and scene by scene: this pass is about finish. ':''}Visual self-review. The attached images are real renders of your current Frame.tsx: one sheet per scene with every ordered format side by side, one for the longest copy, and zoomed crops of measured problems. Look at them as a strict art director who did not build this, against the director's design and visual idea. Find every defect: the logo or any word hard to see or read; type with no clear hierarchy or with lines run together that the design separates; anything clipped, overlapping, off the canvas or in a safe margin; pictures cut through the subject, stretched or soft; dead or cramped space; a format that is only the square squeezed instead of recomposed; graphics, products or marks that look invented or unfinished; edges and baselines off one grid, uneven spacing, matching roles in different sizes; an interface mockup not built from the brand's own components or with unbelievable data; buttons, labels or the CTA not set as the brand sets them; text or a logo inside a generated picture; a word drawn in two fonts. Then fix all of them in one coherent change; keep the concept, options and approved words.${measured.length?`\nMeasured in the browser:\n${measured.map((f,i)=>`${i+1}. [${f.severity}] ${f.detail} — ${f.views.join('; ')}`).join('\n')}`:''}`;
 }
 export function criticNote(critique:LiveCritique,round:number){
  const notes=critique.notes.filter(n=>n.recipient==='assembler');
@@ -87,15 +88,18 @@ export async function runLiveReview(deps:LiveReviewDeps):Promise<LiveReviewRecor
  };
  await gate();
  // The coder looks at its own rendered views once before anyone else does.
- if(!stopped&&deps.selfReview&&!state.selfReviewed&&shots.length){
-  state.selfReviewed=true;await deps.save(state);
+ // Up to two looks: the second only after the first was applied, and only within the coder's quoted requests
+ // (repairBlocked). A state saved before rounds were counted (selfReviewed) counts as one look.
+ while(!stopped&&deps.selfReview&&shots.length){
+  const done=state.selfReviewRounds??(state.selfReviewed?1:0);if(done>=MAX_SELF_REVIEW_ROUNDS)break;
+  const round=done+1,step=round>1?`review:self:${round}`:'review:self';
+  state.selfReviewed=true;state.selfReviewRounds=round;await deps.save(state);
   const blocked=await deps.repairBlocked?.();
-  if(blocked)await deps.emit('review:self:skipped',`The coder's visual self-review was skipped: ${blocked}`,{reason:blocked});
-  else{
-   const result=await deps.repair(selfReviewNote(summary),'self',1,{shots,summary});state.repairs.push({kind:'self',round:1,...result});await deps.save(state);
-   if(!result.applied)await deps.emit('review:self','The coder looked at the rendered views but could not finish a fix; the previous working version is kept.',result);
-   else if(await remeasure()){await deps.emit('review:self',`The coder reviewed the rendered views and revised the component; ${plural(summary.hard,'objective issue')} remain.`,{hard:summary.hard,soft:summary.soft});await gate();}
-  }
+  if(blocked){await deps.emit(`${step}:skipped`,`The coder's visual self-review was skipped: ${blocked}`,{reason:blocked});break;}
+  const result=await deps.repair(selfReviewNote(summary,round),'self',round,{shots,summary});state.repairs.push({kind:'self',round,...result});await deps.save(state);
+  if(!result.applied){await deps.emit(step,'The coder looked at the rendered views but could not finish a fix; the previous working version is kept.',result);break;}
+  if(!await remeasure())break;
+  await deps.emit(step,`The coder reviewed the rendered views${round>1?' again for finish':''} and revised the component; ${plural(summary.hard,'objective issue')} remain.`,{hard:summary.hard,soft:summary.soft});await gate();
  }
  if(deps.critic&&deps.criticRounds>0){
   while(!stopped&&state.criticRounds<deps.criticRounds){

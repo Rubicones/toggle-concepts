@@ -75,6 +75,8 @@ Checked against the code on `main` (`43ba6d0`). Corrections and gaps, in plan or
 
 - Step 1 (A + A5): implemented on `feat/brand-uikit-components`, see `docs/reviews/2026-11-03-brand-uikit-components.md`. Migration `20261103000100_brand_uikit_components.sql` for the owner.
 - Step 2 (B + C): implemented on `feat/copy-hierarchy-ad-shape`, see `docs/reviews/2026-11-03-copy-hierarchy-ad-shape.md`. No migration. The script schema keeps its 2 400-character budget by replacing the unused script `proxyContracts` (visual direction keeps its own) with `productData`.
+- Step 3 (D): implemented on `feat/brand-language-principles`, stacked on steps 1 and 2 (it contains both), see `docs/reviews/2026-11-03-brand-language-principles.md`. No migration.
+- Step 4 (E): implemented on `feat/review-execution`, stacked on step 3 (contains steps 1–3), see `docs/reviews/2026-11-03-review-execution.md`. No migration.
 
 ## Order
 

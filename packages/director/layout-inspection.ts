@@ -11,12 +11,12 @@ import type {ImageFacts} from './image-facts';
 
 export type Box={x:number;y:number;width:number;height:number};
 export type InspectionView={key:string;label:string;variantId:string;props:LiveFrameProps;ordered:boolean;shot:boolean;group?:'reference'|'longest'};
-export type RawText={text:string;box:Box;fontSize:number;color:string;element:number;clipped:boolean;lines:number;background:string|null;complexBackground:boolean;overImage:string|null;brokenWords?:string[]};
+export type RawText={text:string;box:Box;fontSize:number;color:string;element:number;clipped:boolean;lines:number;background:string|null;complexBackground:boolean;overImage:string|null;brokenWords?:string[];/** Words whose letters come from two fonts (the first font lacks some of them). */mixedFontWords?:string[]};
 export type RawImage={src:string;box:Box;naturalWidth:number;naturalHeight:number;objectFit:string;objectPosition:string;logo:boolean};
 export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[]};
 /** ink: alpha-weighted relative luminance of the logo's own pixels; background/overImage: what it sits on. */
 export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null};
-export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST';
+export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD';
 export type Finding={code:FindingCode;severity:'hard'|'soft';view:string;detail:string;box?:Box};
 export type ViewReport={view:string;label:string;findings:Finding[];texts:number;images:number};
 export type InspectionSummary={version:1;revision:string;views:number;hard:number;soft:number;reports:ViewReport[]};
@@ -78,6 +78,11 @@ export function collectLayout(size:{width:number;height:number}):RawView{
  const source=(src:string)=>names.get(src)??(src.startsWith('data:')?'inline':src.slice(0,200));
  const imgs=Array.from(document.querySelectorAll('img')).filter(i=>visible(i)>=0.5);
  const images=imgs.map(i=>{const s=getComputedStyle(i);return {src:source(i.getAttribute('src')??''),box:box(i.getBoundingClientRect()),naturalWidth:i.naturalWidth,naturalHeight:i.naturalHeight,objectFit:s.objectFit,objectPosition:s.objectPosition,logo:!!i.closest('[data-brand-logo]')||i.hasAttribute('data-brand-logo')};});
+ // A letter the element's first font has measures the same whatever the fallback; a missing letter takes the fallback's
+ // width. A word with both kinds is drawn in two fonts.
+ const pen=document.createElement('canvas').getContext('2d'),coverage=new Map<string,boolean>();
+ const covers=(family:string,weight:string,fontStyle:string,ch:string)=>{const key=`${family}|${weight}|${fontStyle}|${ch}`;let v=coverage.get(key);if(v===undefined){if(!pen)return true;const width=(fallback:string)=>{pen.font=`${fontStyle} ${weight} 40px ${family}, ${fallback}`;return pen.measureText(ch).width;};const a=width('monospace'),b=width('serif'),c=width('cursive');v=Math.abs(a-b)<0.01&&Math.abs(a-c)<0.01;coverage.set(key,v);}return v;};
+ const generic=/^(serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-[a-z-]+|emoji|math|fangsong|inherit|initial)$/i;
  const texts:RawText[]=[],walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
  while(walker.nextNode()){
   const node=walker.currentNode,e=node.parentElement;if(!e||!node.textContent?.trim()||e.closest('script,style,noscript'))continue;
@@ -93,7 +98,9 @@ export function collectLayout(size:{width:number;height:number}):RawView{
   const under=images.find(i=>!i.logo&&i.box.x<r.right&&i.box.x+i.box.width>r.left&&i.box.y<r.bottom&&i.box.y+i.box.height>r.top);
   // A word whose glyphs land on two lines was hyphenated or broken (hyphen-joined parts are checked separately).
   const brokenWords:string[]=[],content=node.textContent;for(const m of content.matchAll(/[^\s\-‐–—/]+/g)){if(brokenWords.length>=4)break;const w=document.createRange();w.setStart(node,m.index!);w.setEnd(node,m.index!+m[0].length);if(new Set(Array.from(w.getClientRects()).filter(c=>c.width>0).map(c=>Math.round(c.top))).size>1)brokenWords.push(m[0]);}
-  texts.push({text:node.textContent.replace(/\s+/g,' ').trim(),box:box(r),fontSize:parseFloat(style.fontSize)*fontScale,color:style.color,element:index(e),clipped,lines:Math.max(1,lineTops.size),background,complexBackground,overImage:!background&&under?under.src:null,...(brokenWords.length?{brokenWords}:{})});
+  const first=style.fontFamily.split(',')[0]?.trim()??'',mixedFontWords:string[]=[];
+  if(first&&!generic.test(first.replace(/["']/g,'')))for(const m of content.matchAll(/\p{L}[\p{L}\p{M}'’]*/gu)){if(mixedFontWords.length>=4)break;const letters=[...m[0]].filter(ch=>/\p{L}/u.test(ch));const has=letters.map(ch=>covers(first,style.fontWeight,style.fontStyle,ch));if(has.includes(true)&&has.includes(false))mixedFontWords.push(m[0]);}
+  texts.push({text:node.textContent.replace(/\s+/g,' ').trim(),box:box(r),fontSize:parseFloat(style.fontSize)*fontScale,color:style.color,element:index(e),clipped,lines:Math.max(1,lineTops.size),background,complexBackground,overImage:!background&&under?under.src:null,...(brokenWords.length?{brokenWords}:{}),...(mixedFontWords.length?{mixedFontWords}:{})});
  }
  const linear=(v:number)=>{v/=255;return v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4;};
  const ink=(e:Element)=>{const img=(e.tagName==='IMG'?e:e.querySelector('img')) as HTMLImageElement|null;if(!img||!img.complete||!img.naturalWidth)return null;
@@ -152,6 +159,7 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
     if(ratio<3||f.busy[cell]>0.6)add('CONTRAST_OVER_PICTURE','soft',`Text sits directly on the picture (estimated ${ratio.toFixed(1)}:1, busy ${f.busy[cell].toFixed(2)}); check it reads: ${quote(t.text)}`,t.box);
    }
   }
+  for(const word of t.mixedFontWords??[])add('FONT_MIXED_IN_WORD','hard',`Letters of one word come from two fonts (the brand font lacks some of them): set the whole line in one font that has every letter: ${quote(word)} in ${quote(t.text)}`,t.box);
   for(const word of t.brokenWords??[])add('WORD_BROKEN',approvedText?'hard':'soft',`A word is split across two lines: ${quote(word)} in ${quote(t.text)}`,t.box);
   for(const logo of raw.logos)if(overlap(t.box,logo.box)>0.1*Math.min(t.box.width*t.box.height,logo.box.width*logo.box.height))add('TEXT_OVER_LOGO','hard',`Text overlaps the logo: ${quote(t.text)}`,{x:Math.min(t.box.x,logo.box.x),y:Math.min(t.box.y,logo.box.y),width:Math.max(t.box.x+t.box.width,logo.box.x+logo.box.width)-Math.min(t.box.x,logo.box.x),height:Math.max(t.box.y+t.box.height,logo.box.y+logo.box.height)-Math.min(t.box.y,logo.box.y)});
  }
