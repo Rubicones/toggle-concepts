@@ -1,7 +1,9 @@
 /** App-owned identity and approved facts; no creative layout vocabulary. */
 export type Format = {id:string;width:number;height:number;fps:number;safe:{top:number;right:number;bottom:number;left:number};minTextPx:number};
 export type Variant = {id:string;format:string;locale:string;hook:string;cta:string;length:number};
-export type Scene = {id:string;sourceSceneId?:string;start:number;end:number;copy:string[];visualNotes:string;motionNotes:string;maxStaticSeconds:number};
+export type Scene = {id:string;sourceSceneId?:string;start:number;end:number;copy:string[];visualNotes:string;motionNotes:string;maxStaticSeconds:number;
+ /** Design quality plan, point 1d: what in this frame proves its line; absent for earlier scenarios. */
+ proof?:string};
 export type BrandKit = {
  tokens:Record<string,string|number>;fonts:{family:string;url:string;weight?:string;style?:string}[];
  logos:{id:string;url:string;clearSpacePx:number;required?:boolean;/** Same drawing with currentColor resolved: for dark and for light grounds. */variants?:{onDark:string;onLight:string}}[];

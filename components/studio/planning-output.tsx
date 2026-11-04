@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {Disclosure} from '@/components/ui/disclosure';
-import {evidenceText,humanLabel,scenarioPresentation,technicalField} from '@/packages/contracts/run-presentation';
+import {evidenceText,fieldHints,humanLabel,sceneLengths,scenarioPresentation,technicalField} from '@/packages/contracts/run-presentation';
 import {planningField,planningObject} from '@/packages/director/planning';
 import styles from './planning-output.module.css';
 
@@ -11,7 +11,8 @@ export function PlanningOutput({value}:{value:unknown}){
  if(directions){const direction=directions[Math.min(chosen,directions.length-1)];return <div className={styles.editorial}>
   {directions.length>1&&<nav className={styles.tabs} aria-label="Creative directions">{directions.map((d,i)=><button key={d.id} type="button" aria-pressed={i===chosen} onClick={()=>setChosen(i)}>{d.title}</button>)}</nav>}
   <header className={styles.concept}>{direction.premise&&<p>{direction.premise}</p>}{direction.hook&&<blockquote>{direction.hook}</blockquote>}{direction.cta&&<p className={styles.cta}><span>Call to action</span>{direction.cta}</p>}</header>
-  {!!direction.scenes.length&&<section aria-label={`${direction.title} storyboard`}><div className={styles.heading}><h4>Story beats</h4><span>{direction.scenes.length} scenes</span></div><ol className={styles.beats}>{direction.scenes.map((scene,index)=><li key={`${scene.id}:${index}`}><div className={styles.time}><strong>{String(index+1).padStart(2,'0')}</strong>{scene.start!==''&&<span>{scene.start}{scene.end!==''?`–${scene.end}`:''}s</span>}</div><div className={styles.scene}>{scene.copy&&<p className={styles.copy}>{scene.copy}</p>}{scene.visual&&<p>{scene.visual}</p>}{(scene.narration||scene.motion||scene.audio)&&<Disclosure><summary>Voice, sound and later motion</summary><dl>{scene.narration&&<><dt>Voiceover</dt><dd>{scene.narration}</dd></>}{scene.audio&&<><dt>Sound</dt><dd>{scene.audio}</dd></>}{scene.motion&&<><dt>Motion intent</dt><dd>{scene.motion}</dd></>}</dl></Disclosure>}</div></li>)}</ol></section>}
+  {!!direction.world.length&&<section className={styles.world} aria-label={`${direction.title} world`}><div className={styles.heading}><h4>World</h4><span>used by every scene</span></div><dl>{direction.world.map(g=><div key={g.group}><dt>{g.group}</dt><dd>{g.items.join(' · ')}</dd></div>)}</dl></section>}
+  {!!direction.scenes.length&&<section aria-label={`${direction.title} storyboard`}><div className={styles.heading}><h4>Story beats</h4><span>{sceneLengths(direction.scenes)}{direction.proofs&&direction.scenes.slice(0,-1).some(sc=>!sc.proof)?` · ${direction.scenes.slice(0,-1).filter(sc=>!sc.proof).length} without proof`:''}</span></div><ol className={styles.beats}>{direction.scenes.map((scene,index)=><li key={`${scene.id}:${index}`}><div className={styles.time}><strong>{String(index+1).padStart(2,'0')}</strong>{scene.start!==''&&<span>{scene.start}{scene.end!==''?`–${scene.end}`:''}s</span>}</div><div className={styles.scene}>{scene.copy&&<p className={styles.copy}>{scene.copy}</p>}{scene.visual&&<p>{scene.visual}</p>}{scene.proof?<p className={styles.proof}><span>Proof</span> {scene.proof}</p>:direction.proofs&&index<direction.scenes.length-1?<p className={styles.noProof}><span aria-hidden>!</span> This frame proves nothing yet.</p>:null}{(scene.narration||scene.motion||scene.audio)&&<Disclosure><summary>Voice, sound and later motion</summary><dl>{scene.narration&&<><dt>Voiceover</dt><dd>{scene.narration}</dd></>}{scene.audio&&<><dt>Sound</dt><dd>{scene.audio}</dd></>}{scene.motion&&<><dt>Motion intent</dt><dd>{scene.motion}</dd></>}</dl></Disclosure>}</div></li>)}</ol></section>}
   {!!Object.keys(direction.rest).length&&<Disclosure><summary>Copy, variations and production notes</summary><Evidence value={direction.rest}/></Disclosure>}
  </div>;}
  const o=planningObject(value),territories=planningField(o,['threeTerritories','territories']),treatments=planningField(o,['treatments','visualTreatments']);
@@ -35,5 +36,5 @@ export function Evidence({value,depth=0}:{value:unknown;depth?:number}){
  if(depth>=4)return <p className={styles.prose}>{evidenceText(value)}</p>;
  if(Array.isArray(value))return <><ul className={styles.list}>{value.slice(0,limit).map((v,i)=><li key={i}><Evidence value={v} depth={depth+1}/></li>)}</ul>{value.length>limit&&<Button variant="outline" onClick={()=>setLimit(n=>n+20)}>Show more · {value.length-limit} remaining</Button>}</>;
  const entries=Object.entries(value).filter(([key,v])=>!technicalField(key)&&v!=null&&v!==''&&(!Array.isArray(v)||v.length));
- return <dl className={styles.facts}>{entries.map(([key,v])=><div key={key}><dt>{humanLabel(key)}</dt><dd><Evidence value={v} depth={depth+1}/></dd></div>)}</dl>;
+ return <dl className={styles.facts}>{entries.map(([key,v])=><div key={key}><dt>{humanLabel(key)}</dt><dd>{fieldHints[key]&&<small className={styles.hint}>{fieldHints[key]}</small>}<Evidence value={v} depth={depth+1}/></dd></div>)}</dl>;
 }

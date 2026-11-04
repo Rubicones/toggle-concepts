@@ -212,6 +212,19 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
   - Each sealed designer draft records its real usage (`designer.usage`), which the timeline shows. After `DESIGNER_MEASURED_RUNS` measured runs the quote takes its allowance from the 90th percentile with 50 % headroom, never above the starting ceiling.
   - The price panel says "up to N design rounds and up to M pictures" and the typical measured cost.
 
+### Planning: idea, proof and world (design quality plan, point 1, 4 November 2026)
+
+- Instruction version `2026-11-04.1`. Runs whose frozen instructions are this version or later (`scriptProofFor`) get the new script schema and contracts; older runs keep theirs exactly.
+- **Strategy** decides the idea, not the production. `visualPremise` is the visual thought: what the viewer should see and feel. It never states canvas, colours, grids, pixels, percentages, tools, a picture policy or how the interface is shown. The UI labels it "Visual thought".
+- **Interface rule** (`interfaceRule`, every planning role): a digital product's interface is a simplified mockup built in code from the brand's UI-kit components, never a screenshot. An earlier role's production remark never overrides it or a brand rule.
+- **Product as proof** (`productProof`): the frame that proves the promise shows the product in use; a metaphor frames it, never replaces it.
+- **Script** (`agent_output_v1_3`):
+  - every scene has `proof`, which may be empty only for the brand/CTA scene;
+  - every direction has one `world` ("Group: value" lines) instead of `productData`;
+  - scene count follows the message's beats, not the duration.
+- **Delivery.** `Scene.proof` and `intent.direction.world` reach the director, coder and designer.
+- **Visual direction** gives intent and relationships, never pixel positions or percentages; brand values stay exact.
+
 ## 6. Current draft execution and handoff contracts
 
 Key modules: `lib/server/director-start.ts`, `apps/local-runner/director/worker.ts`, `apps/local-runner/director/static-assembler.ts`, `packages/director/creative-handoff.ts`, `packages/director/planning.ts`, `packages/director/inputs.ts`, `packages/director/source-edits.ts` and `packages/director/contract.ts`.

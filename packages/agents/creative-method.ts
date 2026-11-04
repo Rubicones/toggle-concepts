@@ -13,3 +13,9 @@ export const craftStandards=`CRAFT. Every frame has a clear hierarchy: the headl
 
 /** Studio rules every planning role applies (creative quality plan D3): how generated pictures are used, not what they show. */
 export const studioRules=`STUDIO RULES. Text and logos are never part of a generated picture: no engraved, embossed, printed, painted or signage type and no wordmark inside it; type and marks are set in code. A world built on generated pictures keeps one camera angle per scene across all formats; each format is recomposed by crop and layout, never by a new angle.`;
+
+/** Design quality plan, point 1b: the AD's interface rule, carried by every planning role and the draft agents. */
+export const interfaceRule=`INTERFACE RULE. A digital product's interface in an ad is always a simplified mockup built from scratch in code from the brand's UI-kit components, never a screenshot; a screenshot may still give the product's names and facts.`;
+
+/** Design quality plan, point 1c: the product is the proof. */
+export const productProof=`PRODUCT AS PROOF. The frame that proves the promise shows the product in use, doing what the promise says, filled with believable names, numbers and states from confirmed facts. A metaphor may frame the product; it never replaces it.`;

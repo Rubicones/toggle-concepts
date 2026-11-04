@@ -45,9 +45,12 @@ test('creative prompts teach a method, never example styles, and know the studio
  const {defaultAgentSettings:agents,AGENT_INSTRUCTION_VERSION:version}=await import('../packages/agents/defaults');
  const {staticDirectorPrompt}=await import('../packages/agents/prompts/director-v1');
  const {staticCoderInstructions}=await import('../packages/agents/prompts/static-coder');
- assert.equal(version,'2026-11-03.2');
+ assert.equal(version,'2026-11-04.1');
  const anchors=/App Screen|Still Life|color.block|colour.block|highlight strip|section rulers|high-density|phone mockup|split screens, colour fields|draw it natively/i;
- for(const role of ['strategy','script','visual-direction']){const text=agents.find(a=>a.role===role)!.instructions;assert.doesNotMatch(text,anchors,role);assert.match(text,/HOW TO INVENT/);assert.match(text,/GSAP/);assert.match(text,/Three\.js/);assert.ok(text.length<=12000,role);}
+ for(const role of ['strategy','script','visual-direction']){const text=agents.find(a=>a.role===role)!.instructions;assert.doesNotMatch(text,anchors,role);assert.match(text,/HOW TO INVENT/);assert.ok(text.length<=12000,role);}
+ // Design quality plan, point 1a: the strategy decides the idea, not the production, so it names no tools.
+ for(const role of ['script','visual-direction']){const text=agents.find(a=>a.role===role)!.instructions;assert.match(text,/GSAP/);assert.match(text,/Three\.js/);}
+ assert.doesNotMatch(agents.find(a=>a.role==='strategy')!.instructions,/GSAP|Three\.js|STUDIO TOOLKIT/);
  assert.match(agents.find(a=>a.role==='visual-direction')!.instructions,/makingTechnique/);
  assert.doesNotMatch(staticDirectorPrompt.instructions,anchors);assert.match(staticDirectorPrompt.instructions,/never redrawn or invented/);
  assert.doesNotMatch(staticCoderInstructions,anchors);assert.match(staticCoderInstructions,/Never redraw, simplify or invent the product/);
