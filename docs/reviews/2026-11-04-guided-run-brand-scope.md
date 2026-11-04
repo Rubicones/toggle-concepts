@@ -50,3 +50,14 @@
   - `npm run typecheck`: passed.
   - `npm run lint`: passed.
   - Director image-method, designer and hero-frame tests: passed.
+
+## 6. Follow-up: the live preview fails on a picture still being prepared (same day)
+
+- **Symptom:** after the fix in section 5, "Retry preview" still showed `IMAGE_METHOD_SKETCH_REQUIRED`, and the live component disappeared.
+- **Cause:** the web app's live preview (`lib/server/director-live.ts` → `liveResourceBindings`) builds a request key for every saved picture. The designer's sketch picture had been saved before its sketch was pinned, so the preview itself threw.
+- **Fix:** `packages/director/resources.ts` `liveResourceBindings`. A picture whose image method is not pinned yet (sketch without hash, edit without source, extend without canvas) is simply not ready, and the preview never fails on it.
+- **Test:** `tests/director-resource-bindings.test.ts` (an unpinned sketch is pending).
+- **Verification:**
+  - `npm run typecheck`: passed.
+  - `npm run lint`: passed.
+  - Resource-binding tests: 8 passed.
