@@ -10,7 +10,9 @@ export type LivePreview={status:'waiting'|'ready'|'updating';revision?:string;as
  /** A designer block (point 4): one owner receives every note. */
  designer?:boolean;
  /** Designer drafts (point 5c): the ordered formats and whether each is designed, being designed or has open findings. */
- formats?:DesignedFormat[]};
+ formats?:DesignedFormat[];
+ /** Point 2d: measured font problems in plain words; an empty list means none were measured. */
+ fontChecks?:string[]};
 export const liveAspectPresets=[{label:'1:1',width:1080,height:1080},{label:'9:16',width:1080,height:1920},{label:'4:5',width:1080,height:1350},{label:'16:9',width:1920,height:1080}] as const;
 export function liveFormat(width:number,height:number){return width===height?'square':width>height?'wide':height/width>1.65?'vertical':'portrait';}
 /** Only issued copy bindings can be selected. Dimensions are continuous preview inputs, never layouts. */

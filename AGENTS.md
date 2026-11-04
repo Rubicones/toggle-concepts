@@ -225,6 +225,19 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
 - **Delivery.** `Scene.proof` and `intent.direction.world` reach the director, coder and designer.
 - **Visual direction** gives intent and relationships, never pixel positions or percentages; brand values stay exact.
 
+### Brand font check (design quality plan, point 2, 4 November 2026)
+
+- The browser measurement records, for every text, the font that really rendered it: the first family of its `font-family` that is loaded and covers its letters (`RawText.font`). It also records whether the requested weight exists in that family's loaded files, and which brand font files failed to load (`RawView.fontsFailed`).
+- **Findings.**
+  - `FONT_NOT_BRAND` is hard for approved copy and soft for prop text.
+  - `FONT_WEIGHT_MISSING` is soft: the browser imitates the weight.
+  - `FONT_NOT_LOADED` is hard: a delivery problem.
+  - Names in the text come only from the measurement and `brand.fonts`; no font is named in code or prompts.
+- **UI.**
+  - The live review's "Build and option status" lists font problems in plain words.
+  - The format chips count them as open issues.
+  - The brand card warns when the typography rules use a weight the family's files do not have (`ruleWeights`).
+
 ## 6. Current draft execution and handoff contracts
 
 Key modules: `lib/server/director-start.ts`, `apps/local-runner/director/worker.ts`, `apps/local-runner/director/static-assembler.ts`, `packages/director/creative-handoff.ts`, `packages/director/planning.ts`, `packages/director/inputs.ts`, `packages/director/source-edits.ts` and `packages/director/contract.ts`.
