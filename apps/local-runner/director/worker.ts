@@ -56,9 +56,10 @@ import {liveCriticInstructions,liveCriticSchema} from '../../../packages/agents/
 import {reviewImages} from './review-sheet';
 import {prepareImageMethods,derivedReferences,finishImageMethod} from './image-methods';
 import {storeCutout,emitCutout,pictureRoleDetail} from './cutout';
-import {usesDesigner,designerActivityLine,designerTurnSummary,designerTurnResponse} from '../../../packages/director/designer';
+import {usesDesigner,heroFirst,designerActivityLine,designerTurnSummary,designerTurnResponseFor} from '../../../packages/director/designer';
 import {designerContext} from '../../../packages/director/designer-context';
-import {designerInstructions} from '../../../packages/agents/prompts/designer-v1';
+import {designerInstructionsFor} from '../../../packages/agents/prompts/designer-v1';
+import {readLiveCritique} from '../../../packages/director/live-review';
 import {runDesigner,newDesignerState,type DesignerLoopState} from './designer-loop';
 import {designerTools,provisionalDesign,finishDesign,designerPrefixImages} from './designer-run';
 import {failingCombinations} from '../../../packages/director/layout-inspection';
@@ -173,7 +174,7 @@ export async function executeDirector(claim:DirectorClaim,device:string){
    const seal=async(review?:LiveReviewRecord)=>{
     // Point 6c: the designer's real usage is recorded with the sealed draft and shown in the timeline.
     const usage=state.designer?await designerUsage(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId}).catch(()=>undefined):undefined,usd=(value:number)=>'$'+(value/1e6).toFixed(2);
-    const designerMeasured=state.designer?{renders:state.designer.renders,turns:state.designer.turn,finished:state.designer.complete,...(usage?{usage}:{})}:undefined;
+    const designerMeasured=state.designer?{renders:state.designer.renders,turns:state.designer.turn,finished:state.designer.complete,...(state.designer.hero?{hero:{sceneId:state.designer.hero.sceneId,format:state.designer.hero.format,state:state.designer.hero.state,reviews:state.designer.hero.reviews}}:{}),...(usage?{usage}:{})}:undefined;
     if(usage)await events.emit(`designer:${state.iteration??1}:usage`,{stepId:`designer:${state.iteration??1}:usage`,kind:'designer',status:'done',costMicroUsd:0,message:`The designer used ${usage.requests} design turn${usage.requests===1?'':'s'} (${usd(usage.costMicroUsd)}) and ${usage.pictures} picture${usage.pictures===1?'':'s'} (${usd(usage.picturesMicroUsd)}) for this direction.`,detail:{usage}});
     const source=await snapshotFolder(folder,input.iterationId);state.sourceHash=source.hash;state.reports={};checked(await admin.rpc('studio_append_director_iteration',{target:block.id,direction:input.directionId,device,token:work.lease_token,iteration:input.iterationId,number:state.iteration,source_hash:source.hash,document:{protocol:'director@1',presentation:'live',sourceChecks:await sourceChecks(folder,(await liveSource(folder)).revision),construction:await draftConstruction(folder,input),design,catalog:state.catalog,source,reports:{},folder,variants:input.variants,unchecked:true,...(review?{review}:{}),...(designerMeasured?{designer:designerMeasured}:{})}}));state.phase='complete';state.wrapUp=false;await events.emit('live:delivery',{stepId:'live:delivery',kind:'delivery',status:'done',message:review?`The live draft generator is ready for your review. Layout measured in ${review.inspection.views} views (${review.inspection.hard} objective issues left)${review.criticRounds?`, creative review rounds: ${review.criticRounds}`:''}. Your visual review decides.`:'The live draft generator is ready for your review. No image export or visual check was run.',...(review?{detail:review}:{})});await save('done');};
    // Free browser measurement, bounded coder repairs and (only when the frozen quote includes it) the creative review.
@@ -238,7 +239,7 @@ export async function executeDirector(claim:DirectorClaim,device:string){
     };
     const designerBlocked=async()=>{const a=designerAllowance();return a.requests-(state.designer?.turn??0)<1?'No designer turns remain in the approved allowance.':undefined;};
     const criticConfig=snapshot.models.critic,canReview=estimate.roles.critic.requests>0&&!!criticConfig?.vision;
-    return runLiveReview({...(usesDesigner(input)?{owner:'designer' as const}:{}),inspect,repair:usesDesigner(input)?designerRepair:repair,repairBlocked:usesDesigner(input)?designerBlocked:repairBlocked,criticRounds:canReview?Math.min(2,estimate.roles.critic.requests):0,state:reviewState,
+    return runLiveReview({...(usesDesigner(input)?{owner:'designer' as const}:{}),inspect,repair:usesDesigner(input)?designerRepair:repair,repairBlocked:usesDesigner(input)?designerBlocked:repairBlocked,criticRounds:canReview?Math.max(0,Math.min(2,estimate.roles.critic.requests-(state.designer?.hero?.reviews??0))):0,state:reviewState,
      critic:canReview?async(round,context,views)=>{await controls();return (await call('critic','Review these rendered views of the live draft and the measurements.',liveCriticInstructions,liveCriticSchema,context,{review:'live',round},[...await brandSheetImages(folder,input),...await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:6})])).text;}:undefined,selfReview:usesDesigner(input)?false:coderSees,
      context:()=>({concept:design.designDocument.slice(0,2500),...(input.creativeHandoff?.intent.feeling?{feeling:input.creativeHandoff.intent.feeling}:{}),keyFrames:design.keyFrames,resources:design.resources.map(r=>({id:r.id,scene:r.scene,purpose:r.purpose,proxy:r.proxy,...(input.brief.pictureRulesVersion===1?{...(r.proxyFor?{proxyFor:r.proxyFor}:{}),...(r.cutout?{cutout:true}:{})}:{})})),formats:input.formats.map(f=>({id:f.id,width:f.width,height:f.height})),brandTokens:input.brand.tokens}),
      save:async next=>{state.liveReview=next;await save();},
@@ -257,9 +258,17 @@ export async function executeDirector(claim:DirectorClaim,device:string){
     const buy=async(resource:Resource)=>{await controls();const made=await buildResourceCatalog({folder,input,design:{...design,resources:[resource]},...pictureArgs(controls)});await writeResources(folder,input,state.catalog??[]);await save();return made[0];};
     const tools=designerTools({folder,input,design,preview,deadline:()=>Math.max(Date.now()+60000,started()+allowance.timeMs),facts:()=>Object.fromEntries((state.catalog??[]).filter(c=>c.image).map(c=>[c.url,c.image])),save:()=>save(),buy});
     const prefix=await designerPrefixImages(folder,input,brandSheetImages,visionImages);
+    // Point 3: the hero frame's reviews use the critic requests the quote added for them (estimate.heroReviews).
+    const heroCritic=heroFirst(input)&&!!snapshot.models.critic?.vision?Math.min(estimate.heroReviews??0,estimate.roles.critic.requests):0;
+    tools.reviewHero=heroCritic?async(round,shots,measured)=>{await controls();const hero=input.storyboard.find(s=>s.id===loop.hero?.sceneId);
+     const text=(await call('critic','Review the hero frame: the scene that proves the promise, in the reference format. Judge it as the frame every other scene will follow.',liveCriticInstructions,liveCriticSchema,{hero:{scene:sceneNumber(hero?.id??''),copy:hero?.copy,proof:hero?.proof},...(input.creativeHandoff?.intent.feeling?{feeling:input.creativeHandoff.intent.feeling}:{}),brandTokens:input.brand.tokens,measured:{findings:measured.slice(0,20)},views:shots.map(s=>s.label)},{review:'hero',round},[...await brandSheetImages(folder,input),...await reviewImages(folder,shots.map(s=>({...s,sceneId:hero?.id,group:'reference' as const})),[],{maxCrops:2})])).text;
+     return readLiveCritique(text);}:undefined;
+    const heroStep=(kind:string)=>`designer:${state.iteration??1}:hero:${kind}:${loop.hero?.reviews??0}`,formatLabel=(id:string)=>{const f=input.formats.find(x=>x.id===id);if(!f)return id;const g=(a:number,b:number):number=>b?g(b,a%b):a,d=g(f.width,f.height);return `${f.width/d}:${f.height/d}`;};
     await runDesigner({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,
-     save:async next=>{state.designer=next;await save();},
-     call:async(request,images)=>(await call('designer',JSON.stringify(request),withCreativeHandoff(input,'director',designerInstructions),designerTurnResponse,{input:designerContext(input),notes:agentReviewNotes(state.notes??[])},{designer:request.turn},[...prefix,...images.map(i=>({...i,required:true}))])).text,
+     save:async next=>{state.designer=next;await save();},heroReviews:heroCritic,
+     // Point 3d: the hero frame's milestones in the timeline.
+     onHero:async event=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='no-critic'?' (no creative review in this quote)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);},
+     call:async(request,images)=>(await call('designer',JSON.stringify(request),withCreativeHandoff(input,'director',designerInstructionsFor(input)),designerTurnResponseFor(input),{input:designerContext(input),notes:agentReviewNotes(state.notes??[])},{designer:request.turn},[...prefix,...images.map(i=>({...i,required:true}))])).text,
      onTurn:async(turn,results,looked)=>{await events.emit(`designer:${state.iteration??1}:${loop.turn}`,{stepId:`designer:${state.iteration??1}:${loop.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:designerActivityLine(turn,sceneNumber),detail:{sceneId:turn.focus.sceneId,activity:turn.focus.activity,summary:designerTurnSummary(results)}},looked);}});
     if(loop.finish)finishDesign(design,loop.finish);
     await writeFile(resolve(folder,'draft.json'),JSON.stringify(design));await save();

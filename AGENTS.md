@@ -238,6 +238,21 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
   - The format chips count them as open issues.
   - The brand card warns when the typography rules use a weight the family's files do not have (`ruleWeights`).
 
+### Hero frame first (design quality plan, point 3, 4 November 2026)
+
+- New designer quotes set `brief.designerVersion: 2`. Version 1 blocks run exactly as before; `usesDesigner` accepts both.
+- **Hero frame.** The designer designs the hero first: the scene that proves the promise (the first scene with a script proof, else the first), in the reference format.
+  - Renders of other scenes or formats, and `finish`, are refused with a sentence until the hero is settled.
+  - The hero state lives in `DesignerLoopState.hero`, so a restart keeps it.
+- **Review.** `settleHero` runs one critic request on the hero's render; its notes come back on the next turn. At most 2 hero reviews; after they are used, the next settle accepts the hero.
+  - The quote adds these to the critic requests (`estimateDesignerDirection({heroReviews:2})`, `estimate.heroReviews`).
+  - The end review uses what is left.
+- **Note routing.** With `owner: 'designer'`, critic notes for both recipients go to the designer's repair. The coder pipeline is unchanged.
+- **UI.**
+  - The timeline shows "Hero frame: scene N in 1:1", then "Hero frame reviewed: N notes", then "Hero frame accepted. Designing the other scenes."
+  - Until the hero is accepted, the other format chips read "waiting for the hero frame".
+  - The live preview opens on the hero scene and format.
+
 ## 6. Current draft execution and handoff contracts
 
 Key modules: `lib/server/director-start.ts`, `apps/local-runner/director/worker.ts`, `apps/local-runner/director/static-assembler.ts`, `packages/director/creative-handoff.ts`, `packages/director/planning.ts`, `packages/director/inputs.ts`, `packages/director/source-edits.ts` and `packages/director/contract.ts`.

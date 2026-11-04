@@ -37,14 +37,15 @@ export function reconcileLiveSelection(variants:Variant[],options:LiveOptions,cu
  return options.scenes.includes(next.sceneId)?next:{...next,sceneId:fallback.sceneId,moment:fallback.moment};
 }
 
-export type DesignedFormat={id:string;label:string;width:number;height:number;state:'designed'|'designing'|'not-started';findings:number};
+export type DesignedFormat={id:string;label:string;width:number;height:number;state:'designed'|'designing'|'not-started'|'waiting';findings:number};
 const ratio=(w:number,h:number)=>{const g=(a:number,b:number):number=>b?g(b,a%b):a,d=g(w,h);return `${w/d}:${h/d}`;};
 /** Point 5c: per ordered format, how many scenes the designer rendered there and the hard findings measured in it. */
-export function designedFormats(formats:{id:string;width:number;height:number}[],scenes:string[],renders:Record<string,number>,findings:{views:string[]}[]):DesignedFormat[]{
+/** hero (design quality plan, point 3d): until the hero frame is accepted, the other formats wait for it. */
+export function designedFormats(formats:{id:string;width:number;height:number}[],scenes:string[],renders:Record<string,number>,findings:{views:string[]}[],hero?:{format:string;accepted:boolean}):DesignedFormat[]{
  return formats.map(f=>{
   const done=scenes.filter(s=>(renders[`${s}@${f.id}`]??0)>0).length,size=`${f.width}×${f.height}`;
   const open=findings.filter(x=>x.views.some(v=>v.includes(size)||v.includes(`|${f.id}|`)||v.startsWith(`${f.id} `))).length;
-  return {id:f.id,label:ratio(f.width,f.height),width:f.width,height:f.height,state:done===0?'not-started':done<scenes.length?'designing':'designed',findings:open};
+  return {id:f.id,label:ratio(f.width,f.height),width:f.width,height:f.height,state:hero&&!hero.accepted&&f.id!==hero.format?'waiting':done===0?'not-started':done<scenes.length?'designing':'designed',findings:open};
  });
 }
 /** The designed format closest in shape to a requested canvas. */
