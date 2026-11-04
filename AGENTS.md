@@ -262,6 +262,13 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
 - On a turn after a render, `seen` is required. Without it nothing is applied, the refusal says why, and the render stays attached for the retry.
 - **UI.** Each designer step shows its `seen` lines in the timeline; the Agent working log shows "Designer's notes" and counts designer turns.
 
+### Prioritised prompts (design quality plan, point 5, 4 November 2026)
+
+- **Planning roles** (instruction version `2026-11-04.2`). Every role opens, right after its ROLE line, with "PRIORITIES (in order):" and five principles (`packages/agents/priorities.ts`). Rules that a code check, the schema or the contract enforces left the prose.
+- **Draft agents.** New blocks (`brief.promptVersion: 2`) get shorter prompts with priorities first: director (`staticDirectorInstructionsV2`), coder (`staticCoderInstructionsV2`), live critic (`liveCriticInstructionsV2`) and designer version 2 (`designerInstructionsV2`). What the browser measurement checks (clipping, overlap, broken words, small text, safe areas, fonts, logo contrast) is left to its findings.
+- Earlier blocks keep their exact texts. The 128-variant director request has about 1 200 more units of room.
+- **UI.** Models & agents shows each role's priorities above its full instructions. After "Update instructions" it lists the roles whose priorities changed.
+
 ## 6. Current draft execution and handoff contracts
 
 Key modules: `lib/server/director-start.ts`, `apps/local-runner/director/worker.ts`, `apps/local-runner/director/static-assembler.ts`, `packages/director/creative-handoff.ts`, `packages/director/planning.ts`, `packages/director/inputs.ts`, `packages/director/source-edits.ts` and `packages/director/contract.ts`.

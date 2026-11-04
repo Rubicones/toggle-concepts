@@ -38,7 +38,7 @@ test('the visual direction gives intent and relationships; brand values stay exa
 });
 
 test('the schema and contracts change only for runs on the new instructions',()=>{
- assert.equal(AGENT_INSTRUCTION_VERSION,SCRIPT_PROOF_VERSION);
+ assert.ok(AGENT_INSTRUCTION_VERSION>=SCRIPT_PROOF_VERSION,'later instruction versions keep proof and world');
  assert.equal(scriptProofFor(`Instruction version ${AGENT_INSTRUCTION_VERSION}.`),true);assert.equal(scriptProofFor('Instruction version 2026-11-03.2.'),false);assert.equal(scriptProofFor(undefined),false);assert.equal(scriptProofFor('Instruction version 2026-12-01.1.'),true);
  const item=(c:ReturnType<typeof agentResponseSchema>)=>(c.schema as unknown as {properties:{deliverable:{properties:{threeDirections:{items:{properties:Record<string,{items?:{properties:Record<string,unknown>;required:string[]}}>;required:string[]}}}}}}).properties.deliverable.properties.threeDirections.items;
  const now=agentResponseSchema('script',undefined,{scriptProof:true}),before=agentResponseSchema('script');
