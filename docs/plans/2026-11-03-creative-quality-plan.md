@@ -6,11 +6,11 @@
 
 ## Why
 
-The latest sonicdesk run ("Snap to the grid") reached the brand (black canvas, one lime, Archivo + JetBrains Mono, logo visible, interface built in code) but stays far below the reference ads made directly by a model:
+The latest run reached the brand (its canvas, its accent colour, its fonts, logo visible, interface built in code) but stays far below the reference ads made directly by a model:
 
-- The reference shows believable product data in every frame (versions "Master v11 · applied", "alt-bridge · MAREK · copy of v11", a comment "BARS 33–36 · This part feels too calm — push it harder", bar numbers, sections, chords, BPM). Ours shows abstract TAKE / STEM / NOTE labels and grey waveforms.
-- The reference has a full text hierarchy (huge headline with the lime full stop, an explaining mono line, product module with micro labels, footer with site and CTA). Ours has one line per scene, because scripts give one line and the coder may not add words.
-- The reference is built from the product's own components and interface colours (header bar with meta tag, cards on hairlines, tags, track colours next to the single lime, footer bar). Our kit has no component inventory and no interface colours (this run had no tokens file and no UI kit), and our principles ("one focal point", "add nothing decorative") push agents to empty frames.
+- The reference shows believable product data in every frame: named versions, who made a copy of what, a comment pinned to an exact place with its text, and the product's own units and states. Ours shows abstract generic labels and grey decoration.
+- The reference has a full text hierarchy: a huge headline with the brand's accent, an explaining support line, a product module with micro labels, and a footer with site and CTA. Ours has one line per scene, because scripts give one line and the coder may not add words.
+- The reference is built from the product's own components and interface colours: a header bar with a meta tag, cards on hairlines, tags, the interface's own colours next to the brand accent, a footer bar. Our kit has no component inventory and no interface colours (this run had no tokens file and no UI kit), and our principles ("one focal point", "add nothing decorative") push agents to empty frames.
 - Planning roles decide in text without seeing pixels; the coder receives a compressed design and finished after one request.
 
 ## Owner decisions (do not change)
@@ -67,8 +67,8 @@ Checked against the code on `main` (`43ba6d0`). Corrections and gaps, in plan or
 
 ## E. Execution and review
 
-- **E1. Coder loop and critic.** More iterations on rendered views per scene and format group (`apps/local-runner/director/worker.ts`, `packages/director/live-review.ts`, allowances in `packages/director/money.ts` — quote changes must stay inside the approved allowance rules). Critic criteria (`liveCriticInstructions`): the visual idea is visible; brand language and components used; hierarchy and reading order; finish (grid alignment, spacing rhythm, consistent sizes); product data believable; brand rules for buttons/labels respected (this run set the CTA in large Archivo and the offer in mono — reversed); no text or logo inside generated pictures.
-- **E2. Font coverage.** When the brand font lacks a locale's letters (Kazakh ғ қ ұ ә with latin-only Archivo files), the whole line uses the fallback — never mixed fonts inside a word. Coder rule; measured check "mixed fonts inside a word" in `layout-inspection.ts` (collector can compare computed font per glyph run); fetch the family's Cyrillic subset in `lib/server/google-fonts.ts` when Google Fonts has it.
+- **E1. Coder loop and critic.** More iterations on rendered views per scene and format group (`apps/local-runner/director/worker.ts`, `packages/director/live-review.ts`, allowances in `packages/director/money.ts` — quote changes must stay inside the approved allowance rules). Critic criteria (`liveCriticInstructions`): the visual idea is visible; brand language and components used; hierarchy and reading order; finish (grid alignment, spacing rhythm, consistent sizes); product data believable; brand rules for buttons/labels respected (this run set the CTA in the large display font and the offer in the small label font — reversed); no text or logo inside generated pictures.
+- **E2. Font coverage.** When the brand font lacks a locale's letters (letters of one locale missing from latin-only font files), the whole line uses the fallback — never mixed fonts inside a word. Coder rule; measured check "mixed fonts inside a word" in `layout-inspection.ts` (collector can compare computed font per glyph run); fetch the family's Cyrillic subset in `lib/server/google-fonts.ts` when Google Fonts has it.
 - **E3.** The idea critic for scripts and visual direction also checks execution technique (text/logo inside generated material, prop text as headline).
 
 ## Status

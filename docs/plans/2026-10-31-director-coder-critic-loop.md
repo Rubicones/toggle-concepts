@@ -10,7 +10,7 @@
 2. **Legibility is not specified.** No prompt states a contrast floor, a scrim/plate/placement method, `object-position` or focal-point handling. Two coder rules pull against each other: stills are always full clarity (`opacity 1`, no wash) and copy must sit on "its own field or calm area". Headline `line-height 0.92–1.0` risks clipped descenders and Cyrillic.
 3. **The director carries a house style.** `staticDirectorPrompt` asks for stacked 2–3-line headlines with highlight strips or accent dots, colour-block splits and "hardware-chassis frames" in every direction. This is close to a template and explains look-alike results.
 4. **Image briefs do not plan for type or for other formats.** No calm text zone, no frame reserve, one generation at one aspect serves every format, no inspection after arrival, no edit path (only a new brief = a new image). The reference-image wording speaks about "people, wardrobe" even for products.
-5. **No critic in live drafts.** `seal()` stores `reports:{}` and `unchecked:true`; `estimateLiveDirection` zeroes the critic. The historical static critic needed rendered PNG grids, and the pixel checks of the Sonicdesk run (202 stills, five passes) never converged — the loop repaired the same failures again and again.
+5. **No critic in live drafts.** `seal()` stores `reports:{}` and `unchecked:true`; `estimateLiveDirection` zeroes the critic. The historical static critic needed rendered PNG grids, and the pixel checks of an earlier run (202 stills, five passes) never converged — the loop repaired the same failures again and again.
 6. **Image model risk.** The default image model is `google/gemini-2.5-flash-image`, and older docs state the adapter executes only that model. Google's deprecation page lists its shutdown as 2026-10-02 (successor `gemini-3.1-flash-image`). Whether OpenRouter still routes it must be checked before any live run.
 
 ## 2. Principles of the redesign
@@ -19,7 +19,7 @@
 
 - **Measure in code, judge with a model.** Geometry, overflow, collisions, safe areas, minimum size and contrast are measured deterministically. Research (PRISM, CVPR 2026 Findings; arXiv 2607.11598) shows vision models miss small overlaps and cannot localise principle violations; a model "pass" never overrides a measured failure. The critic model judges what numbers cannot: idea, hierarchy, staging, brand feel, format re-staging.
 - **Agents still author.** The app measures and reports; the director and coder choose the legibility technique, crop and layout. No presets, zones or autofixes (`AGENTS.md` §2).
-- **Bounded and convergent.** Every repair path has a hard count. A finding that survives two targeted repairs becomes a reported known issue for the AD, not another loop (lesson from Sonicdesk).
+- **Bounded and convergent.** Every repair path has a hard count. A finding that survives two targeted repairs becomes a reported known issue for the AD, not another loop (lesson from an earlier run).
 - **Cheap first.** Free local checks run before any paid critic request.
 
 ## 3. Workstreams

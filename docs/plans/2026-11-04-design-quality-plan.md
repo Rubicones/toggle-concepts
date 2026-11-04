@@ -6,11 +6,11 @@
   - `AGENTS.md` and `CLAUDE.md`;
   - `docs/plans/2026-11-03-designer-pipeline-plan.md` (the designer, brand sheet, "In the final version");
   - `docs/reviews/2026-11-03-designer-room-fixes.md` (fixes since).
-- **Why:** a live designer run for sonicdesk. lagged far behind a reference ad set made by hand with a top model. The gap appeared in this order:
+- **Why:** a live designer run lagged far behind a reference ad set made by hand with a top model. The gap appeared in this order:
   1. **Strategy decided production.** Its `visualPremise` fixed the canvas, the grid in px, the tools, "no generated pictures" and "real UI only from the supplied screenshot". The visual direction inherited that, so the product could appear once, as a bitmap.
-  2. **The territory became a metaphor instead of the product.** "Pin it to the bar" was shown as a ruler and a floating note. The reference shows a track row, a selected bar range, a named comment and replies.
+  2. **The territory became a metaphor instead of the product.** The feature in the headline was shown as an abstract symbol. The reference shows the product's own interface doing it, filled with believable names, numbers and states.
   3. **Six 2-second fragments.** Most frames were a headline over empty black, with no proof.
-  4. **Execution.** Headlines rendered in a non-brand fallback font. The same decorative waveforms repeated in every scene. Space was empty and support text tiny.
+  4. **Execution.** Headlines rendered in a non-brand fallback font. The same decorative element repeated in every scene. Space was empty and support text tiny.
 
 ## Working rules (unchanged from the designer plan)
 
@@ -59,7 +59,7 @@ Files:
 
 **1d. Scene proof and one shared world (script schema).** This is the schema change; gate it with a brief flag such as `scriptProofVersion: 1`.
 - Per scene in `timedStoryboard`: add `proof`, a short string saying what in this frame proves the line, and which product part or prop data shows it. An empty string is allowed only for the brand/CTA scene.
-- Per direction: replace the free list `productData` with a `world`, used by every scene of the direction. It contains the people, the project/track names, the numbers, the versions and statuses, all built from confirmed facts. Keep `productData` readable for older runs.
+- Per direction: replace the free list `productData` with a `world`, used by every scene of the direction. It contains the people, the names of the things the product handles, the numbers, the versions and the statuses, all built from confirmed facts. Keep `productData` readable for older runs.
 - Check `tests/agent-output.test.ts` (< 2400) after the change.
   - If the schema grows past the limit, shorten descriptions elsewhere.
   - Do not drop required fields, because the handoff relies on them.
@@ -69,7 +69,7 @@ Files:
   - Measure the director request against its 32 768 target.
 - **UI/UX:**
   - The Story beats list shows each scene's proof as a short line under its visual notes ("Proof: …").
-  - The direction shows its world once, as a compact list ("People", "Projects", "Versions"…), above the beats.
+  - The direction shows its world once, as a compact list grouped the way the world is written, above the beats.
   - The AD can see at a glance which scenes prove nothing.
 
 **1e. Scene count from the message, not from the duration.**

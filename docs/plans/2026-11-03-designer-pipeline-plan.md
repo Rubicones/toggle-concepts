@@ -155,4 +155,4 @@ Large point: implement as sub-steps 4a → 4e, each its own branch and review.
 
 ## Measuring without a budget
 
-Keep one fixed brief per brand (sonicdesk, KITE). Save the first attempt of every pipeline version as PNGs per scene and format in `artifacts/quality/<date>-<version>/`, next to the chat's first attempts; the AD writes one line per pair (better / same / worse) in a markdown log. When budget allows, run the API reproduction test and the blind A/B.
+Keep one fixed brief per test brand. Save the first attempt of every pipeline version as PNGs per scene and format in `artifacts/quality/<date>-<version>/`, next to the chat's first attempts; the AD writes one line per pair (better / same / worse) in a markdown log. When budget allows, run the API reproduction test and the blind A/B.

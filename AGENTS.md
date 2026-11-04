@@ -103,7 +103,7 @@ Use this sequence to solve a creative problem:
 
 1. Identify the audience's situation, the supported benefit and what this specific scene should communicate.
 2. Judge idea, hook and picture together. A generic background plus correct headline is not enough if the image contributes no meaning.
-3. Ask for concrete objects, gestures and visible proof. For Sonicdesk, a waveform establishes music; showing retained versions communicates version control. Treat proposed UI content as a proposal until supported by the product references.
+3. Ask for concrete objects, gestures and visible proof: the product's own objects establish its world, and showing what it does communicates the benefit. Treat proposed UI content as a proposal until supported by the product references.
 4. Distinguish concepts by promise, mechanism, opening and narrative, not merely palette, lighting or synonyms.
 5. Resolve a strong square base, then author how relationships change continuously on wider/narrower canvases. Preserve content and creative purpose rather than blindly scaling or cropping.
 6. Keep variable copy and logical choices outside generated pictures. Reuse visual resources across copy/layout changes unless the visual subject actually changes.

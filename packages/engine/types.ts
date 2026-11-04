@@ -159,7 +159,7 @@ export interface BrandKit {
   schema: 'ad/kit@3';
   brand: string;                    // identifier (same pattern as today)
   version: number;
-  name: string;                     // as the brand writes it: "sonicdesk"
+  name: string;                     // as the brand writes it
   essence: string;                  // 1–3 sentences: what it is and how it looks; the brand page lede
   colors: Record<string, BrandColor>;
   fonts: Record<string, BrandFont>;
