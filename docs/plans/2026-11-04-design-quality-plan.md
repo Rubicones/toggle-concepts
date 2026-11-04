@@ -10,7 +10,7 @@
   1. **Strategy decided production.** Its `visualPremise` fixed the canvas, the grid in px, the tools, "no generated pictures" and "real UI only from the supplied screenshot". The visual direction inherited that, so the product could appear once, as a bitmap.
   2. **The territory became a metaphor instead of the product.** "Pin it to the bar" was shown as a ruler and a floating note. The reference shows a track row, a selected bar range, a named comment and replies.
   3. **Six 2-second fragments.** Most frames were a headline over empty black, with no proof.
-  4. **Execution.** Headlines rendered in a non-brand fallback sans. The same decorative waveforms repeated in every scene. Space was empty and support text tiny.
+  4. **Execution.** Headlines rendered in a non-brand fallback font. The same decorative waveforms repeated in every scene. Space was empty and support text tiny.
 
 ## Working rules (unchanged from the designer plan)
 
@@ -108,11 +108,11 @@ Files: `apps/local-runner/director/live-inspect.ts` (browser-side measurement) a
 **2b. Finding `FONT_NOT_BRAND`.**
 - **Hard** for approved copy (headline, support line, CTA, offer) rendered in a font outside `brand.fonts`.
 - **Soft** for prop text.
-- The detail names the font that rendered, and the brand families and weights available ("rendered in Helvetica; brand fonts: Archivo 400/600, JetBrains Mono 500").
+- The detail names the font that rendered and lists the brand families and weights available, both taken from the measurement and `brand.fonts` at run time. Never hard-code a font name in the check, its text or the prompts.
 - A requested weight the brand files do not have is reported as **soft** `FONT_WEIGHT_MISSING`, because the browser synthesises it.
 
-**2c. Root-cause check for sonicdesk.**
-- Before blaming the designer, confirm from the brand export which Archivo weights the brand files include. Also check that `brand.fonts` reaches the live bundle (`apps/local-runner/director/workspace.ts` writes `brand.ts`).
+**2c. Root-cause check.**
+- Before blaming the designer, confirm from the brand export which weights the brand's headline font files include. Also check that `brand.fonts` reaches the live bundle (`apps/local-runner/director/workspace.ts` writes `brand.ts`).
 - If a font failed to load, that is a delivery bug; fix it there.
 
 **2d. UI/UX.**
