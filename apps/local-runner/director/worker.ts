@@ -255,7 +255,11 @@ export async function executeDirector(claim:DirectorClaim,device:string){
    const designerAllowance=()=>{const a=estimate.roles.designer;if(!a)throw new Error('DIRECTOR_ALLOWANCE_REQUIRED');return a;};
    const designerRun=async(maxTurns:number)=>{
     const loop:DesignerLoopState=state.designer??=newDesignerState(),allowance=designerAllowance(),started=()=>((state.roleStartedAt??{}) as Record<string,number>).designer??Date.now();
-    const buy=async(resource:Resource)=>{await controls();const made=await buildResourceCatalog({folder,input,design:{...design,resources:[resource]},...pictureArgs(controls)});await writeResources(folder,input,state.catalog??[]);await save();return made[0];};
+    // A designer picture with a blocking sketch needs the same preparation as the director's: the sketch is rasterised
+    // and its hash pinned before the request is built (IMAGE_METHOD_SKETCH_REQUIRED otherwise).
+    const buy=async(resource:Resource)=>{await controls();
+     if(await prepareImageMethods(folder,input,{...design,resources:[resource]},state.catalog as PricedResource[],async message=>{await events.emit(`picture:method:${resource.id}`,{stepId:`picture:method:${resource.id}`,kind:'picture',status:'done',costMicroUsd:0,message});}))await save();
+     const made=await buildResourceCatalog({folder,input,design:{...design,resources:[resource]},...pictureArgs(controls)});await writeResources(folder,input,state.catalog??[]);await save();return made[0];};
     const tools=designerTools({folder,input,design,preview,deadline:()=>Math.max(Date.now()+60000,started()+allowance.timeMs),facts:()=>Object.fromEntries((state.catalog??[]).filter(c=>c.image).map(c=>[c.url,c.image])),save:()=>save(),buy});
     const prefix=await designerPrefixImages(folder,input,brandSheetImages,visionImages);
     // Point 3: the hero frame's reviews use the critic requests the quote added for them (estimate.heroReviews).

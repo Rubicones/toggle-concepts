@@ -37,3 +37,16 @@
 - **Migration chain:** applied on a disposable Postgres 16 with Supabase stubs.
 - **SQL tests:** `brand-source.sql` passes, and fails without the migration.
 - **TypeScript:** no change.
+
+## 5. Follow-up: designer pictures with a blocking sketch (same day)
+
+- **Symptom:** the draft stopped with `IMAGE_METHOD_SKETCH_REQUIRED`.
+- **Cause:** the director's pictures get their sketch rasterised and its hash pinned (`prepareImageMethods`) once, before the build starts. The designer orders pictures during the build, and its `buy` went straight to `buildResourceCatalog`. A designer picture with `sketch` therefore reached `resourceRequest` without `sketch.sha256`.
+- **Fix:** `apps/local-runner/director/worker.ts`: the designer's `buy` runs `prepareImageMethods` for that one picture first, and saves the pinned hash with the work state.
+  - The picture's identity and price are unchanged.
+  - The pictures saved before the failure are prepared the same way when the block resumes.
+- **Migrations:** none. Press "Retry preview" after restarting local processing.
+- **Verification:**
+  - `npm run typecheck`: passed.
+  - `npm run lint`: passed.
+  - Director image-method, designer and hero-frame tests: passed.
