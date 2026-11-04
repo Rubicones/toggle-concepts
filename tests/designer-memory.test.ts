@@ -54,3 +54,11 @@ test('the AD sees what the designer saw in the timeline and its notes in the wor
  assert.match(readFileSync('components/studio/director-workspace.tsx','utf8'),/Designer&apos;s notes/);
  assert.match(readFileSync('lib/server/director.ts','utf8'),/designerNotes:state\.designer\.notes/);
 });
+
+test('a missing seen is refused once per render; the second answer without it is applied, so refusals cannot burn the allowance',async()=>{
+ const i=input(2),s=heroScene(i),{writes,tools}=harness();
+ const turns=[{focus:{sceneId:s,activity:'designing',about:'hero'},render:{sceneId:s,formats:[]}},{focus:{sceneId:s,activity:'revising',about:'a'},files:[{path:'Frame.tsx',source:'a'}]},{focus:{sceneId:s,activity:'revising',about:'b'},files:[{path:'Frame.tsx',source:'b'}]}];
+ const state=newDesignerState();let n=0;
+ await runDesigner({input:i,state,maxTurns:3,maxPictures:0,timeMs:60000,tools,save:async()=>{},call:async()=>JSON.stringify(turns[n++])});
+ assert.deepEqual(writes,['Frame.tsx'],'the second answer without seen is applied');assert.equal(state.seenRefused,undefined,'the flag is cleared once a turn is applied');
+});

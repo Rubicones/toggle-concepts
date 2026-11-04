@@ -37,7 +37,7 @@ export type DesignerTools={
  reviewHero?:(round:number,shots:{label:string;file:string}[],findings:{view:string;severity:string;detail:string}[])=>Promise<{accepted:boolean;notes:{recipient:string;priority:string;view:string;problem:string;fix:string}[]}|undefined>;
 };
 /** Point 3d: hero frame milestones for the timeline. */
-export type HeroEvent={kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'no-critic';looked?:string};
+export type HeroEvent={kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'no-critic'|'review-failed';looked?:string};
 export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number};scenes:{sceneId:string;formats:{format:string;renders:number;revisionsLeft:number}[]}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];/** Point 4a: the designer's own notes, always sent. */notes?:string;/** Point 4b: set when the attached images are a render the designer must look at first. */lookFirst?:boolean;/** Point 3: the hero frame to settle first (designerVersion 2). */hero?:{sceneId:string;format:string;settled:boolean;reviewsLeft:number};lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
 
 /** The views the designer asked for: the reference copy in each requested format (default: the reference format),
@@ -83,7 +83,7 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
  if(heroOn&&!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
  const heroOpen=()=>heroOn&&state.hero?.state!=='accepted';
  const heroAsk=()=>`Finish the hero frame first: scene ${scenes.indexOf(state.hero!.sceneId)+1} in ${ratio(state.hero!.format)}. Render it, then set settleHero for its review.`;
- const accept=async(by:'critic'|'reviews-used'|'no-critic')=>{state.hero!.state='accepted';state.hero!.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:state.hero!.sceneId,format:state.hero!.format,by});};
+ const accept=async(by:'critic'|'reviews-used'|'no-critic'|'review-failed')=>{state.hero!.state='accepted';state.hero!.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:state.hero!.sceneId,format:state.hero!.format,by});};
  while(!state.complete&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   await collect();stopIfFatal();
   const files=await tools.files(),last=state.lastRender;
@@ -100,9 +100,12 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
   try{turn=readDesignerTurn(JSON.parse(text),input);}catch(error){await log({error:(error instanceof Error?error.message:'Unreadable answer').slice(0,600)});continue;}
   // Point 4: notes are working memory; a turn after a render must first say what it saw (look, name, then fix).
   if(heroOn&&turn.notes){state.notes=turn.notes;await args.save(state);}
-  if(heroOn&&last&&!turn.seen){await log({error:'Look before you change: write seen (what a viewer reads first, second and third in the render, and its weakest points, the measured findings included). Nothing was applied.'});await args.onTurn?.(turn,[{refused:'seen'}],looked);
+  // Refused once per render: a second turn without seen is applied, so a model that keeps omitting it cannot burn
+  // the allowance on refusals.
+  if(heroOn&&last&&!turn.seen&&!state.seenRefused){state.seenRefused=true;await log({error:'Look before you change: write seen (what a viewer reads first, second and third in the render, and its weakest points, the measured findings included). Nothing was applied.'});await args.onTurn?.(turn,[{refused:'seen'}],looked);
    // The render stays attached for the retry.
    state.lastRender=last;await args.save(state);continue;}
+  if(state.seenRefused){delete state.seenRefused;await args.save(state);}
   const results:unknown[]=[];
   try{
    // 1. Code: exact edits against the files this turn saw, then whole files.
@@ -139,7 +142,7 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
     else if(hero.reviews>=(args.heroReviews??0)||!tools.reviewHero){await accept(tools.reviewHero&&(args.heroReviews??0)>0?'reviews-used':'no-critic');results.push({hero:'accepted',detail:'Design the other scenes and formats now.'});}
     else{
      const review=await tools.reviewHero(hero.reviews+1,hero.shots,(state.lastRender?.findings??[]).map(f=>({view:f.view,severity:f.severity,detail:f.detail})));hero.reviews++;await args.save(state);
-     if(!review){await accept('no-critic');results.push({hero:'accepted',detail:'Design the other scenes and formats now.'});}
+     if(!review){await accept('review-failed');results.push({hero:'accepted',detail:'The review could not run. Design the other scenes and formats now; the end review still runs.'});}
      else{
       await args.onHero?.({kind:'reviewed',sceneId:hero.sceneId,format:hero.format,notes:review.notes.length,looked:hero.shots[0]?.file});
       if(review.accepted||!review.notes.length){await accept('critic');results.push({hero:'accepted',detail:'The review accepted the hero frame. Design the other scenes and formats now.'});}

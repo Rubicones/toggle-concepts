@@ -11,7 +11,7 @@ import type {ImageFacts} from './image-facts';
 
 export type Box={x:number;y:number;width:number;height:number};
 export type InspectionView={key:string;label:string;variantId:string;props:LiveFrameProps;ordered:boolean;shot:boolean;group?:'reference'|'longest'};
-export type RawText={text:string;box:Box;fontSize:number;color:string;element:number;clipped:boolean;lines:number;background:string|null;complexBackground:boolean;overImage:string|null;brokenWords?:string[];/** Design quality plan, point 2a: the font family that really rendered this text (the first family of its font-family that is loaded and covers its letters), and whether the requested weight exists in that family's files. */font?:{family:string;weight:string;fallback?:boolean;weightMissing?:boolean};/** Words whose letters come from two fonts (the first font lacks some of them). */mixedFontWords?:string[]};
+export type RawText={text:string;box:Box;fontSize:number;color:string;element:number;clipped:boolean;lines:number;background:string|null;complexBackground:boolean;overImage:string|null;brokenWords?:string[];/** Design quality plan, point 2a: the font family that really rendered this text (the first family of its font-family that is loaded and covers its letters), and whether the requested weight exists in that family's files. */font?:{family:string;weight:string;fallback?:boolean;weightMissing?:boolean;/** a loaded family earlier in the stack that lacks these letters */uncovered?:string};/** Words whose letters come from two fonts (the first font lacks some of them). */mixedFontWords?:string[]};
 export type RawImage={src:string;box:Box;naturalWidth:number;naturalHeight:number;objectFit:string;objectPosition:string;logo:boolean};
 export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[]};
 /** ink: alpha-weighted relative luminance of the logo's own pixels; background/overImage: what it sits on. */
@@ -108,13 +108,14 @@ export function collectLayout(size:{width:number;height:number}):RawView{
   // letter wins; a family with no loaded face (or a generic one) means the browser fell back.
   let font:RawText['font'];{
    const families=style.fontFamily.split(',').map(f=>f.trim().replace(/^["']|["']$/g,'')).filter(Boolean),letters=[...content].filter(ch=>/\p{L}/u.test(ch)).slice(0,24);
+   let uncovered:string|undefined;
    for(const fam of families){
-    if(generic.test(fam)){font={family:fam,weight:style.fontWeight,fallback:true};break;}
+    if(generic.test(fam)){font={family:fam,weight:style.fontWeight,fallback:true,...(uncovered?{uncovered}:{})};break;}
     const loaded=faces.filter(f=>norm(f.family)===norm(fam)&&f.status==='loaded');if(!loaded.length)continue;
-    if(letters.some(ch=>!covers(`"${fam}"`,style.fontWeight,style.fontStyle,ch)))continue;
+    if(letters.some(ch=>!covers(`"${fam}"`,style.fontWeight,style.fontStyle,ch))){uncovered??=fam;continue;}
     font={family:fam,weight:style.fontWeight,...(loaded.some(f=>weightCovers(f.weight,style.fontWeight))?{}:{weightMissing:true})};break;
    }
-   font??={family:families.at(-1)??'default',weight:style.fontWeight,fallback:true};
+   font??={family:families.at(-1)??'default',weight:style.fontWeight,fallback:true,...(uncovered?{uncovered}:{})};
   }
   texts.push({text:node.textContent.replace(/\s+/g,' ').trim(),box:box(r),fontSize:parseFloat(style.fontSize)*fontScale,color:style.color,element:index(e),clipped,lines:Math.max(1,lineTops.size),background,complexBackground,overImage:!background&&under?under.src:null,...(brokenWords.length?{brokenWords}:{}),...(mixedFontWords.length?{mixedFontWords}:{}),...(font?{font}:{})});
  }
@@ -182,7 +183,10 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
   // Point 2b: the font that really rendered the text must be a brand font (hard for approved copy, soft for prop
   // text). Names come only from the measurement and brand.fonts, never from a list in code.
   if(t.font&&brandFonts.size){const family=t.font.family.toLowerCase();
-   if(!brandFonts.has(family))add('FONT_NOT_BRAND',approvedText?'hard':'soft',`${approvedText?'Approved copy':'Prop text'} is not in a brand font: ${quote(t.text)} rendered in ${t.font.fallback?`a fallback font (${t.font.family})`:t.font.family}. Brand fonts: ${brandFontList}.`,t.box);
+   // A loaded brand family that has no letters for this text (a locale the files do not cover) falls back by design:
+   // the whole line in one fallback font is the rule, so it is reported for the AD, never sent back as a repair.
+   if(!brandFonts.has(family)&&t.font.uncovered&&brandFonts.has(t.font.uncovered.toLowerCase()))add('FONT_NOT_BRAND','soft',`The brand font ${t.font.uncovered} has no letters for ${quote(t.text)}, so the whole line uses ${t.font.family}. Add brand font files that cover this language to keep it in the brand font.`,t.box);
+   else if(!brandFonts.has(family))add('FONT_NOT_BRAND',approvedText?'hard':'soft',`${approvedText?'Approved copy':'Prop text'} is not in a brand font: ${quote(t.text)} rendered in ${t.font.fallback?`a fallback font (${t.font.family})`:t.font.family}. Brand fonts: ${brandFontList}.`,t.box);
    else if(t.font.weightMissing)add('FONT_WEIGHT_MISSING','soft',`Weight ${t.font.weight} of ${t.font.family} is not in the brand files, so the browser imitates it: ${quote(t.text)}. Available: ${brandFontWeights(family)}.`,t.box);}
   for(const word of t.mixedFontWords??[])add('FONT_MIXED_IN_WORD','hard',`Letters of one word come from two fonts (the brand font lacks some of them): set the whole line in one font that has every letter: ${quote(word)} in ${quote(t.text)}`,t.box);
   for(const word of t.brokenWords??[])add('WORD_BROKEN',approvedText?'hard':'soft',`A word is split across two lines: ${quote(word)} in ${quote(t.text)}`,t.box);
@@ -199,7 +203,7 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
  }
  if(ctx.input.brand.logos.some(l=>l.url)&&!raw.logos.length)add('LOGO_MISSING','soft','No brand logo is visible in this view.');
  // Point 2c: a brand font file that failed to load is a delivery problem, reported once per view.
- for(const family of raw.fontsFailed??[])add('FONT_NOT_LOADED','hard',`The brand font file for ${family} did not load, so its text falls back to another font. This is a delivery problem, not a design choice.`);
+ for(const family of raw.fontsFailed??[])add('FONT_NOT_LOADED','soft',`The brand font file for ${family} did not load, so its text falls back to another font. This is a delivery problem, not a design choice.`);
  for(const image of raw.images.filter(i=>!i.logo)){
   const rect=visibleSourceRect(image);if(!rect)continue;const scale=image.box.width/((rect[2]-rect[0])*image.naturalWidth);
   if(scale>1.6)add('PICTURE_UPSCALED','soft',`A picture is enlarged ${scale.toFixed(1)}× beyond its pixels and will look soft.`,image.box);

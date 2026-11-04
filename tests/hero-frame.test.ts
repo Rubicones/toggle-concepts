@@ -53,6 +53,7 @@ test('an accepting review settles the hero at once; without a critic the hero is
  const accepted=await run(i,[{focus,render:{sceneId:hero,formats:[]},settleHero:true}],tools(async()=>({accepted:true,notes:[]})).tools);
  assert.equal(accepted.state.hero!.acceptedBy,'critic');assert.equal(accepted.state.hero!.reviews,1);
  const none=await run(i,[{focus,render:{sceneId:hero,formats:[]},settleHero:true}],tools().tools,0);assert.equal(none.state.hero!.acceptedBy,'no-critic');
+ const failed=await run(i,[{focus,render:{sceneId:hero,formats:[]},settleHero:true}],tools(async()=>undefined).tools);assert.equal(failed.state.hero!.acceptedBy,'review-failed','a review that could not run never stops the designer');
  const other=i.storyboard.find(s=>s.id!==hero)!.id,again=tools();const resumed=await run(i,[{focus,render:{sceneId:other,formats:[]}}],again.tools,2,accepted.state);
  assert.deepEqual(resumed.events,[],'no new hero start after a restart');assert.equal(again.renders.length,1,'the accepted hero survives the restart');
 });

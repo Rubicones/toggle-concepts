@@ -114,8 +114,10 @@ export function designerTurnSummary(results:unknown[]):string[]{
 export type DesignerLoopState={
  /** Point 4a: the designer's notes, sent at the top of every request (outside the 12-result window); a restart keeps them. */
  notes?:string;
+ /** point 4b: the turn after this render was already refused once for a missing seen */
+ seenRefused?:boolean;
  /** Design quality plan, point 3 (designerVersion 2): the hero frame and whether it is settled. Saved, so a restart keeps it. */
- hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;acceptedBy?:'critic'|'reviews-used'|'no-critic';shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
+ hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;acceptedBy?:'critic'|'reviews-used'|'no-critic'|'review-failed';shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
 
 /** Point 4d: the designer's look at a render, as timeline lines. */
 export function seenLines(seen:NonNullable<DesignerTurn['seen']>){return [`Read first: ${seen.first}`,`Read second: ${seen.second}`,`Read third: ${seen.third}`,...seen.weakest.map((w,i)=>`${i===0?'Weakest point':'Also weak'}: ${w}`)];}

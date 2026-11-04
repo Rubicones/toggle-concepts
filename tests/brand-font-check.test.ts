@@ -23,14 +23,17 @@ test('a headline in a fallback font is a hard FONT_NOT_BRAND; prop text is soft;
  assert.equal(of('FONT_WEIGHT_MISSING').length,1);assert.equal(of('FONT_WEIGHT_MISSING')[0].severity,'soft');assert.match(of('FONT_WEIGHT_MISSING')[0].detail,/Weight 700 of Brand Sans/);
  const clean=analyzeView({...raw,texts:[text('Every take, one place.',{family:'Brand Sans',weight:'400'})]},ctx(brand));assert.equal(clean.filter(f=>f.code.startsWith('FONT_')).length,0);
  assert.equal(analyzeView(raw,ctx([])).filter(f=>f.code==='FONT_NOT_BRAND').length,0,'a brand without font files is not checked');
- assert.equal(analyzeView({...raw,fontsFailed:['brand sans']},ctx(brand)).filter(f=>f.code==='FONT_NOT_LOADED').length,1);
+ const failed=analyzeView({...raw,fontsFailed:['brand sans']},ctx(brand)).filter(f=>f.code==='FONT_NOT_LOADED');
+ assert.equal(failed.length,1);assert.equal(failed[0].severity,'soft','a delivery problem is reported, never sent back as a repair');
+ const uncovered=analyzeView({...raw,texts:[text('Every take, one place.',{family:'serif',weight:'400',fallback:true,uncovered:'Brand Sans'})]},ctx(brand)).filter(f=>f.code==='FONT_NOT_BRAND');
+ assert.equal(uncovered.length,1);assert.equal(uncovered[0].severity,'soft','letters the brand files lack fall back by design');assert.match(uncovered[0].detail,/Brand Sans has no letters/);
 });
 
 test('the browser measurement names the font that really rendered each line',async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||(existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined),headless:true,chromiumSandbox:false});
  try{
   const page=await browser.newPage({viewport:{width:1080,height:1080}});
-  await page.setContent(`<!doctype html><html><body style="margin:0"><h1 style="font-family:'Brand Sans',sans-serif;font-weight:400;font-size:64px">Every take, one place.</h1><h2 style="font-family:'Missing Face',serif;font-size:48px">Start free.</h2><p style="font-family:'Brand Sans',sans-serif;font-weight:700;font-size:40px">Master version</p></body></html>`);
+  await page.setContent(`<!doctype html><html><body style="margin:0"><h1 style="font-family:'Brand Sans',sans-serif;font-weight:400;font-size:64px">Every take, one place.</h1><h2 style="font-family:'Missing Face',serif;font-size:48px">Start free.</h2><p style="font-family:'Brand Sans',sans-serif;font-weight:700;font-size:40px">Master version</p><p style="font-family:'Brand Sans',sans-serif;font-weight:400;font-size:40px">Ключ ГЖЯ</p></body></html>`);
   await page.evaluate('window.__name=(f)=>f;');
   await page.evaluate(async url=>{const face=new FontFace('Brand Sans',`url(${url})`,{weight:'400'});await face.load();document.fonts.add(face);await document.fonts.ready;},fontUrl);
   const raw=await page.evaluate(collectLayout,{width:1080,height:1080}) as RawView;
@@ -38,8 +41,10 @@ test('the browser measurement names the font that really rendered each line',asy
   assert.equal(font('Every take').family,'Brand Sans');assert.equal(font('Every take').fallback,undefined);assert.equal(font('Every take').weightMissing,undefined);
   assert.equal(font('Start free').family,'serif');assert.equal(font('Start free').fallback,true);
   assert.equal(font('Master version').family,'Brand Sans');assert.equal(font('Master version').weightMissing,true);
+  assert.equal(font('Ключ').uncovered,'Brand Sans','a latin-only brand file has no Cyrillic letters');
   const findings=analyzeView(raw,ctx(brand));
   assert.ok(findings.some(f=>f.code==='FONT_NOT_BRAND'&&f.severity==='hard'&&f.detail.includes('Start free')));
+  assert.ok(findings.some(f=>f.code==='FONT_NOT_BRAND'&&f.severity==='soft'&&f.detail.includes('Ключ')),'an uncovered language is reported, not repaired');
   assert.ok(!findings.some(f=>f.code==='FONT_NOT_BRAND'&&f.detail.includes('Every take')));
  }finally{await browser.close();}
 });

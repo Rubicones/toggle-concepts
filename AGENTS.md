@@ -229,9 +229,9 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
 
 - The browser measurement records, for every text, the font that really rendered it: the first family of its `font-family` that is loaded and covers its letters (`RawText.font`). It also records whether the requested weight exists in that family's loaded files, and which brand font files failed to load (`RawView.fontsFailed`).
 - **Findings.**
-  - `FONT_NOT_BRAND` is hard for approved copy and soft for prop text.
+  - `FONT_NOT_BRAND` is hard for approved copy and soft for prop text. It is soft when a loaded brand family simply has no letters for the text (a language its files do not cover): the whole line in one fallback font is the rule then, so it is reported for the AD and never sent back as a repair.
   - `FONT_WEIGHT_MISSING` is soft: the browser imitates the weight.
-  - `FONT_NOT_LOADED` is hard: a delivery problem.
+  - `FONT_NOT_LOADED` is soft: a delivery problem no agent can fix. It is reported for the AD, never sent back as a repair.
   - Names in the text come only from the measurement and `brand.fonts`; no font is named in code or prompts.
 - **UI.**
   - The live review's "Build and option status" lists font problems in plain words.
