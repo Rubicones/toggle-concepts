@@ -253,6 +253,15 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
   - Until the hero is accepted, the other format chips read "waiting for the hero frame".
   - The live preview opens on the hero scene and format.
 
+### Designer memory and look, name, fix (design quality plan, point 4, 4 November 2026)
+
+- Designer version 2 turns (`designer_turn_v2`) carry:
+  - `notes`: the designer's own record of decisions, rejections and what remains, at most 1 500 characters, rewritten whole each turn;
+  - `seen`: what a viewer reads first, second and third in the last render, and its weakest points.
+- `notes` is saved in `DesignerLoopState.notes` and sent at the top of every request, outside the 12-result window; a restart keeps it.
+- On a turn after a render, `seen` is required. Without it nothing is applied, the refusal says why, and the render stays attached for the retry.
+- **UI.** Each designer step shows its `seen` lines in the timeline; the Agent working log shows "Designer's notes" and counts designer turns.
+
 ## 6. Current draft execution and handoff contracts
 
 Key modules: `lib/server/director-start.ts`, `apps/local-runner/director/worker.ts`, `apps/local-runner/director/static-assembler.ts`, `packages/director/creative-handoff.ts`, `packages/director/planning.ts`, `packages/director/inputs.ts`, `packages/director/source-edits.ts` and `packages/director/contract.ts`.

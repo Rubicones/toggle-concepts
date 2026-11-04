@@ -38,7 +38,7 @@ export type DesignerTools={
 };
 /** Point 3d: hero frame milestones for the timeline. */
 export type HeroEvent={kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'no-critic';looked?:string};
-export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number};scenes:{sceneId:string;formats:{format:string;renders:number;revisionsLeft:number}[]}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];/** Point 3: the hero frame to settle first (designerVersion 2). */hero?:{sceneId:string;format:string;settled:boolean;reviewsLeft:number};lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
+export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number};scenes:{sceneId:string;formats:{format:string;renders:number;revisionsLeft:number}[]}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];/** Point 4a: the designer's own notes, always sent. */notes?:string;/** Point 4b: set when the attached images are a render the designer must look at first. */lookFirst?:boolean;/** Point 3: the hero frame to settle first (designerVersion 2). */hero?:{sceneId:string;format:string;settled:boolean;reviewsLeft:number};lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
 
 /** The views the designer asked for: the reference copy in each requested format (default: the reference format),
  * plus the longest copy in the same formats so overflow shows up while the scene is designed. Screenshots only for
@@ -89,7 +89,7 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
   const files=await tools.files(),last=state.lastRender;
   const images=last?await Promise.all(last.views.map(async v=>({url:await jpeg(v.file),label:`${v.label} (rendered, scene ${scenes.indexOf(last.sceneId)+1})`}))):[];
   let text:string;
-  try{text=await args.call({turn:state.turn,budget:{turnsLeft:args.maxTurns-state.turn,picturesLeft:Math.max(0,args.maxPictures-state.pictures)},
+  try{text=await args.call({...(heroOn?{notes:state.notes??'',...(last?{lookFirst:true}:{})}:{}),turn:state.turn,budget:{turnsLeft:args.maxTurns-state.turn,picturesLeft:Math.max(0,args.maxPictures-state.pictures)},
    scenes:scenes.map(sceneId=>({sceneId,formats:input.formats.map(f=>({format:f.id,renders:state.renders[renderKey(sceneId,f.id)]??0,revisionsLeft:Math.max(0,DESIGNER_REVISIONS_PER_SCENE+1-(state.renders[renderKey(sceneId,f.id)]??0))})).filter(f=>f.renders>0||f.format===referenceFormat)})),
    toolResults:state.transcript.slice(-12),currentFiles:files,
    ...(state.hero?{hero:{sceneId:state.hero.sceneId,format:state.hero.format,settled:state.hero.state==='accepted',reviewsLeft:Math.max(0,(args.heroReviews??0)-state.hero.reviews)}}:{}),
@@ -98,6 +98,11 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
   const looked=last?.views[0]?.file;state.turn++;state.transcript.push({from:'agent',text:text.slice(0,2000)});delete state.lastRender;await args.save(state);
   let turn:DesignerTurn;
   try{turn=readDesignerTurn(JSON.parse(text),input);}catch(error){await log({error:(error instanceof Error?error.message:'Unreadable answer').slice(0,600)});continue;}
+  // Point 4: notes are working memory; a turn after a render must first say what it saw (look, name, then fix).
+  if(heroOn&&turn.notes){state.notes=turn.notes;await args.save(state);}
+  if(heroOn&&last&&!turn.seen){await log({error:'Look before you change: write seen (what a viewer reads first, second and third in the render, and its weakest points, the measured findings included). Nothing was applied.'});await args.onTurn?.(turn,[{refused:'seen'}],looked);
+   // The render stays attached for the retry.
+   state.lastRender=last;await args.save(state);continue;}
   const results:unknown[]=[];
   try{
    // 1. Code: exact edits against the files this turn saw, then whole files.

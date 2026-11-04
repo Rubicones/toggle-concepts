@@ -19,9 +19,11 @@ const note=(recipient:'director'|'assembler',problem:string)=>({recipient,priori
 function tools(review?:DesignerTools['reviewHero']){const renders:string[]=[];return {renders,tools:{files:async()=>[],write:async()=>{},build:async()=>({ok:true as const}),requestImage:async()=>({id:'',status:'refused' as const}),finish:async()=>({complete:true as const}),
  render:async(views:Parameters<DesignerTools['render']>[0])=>{renders.push(`${views[0].props.sceneId}@${views[0].label.split(' ')[0]}`);return {summary:{version:1 as const,revision:'r',views:views.length,hard:0,soft:0,reports:[]},shots:views.filter(v=>v.shot).map(v=>({key:v.key,file:shotFile}))};},
  ...(review?{reviewHero:review}:{})} satisfies DesignerTools};}
+// Version 2 turns after a render must say what they saw (point 4); these tests are about the hero, so every turn does.
+const withSeen=(a:unknown)=>({...(a as object),seen:{first:'a',second:'b',third:'c',weakest:['d']}});
 async function run(i:DirectionInput,answers:unknown[],t:DesignerTools,heroReviews=2,state=newDesignerState()){
  const events:HeroEvent[]=[];let n=0;
- await runDesigner({input:i,state,maxTurns:state.turn+answers.length,maxPictures:0,timeMs:60000,tools:t,heroReviews,save:async()=>{},onHero:async e=>{events.push(e);},call:async()=>JSON.stringify(answers[n++])});
+ await runDesigner({input:i,state,maxTurns:state.turn+answers.length,maxPictures:0,timeMs:60000,tools:t,heroReviews,save:async()=>{},onHero:async e=>{events.push(e);},call:async()=>JSON.stringify(Number(i.brief.designerVersion)>=2?withSeen(answers[n++]):answers[n++])});
  return {state,events};
 }
 

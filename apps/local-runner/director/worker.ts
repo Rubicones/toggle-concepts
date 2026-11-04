@@ -56,7 +56,7 @@ import {liveCriticInstructions,liveCriticSchema} from '../../../packages/agents/
 import {reviewImages} from './review-sheet';
 import {prepareImageMethods,derivedReferences,finishImageMethod} from './image-methods';
 import {storeCutout,emitCutout,pictureRoleDetail} from './cutout';
-import {usesDesigner,heroFirst,designerActivityLine,designerTurnSummary,designerTurnResponseFor} from '../../../packages/director/designer';
+import {usesDesigner,heroFirst,designerActivityLine,designerTurnSummary,designerTurnResponseFor,seenLines} from '../../../packages/director/designer';
 import {designerContext} from '../../../packages/director/designer-context';
 import {designerInstructionsFor} from '../../../packages/agents/prompts/designer-v1';
 import {readLiveCritique} from '../../../packages/director/live-review';
@@ -269,7 +269,7 @@ export async function executeDirector(claim:DirectorClaim,device:string){
      // Point 3d: the hero frame's milestones in the timeline.
      onHero:async event=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='no-critic'?' (no creative review in this quote)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);},
      call:async(request,images)=>(await call('designer',JSON.stringify(request),withCreativeHandoff(input,'director',designerInstructionsFor(input)),designerTurnResponseFor(input),{input:designerContext(input),notes:agentReviewNotes(state.notes??[])},{designer:request.turn},[...prefix,...images.map(i=>({...i,required:true}))])).text,
-     onTurn:async(turn,results,looked)=>{await events.emit(`designer:${state.iteration??1}:${loop.turn}`,{stepId:`designer:${state.iteration??1}:${loop.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:designerActivityLine(turn,sceneNumber),detail:{sceneId:turn.focus.sceneId,activity:turn.focus.activity,summary:designerTurnSummary(results)}},looked);}});
+     onTurn:async(turn,results,looked)=>{await events.emit(`designer:${state.iteration??1}:${loop.turn}`,{stepId:`designer:${state.iteration??1}:${loop.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:designerActivityLine(turn,sceneNumber),detail:{sceneId:turn.focus.sceneId,activity:turn.focus.activity,summary:designerTurnSummary(results),...(turn.seen?{seen:seenLines(turn.seen)}:{})}},looked);}});
     if(loop.finish)finishDesign(design,loop.finish);
     await writeFile(resolve(folder,'draft.json'),JSON.stringify(design));await save();
     return loop;

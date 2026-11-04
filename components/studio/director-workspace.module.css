@@ -51,3 +51,12 @@
 .workspace :global(.director-timeline-activity) :global(.director-timeline-warning) { display:flex; gap:.4rem; align-items:flex-start; }
 .workspace :global(.director-timeline-document),.workspace :global(.director-timeline-technical) { white-space:pre-wrap; overflow-wrap:anywhere; max-height:360px; overflow:auto; }
 .workspace :global(.director-timeline-technical) { font-size:.75rem; }
+
+/* Design quality plan, point 4d: the designer's own running notes, readable above the technical log. */
+.designerNotes{margin:.5rem 0 .75rem;padding:.75rem 1rem;border-left:3px solid var(--line,#d8ddda);background:var(--surface,#fafafa)}
+.designerNotes h5{margin:0 0 .25rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.designerNotes p{margin:0;white-space:pre-wrap;font-size:.875rem}
+.workspace :global(.director-timeline-seen){display:grid;gap:2px;margin:.25rem 0}
+.workspace :global(.director-timeline-seen) div{display:grid;grid-template-columns:8.5rem 1fr;gap:.5rem;font-size:.8rem}
+.workspace :global(.director-timeline-seen) dt{color:var(--muted)}
+.workspace :global(.director-timeline-seen) dd{margin:0}

@@ -34,13 +34,19 @@ export const designerTurnSchema=z.strictObject({
   scenes:z.array(z.strictObject({sceneId:id,moment:text(160),motion:text(240).optional(),sound:text(200).optional()})).min(1).max(40),
  }).optional(),
 });
-export type DesignerTurn=z.infer<typeof designerTurnSchema>&{settleHero?:boolean};
+export type DesignerTurn=z.infer<typeof designerTurnSchema>&{settleHero?:boolean;notes?:string;seen?:z.infer<typeof seenSchema>};
 export type DesignerPicture=z.infer<typeof designerPictureSchema>;
 
 /** The provider sees the portable core; the full zod contract checks every answer afterwards. */
 export const designerTurnResponse={name:'designer_turn_v1',schema:z.toJSONSchema(designerTurnSchema,{io:'input'}) as Record<string,unknown>};
 /** Version 2 turns (design quality plan): settleHero asks for the hero frame's review (point 3). */
-export const designerTurnSchemaV2=designerTurnSchema.extend({settleHero:z.boolean().optional()});
+/** Design quality plan, point 4: what the designer saw in the last render, before it changes anything. */
+export const seenSchema=z.strictObject({first:text(200),second:text(200),third:text(200),weakest:z.array(text(200)).min(1).max(3)});
+export const designerTurnSchemaV2=designerTurnSchema.extend({settleHero:z.boolean().optional(),
+ /** Point 4a: the designer's own running record (decisions, what it tried and rejected, what remains), rewritten whole each turn. */
+ notes:text(1500).optional(),
+ /** Point 4b: required on a turn that follows a render. */
+ seen:seenSchema.optional()});
 export const designerTurnResponseV2={name:'designer_turn_v2',schema:z.toJSONSchema(designerTurnSchemaV2,{io:'input'}) as Record<string,unknown>};
 export const designerTurnResponseFor=(input:Pick<DirectionInput,'brief'>)=>heroFirst(input)?designerTurnResponseV2:designerTurnResponse;
 
@@ -63,7 +69,7 @@ export function readDesignerTurn(value:unknown,input:Pick<DirectionInput,'storyb
   if(missing.length||new Set(named).size!==named.length||named.some(s=>!scenes.has(s)))throw new Error(`DESIGNER_FINISH_SCENES: finish names every scene exactly once (${[...scenes].join(', ')}).`);
   if(!audio)for(const s of turn.finish.scenes)delete s.sound;
  }
- if(!turn.files.length&&!turn.edits.length&&!turn.pictures.length&&!turn.render&&!turn.finish&&!turn.settleHero)throw new Error('DESIGNER_EMPTY_TURN: change the code, request a picture, ask for a render or finish.');
+ if(!turn.files.length&&!turn.edits.length&&!turn.pictures.length&&!turn.render&&!turn.finish&&!turn.settleHero&&!turn.notes)throw new Error('DESIGNER_EMPTY_TURN: change the code, request a picture, ask for a render or finish.');
  return turn;
 }
 
@@ -98,6 +104,7 @@ export function designerTurnSummary(results:unknown[]):string[]{
   else if(r.finish==='complete')lines.push('The draft is finished.');else if(r.finish==='refused')lines.push('Not finished yet: some options still need work.');
   else if(typeof r.error==='string')lines.push('This step needs another attempt.');
  }
+ if(results.some(r=>(r as {refused?:string})?.refused==='seen'))lines.push('Not applied: the designer must first say what it saw in the render.');
  if(written.length)lines.unshift(`Saved ${written.join(', ')}.`);
  if(asked)lines.push(`Asked for ${asked} picture${asked===1?'':'s'}.`);if(refused)lines.push('The approved number of pictures is used.');
  return lines;
@@ -105,5 +112,10 @@ export function designerTurnSummary(results:unknown[]):string[]{
 
 /** The designer's saved progress in the work state (point 4b/4e). */
 export type DesignerLoopState={
+ /** Point 4a: the designer's notes, sent at the top of every request (outside the 12-result window); a restart keeps them. */
+ notes?:string;
  /** Design quality plan, point 3 (designerVersion 2): the hero frame and whether it is settled. Saved, so a restart keeps it. */
  hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;acceptedBy?:'critic'|'reviews-used'|'no-critic';shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
+
+/** Point 4d: the designer's look at a render, as timeline lines. */
+export function seenLines(seen:NonNullable<DesignerTurn['seen']>){return [`Read first: ${seen.first}`,`Read second: ${seen.second}`,`Read third: ${seen.third}`,...seen.weakest.map((w,i)=>`${i===0?'Weakest point':'Also weak'}: ${w}`)];}
