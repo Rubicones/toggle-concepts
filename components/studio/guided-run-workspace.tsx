@@ -26,6 +26,7 @@ import { applyRunBrandReview, brandAcceptanceBlockers, type BrandWorkspaceRecord
 import type { DraftWorkspaceRecord } from "@/packages/contracts/drafts";
 import { WorkflowMigration } from "./brief-workspace";
 import { SharedMedia } from "./shared-media";
+import { ProviderReceipts } from "./provider-receipts";
 import { DraftReview } from "./draft-review";
 import styles from "./guided-run-workspace.module.css";
 function focusPlanningNote(){
@@ -493,6 +494,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
                 </Disclosure>
               )}
               {control.blocker === "ASSETS_REQUIRED" && <SharedMedia campaignId={campaignId} />}
+              {/UNKNOWN|unknown|UNRESOLVED/.test(control.blocker ?? "") && <ProviderReceipts runId={run?.id} />}
             </section>
           )}
           {control.blocker==='M07B_SCHEMA_REQUIRED'&&<WorkflowMigration stage="M07b"/>}

@@ -146,3 +146,15 @@
 - **Risk:**
   - The run cap was already raised by the full block maximum at approval, so no money beyond the approved quote is admitted.
   - Director-and-coder quotes have no `designer` key: unchanged.
+
+## 8. Follow-up: the receipt check where the run stops (2026-11-04)
+
+- **Symptom:** the run banner said "A provider receipt needs checking" (`UNRESOLVED_PROVIDER_RECEIPT`) but offered no action. The receipt check lived only on the Queue page.
+- **Fix:** `components/studio/guided-run-workspace.tsx` shows the run's provider-receipt recovery (`ProviderReceipts` filtered by run) inside that banner:
+  - look up the saved generation, then reconcile;
+  - or recover an unsubmitted request.
+- **Migrations:** none.
+- **Risk:** UI only. Reconciliation is the existing, idempotent flow.
+- **Verification:**
+  - `npm run typecheck`: passed.
+  - `npm run lint`: passed.
