@@ -1,4 +1,5 @@
 import 'server-only';
+import {usesDesigner} from '@/packages/director/designer';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {createHash} from 'node:crypto';
 import {checked} from './studio';
@@ -19,7 +20,7 @@ export async function directorImageAdmission(admin:SupabaseClient,tenant:string,
  if(expected.prompt!==prompt||JSON.stringify(expected.references)!==JSON.stringify(image.referenceAssetIds)||JSON.stringify(expected.derivedPlan.map(d=>d.sha256))!==JSON.stringify(image.derivedSha256??[]))throw new ApiError(409,'STALE_DIRECTOR_RESOURCE','This still must match the saved director request.');
  // Designer blocks (point 4c): the quote approved a COUNT of pictures, and the brief's synthesis permission was mapped
  // to that count at quote time (none when generated pictures are not permitted). Retrying the same picture is not a new one.
- const designer=input.brief.designerVersion===1;
+ const designer=usesDesigner(input);
  if(!designer&&input.brief.synthesisAllowed!==true&&!block.approved_resource_ids.includes(resourceRequest(resource,input,estimate.perStillMicroUsd).key))throw new ApiError(409,'RESOURCE_PERMISSION_REQUIRED','The brief does not yet permit this still.');
  if(designer){
   const steps=checked(await admin.from('studio_agent_steps').select('config_snapshot').eq('run_id',runId).eq('config_snapshot->>directorBlockId',block.id).eq('config_snapshot->>directorDirectionId',meta.directionId).eq('config_snapshot->>directorRole','resources'))??[];

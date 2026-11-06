@@ -43,7 +43,7 @@ test('scripts carry a reading order, a product-data set, and never use prop text
  assert.match(contract,/productData lists the believable product content/);assert.match(contract,/it is prop text: never a headline, a hook, a claim or an offer/);
  assert.match(contract,/No headline or hook is prop text/);assert.match(contract,/which scenes show the call to action/);
  const instructions=defaultAgentSettings.find(a=>a.role==='script')!.instructions;
- assert.match(instructions,/reading order/);assert.match(instructions,/listed in productData from confirmed facts/);assert.match(instructions,/never make prop text or an example name from the brand materials the headline or the hook/);
+ assert.match(instructions,/reading order/);assert.match(instructions,/listed in world as "Group: value" lines/);assert.match(instructions,/never make it or an example name from the brand materials the headline or the hook/);
  assert.doesNotMatch(instructions,/add a supporting line only when the frame cannot carry the meaning alone/);
 });
 

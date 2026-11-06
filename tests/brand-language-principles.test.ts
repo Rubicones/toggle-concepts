@@ -17,7 +17,9 @@ test('principles ask for clear hierarchy, not an empty frame',()=>{
 
 test('every creative planning role applies the studio rules for generated pictures',()=>{
  assert.match(studioRules,/Text and logos are never part of a generated picture/);assert.match(studioRules,/one camera angle per scene across all formats/);
- for(const role of ['strategy','script','visual-direction'])assert.ok(defaultAgentSettings.find(a=>a.role===role)!.instructions.includes(studioRules),role);
+ for(const role of ['script','visual-direction'])assert.ok(defaultAgentSettings.find(a=>a.role===role)!.instructions.includes(studioRules),role);
+ // Design quality plan, point 1a: picture policy is production, so the strategy no longer carries it.
+ assert.ok(!defaultAgentSettings.find(a=>a.role==='strategy')!.instructions.includes(studioRules));
 });
 
 test('the director and the coder build from the brand own components and colours',()=>{

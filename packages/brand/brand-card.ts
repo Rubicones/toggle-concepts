@@ -27,6 +27,13 @@ const clip=(v:string,n:number)=>v.length<=n?v:v.slice(0,n-1)+'…';
 const hexFills=(svg:string)=>[...svg.matchAll(/(?:fill|stroke)\s*[:=]\s*["']?(#[0-9a-f]{6}|#[0-9a-f]{3})\b/gi)].map(m=>m[1].length===4?`#${[...m[1].slice(1)].map(c=>c+c).join('')}`:m[1]);
 const lum=(hex:string)=>{const n=parseInt(hex.slice(1),16),c=[n>>16&255,n>>8&255,n&255].map(v=>{v/=255;return v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4;});return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];};
 
+/** Font weights a typography rule names, as numbers ("Bold", "700", "SemiBold 600"). */
+export function ruleWeights(text:string){
+ const names:Record<string,number>={thin:100,hairline:100,extralight:200,ultralight:200,light:300,regular:400,book:400,medium:500,semibold:600,demibold:600,bold:700,extrabold:800,ultrabold:800,heavy:800,black:900};
+ const found=new Set<number>();for(const m of text.matchAll(/\b([1-9]00)\b/g))found.add(Number(m[1]));
+ for(const m of text.toLowerCase().matchAll(/\b(extra|ultra|semi|demi)?[\s-]?(thin|hairline|light|regular|book|medium|bold|black|heavy)\b/g)){const key=`${m[1]??''}${m[2]}`;if(names[key])found.add(names[key]);}
+ return [...found].sort((a,b)=>a-b);
+}
 export function buildBrandCard(findings:Finding[],materials:Material[]):BrandCard{
  const byId=new Map(materials.map(m=>[m.id,m])),file=(id:string)=>byId.get(id)?.filename??'unknown file';
  const roleOf=(id:string)=>{const m=byId.get(id);return m?.sure?m.role:undefined;};
@@ -49,6 +56,13 @@ export function buildBrandCard(findings:Finding[],materials:Material[]):BrandCar
  if(!logos.length)checks.push({ok:false,text:'No logo file. Mark the logo, wordmark or icon in “What each file is”.'});
  else{checks.push({ok:readable('dark'),text:readable('dark')?'A logo reads on dark backgrounds.':'Every logo is dark: add a light version for dark backgrounds.'});checks.push({ok:readable('light'),text:readable('light')?'A logo reads on light backgrounds.':'Every logo is light: add a dark version for light backgrounds.'});}
  for(const family of named){const key=(v:string)=>v.toLowerCase().replace(/[^a-z0-9]/g,''),f=[...families.values()].find(x=>key(x.family)===key(family));checks.push(f?{ok:true,text:`${family}: font files in ${f.weights.join(', ')}.`}:{ok:false,text:`${family}: no font file. If it is on Google Fonts it is fetched for drafts; otherwise add the files.`});}
+ // Design quality plan, point 2d: a weight the typography rules use for a family must exist in its files, or the
+ // browser imitates it. Only weights the rules name next to the family are checked.
+ for(const f of families.values())for(const rule of of('typographyRules','displayFonts','bodyFonts','monoFonts')){
+  if(!rule.value.toLowerCase().replace(/[^a-z0-9]/g,'').includes(f.family.toLowerCase().replace(/[^a-z0-9]/g,'')))continue;
+  const missing=ruleWeights(rule.value).filter(w=>!f.weights.includes(w));
+  if(missing.length&&!checks.some(c=>c.text.startsWith(`${f.family}: the typography rules use`)))checks.push({ok:false,text:`${f.family}: the typography rules use weight ${missing.join(', ')}, but its files are ${f.weights.join(', ')}. The browser imitates a missing weight; add its file.`});
+ }
  checks.push(hex('accent')?{ok:true,text:`One accent colour: ${hex('accent')}.`}:{ok:false,text:'No accent colour found. Mark the brand colours or add the tokens file.'});
  const c=ratio(hex('ink'),hex('paper'));if(c!==null)checks.push({ok:c>=4.5,text:`Text on background contrast ${c}:1${c>=4.5?'.':' — below 4.5:1.'}`});
  // Interface mockups are built in code from the product's own components and colours: say when there is nothing to build from.

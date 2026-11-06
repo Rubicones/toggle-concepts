@@ -40,9 +40,9 @@ test('a requested picture becomes a resource under the next unused issued id',()
  assert.throws(()=>pictureResource({purpose:'p',scene:'s',prompt:'p',aspect:'1:1',referenceAssetIds:[],mustNotContain:[]},input,['r1','r2','r3']),/STILL_COUNT_EXHAUSTED/);
 });
 
-test('admission counts pictures for designer blocks: a new one past the count is refused, a retry is not',async()=>{
+for(const version of [1,2])test(`admission counts pictures for designer v${version}: a new one past the count is refused, a retry is not`,async()=>{
  const admission=await loadAdmission(),base=structuredClone(inputJson) as unknown as DirectionInput;
- const input:DirectionInput={...base,resourceIds:['a','b'],brief:{...base.brief,designerVersion:1,synthesisAllowed:false}};
+ const input:DirectionInput={...base,resourceIds:['a','b'],brief:{...base.brief,designerVersion:version,synthesisAllowed:false}};
  const resource:Resource={id:'b',kind:'still',proxy:false,resolution:'low',purpose:'p',scene:input.storyboard[0].id,prompt:'A slab.',aspect:'1:1',referenceAssetIds:[],mustNotContain:[]},req=resourceRequest(resource,input,1);
  const admin=(steps:string[])=>fakeAdmin({studio_director_blocks:{id:'blk',status:'running',approved_resource_ids:[],snapshot:{inputs:[input],estimates:{[input.directionId]:{perStillMicroUsd:1,maxStills:1}}}},studio_director_work:{status:'running',state:{design:{resources:[resource]}}},studio_agent_steps:steps.map(id=>({config_snapshot:{directorResourceId:id}}))});
  const call=(a:unknown)=>admission(a,'t',input.runId,{blockId:'blk',directionId:input.directionId,resourceId:'b',maxCostMicroUsd:1},req.prompt,'not-issued',{aspectRatio:'1:1',referenceAssetIds:req.references,derivedSha256:[]},1);

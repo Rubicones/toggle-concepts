@@ -43,7 +43,9 @@ export function approvedScenes(raw:unknown,directionId:string):Scene[]{
   const rawCopyLines=Array.isArray(s.onScreenCopy)&&s.onScreenCopy.every(v=>typeof v==='string')?s.onScreenCopy as string[]:copy?[copy]:extractedCopy;
   const copyLines=rawCopyLines.map(cleanOnScreenCopyLine).filter(Boolean);
   const rawSourceId=s.sceneId??s.id;
-  return {id:requestId({directionId,scene:index}),...((typeof rawSourceId==='string'||typeof rawSourceId==='number')&&String(rawSourceId).trim()?{sourceSceneId:String(rawSourceId).trim()}:{}),start,end,copy:copyLines,visualNotes:visual,motionNotes:typeof s.motionNotes==='string'?s.motionNotes:visual,maxStaticSeconds:typeof s.maxStaticSeconds==='number'?s.maxStaticSeconds:.75};
+  return {id:requestId({directionId,scene:index}),...((typeof rawSourceId==='string'||typeof rawSourceId==='number')&&String(rawSourceId).trim()?{sourceSceneId:String(rawSourceId).trim()}:{}),start,end,copy:copyLines,visualNotes:visual,motionNotes:typeof s.motionNotes==='string'?s.motionNotes:visual,maxStaticSeconds:typeof s.maxStaticSeconds==='number'?s.maxStaticSeconds:.75,
+   // Design quality plan, point 1d: what in this frame proves its line (scenarios from 2026-11-04.1 on).
+   ...(typeof s.proof==='string'&&s.proof.trim()?{proof:s.proof.trim().replace(/\s+/g,' ').slice(0,300)}:{})};
  });
 }
 export type ApprovedLocalization={copySlot:string;locale:string;text:string;variantIds:string[];sceneId?:string;direction?:string};

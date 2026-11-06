@@ -34,6 +34,7 @@ test('changed image briefs stay pending until matching pixels arrive, and every 
  assert.equal(liveResourceBindings(i,[{...resource,purpose:'Copy-only revision'}],catalog).first.ready,true);
  const changed=liveResourceBindings(i,[{...resource,prompt:'New image material'}],catalog);assert.equal(changed.first.ready,false);assert.equal(changed.first.url,'');assert.notEqual(changed.first.requestHash,first.first.requestHash);
  assert.throws(()=>liveResourceBindings(i,[{...resource,id:'foreign'}],catalog),/UNISSUED_RESOURCE_ID/);
+ const sketched=liveResourceBindings({...i,brief:{...i.brief,imageMethodsVersion:1}},[{...resource,sketch:{shapes:[]}} as never],catalog);assert.equal(sketched.first.ready,false,'a sketch not pinned yet is pending, and the preview does not fail');
 });
 
 test('aliases and copy/layout revisions share one paid image while current IDs and original receipts remain bound',async()=>{

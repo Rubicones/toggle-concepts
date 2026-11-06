@@ -58,8 +58,9 @@ export function selfReviewNote(summary:InspectionSummary,round=1){
  const measured=findingDigest(summary,'all',12);
  return `${round>1?'Second look, one format group at a time (tall, then square, then wide) and scene by scene: this pass is about finish. ':''}Visual self-review. The attached images are real renders of your current Frame.tsx: one sheet per scene with every ordered format side by side, one for the longest copy, and zoomed crops of measured problems. Look at them as a strict art director who did not build this, against the director's design and visual idea. Find every defect: the logo or any word hard to see or read; type with no clear hierarchy or with lines run together that the design separates; anything clipped, overlapping, off the canvas or in a safe margin; pictures cut through the subject, stretched or soft; dead or cramped space; a format that is only the square squeezed instead of recomposed; graphics, products or marks that look invented or unfinished; edges and baselines off one grid, uneven spacing, matching roles in different sizes; an interface mockup not built from the brand's own components or with unbelievable data; buttons, labels or the CTA not set as the brand sets them; text or a logo inside a generated picture; a word drawn in two fonts. Then fix all of them in one coherent change; keep the concept, options and approved words.${measured.length?`\nMeasured in the browser:\n${measured.map((f,i)=>`${i+1}. [${f.severity}] ${f.detail} — ${f.views.join('; ')}`).join('\n')}`:''}`;
 }
-export function criticNote(critique:LiveCritique,round:number){
- const notes=critique.notes.filter(n=>n.recipient==='assembler');
+/** owner 'designer' (design quality plan, point 3c): the designer owns idea and execution, so every note is its to apply. */
+export function criticNote(critique:LiveCritique,round:number,owner:'coder'|'designer'='coder'){
+ const notes=critique.notes.filter(n=>owner==='designer'||n.recipient==='assembler');
  return `Art-direction review of the current views (round ${round}). The attached images show the views the reviewer saw. Apply every note in its named view, as one coherent change to the existing component; keep the concept, options and working views. The technique is your choice; never change approved words.\n${notes.map((n,i)=>`${i+1}. [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}`;
 }
 
@@ -113,14 +114,15 @@ export async function runLiveReview(deps:LiveReviewDeps):Promise<LiveReviewRecor
    catch(error){const message=error instanceof Error?error.message:'CRITIC_FAILED';if(CONTROL_FAILURE.test(message))throw error;state.skipped=message.slice(0,200);await deps.save(state);await deps.emit('review:critic:skipped','The creative review could not run; the draft is delivered with the measured findings only.',{reason:state.skipped});break;}
    state.criticRounds=round;state.critiques.push(critique);await deps.save(state);
    await deps.emit(`review:critic:${round}`,critique.accepted?'The creative review accepted the current views.':`The creative review returned ${plural(critique.notes.length,'note')}.`,critique,shots.length?shots[0].file:undefined);
-   const forCoder=critique.notes.filter(n=>n.recipient==='assembler');
+   const owner=deps.owner??'coder',forCoder=critique.notes.filter(n=>owner==='designer'||n.recipient==='assembler');
    if(critique.accepted||!forCoder.length)break;
-   const result=await deps.repair(criticNote(critique,round),'critic',round,{shots,summary});state.repairs.push({kind:'critic',round,...result});await deps.save(state);
+   const result=await deps.repair(criticNote(critique,round,owner),'critic',round,{shots,summary});state.repairs.push({kind:'critic',round,...result});await deps.save(state);
    if(!result.applied){await deps.emit(`review:critic:${round}:repair`,'The review notes could not be applied automatically; they are kept for the AD.',result);break;}
    if(!await remeasure())break;
    await gate();
   }
  }
- const directorNotes=state.critiques.flatMap(c=>c.notes.filter(n=>n.recipient==='director'));
+ // A designer applied every note itself; only the coder pipeline keeps director notes aside for the AD.
+ const directorNotes=deps.owner==='designer'?[]:state.critiques.flatMap(c=>c.notes.filter(n=>n.recipient==='director'));
  return {version:1,inspection:{revision:summary.revision,views:summary.views,hard:summary.hard,soft:summary.soft,findings:findingDigest(summary,'all',20)},gateRounds:state.gateRounds,criticRounds:state.criticRounds,critiques:state.critiques,directorNotes,repairs:state.repairs,...(state.skipped?{skipped:state.skipped}:{})};
 }

@@ -57,8 +57,11 @@ export function liveResourceBindings(input:DirectionInput,resources:Resource[],c
  const bindings:NonNullable<import('./live-preview').LivePreview['resources']>=Object.fromEntries(input.resourceIds.map(id=>[id,{id,url:'',ready:false}]));
  for(const resource of resources){
   if(!input.resourceIds.includes(resource.id))throw new Error('UNISSUED_RESOURCE_ID');
-  const key=independentResourceBindings(input)?resourceRequest(resource,input,1).key:undefined;
-  const ready=catalog.find(c=>c.id===resource.id&&(!key||c.requestHash===key));
+  // A picture whose image method is not pinned yet (a designer picture whose sketch is still being prepared) is simply
+  // not ready: the preview must never fail on it.
+  const pinned=!(resource.sketch&&!resource.sketch.sha256)&&!(resource.edit&&!resource.edit.source)&&!(resource.extend&&(!resource.extend.source||!resource.extend.canvasSha256));
+  const key=pinned&&independentResourceBindings(input)?resourceRequest(resource,input,1).key:undefined;
+  const ready=pinned?catalog.find(c=>c.id===resource.id&&(!key||c.requestHash===key)):undefined;
   bindings[resource.id]={id:resource.id,sceneId:resource.scene,url:ready?.url??'',proxy:resource.proxy,proxyFor:resource.proxyFor,ready:!!ready,...(ready?.cutout?{cutoutUrl:ready.cutout.url,cutoutWidth:ready.cutout.width,cutoutHeight:ready.cutout.height}:{}),...(ready?.cutoutFailed?{cutoutFailed:ready.cutoutFailed}:{}),...(ready?{revisionId:ready.revisionId,width:ready.width,height:ready.height,...(ready.image?{image:ready.image}:{})}:{}),...(key?{requestHash:key}:{})};
  }
  return bindings;

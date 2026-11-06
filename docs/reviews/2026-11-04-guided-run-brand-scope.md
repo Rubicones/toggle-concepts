@@ -1,0 +1,63 @@
+# Work Review: A run starts with a brand from the library
+
+- **Date:** 2026-11-04
+- **Branch:** `feat/prompt-priorities`
+- **Base Commit:** `fe98b7b`
+
+## 1. Database Migrations to Apply (ACTION REQUIRED BY OWNER)
+
+- **Migrations Added:** `supabase/migrations/20261104000200_guided_run_brand_scope.sql`
+- **Why Needed:** `studio_start_guided_run` looked for a submitted brandbook on the run's own campaign. A campaign that uses another campaign's brand (`brand_source_campaign_id`) therefore stopped with `BRANDBOOK_REQUIRED` ("Submit the brandbook you have first."). It now reads `app_private.brand_scope(campaign)`.
+- **How to Apply:**
+  - Run the file in the Supabase SQL Editor (or `npx supabase db push`).
+  - It is safe to run twice, and stops on an unexpected function version.
+  - Test: `supabase/tests/brand-source.sql`.
+- **Backward Compatibility:**
+  - Campaigns with their own brandbook resolve to themselves, so nothing changes for them.
+  - Runs already started keep their pinned brandbook.
+
+## 2. Summary of Changes
+
+- **The migration:** replaces one read in `studio_start_guided_run`. The run pins the library brand's submitted brandbook. `lib/server/brandbook-a1.ts` already validates a pinned submission against the brand scope.
+- **`supabase/tests/brand-source.sql`:** a campaign with a library brand and no brandbook of its own starts its run, and the run pins the library brand's submission.
+  - Without the migration: `BRANDBOOK_REQUIRED`.
+  - With it: passes.
+- **Checked:** every other database function that reads brandbook heads or submissions.
+  - Brand sheet requests already pass the brand scope.
+  - The brief prefill from a library brand is still not done (known since the brand library phase).
+
+## 3. Self-Review & Risk Audit ("Can It Produce Another Bug or Blocking Error?")
+
+1. **Frozen digests:** no `config_hash`, `requestId` or `quoteId` change.
+2. **Size limits:** no prompt or schema change.
+3. **`AGENTS.md` principles:** the brand stays read-only from the library campaign.
+
+## 4. Verification Results
+
+- **Migration chain:** applied on a disposable Postgres 16 with Supabase stubs.
+- **SQL tests:** `brand-source.sql` passes, and fails without the migration.
+- **TypeScript:** no change.
+
+## 5. Follow-up: designer pictures with a blocking sketch (same day)
+
+- **Symptom:** the draft stopped with `IMAGE_METHOD_SKETCH_REQUIRED`.
+- **Cause:** the director's pictures get their sketch rasterised and its hash pinned (`prepareImageMethods`) once, before the build starts. The designer orders pictures during the build, and its `buy` went straight to `buildResourceCatalog`. A designer picture with `sketch` therefore reached `resourceRequest` without `sketch.sha256`.
+- **Fix:** `apps/local-runner/director/worker.ts`: the designer's `buy` runs `prepareImageMethods` for that one picture first, and saves the pinned hash with the work state.
+  - The picture's identity and price are unchanged.
+  - The pictures saved before the failure are prepared the same way when the block resumes.
+- **Migrations:** none. Press "Retry preview" after restarting local processing.
+- **Verification:**
+  - `npm run typecheck`: passed.
+  - `npm run lint`: passed.
+  - Director image-method, designer and hero-frame tests: passed.
+
+## 6. Follow-up: the live preview fails on a picture still being prepared (same day)
+
+- **Symptom:** after the fix in section 5, "Retry preview" still showed `IMAGE_METHOD_SKETCH_REQUIRED`, and the live component disappeared.
+- **Cause:** the web app's live preview (`lib/server/director-live.ts` → `liveResourceBindings`) builds a request key for every saved picture. The designer's sketch picture had been saved before its sketch was pinned, so the preview itself threw.
+- **Fix:** `packages/director/resources.ts` `liveResourceBindings`. A picture whose image method is not pinned yet (sketch without hash, edit without source, extend without canvas) is simply not ready, and the preview never fails on it.
+- **Test:** `tests/director-resource-bindings.test.ts` (an unpinned sketch is pending).
+- **Verification:**
+  - `npm run typecheck`: passed.
+  - `npm run lint`: passed.
+  - Resource-binding tests: 8 passed.

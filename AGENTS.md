@@ -201,6 +201,8 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
   - AD notes go to the designer without a recipient choice.
   - The status reads "The designer is working".
 - **Earlier blocks.** They keep director + coder with their exact requests and quotes.
+- **Version-aware continuation.** Continuation pricing, picture admission and preview metadata use `usesDesigner(input)`, like the worker, for both designer versions 1 and 2. A version-2 block with a legacy continuation quote can stop with `DIRECTOR_ALLOWANCE_REQUIRED`; request and approve a corrected continuation quote after updating the app. Retrying does not add the missing allowance, and existing approvals are never rewritten.
+- New designer continuation quotes recalculate `designerRequestInputCap` from the refreshed model context and frozen output limit, matching draft-start pricing. If a stopped designer quote has a smaller cap, the workspace offers a corrected continuation price. Existing approved caps stay frozen; a retry alone cannot enlarge them. Progress reads project only the two model-limit scalars needed for this recovery choice.
 - **Formats** (point 5).
   - The designer designs every scene in the reference format first. It then recomposes each ordered format as an explicit branch of the same component; hooks, locales, CTAs and lengths stay data.
   - Revisions are counted per scene and format (`renderKey`), so recomposing a format is a first design.
@@ -211,6 +213,63 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
   - Screenshots go to the designer as JPEG at about 1080 px on the long side.
   - Each sealed designer draft records its real usage (`designer.usage`), which the timeline shows. After `DESIGNER_MEASURED_RUNS` measured runs the quote takes its allowance from the 90th percentile with 50 % headroom, never above the starting ceiling.
   - The price panel says "up to N design rounds and up to M pictures" and the typical measured cost.
+
+### Planning: idea, proof and world (design quality plan, point 1, 4 November 2026)
+
+- Instruction version `2026-11-04.1`. Runs whose frozen instructions are this version or later (`scriptProofFor`) get the new script schema and contracts; older runs keep theirs exactly.
+- **Strategy** decides the idea, not the production. `visualPremise` is the visual thought: what the viewer should see and feel. It never states canvas, colours, grids, pixels, percentages, tools, a picture policy or how the interface is shown. The UI labels it "Visual thought".
+- **Interface rule** (`interfaceRule`, every planning role): a digital product's interface is a simplified mockup built in code from the brand's UI-kit components, never a screenshot. An earlier role's production remark never overrides it or a brand rule.
+- **Product as proof** (`productProof`): the frame that proves the promise shows the product in use; a metaphor frames it, never replaces it.
+- **Script** (`agent_output_v1_3`):
+  - every scene has `proof`, which may be empty only for the brand/CTA scene;
+  - every direction has one `world` ("Group: value" lines) instead of `productData`;
+  - scene count follows the message's beats, not the duration.
+- **Delivery.** `Scene.proof` and `intent.direction.world` reach the director, coder and designer.
+- **Visual direction** gives intent and relationships, never pixel positions or percentages; brand values stay exact.
+
+### Brand font check (design quality plan, point 2, 4 November 2026)
+
+- The browser measurement records, for every text, the font that really rendered it: the first family of its `font-family` that is loaded and covers its letters (`RawText.font`). It also records whether the requested weight exists in that family's loaded files, and which brand font files failed to load (`RawView.fontsFailed`).
+- **Findings.**
+  - `FONT_NOT_BRAND` is hard for approved copy and soft for prop text. It is soft when a loaded brand family simply has no letters for the text (a language its files do not cover): the whole line in one fallback font is the rule then, so it is reported for the AD and never sent back as a repair.
+  - `FONT_WEIGHT_MISSING` is soft: the browser imitates the weight.
+  - `FONT_NOT_LOADED` is soft: a delivery problem no agent can fix. It is reported for the AD, never sent back as a repair.
+  - Names in the text come only from the measurement and `brand.fonts`; no font is named in code or prompts.
+- **UI.**
+  - The live review's "Build and option status" lists font problems in plain words.
+  - The format chips count them as open issues.
+  - The brand card warns when the typography rules use a weight the family's files do not have (`ruleWeights`).
+
+### Hero frame first (design quality plan, point 3, 4 November 2026)
+
+- New designer quotes set `brief.designerVersion: 2`. Version 1 blocks run exactly as before; `usesDesigner` accepts both.
+- **Hero frame.** The designer designs the hero first: the scene that proves the promise (the first scene with a script proof, else the first), in the reference format.
+  - Renders of other scenes or formats, and `finish`, are refused with a sentence until the hero is settled.
+  - The hero state lives in `DesignerLoopState.hero`, so a restart keeps it.
+- **Review.** `settleHero` runs one critic request on the hero's render; its notes come back on the next turn. At most 2 hero reviews; after they are used, the next settle accepts the hero.
+  - The quote adds these to the critic requests (`estimateDesignerDirection({heroReviews:2})`, `estimate.heroReviews`).
+  - The end review uses what is left.
+- **Note routing.** With `owner: 'designer'`, critic notes for both recipients go to the designer's repair. The coder pipeline is unchanged.
+- **UI.**
+  - The timeline shows "Hero frame: scene N in 1:1", then "Hero frame reviewed: N notes", then "Hero frame accepted. Designing the other scenes."
+  - Until the hero is accepted, the other format chips read "waiting for the hero frame".
+  - The live preview opens on the hero scene and format.
+
+### Designer memory and look, name, fix (design quality plan, point 4, 4 November 2026)
+
+- Designer version 2 turns (`designer_turn_v2`) carry:
+  - `notes`: the designer's own record of decisions, rejections and what remains, at most 1 500 characters, rewritten whole each turn;
+  - `seen`: what a viewer reads first, second and third in the last render, and its weakest points.
+- `notes` is saved in `DesignerLoopState.notes` and sent at the top of every request, outside the 12-result window; a restart keeps it.
+- On a turn after a render, `seen` is required. Without it nothing is applied, the refusal says why, and the render stays attached for the retry.
+- **UI.** Each designer step shows its `seen` lines in the timeline; the Agent working log shows "Designer's notes" and counts designer turns.
+
+### Prioritised prompts (design quality plan, point 5, 4 November 2026)
+
+- **Planning roles** (instruction version `2026-11-04.2`). Every role opens, right after its ROLE line, with "PRIORITIES (in order):" and five principles (`packages/agents/priorities.ts`). Rules that a code check, the schema or the contract enforces left the prose.
+- **Draft agents.** New blocks (`brief.promptVersion: 2`) get shorter prompts with priorities first: director (`staticDirectorInstructionsV2`), coder (`staticCoderInstructionsV2`), live critic (`liveCriticInstructionsV2`) and designer version 2 (`designerInstructionsV2`). What the browser measurement checks (clipping, overlap, broken words, small text, safe areas, fonts, logo contrast) is left to its findings.
+- Earlier blocks keep their exact texts. The 128-variant director request has about 1 200 more units of room.
+- **UI.** Models & agents shows each role's priorities above its full instructions. After "Update instructions" it lists the roles whose priorities changed.
 
 ## 6. Current draft execution and handoff contracts
 

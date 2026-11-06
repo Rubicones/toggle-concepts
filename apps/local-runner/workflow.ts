@@ -10,7 +10,7 @@ import type {CreativeStage} from '../../packages/agents/prompts/creative-v1';
 import {textRequestQuote,retryOutputLimit,requireRequestAllowance} from '../../packages/agents/text-quote';
 import {preparePreviewProposal,PREVIEW_PROTOCOL,type PreviewInputs} from '../../packages/contracts/preview-proposal';
 import {planningTransportTask,PLANNING_RETRY_FEEDBACK,type LocalizationVariant} from '../../packages/contracts/localization';
-import {agentResponseSchema,prepareAgentOutput,outputDiagnostic,planningEnvelopeSchema,envelopeRoleInstruction} from '../../packages/contracts/agent-output';
+import {agentResponseSchema,prepareAgentOutput,outputDiagnostic,planningEnvelopeSchema,envelopeRoleInstruction,scriptProofFor} from '../../packages/contracts/agent-output';
 import {providerJsonSchema,typeArraysAsAnyOf} from '../../packages/director/provider-schema';
 import {effectiveRunAgents} from '../../packages/data/run-limits';
 import {isPlanningJob} from '../../packages/contracts/planning-job';
@@ -107,11 +107,13 @@ async function execute(claim:Claim){
   // Draft planning answers use the agent envelope. Pin it with the strict schema wherever the model supports it, so the
   // role, status and deliverable shape cannot drift (earlier only Gemini 2.5 Flash was pinned).
   const envelope=claim.round.kind==='draft'&&!snapshot.responseSchema;
-  const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest):null;
+  // Design quality plan, point 1: the run's frozen instruction version decides the script schema and contracts.
+  const scriptProof=scriptProofFor(snapshot.instructions);
+  const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest,{scriptProof}):null;
   if(schema&&planningEnvelopeSchema({id:modelId,supportedParameters:model.supportedParameters},schema)){
    snapshot.responseSchema=modelId==='google/gemini-2.5-flash'?schema:{name:schema.name,schema:typeArraysAsAnyOf(providerJsonSchema(schema.schema)) as Record<string,unknown>};snapshot.outputFormat='json_schema';
   }
-  let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count)):'';
+  let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count,{scriptProof})):'';
   if(envelope)transportTask=envelopeRoleInstruction(job.role)+(transportTask?'\n'+transportTask:'');
   // Guided planning contexts are built in SQL without the feeling brief; it travels with the task text, because the
   // frozen campaignContext is compared byte for byte at admission (studio_begin_workflow) and must stay unchanged.

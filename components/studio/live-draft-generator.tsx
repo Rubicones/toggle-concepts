@@ -77,7 +77,7 @@ function OptionGroup({label,values,active,onChange,format=String}:{label:string;
 /** Point 5c: the designed formats as the aspect control. Each chip says whether the format is designed, in progress or
  * has open findings; the slider snaps to the nearest designed format and names it. */
 function DesignedFormats({formats,selected,nearest,pick,slide,id}:{formats:DesignedFormat[];selected:{width:number;height:number};nearest:string;pick:(f:DesignedFormat)=>void;slide:(ratio:number)=>void;id:string}){
- const status=(f:DesignedFormat)=>f.findings?`${f.findings} open issue${f.findings===1?'':'s'}`:f.state==='designed'?'designed':f.state==='designing'?'being designed':'not designed yet';
+ const status=(f:DesignedFormat)=>f.findings?`${f.findings} open issue${f.findings===1?'':'s'}`:f.state==='designed'?'designed':f.state==='designing'?'being designed':f.state==='waiting'?'waiting for the hero frame':'not designed yet';
  const ratios=formats.map(f=>f.width/f.height),min=Math.min(...ratios,0.5625),max=Math.max(...ratios,1.7778);
  return <div className={styles.group}><label className={styles.label} htmlFor={id}>Format · {selected.width} × {selected.height}</label>
   <div className={styles.pills}>{formats.map(f=><button type="button" key={f.id} className={`${styles.pill} ${f.findings?styles.pillIssue:f.state!=='designed'?styles.pillPending:''}`} aria-pressed={selected.width===f.width&&selected.height===f.height} aria-label={`${f.label}, ${status(f)}`} onClick={()=>pick(f)}>{f.label}<small className={styles.pillState}> · {status(f)}</small></button>)}</div>

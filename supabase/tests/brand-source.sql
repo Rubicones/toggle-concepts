@@ -1,8 +1,8 @@
--- Disposable database only. A campaign reuses another campaign's brand (migration 20261102000200).
+-- Disposable database only. A campaign reuses another campaign's brand (migrations 20261102000200, 20261104000200).
 begin;
 do $$
 #variable_conflict use_variable
-declare actor uuid:=gen_random_uuid();tenant uuid:=gen_random_uuid();other uuid:=gen_random_uuid();brand uuid:=gen_random_uuid();campaign uuid:=gen_random_uuid();empty uuid:=gen_random_uuid();foreign_campaign uuid:=gen_random_uuid();submission uuid:=gen_random_uuid();
+declare actor uuid:=gen_random_uuid();tenant uuid:=gen_random_uuid();other uuid:=gen_random_uuid();brand uuid:=gen_random_uuid();campaign uuid:=gen_random_uuid();empty uuid:=gen_random_uuid();foreign_campaign uuid:=gen_random_uuid();submission uuid:=gen_random_uuid();run_id uuid:=gen_random_uuid();
 begin
  insert into auth.users(id,email) values(actor,'brand-source@example.test');
  insert into public.tenants(id,name) values(tenant,'Brand source'),(other,'Other');insert into app_private.tenant_members values(tenant,actor,'producer');
@@ -17,6 +17,10 @@ begin
  perform public.studio_set_brand_source(campaign,brand,actor);
  if app_private.brand_scope(campaign)<>brand or app_private.brand_scope(brand)<>brand then raise exception 'SCOPE_NOT_RESOLVED';end if;
  begin perform public.studio_set_brand_source(brand,empty,actor);raise exception 'SOURCE_CHAINED';exception when others then if sqlerrm not in ('CAMPAIGN_IS_A_BRAND_SOURCE','BRANDBOOK_REQUIRED') then raise;end if;end;
+ -- The run of a campaign with a library brand starts and pins the library brand's submitted brandbook.
+ insert into public.studio_runs(id,tenant_id,campaign_id,request_id,name,cap_micro_usd,config_snapshot) values(run_id,tenant,campaign,gen_random_uuid(),'Run',1000000,'[]');
+ insert into public.studio_c1_checkpoints(id,tenant_id,campaign_id,run_id,request_id,draft_version,payload,brief_text,config_text,created_by) values(gen_random_uuid(),tenant,campaign,run_id,gen_random_uuid(),1,'{}','brief','config',actor);
+ if (public.studio_start_guided_run(run_id,actor)).brandbook_id is distinct from submission then raise exception 'LIBRARY_BRAND_NOT_PINNED';end if;
  perform public.studio_set_brand_source(campaign,null,actor);
  if app_private.brand_scope(campaign)<>campaign then raise exception 'SOURCE_NOT_CLEARED';end if;
  if position('brand_scope' in pg_get_functiondef('public.studio_save_brand(uuid,integer,jsonb,uuid)'::regprocedure))=0 then raise exception 'SAVE_NOT_SCOPED';end if;

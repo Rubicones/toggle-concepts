@@ -10,7 +10,9 @@ export type LivePreview={status:'waiting'|'ready'|'updating';revision?:string;as
  /** A designer block (point 4): one owner receives every note. */
  designer?:boolean;
  /** Designer drafts (point 5c): the ordered formats and whether each is designed, being designed or has open findings. */
- formats?:DesignedFormat[]};
+ formats?:DesignedFormat[];
+ /** Point 2d: measured font problems in plain words; an empty list means none were measured. */
+ fontChecks?:string[]};
 export const liveAspectPresets=[{label:'1:1',width:1080,height:1080},{label:'9:16',width:1080,height:1920},{label:'4:5',width:1080,height:1350},{label:'16:9',width:1920,height:1080}] as const;
 export function liveFormat(width:number,height:number){return width===height?'square':width>height?'wide':height/width>1.65?'vertical':'portrait';}
 /** Only issued copy bindings can be selected. Dimensions are continuous preview inputs, never layouts. */
@@ -35,14 +37,15 @@ export function reconcileLiveSelection(variants:Variant[],options:LiveOptions,cu
  return options.scenes.includes(next.sceneId)?next:{...next,sceneId:fallback.sceneId,moment:fallback.moment};
 }
 
-export type DesignedFormat={id:string;label:string;width:number;height:number;state:'designed'|'designing'|'not-started';findings:number};
+export type DesignedFormat={id:string;label:string;width:number;height:number;state:'designed'|'designing'|'not-started'|'waiting';findings:number};
 const ratio=(w:number,h:number)=>{const g=(a:number,b:number):number=>b?g(b,a%b):a,d=g(w,h);return `${w/d}:${h/d}`;};
 /** Point 5c: per ordered format, how many scenes the designer rendered there and the hard findings measured in it. */
-export function designedFormats(formats:{id:string;width:number;height:number}[],scenes:string[],renders:Record<string,number>,findings:{views:string[]}[]):DesignedFormat[]{
+/** hero (design quality plan, point 3d): until the hero frame is accepted, the other formats wait for it. */
+export function designedFormats(formats:{id:string;width:number;height:number}[],scenes:string[],renders:Record<string,number>,findings:{views:string[]}[],hero?:{format:string;accepted:boolean}):DesignedFormat[]{
  return formats.map(f=>{
   const done=scenes.filter(s=>(renders[`${s}@${f.id}`]??0)>0).length,size=`${f.width}×${f.height}`;
   const open=findings.filter(x=>x.views.some(v=>v.includes(size)||v.includes(`|${f.id}|`)||v.startsWith(`${f.id} `))).length;
-  return {id:f.id,label:ratio(f.width,f.height),width:f.width,height:f.height,state:done===0?'not-started':done<scenes.length?'designing':'designed',findings:open};
+  return {id:f.id,label:ratio(f.width,f.height),width:f.width,height:f.height,state:hero&&!hero.accepted&&f.id!==hero.format?'waiting':done===0?'not-started':done<scenes.length?'designing':'designed',findings:open};
  });
 }
 /** The designed format closest in shape to a requested canvas. */

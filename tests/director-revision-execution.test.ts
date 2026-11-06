@@ -74,4 +74,7 @@ test('progress projections retain lineage, design and source identity without ex
  const design={designDocument:'Exact design',keyFrames:[],resources:[]},iteration=directorViewIteration({id:'iteration',source_hash:'hash',design,catalog:[],reports:{},presentation:'live',unchecked:true});
  assert.deepEqual(iteration.payload.design,design);assert.equal(iteration.source_hash,'hash');assert.equal(iteration.payload.presentation,'live');assert.ok(!('source' in iteration.payload));
  assert.ok(!directorViewBlockColumns.split(',').includes('snapshot'));assert.ok(!directorViewIterationColumns.split(',').includes('payload'));assert.ok(!directorViewIterationColumns.includes('payload->source'));
+ const limits=directorViewBlock({designerContextLength:'1000000',designerMaxOutputTokens:'12000'}).snapshot.models.director;
+ assert.equal(limits.contextLength,1000000);assert.equal(limits.maxOutputTokens,12000);
+ assert.ok(directorViewBlockColumns.includes('designerContextLength:snapshot->models->director->>contextLength'));assert.ok(!directorViewBlockColumns.includes('models:snapshot->models'));
 });
