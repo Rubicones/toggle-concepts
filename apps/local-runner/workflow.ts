@@ -33,12 +33,23 @@ import {spawn} from "node:child_process";
 import {resolve} from "node:path";
 import {adminClient,checked,sharedTenant} from "../../packages/data/shared-runtime";
 import {modelCatalog} from "../../packages/agents/catalog";
-import {submitText,type TextSnapshot} from "../../packages/agents/text-provider";
+import type {TextSnapshot} from "../../packages/agents/text-provider";
+import {loadLocalRuntime,textExecutionFor,transportFor,subscriptionWaitUntil,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime,type TextExecution} from "./local-claude/runtime";
+import type {LocalTextReceipt} from "./local-claude/transport";
 import type {AgentSetting} from "../../packages/contracts/shared";
 
 type Snapshot=TextSnapshot&{stepCapMicroUsd:number;budgetScopeId?:string|null;campaignContext?:{variantManifest?:{entries:Record<string,unknown>[]}}};
 type Claim={job:{id:string;job_key:string;kind:string;role:string;campaign_id:string;run_id:string;round_id:string;initial_step_id:string|null;input_hash:string;config_hash:string;lease_token:number;attempt_count:number;payload:{prompt:string;snapshot:Snapshot;creativeInputs?:CreativeInputs;manifest?:import('../../packages/contracts/campaign').VariantManifest;brandSystemHash?:string}};attempt:{id:string};round:{kind:string}};
 const admin=adminClient(),device=randomUUID(),directory=resolve("artifacts/m06"),lock=resolve(directory,"worker.lock");
+// Local mode (docs/plans/2026-11-06-local-claude-pipeline-plan.md): this device's qualified profile, and the stable
+// device id registered with the lease id. While a subscription limit lasts, the id is withdrawn so no Local work is claimed.
+let localRuntime:LocalRuntime={schema:false},registeredLocal:string|null=null;
+async function syncLocalDevice(){
+ if(!localRuntime.schema)return;
+ const wanted=localRuntime.setup&&localRuntime.device&&!(await subscriptionWaitUntil())?localRuntime.device.id:null;
+ if(wanted===registeredLocal)return;
+ await rpc("studio_workflow_device_local",{device,target_tenant:sharedTenant,local:wanted});registeredLocal=wanted;
+}
 let stopping=false;process.once("SIGTERM",()=>{stopping=true;});process.once("SIGINT",()=>{stopping=true;});
 /**
  * The worker is a detached process: restarting the app does not restart it, and a busy worker never idles out.
@@ -80,14 +91,16 @@ async function flushReceipts(){
  }
 }
 async function execute(claim:Claim){
- const {job,attempt}=claim;let submitted=false,heartbeatBusy=false;
+ const {job,attempt}=claim;let submitted=false,heartbeatBusy=false,execution:TextExecution={mode:"openrouter"},waitUntil:{until:number;usage:unknown}|null=null;
  if(Boolean(job.payload.creativeInputs)||job.kind==='compile'){await rpc('studio_retire_creative_claim',{target_job:job.id,token:job.lease_token,device});return;}
  const beat=setInterval(()=>{if(heartbeatBusy)return;heartbeatBusy=true;void rpc("studio_heartbeat_workflow",{target_job:job.id,token:job.lease_token,device}).catch(()=>{}).finally(()=>{heartbeatBusy=false;});},15000);
  if(job.kind==="compile"){try{if(job.payload.creativeInputs)await compileCreativeClaim(job as Parameters<typeof compileCreativeClaim>[0],device);else await compileDraftClaim(job,device);}finally{clearInterval(beat);}return;}
  let outputLimit=job.payload.snapshot.maxOutputTokens,protocolSchema:string|null=null;
  let result:{outcome:string;cost:number|null;text:string|null;generation:string|null;usage:unknown;failure:string|null;finishReason?:string|null;validation?:unknown;providerError?:ProviderErrorDetail;originalOutput?:string;normalizations?:string[]}={outcome:"failed",cost:0,text:null,generation:null,usage:null,failure:null};
  try{
-  if(!process.env.OPENROUTER_API_KEY)throw new Error("PROVIDER_NOT_CONFIGURED");
+  // The mode frozen on the run decides the transport; Local runs never fall back to OpenRouter.
+  execution=await textExecutionFor(admin,"run",job.run_id);const transport=transportFor(execution,localRuntime);
+  if(execution.mode!=="local_claude"&&!process.env.OPENROUTER_API_KEY)throw new Error("PROVIDER_NOT_CONFIGURED");
   const run=checked(await admin.from("studio_runs").select("id,config_snapshot").eq("id",job.run_id).eq("tenant_id",sharedTenant).single());
   if(!run)throw new Error("RUN_NOT_ACTIVE");
   const agent=(await effectiveRunAgents(admin,run as {id:string;config_snapshot:AgentSetting[]},{directorOverrides:!isPlanningJob(job,claim.round.kind)})).find(a=>a.role===job.role);if(!agent?.model_id)throw new Error("AGENT_NOT_CONFIGURED");
@@ -157,11 +170,16 @@ async function execute(claim:Claim){
   // From this point a crash/timeout is uncertain and can never be automatically resubmitted.
   submitted=true;
   outputLimit=snapshot.maxOutputTokens;
-  result=await submitText(modelId,job.payload.prompt+(transportTask?'\n'+transportTask:''),creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:snapshot,vision,submittedStep.id,async generation=>{
+  result=await transport(modelId,job.payload.prompt+(transportTask?'\n'+transportTask:''),creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:snapshot,vision,submittedStep.id,async generation=>{
    // Durable provider identity only: replaying this anchor cannot submit or activate output.
    const path=resolve(directory,'provider-ids',`${attempt.id}.json`),tmp=path+'.tmp';
    await writeFile(tmp,JSON.stringify({attemptId:attempt.id,receipt:{target_job:job.id,token:job.lease_token,device,expected_input:job.input_hash,expected_config:job.config_hash,outcome:'unknown',actual_cost:null,result_text:null,provider_generation:generation,token_usage:null,failure:'PROCESS_INTERRUPTED'}}),{mode:0o600});await rename(tmp,path);
   });
+  if(execution.mode==="local_claude"){
+   await keepLocalDiagnostics(submittedStep.id,result as LocalTextReceipt).catch(()=>{});
+   // A subscription limit is a known outcome (the model did not work on it): the job waits, it does not fail.
+   if(result.failure==="SUBSCRIPTION_LIMIT")waitUntil={until:await markSubscriptionLimit(),usage:result.usage};
+  }
   if(result.outcome==="succeeded"&&result.text){
    try{
     const text=result.text;
@@ -185,6 +203,7 @@ async function execute(claim:Claim){
   }
  }catch(error){result={outcome:submitted?"unknown":"failed",cost:submitted?null:0,text:null,generation:null,usage:null,failure:submitted?"SUBMISSION_OUTCOME_UNKNOWN":error instanceof Error?error.message:"PREFLIGHT_FAILED"};}
  finally{clearInterval(beat);}
+ if(waitUntil){await rpc("studio_wait_workflow_subscription",{target_job:job.id,token:job.lease_token,device,retry_at:new Date(waitUntil.until).toISOString(),token_usage:waitUntil.usage??{}});await syncLocalDevice();await unlink(resolve(directory,'provider-ids',`${attempt.id}.json`)).catch(()=>{});return;}
  const receipt={target_job:job.id,token:job.lease_token,device,expected_input:job.input_hash,expected_config:job.config_hash,outcome:result.outcome,actual_cost:result.cost,result_text:result.text,provider_generation:result.generation,token_usage:(result.usage||result.providerError||result.finishReason)?{...(result.usage as Record<string,unknown>),_studio:{finishReason:result.finishReason??null,maxOutputTokens:outputLimit,validation:result.validation??null,providerError:result.providerError??null,normalizations:result.normalizations??[],...(result.originalOutput?{originalOutput:result.originalOutput}:{}),responseSchema:protocolSchema}}:null,failure:result.failure};
  const file=resolve(directory,"receipts",`${attempt.id}.json`),tmp=file+'.tmp';await writeFile(tmp,JSON.stringify(receipt),{mode:0o600});await rename(tmp,file);
  await rpc("studio_complete_workflow",receipt);await unlink(file);await unlink(resolve(directory,'provider-ids',`${attempt.id}.json`)).catch(()=>{});
@@ -199,11 +218,13 @@ async function main(){
  let timer:NodeJS.Timeout|undefined;
  try{
   await rpc("studio_workflow_device",{device,target_tenant:sharedTenant,online:true});
-  timer=setInterval(()=>{void rpc("studio_workflow_device",{device,target_tenant:sharedTenant,online:true}).catch(()=>{});},15000);
+  localRuntime=await loadLocalRuntime(admin);await syncLocalDevice();
+  if(localRuntime.schema&&!localRuntime.setup&&localRuntime.reason!=="LOCAL_DEVICE_NOT_SET_UP")console.error(`Local mode is unavailable on this device (${localRuntime.reason}); OpenRouter work continues. Run: npm run local-claude:doctor`);
+  timer=setInterval(()=>{void rpc("studio_workflow_device",{device,target_tenant:sharedTenant,online:true}).then(syncLocalDevice).catch(()=>{});},15000);
   let idle=Date.now(),checked_at=Date.now();const startedWith=await codeFingerprint();
   while(!stopping&&Date.now()-idle<60000){
    if(Date.now()-checked_at>5000){checked_at=Date.now();if(await codeFingerprint()!==startedWith){restartForNewCode=true;break;}}
-   await flushReceipts();await flushProviderAnchors();try{if(await processDirectorWork(device)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis()){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
+   await flushReceipts();await flushProviderAnchors();try{if(await processDirectorWork(device,localRuntime)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis(device,localRuntime)){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
    const claim=await rpc("studio_claim_workflow",{target_tenant:sharedTenant,device}) as Claim|null;
    if(claim){idle=Date.now();await execute(claim);}else await waitForWork(idleDelay(Date.now()-idle));
   }

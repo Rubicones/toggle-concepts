@@ -27,6 +27,9 @@ export type LocalTextDetails={
  cliVersion:string;executedModel?:string;sessionId?:string;apiKeySource?:string;
  internalAttempts:number;numTurns?:number;stopReason?:string|null;durationMs:number;exitCode:number|null;limitReached?:boolean;
  usage?:CliResult['usage'];events:CliEvent[];stderr:string;recordPath?:string;
+ /** Hypothetical text cost on the target model (plan §9, quantity 3): Sonnet's tokens at the target's prices. A forecast
+  * with an unmeasured error, never an actual cost or a receipt. */
+ forecast?:{targetModel:string;microUsd:number;method:'cli-tokens-x-target-price@1';errorMeasured:false};
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
 
@@ -63,9 +66,10 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    const r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cli.maxOutputTokens)}),stdin:streamUserMessage(cli.parts),timeoutMs,signal:stop.signal,
     onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){const tools=(e.tools as unknown[]|undefined)??[],mcp=(e.mcp_servers as unknown[]|undefined)??[];if(tools.length||mcp.length)leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
    options.signal?.removeEventListener('abort',relay);
+   const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{})};
+    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};

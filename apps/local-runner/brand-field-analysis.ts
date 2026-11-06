@@ -5,7 +5,9 @@ import {resolve} from 'node:path';
 import {adminClient,checked,sharedTenant} from '../../packages/data/shared-runtime';
 import {objectStore} from '../../packages/media/s3.server';
 import {modelCatalog} from '../../packages/agents/catalog';
-import {submitText,type TextReceipt} from '../../packages/agents/text-provider';
+import type {TextReceipt} from '../../packages/agents/text-provider';
+import {textExecutionFor,transportFor,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime} from './local-claude/runtime';
+import type {LocalTextReceipt} from './local-claude/transport';
 import {fieldExtractionRequest,parseFieldResponse,splitBrandText} from '../../packages/brand/field-extraction';
 import {effectiveMaterialRole,findingsForRole,roleReadingNotes} from '../../packages/brand/material-roles';
 import type {AgentSetting} from '../../packages/contracts/shared';
@@ -15,8 +17,10 @@ async function rpc(name:string,args:Record<string,unknown>){return checked(await
 export async function flushBrandReadReceipts(){
  await mkdir(directory,{recursive:true,mode:0o700});for(const file of await readdir(directory)){if(!file.endsWith('.json'))continue;const path=resolve(directory,file);await rpc('studio_complete_brand_read',JSON.parse(await readFile(path,'utf8')));await unlink(path);}
 }
-export async function processBrandFieldAnalysis():Promise<boolean>{
- const admin=adminClient();const ready=await admin.from('studio_brand_analyses').select('id').limit(0);if(ready.error)return false;const claim=await rpc('studio_claim_brand_read',{target_tenant:sharedTenant});if(!claim)return false;
+/** device/local: the runner's lease id and Local runtime. With the Local schema, the claim takes this device's own Local
+ * analyses besides OpenRouter ones; without it (or from an older caller) only OpenRouter analyses. */
+export async function processBrandFieldAnalysis(device?:string,local:LocalRuntime={schema:false}):Promise<boolean>{
+ const admin=adminClient();const ready=await admin.from('studio_brand_analyses').select('id').limit(0);if(ready.error)return false;const claim=device&&local.schema?await rpc('studio_claim_brand_read_on',{target_tenant:sharedTenant,device}):await rpc('studio_claim_brand_read',{target_tenant:sharedTenant});if(!claim)return false;
  const {analysis,part,file}=claim;let submitted=false;
  const beat=setInterval(()=>{void rpc('studio_heartbeat_brand_read',{target_part:part.id,token:part.lease_token}).catch(()=>{});},15000);
  try{
@@ -41,8 +45,11 @@ export async function processBrandFieldAnalysis():Promise<boolean>{
   const maxOutputTokens=Math.min(8192,agent.max_output_tokens,model.maxOutput,outputAffordable);if(maxOutputTokens<256)throw new Error('REQUEST_PRICE_CAP');if(inputBound+maxOutputTokens>model.contextLength)throw new Error('REQUEST_PRICE_CAP');
   const reservation=Math.max(1,Math.ceil((inputBound*model.inputPrice+maxOutputTokens*model.outputPrice)*1100000));
   const snapshot={instructions:agent.instructions,maxOutputTokens,pricing:model,campaignContext:context,outputFormat:'json_schema',responseSchema,disableReasoning:agent.model_id==='google/gemini-2.5-flash',stepCapMicroUsd:agent.step_cap_micro_usd,modelId:agent.model_id,requestPriceCapMicroUsd:analysis.request_cap_micro_usd,budgetScopeId:checkpoint?`budget-step-${analysis.run_id}-brand-kit`:null,brandFieldAnalysis:{analysisId:analysis.id,partId:part.id,page:part.page_no,sourceSha:file.source_sha}};
+  // The mode frozen on this analysis decides the transport (plan §4); a mismatch stops before anything is reserved.
+  const execution=await textExecutionFor(admin,'brand-analysis',analysis.id),transport=transportFor(execution,local);
   const step=await rpc('studio_begin_brand_read',{target_part:part.id,token:part.lease_token,request_key:randomUUID(),snapshot,prompt_text:prompt,reservation});submitted=true;
-  const result:TextReceipt=await submitText(agent.model_id,prompt,snapshot,images,step.id);
+  const result:TextReceipt=await transport(agent.model_id,prompt,snapshot,images,step.id);
+  if(execution.mode==='local_claude'){await keepLocalDiagnostics(step.id,result as LocalTextReceipt).catch(()=>{});if(result.failure==='SUBSCRIPTION_LIMIT')await markSubscriptionLimit();}
   const read=result.text?parseFieldResponse(result.text,result.finishReason):{findings:[],more:false,partial:false,invalid:0},roleRead=fileRole.sure?{...read,findings:findingsForRole(fileRole.role,read.findings)}:read,parsed=componentsReady?roleRead:{...roleRead,findings:roleRead.findings.filter(f=>f.field!=='components')};
   let split_payloads=null;
   if(result.failure==='OUTPUT_TOKEN_LIMIT'&&!parsed.findings.length&&typeof part.payload.text==='string'&&part.payload.text.length>512&&!part.payload.image){const pieces=splitBrandText(part.payload.text,Math.ceil(part.payload.text.length/2));split_payloads=pieces.map(p=>({...p,start:(part.payload.start??0)+p.start,end:(part.payload.start??0)+p.end}));}

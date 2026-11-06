@@ -30,6 +30,7 @@ import {directorPrompt,staticDirectorPrompt,imageMethodInstructions,staticDirect
 import {staticDesignResponseFor,hasAudio} from '../../../packages/director/contract';
 import {assemblerInstructions,assemblerProviderSchema} from '../../../packages/agents/prompts/assembler-v1';
 import {readDesign} from '../../../packages/director/contract';
+import {textExecutionFor,transportFor,markSubscriptionLimit,type LocalRuntime} from '../local-claude/runtime';
 import {paidText,requestId,roleNames,resumeBudgetClock,retryableProviderFailure,type Role} from '../../../packages/director/money';
 import type {BlockSnapshot,WorkState,ADQuestion} from '../../../packages/director/state';
 import {directorLedger,designerUsage,directorTextConfig,directorInputAllowance,flushDirectorReceipts} from './ledger';
@@ -67,8 +68,10 @@ import type {Resource} from '../../../packages/director/types';
 export {questionForFailure};
 export type DirectorClaim={block:{id:string;run_id:string;round_id:string;campaign_id:string;snapshot:BlockSnapshot;approved_resource_ids:string[]};work:{direction_id:string;iteration_id:string;lease_token:number;state:WorkState}};
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
-export async function executeDirector(claim:DirectorClaim,device:string){
+export async function executeDirector(claim:DirectorClaim,device:string,local:LocalRuntime={schema:false}){
  const admin=adminClient(),{block,work}=claim,snapshot=block.snapshot,state=structuredClone(work.state),input=structuredClone(snapshot.inputs.find(i=>i.directionId===work.direction_id)!);if(!input)throw new Error('DIRECTOR_INPUT_MISSING');
+ // Local mode: the run's frozen mode picks the transport; a Local request has its own identity (mode and executed model).
+ const execution=await textExecutionFor(admin,'run',input.runId),localIdentity=execution.mode==='local_claude'?{text:'local_claude',model:execution.execution_model,mapping:execution.mapping_version}:null;
  let recoveredClock:{activeMs:number;excludedMs:number}|undefined;
  input.iterationId=state.iterationId??work.iteration_id;state.iterationId=input.iterationId;state.iteration??=1;
  if(state.phase==='director'&&state.workingClockVersion!==2&&state.roleStartedAt?.director!==undefined){
@@ -133,7 +136,7 @@ export async function executeDirector(claim:DirectorClaim,device:string){
    if(role==='director'&&cfg.maxOutputTokens>config.maxOutputTokens)await events.emit(`answer-room:${id}`,{stepId:`answer-room:${id}`,kind:'control',status:'done',model:config.modelId,costMicroUsd:0,message:'The added allowance gives this design answer more room to finish.',detail:{approvedAttempts:estimate.roles.director.requests,maxOutputTokens:cfg.maxOutputTokens}});
    // The AD sees that an answer is being written and since when (a long answer streams for minutes).
    state.activeCall={role,startedAt:Date.now()};note(`${role}: request sent${JSON.stringify(identity).includes('"retry"')?' (retry)':''}.`);await save();
-   try{const answer=await paidText({identity:id,role:modelRole,model:prior?.model_id??config.modelId,prompt:prior?.prompt??prompt,snapshot:cfg,allowanceMicroUsd:admitted.remainingMicroUsd,images,ledger:directorLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,device,token:work.lease_token})});note(`${role}: answer received (${answer.text.length.toLocaleString('en-US')} characters, $${(answer.costMicroUsd/1e6).toFixed(3)}${answer.reused?', saved earlier':''}).`);return answer;}
+   try{const transport=transportFor(execution,local);const answer=await paidText({identity:localIdentity?{call:id,...localIdentity}:id,transport,role:modelRole,model:prior?.model_id??config.modelId,prompt:prior?.prompt??prompt,snapshot:cfg,allowanceMicroUsd:admitted.remainingMicroUsd,images,ledger:directorLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,device,token:work.lease_token})});note(`${role}: answer received (${answer.text.length.toLocaleString('en-US')} characters, $${(answer.costMicroUsd/1e6).toFixed(3)}${answer.reused?', saved earlier':''}).`);return answer;}
    catch(error){note(`${role}: request failed — ${error instanceof Error?error.message:'unknown'}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}.`);throw error;}
    finally{delete state.activeCall;}
   };
@@ -340,13 +343,15 @@ export async function executeDirector(claim:DirectorClaim,device:string){
    if(failure.message==='DIRECTOR_LIVE_WRAP_UP'||state.wrapUp){await save('queued');return;}
    if(failure.message==='DIRECTOR_LIVE_REVISION'||state.liveRevision){beginLiveRevision(state,{blockId:block.id,directionId:input.directionId});await save('queued');return;}
    if(failure.message==='RUN_STOPPED'){state.pausedAt=Date.now();await save('queued');return;}
+   // Local mode: the subscription limit is a wait, not a failure. The clocks pause; the claim resumes after the probe time.
+   if(failure.message==='SUBSCRIPTION_LIMIT'){const until=await markSubscriptionLimit();state.retryAt=until;state.pausedAt??=Date.now();await events.emit(`waiting-subscription:${until}`,{stepId:`waiting-subscription:${until}`,kind:'control',status:'queued',costMicroUsd:0,message:'Waiting for the Claude subscription limit on this device. Approved allowances and the active-time clock are paused; work resumes by itself.',detail:{code:'waiting_subscription',retryAt:until}});await save('queued');return;}
    if(transientExecutionFailure(failure.message)&&(state.transientRetries??0)<10){state.transientRetries=(state.transientRetries??0)+1;state.retryAt=Date.now()+Math.min(120000,3000*2**Math.min(state.transientRetries,6));state.pausedAt=Date.now();await events.emit(`local-retry:${state.transientRetries}`,{stepId:`local-retry:${state.transientRetries}`,kind:'control',status:'queued',costMicroUsd:0,message:'The local worker is recovering a temporary interruption. Saved source and approved limits are retained; no decision is needed.',detail:{code:failure.message,retryAt:state.retryAt}});await save('queued');return;}
    await save('review',questionForFailure(input,failure,failure.message==='RESOURCE_PERMISSION_REQUIRED'?estimate.perStillMicroUsd:estimate.maxCostMicroUsd));
   }catch(saveError){console.error('[director] could not save the stop reason; the lease will expire and the work is retried',failure.message,saveError instanceof Error?saveError.message:saveError);}
  }
  finally{clearInterval(beat);}
 }
-export async function processDirectorWork(device:string){await flushDirectorReceipts(adminClient());if(await processDirectorDelivery(device))return true;const result=await adminClient().rpc('studio_claim_director',{target_tenant:sharedTenant,device});if(result.error){if(['PGRST202','PGRST205','42883','42P01'].includes(result.error.code??''))return false;throw new Error(result.error.message);}if(!result.data)return false;await executeDirector(result.data as DirectorClaim,device);return true;}
+export async function processDirectorWork(device:string,local:LocalRuntime={schema:false}){await flushDirectorReceipts(adminClient());if(await processDirectorDelivery(device))return true;const result=await adminClient().rpc('studio_claim_director',{target_tenant:sharedTenant,device});if(result.error){if(['PGRST202','PGRST205','42883','42P01'].includes(result.error.code??''))return false;throw new Error(result.error.message);}if(!result.data)return false;await executeDirector(result.data as DirectorClaim,device,local);return true;}
 
 /** Brand sheet pages (blocks with brief.brandSheetVersion 1) read from the block's pinned files; the same bytes on every
  * request, so they sit in the cached prefix of each live critic request. */

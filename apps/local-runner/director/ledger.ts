@@ -64,5 +64,6 @@ export async function designerUsage(admin:SupabaseClient,args:{runId:string;bloc
  const role=(r:{config_snapshot:unknown})=>(r.config_snapshot as {directorRole?:string})?.directorRole;
  const designer=rows.filter(r=>role(r)==='designer'),pictures=rows.filter(r=>role(r)==='resources'&&!freeRejection(r));
  const cost=(list:typeof rows)=>list.reduce((n,r)=>n+(r.cost_micro_usd??r.reserve_micro_usd??0),0);
- return {costMicroUsd:cost(designer),picturesMicroUsd:cost(pictures),pictures:pictures.length,requests:designer.filter(r=>!freeRejection(r)).length,inputTokens:designer.reduce((n,r)=>n+accountedTokens(r).input,0),outputTokens:designer.reduce((n,r)=>n+accountedTokens(r).output,0)};
+ const local=designer.some(r=>!!(r.usage as {_local?:unknown}|null)?._local);
+ return {...(local?{local:true}:{}),costMicroUsd:cost(designer),picturesMicroUsd:cost(pictures),pictures:pictures.length,requests:designer.filter(r=>!freeRejection(r)).length,inputTokens:designer.reduce((n,r)=>n+accountedTokens(r).input,0),outputTokens:designer.reduce((n,r)=>n+accountedTokens(r).output,0)};
 }

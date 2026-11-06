@@ -135,7 +135,9 @@ test('inventory: text model calls happen only at the known call sites', async()=
   if(s.includes('chat/completions'))hits.chat.push(f);
   if(/from\s+['"][^'"]*claude-cli\.local['"]/.test(s))hits.cli.push(f);
  }
- assert.deepEqual(hits.provider.sort(),['apps/local-runner/brand-field-analysis.ts','apps/local-runner/workflow.ts','packages/director/money.ts']);
+ // S4: the runner's call sites pick their transport through local-claude/runtime.ts (submitText for OpenRouter scopes).
+ assert.deepEqual(hits.provider.sort(),['apps/local-runner/local-claude/runtime.ts','packages/director/money.ts']);
+ for(const f of ['apps/local-runner/workflow.ts','apps/local-runner/brand-field-analysis.ts','apps/local-runner/director/worker.ts'])assert.match(await readFile(f,'utf8'),/transportFor\(/,f);
  assert.deepEqual(hits.paid,['apps/local-runner/director/worker.ts']);
  assert.deepEqual(hits.chat,['packages/agents/text-provider.ts']);
  assert.ok(hits.cli.every(f=>f.startsWith('apps/local-runner/')),`the CLI adapter is Node-only and local: ${hits.cli.join(', ')}`);
