@@ -3,6 +3,7 @@ import type {ADQuestion} from './state';
 import type {DirectionInput} from './types';
 /** Plain-language stop reasons for the AD; the code goes under Technical details. */
 const plain:Record<string,string>={
+ DIRECTOR_ALLOWANCE_REQUIRED:'The saved quote is missing an allowance required by this draft pipeline. Retrying cannot add it. Saved work is retained; a corrected continuation quote is needed.',
  ASSEMBLER_ALLOWANCE_EXHAUSTED:'The layout coder used its approved turns or time without passing every automatic check. Its latest work is saved.',
  DIRECTOR_ALLOWANCE_EXHAUSTED:'The director could not return a complete design document within its approved attempts.',
  ROLE_ALLOWANCE_EXHAUSTED:'This step has used its approved allowance.',

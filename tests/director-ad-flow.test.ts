@@ -30,6 +30,7 @@ test('draft entry is gated on current planning and live drafts stay accessible w
 test('recovery offers one useful allowance path and never presents unchanged size limits as a retry or more coder turns',()=>{
  const budget=recoveryActions(question('ASSEMBLER_ALLOWANCE_EXHAUSTED'));assert.equal(budget.extend,true);assert.equal(budget.actions.length,0);
  const size=recoveryActions(question('DRAFT_REQUEST_SIZE_CAP'));assert.equal(size.sourceTooLarge,true);assert.equal(size.extend,false);assert.deepEqual(size.actions.map(a=>a.action),['resume']);
+ const corrected=recoveryActions(question('DRAFT_REQUEST_SIZE_CAP'),{requestSizeRequoteAvailable:true});assert.equal(corrected.requestSizeRequoteAvailable,true);assert.deepEqual(corrected.actions.map(a=>a.action),['resume','quote-revision']);assert.equal(corrected.extend,false);
  const pictures=recoveryActions(question('RESOURCE_ESTIMATE_EXCEEDED'));assert.equal(pictures.extend,false);
  const receipt=recoveryActions(question('PROVIDER_RECONCILIATION_REQUIRED'));assert.deepEqual(receipt.actions.map(a=>a.action),['resume']);assert.equal(receipt.actions[0].label,'Open receipt recovery');
  const permission=recoveryActions(question('RESOURCE_PERMISSION_REQUIRED'));assert.deepEqual(permission.actions.map(a=>a.action),['allow-resource']);

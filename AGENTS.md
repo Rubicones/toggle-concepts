@@ -201,6 +201,8 @@ Do not import universal five-word hooks, two-colour limits, product-in-every-bea
   - AD notes go to the designer without a recipient choice.
   - The status reads "The designer is working".
 - **Earlier blocks.** They keep director + coder with their exact requests and quotes.
+- **Version-aware continuation.** Continuation pricing, picture admission and preview metadata use `usesDesigner(input)`, like the worker, for both designer versions 1 and 2. A version-2 block with a legacy continuation quote can stop with `DIRECTOR_ALLOWANCE_REQUIRED`; request and approve a corrected continuation quote after updating the app. Retrying does not add the missing allowance, and existing approvals are never rewritten.
+- New designer continuation quotes recalculate `designerRequestInputCap` from the refreshed model context and frozen output limit, matching draft-start pricing. If a stopped designer quote has a smaller cap, the workspace offers a corrected continuation price. Existing approved caps stay frozen; a retry alone cannot enlarge them. Progress reads project only the two model-limit scalars needed for this recovery choice.
 - **Formats** (point 5).
   - The designer designs every scene in the reference format first. It then recomposes each ordered format as an explicit branch of the same component; hooks, locales, CTAs and lengths stay data.
   - Revisions are counted per scene and format (`renderKey`), so recomposing a format is a first design.

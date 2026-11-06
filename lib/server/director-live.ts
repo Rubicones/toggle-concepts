@@ -1,4 +1,5 @@
 import 'server-only';
+import {usesDesigner} from '@/packages/director/designer';
 import {readFile,realpath} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
@@ -69,10 +70,10 @@ export async function liveDirectorPreview(campaignId:string,directionId:string,i
  const review={identity,enabled:!reviewRows.error,route:ctx.route,checks:await sourceChecks(ctx.folder,info!.revision,ctx.sourceChecks),records:(reviewRows.data??[]) as ReviewRecord[]};
  const options=info!.options,reference=liveReferenceVariant(ctx.input.variants,options)??squareReference(ctx.input.variants)!,legacyFormat=ctx.input.formats.find(f=>f.id===reference.format),scene=ctx.design?.keyFrames?.find(s=>s.sceneId===options.scenes[0])??ctx.design?.keyFrames?.[0];
  const finalNotes=finalVersionNotes(ctx.design,ctx.input);
- const formats=ctx.input.brief.designerVersion===1?designedFormats(ctx.input.formats,(ctx.design?.keyFrames??[]).map(k=>k.sceneId),ctx.designer?.renders??{},ctx.designer?.findings??[],ctx.designer?.hero):[];
+ const formats=usesDesigner(ctx.input)?designedFormats(ctx.input.formats,(ctx.design?.keyFrames??[]).map(k=>k.sceneId),ctx.designer?.renders??{},ctx.designer?.findings??[],ctx.designer?.hero):[];
  // Point 3d: a designer draft with a hero frame opens on the hero scene in the hero format.
  const hero=ctx.designer?.hero,heroFormat=hero?ctx.input.formats.find(f=>f.id===hero.format):undefined,heroSceneId=hero&&(options.scenes.includes(hero.sceneId)||!options.scenes.length)?hero.sceneId:undefined;
- return {status:message?'updating':'ready',message,revision:info!.revision,assetRevision:identity.assetRevision,review,...(finalNotes.length?{finalNotes}:{}),...(ctx.input.brief.designerVersion===1?{designer:true,formats}:{}),...(ctx.measured?{fontChecks:fontFindingLines(ctx.measured)}:{}),assets:pictures,resources,options,construction:ctx.construction??await draftConstruction(ctx.folder,ctx.input),legacy:info!.legacy,variants:ctx.input.variants,scenes,defaultProps:{format:heroFormat?liveFormat(heroFormat.width,heroFormat.height):info!.legacy?reference.format:'square',width:heroFormat?.width??(info!.legacy?legacyFormat?.width??1080:1080),height:heroFormat?.height??(info!.legacy?legacyFormat?.height??1080:1080),locale:reference.locale,hook:reference.hook,cta:reference.cta,length:reference.length,sceneId:heroSceneId??options.scenes[0]??scene?.sceneId??ctx.input.storyboard[0].id,moment:scene?.moments[0]?.id??'key-frame'}};
+ return {status:message?'updating':'ready',message,revision:info!.revision,assetRevision:identity.assetRevision,review,...(finalNotes.length?{finalNotes}:{}),...(usesDesigner(ctx.input)?{designer:true,formats}:{}),...(ctx.measured?{fontChecks:fontFindingLines(ctx.measured)}:{}),assets:pictures,resources,options,construction:ctx.construction??await draftConstruction(ctx.folder,ctx.input),legacy:info!.legacy,variants:ctx.input.variants,scenes,defaultProps:{format:heroFormat?liveFormat(heroFormat.width,heroFormat.height):info!.legacy?reference.format:'square',width:heroFormat?.width??(info!.legacy?legacyFormat?.width??1080:1080),height:heroFormat?.height??(info!.legacy?legacyFormat?.height??1080:1080),locale:reference.locale,hook:reference.hook,cta:reference.cta,length:reference.length,sceneId:heroSceneId??options.scenes[0]??scene?.sceneId??ctx.input.storyboard[0].id,moment:scene?.moments[0]?.id??'key-frame'}};
 }
 export async function liveDirectorArtifact(campaignId:string,directionId:string,args:{iterationId?:string;revision?:string;name?:string;kind:'bundle'|'asset'|'source'}){
  const ctx=await context(campaignId,directionId,args.iterationId);

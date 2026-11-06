@@ -14,13 +14,14 @@ export function directionQuestionSummary(question:ADQuestion){
 }
 
 /** Presentation policy only: never changes source, creative choices, or paid allowances. */
-export function recoveryActions(question:ADQuestion){
+export function recoveryActions(question:ADQuestion,options:{requestSizeRequoteAvailable?:boolean}={}){
  const exhausted=exhaustedRole(question.technical);
  const sourceTooLarge=/^(DRAFT_REQUEST_SIZE_CAP|PROMPT_TOO_LONG)(:|$)/.test(question.technical??'');
+ const requestSizeRequoteAvailable=options.requestSizeRequoteAvailable===true&&question.technical?.split(':')[0]==='DRAFT_REQUEST_SIZE_CAP';
  const newRun=/^(FROZEN_MODEL_REQUIRED|LEGACY_DRAFT_READ_ONLY|VISION_MODEL_REQUIRED)(:|$)/.test(question.technical??'');
  const databaseTimeout=question.reason==='execution'&&/canceling statement due to (?:statement|lock) timeout/i.test(question.technical??'');
- const actions=question.options.filter(option=>option.action!=='review'&&option.action!=='wrap-up'&&!(option.action==='resume'&&(exhausted||newRun||question.technical?.startsWith('PROMPT_TOO_LONG')))&&!(option.action==='quote-revision'&&(exhausted||databaseTimeout||question.technical?.startsWith('DRAFT_REQUEST_SIZE_CAP'))));
- return {extend:!!exhausted&&question.reason==='budget',actions:actions.map(option=>({...option,label:option.action==='quote-revision'?'Review a continuation price':option.action==='resume'?(sourceTooLarge?'Retry compacted request · within allowance':question.reason==='receipt'?'Open receipt recovery':'Retry within approved allowance'):option.label})),sourceTooLarge,newRun};
+ const actions=question.options.filter(option=>option.action!=='review'&&option.action!=='wrap-up'&&!(option.action==='resume'&&(exhausted||newRun||question.technical?.startsWith('PROMPT_TOO_LONG')))&&!(option.action==='quote-revision'&&(exhausted||databaseTimeout||question.technical?.startsWith('DRAFT_REQUEST_SIZE_CAP')&&!requestSizeRequoteAvailable)));
+ return {extend:!!exhausted&&question.reason==='budget',actions:actions.map(option=>({...option,label:option.action==='quote-revision'?'Review a continuation price':option.action==='resume'?(sourceTooLarge?'Retry compacted request · within allowance':question.reason==='receipt'?'Open receipt recovery':'Retry within approved allowance'):option.label})),sourceTooLarge,newRun,requestSizeRequoteAvailable};
 }
 
 export function directionStatus(direction:DirectorView['directions'][number]){
