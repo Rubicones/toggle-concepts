@@ -12,7 +12,7 @@ process.stdin.on('end',()=>{
  const texts=content.filter(c=>c.type==='text').map(c=>c.text),images=content.filter(c=>c.type==='image');
  const out=e=>process.stdout.write(JSON.stringify(e)+'\n');
  const system=(()=>{const i=args.indexOf('--system-prompt-file');return i>=0?readFileSync(args[i+1],'utf8'):'';})();
- if(process.env.FAKE_CLAUDE_RECORD)writeFileSync(process.env.FAKE_CLAUDE_RECORD,JSON.stringify({args,system,content,env:Object.keys(process.env).sort()}));
+ if(process.env.FAKE_CLAUDE_RECORD)writeFileSync(process.env.FAKE_CLAUDE_RECORD,JSON.stringify({args,system,content,env:Object.keys(process.env).sort(),maxOutput:process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS??null}));
  const leak=scenario==='leak';
  out({type:'system',subtype:'init',session_id:'s1',model:process.env.FAKE_CLAUDE_MODEL??'claude-sonnet-test',tools:leak?['Bash']:[],mcp_servers:leak?[{name:'canary',status:'connected'}]:[],apiKeySource:process.env.FAKE_CLAUDE_KEY_SOURCE??'none',claude_code_version:'9.9.9'});
  if(scenario==='hang'){setInterval(()=>{},1000);return;}
@@ -25,6 +25,8 @@ process.stdin.on('end',()=>{
   out({type:'assistant',message:{content:[{type:'tool_use',name:'StructuredOutput',input:{answer:'ok'}}]}});
   out({type:'result',subtype:'success',is_error:false,result:'',structured_output:{answer:'ok'},usage,num_turns:2,session_id:'s1',stop_reason:'end_turn'});return;
  }
+ // Terminal results the transport must map onto the OpenRouter failure codes.
+ if(scenario==='maxtokens'||scenario==='refusal'||scenario==='empty'){const text=scenario==='empty'?'':'cut';out({type:'result',subtype:'success',is_error:false,result:text,usage,num_turns:1,session_id:'s1',stop_reason:scenario==='maxtokens'?'max_tokens':scenario==='refusal'?'refusal':'end_turn'});return;}
  // ok and echo: the answer describes what arrived, so tests can check the request reached the model intact.
  const answer=scenario==='echo'?JSON.stringify({texts,images:images.map(i=>({mediaType:i.source.media_type,bytes:i.source.data.length})),system}):(process.env.FAKE_CLAUDE_ANSWER??'OK');
  out({type:'assistant',message:{content:[{type:'text',text:answer}]}});
