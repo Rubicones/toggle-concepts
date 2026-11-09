@@ -8,25 +8,29 @@ Local results are test results: they cannot be accepted at C2 or delivered to a 
 
 Plan: `docs/plans/2026-11-06-local-claude-pipeline-plan.md`. Reviews: `docs/reviews/2026-11-06-local-claude-s*.md`.
 
-## Windows computer (the owner)
+## Windows computer (the owner): the studio inside WSL, on par with the Mac
 
-Once, in PowerShell (Git must be installed: `winget install Git.Git`):
+On Windows the studio runs inside WSL (Ubuntu 24.04). There, agent code gets the same OS sandbox as on macOS (bubblewrap instead of `sandbox-exec`), so the whole pipeline works, draft films included.
+
+Run `scripts/windows/install.ps1`, sent as `Install-Toggle.ps1`, in PowerShell:
 
 ```powershell
-git clone https://github.com/Rubicones/toggle-concepts.git C:\Users\kholo\YandexDisk\TREATMENTS\POCKET_PITCH\toggle-concepts
-powershell -ExecutionPolicy Bypass -File C:\Users\kholo\YandexDisk\TREATMENTS\POCKET_PITCH\toggle-concepts\scripts\windows\setup.ps1
+powershell -ExecutionPolicy Bypass -File Install-Toggle.ps1
 ```
 
-`scripts/windows/setup.ps1` does the rest:
-- puts a private Node 22 in `POCKET_PITCH\tools`;
-- updates the code to `main` and installs dependencies;
-- creates `.env.local` and opens it to paste the developer's values;
-- installs Claude Code, opens the sign-in and runs the check;
-- writes `POCKET_PITCH\Start-Studio.cmd` and `POCKET_PITCH\Update-Studio.cmd`.
+**First run.** It installs WSL and Ubuntu. Restart the computer, then choose a Ubuntu user name and password in the window that opens.
 
-Draft films (director and designer) render only on the studio Mac, because they need the macOS sandbox. On Windows the brief, brand reading and planning run, in either mode.
-
-Yandex Disk syncs `node_modules`. If `npm ci` fails with EPERM or EBUSY, pause sync and run the setup again.
+**Second run.** It does the rest:
+- installs Git for Windows, used only for the GitHub sign-in;
+- clones the code to `~/toggle/toggle-concepts` in Ubuntu, so it is not on Yandex Disk and is not synced;
+- runs `scripts/linux/setup.sh`:
+  - system packages and bubblewrap;
+  - a private Node 22;
+  - `main` and `npm ci`;
+  - the renderer browser;
+  - `.env.local`, opened in Notepad;
+  - Claude Code sign-in and the capability check;
+- writes `C:\toggle\Start-Studio.cmd`, `C:\toggle\Update-Studio.cmd` and `C:\toggle\Open-Studio-Folder.cmd`.
 
 ## 0. Once, by whoever applies shared migrations (Dmitry)
 

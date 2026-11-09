@@ -39,7 +39,7 @@ test('bubblewrap isolates agent code like the macOS profile', {skip:!usable&&'bu
     const o=net.connect(443,'1.1.1.1');o.setTimeout(3000);o.on('connect',()=>{out.outside='CONNECTED';done();});o.on('error',e=>{out.outside='DENIED:'+e.code;done();});o.on('timeout',()=>{out.outside='DENIED:TIMEOUT';done();});});});
   function done(){console.log(JSON.stringify(out));process.exit(0);}`;
  const args=linuxSandboxArgs({root,repo,execPath:process.execPath,home,hidden:[join(repo,'.env.local')],env:{PATH:process.env.PATH,HOME:'/tmp',TMPDIR:'/tmp'},command:[process.execPath,'-e',script]});
- const {stdout}=await exec(BWRAP,args,{env:{PATH:process.env.PATH,OPENROUTER_API_KEY:'secret'},timeout:30000});
+ const {stdout}=await exec(BWRAP,args,{env:{PATH:process.env.PATH,OPENROUTER_API_KEY:'secret'} as unknown as NodeJS.ProcessEnv,timeout:30000,encoding:'utf8'});
  const r=JSON.parse(stdout.trim().split('\n').at(-1)!);
  assert.ok(!String(r.env).includes('secret'),'.env files cannot be read (like the macOS deny rule)');
  assert.match(r.ssh,/^DENIED:/,'the real home folder is hidden');
