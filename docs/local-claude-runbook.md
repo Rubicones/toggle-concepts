@@ -10,29 +10,17 @@ Plan: `docs/plans/2026-11-06-local-claude-pipeline-plan.md`. Reviews: `docs/revi
 
 ## Windows computer (the owner): the studio inside WSL, on par with the Mac
 
-On Windows the studio runs inside WSL (Ubuntu 24.04). There, agent code gets the same OS sandbox as on macOS (bubblewrap instead of `sandbox-exec`), so the whole pipeline works, draft films included.
+On Windows the studio runs in a light background Ubuntu (WSL). There, agent code gets the same OS sandbox as on macOS (bubblewrap), so the whole pipeline works, draft films included.
 
-Run `scripts/windows/install.ps1`, sent as `Install-Toggle.ps1`, in PowerShell:
+Ubuntu is capped in `%USERPROFILE%\.wslconfig`: at most a third of the memory (up to 6 GB) and half the cores. It stops one minute after the studio closes.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File Install-Toggle.ps1
-```
+**Install:** put `Install-Toggle.cmd` and `Install-Toggle.ps1` (from `scripts/windows/`) in one folder. If you have the developer's settings file, put it at `C:\toggle\.env.local` first. Then double-click `Install-Toggle.cmd`; nothing needs to be typed.
 
-**First run.** It installs WSL and Ubuntu. Restart the computer, then choose a Ubuntu user name and password in the window that opens.
-
-**Second run.** It does the rest:
-- installs Git for Windows, used only for the GitHub sign-in;
-- clones the code to `~/toggle/toggle-concepts` in Ubuntu, so it is not on Yandex Disk and is not synced;
-- runs `scripts/linux/setup.sh`:
-  - system packages and bubblewrap;
-  - a private Node 22;
-  - `main` and `npm ci`;
-  - the renderer browser;
-  - `.env.local`, opened in Notepad;
-  - Claude Code sign-in and the capability check;
-- writes `C:\toggle\Start-Studio.cmd`, `C:\toggle\Update-Studio.cmd` and `C:\toggle\Open-Studio-Folder.cmd`.
-
-The installer also caps Ubuntu in `%USERPROFILE%\.wslconfig`: at most a third of the memory (up to 6 GB) and half the cores. It stops one minute after the studio closes. Runs therefore never take the whole computer.
+- The first WSL install turns on Windows' virtualization feature, which needs one restart. Setup continues by itself after sign-in, through a RunOnce entry.
+- No Ubuntu user is created: `--no-launch`, and the studio runs as Ubuntu's root.
+- The GitHub and Claude sign-ins open in the browser.
+- The code lives in Ubuntu at `/root/toggle/toggle-concepts`, not on Yandex Disk.
+- A "Toggle Studio" desktop icon starts the studio. Running `Install-Toggle.cmd` again updates it.
 
 ## 0. Once, by whoever applies shared migrations (Dmitry)
 
