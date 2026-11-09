@@ -1,9 +1,9 @@
 // Builds the brand sheet (designer pipeline plan, point 1b): each section of packages/brand/brand-sheet.ts is rendered
 // to PNG with headless Chromium, offline (every request except the page itself is refused), at 1280 px wide; taller
 // pages are cut into slices of at most 1600 px. Images are stored content-addressed in staging/brand-sheet/<sha>.png.
+import {headlessShellPath} from './director/toolchain';
 import {createHash} from 'node:crypto';
 import {existsSync} from 'node:fs';
-import {resolve} from 'node:path';
 import {chromium} from '@playwright/test';
 import {adminClient,checked,sharedTenant} from '../../packages/data/shared-runtime';
 import {objectStore} from '../../packages/media/s3.server';
@@ -21,8 +21,8 @@ const MAX_SLICES=4,PAGE_URL='http://brand-sheet.invalid/';
 export function sheetBrowserPath(env:Record<string,string|undefined>=process.env,platform=process.platform,arch=process.arch,exists=existsSync){
  if(env.CHROME_PATH)return env.CHROME_PATH;
  if(env.DIRECTOR_CHROME_PATH)return env.DIRECTOR_CHROME_PATH;
- if(platform!=='darwin')return undefined;
- const a=arch==='arm64'?'arm64':'x64',shell=resolve(`node_modules/.remotion/chrome-headless-shell/mac-${a}/chrome-headless-shell-mac-${a}/chrome-headless-shell`);
+ if(platform!=='darwin'&&platform!=='linux')return undefined;
+ const shell=headlessShellPath({},platform,arch);
  return exists(shell)?shell:undefined;
 }
 

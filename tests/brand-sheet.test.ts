@@ -100,5 +100,7 @@ test('the sheet uses the browser the studio Mac already has',async()=>{
  assert.equal(sheetBrowserPath({DIRECTOR_CHROME_PATH:'/d'},'darwin','arm64',()=>true),'/d');
  assert.match(sheetBrowserPath({},'darwin','arm64',()=>true)!,/\.remotion\/chrome-headless-shell\/mac-arm64\/chrome-headless-shell-mac-arm64\/chrome-headless-shell$/);
  assert.equal(sheetBrowserPath({},'darwin','x64',()=>false),undefined,'no download: Playwright decides');
- assert.equal(sheetBrowserPath({},'linux','x64',()=>true),undefined);
+ // Linux (and Windows through WSL) uses Remotion's Linux headless shell too.
+ assert.match(sheetBrowserPath({},'linux','x64',()=>true)!,/chrome-headless-shell\/linux64\/chrome-headless-shell-linux64\/chrome-headless-shell$/);
+ assert.equal(sheetBrowserPath({},'win32','x64',()=>true),undefined);
 });
