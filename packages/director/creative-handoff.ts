@@ -4,6 +4,7 @@ import {creativeFocusBlock,normalizeCreativeFocus} from '../contracts/creative-f
 import {readKnowledge,resolveReference} from '../agents/knowledge';
 import {planningObject,planningField,planningNodes,type PlanningDirection,type PlanningJob} from './planning';
 import type {DirectionInput} from './types';
+import {squarePreviewOnly,squarePreviewInstructions} from './preview-scope';
 import {squareFirstDraft} from './construction';
 import {independentResourceBindings} from './resources';
 const hash=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
@@ -46,7 +47,7 @@ function deliverable(raw:unknown){
  const parsed=content(raw),nodes=planningNodes(parsed).nodes;
  const envelope=nodes.find(n=>typeof n.value.role==='string'&&n.value.deliverable&&typeof n.value.deliverable==='object');
  // The standard envelope is metadata, but its unresolved assumptions remain evidence.
- if(envelope){const o=envelope.value;return {content:o.deliverable,...(Array.isArray(o.assumptions)&&o.assumptions.length?{assumptions:o.assumptions}:{}),...(Array.isArray(o.blockingQuestions)&&o.blockingQuestions.length?{questions:o.blockingQuestions}:{}),...(Array.isArray(o.warnings)&&o.warnings.length?{warnings:o.warnings}:{})};}
+ if(envelope){const o=envelope.value,{scenarioSelection,...evidence}=planningObject(o.deliverable);void scenarioSelection;return {content:evidence,...(Array.isArray(o.assumptions)&&o.assumptions.length?{assumptions:o.assumptions}:{}),...(Array.isArray(o.blockingQuestions)&&o.blockingQuestions.length?{questions:o.blockingQuestions}:{}),...(Array.isArray(o.warnings)&&o.warnings.length?{warnings:o.warnings}:{})};}
  return parsed;
 }
 export function buildCreativeHandoff(args:{creativeFocus?:string;brief:Record<string,unknown>;direction:PlanningDirection;directions:PlanningDirection[];script:PlanningJob;visual:PlanningJob;strategy?:PlanningJob;input:DirectionInput}):CreativeHandoff{
@@ -89,7 +90,7 @@ function pictureRules(input:DirectionInput,role:'director'|'coder'){
 }
 export function withCreativeHandoff(input:DirectionInput,role:'director'|'coder',instructions:string){
  if(!input.creativeHandoff)return instructions;
- const construction=squareFirstDraft(input)?role==='director'?' Resolve each scene as a strong square first: hierarchy, product staging, typography, image/copy relationship and spacing. Explain how these relationships change continuously with width/height. Keep later motion intent separate from static implementation.':' Work square first, then adapt that design in the same source. construction.focus identifies the next step; it is technical progress, not visual approval. A complete first request is allowed. Preserve working design during repairs.':'';
+ const construction=squarePreviewOnly(input)?' '+squarePreviewInstructions:squareFirstDraft(input)?role==='director'?' Resolve each scene as a strong square first: hierarchy, product staging, typography, image/copy relationship and spacing. Explain how these relationships change continuously with width/height. Keep later motion intent separate from static implementation.':' Work square first, then adapt that design in the same source. construction.focus identifies the next step; it is technical progress, not visual approval. A complete first request is allowed. Preserve working design during repairs.':'';
  const images=independentResourceBindings(input)?role==='director'?' Keep existing image prompts, references and aspect unchanged for copy/layout edits. Change an image brief only when its visual material must change; do not multiply photographs for variant axes.':' Image arrivals update resources data; do not rewrite source just to insert a URL.':'';
  return instructions+'\n'+(role==='director'?'You own this direction. Develop the selected creativeHandoff treatment and intent; do not invent a competing territory. Current approved facts/copy, scope, generation permissions and AD notes outrank older planning hypotheses. Explain necessary departures and reasons in the design document. Planning slot IDs are evidence, never runtime resource IDs.':'Implement the director design and creativeHandoff intent. Do not reinterpret raw planning into a second direction. Use application IDs and report conflicts.')+construction+images+pictureRules(input,role)+(creativeFocusBlock(input.creativeHandoff.intent.creativeFocus)?'\n'+creativeFocusBlock(input.creativeHandoff.intent.creativeFocus):'');
 }

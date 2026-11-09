@@ -156,9 +156,10 @@ function RaiseBudgetDialog({
   // A request stopped by a cap was never sent; raising the cap and retrying it is always safe in planning.
   const budgetStop = control?.stage === "planning" && ["RUN_CAP_REACHED", "STEP_CAP_REACHED"].includes(stoppedCode ?? "");
   const canContinue =
+    // A cap stop is never sent and never paid, so it does not use one of the three retries; the server counts only paid
+    // attempts (studio_amend_run_limits) and refuses a fourth itself.
     (budgetStop &&
       ["blocked", "paused"].includes(control!.status) &&
-      (!failed || failed.attempt_count < 3) &&
       !(control!.cursor.stoppedFrom as { status?: string } | undefined)?.status?.includes("review")) ||
     (!data.assemblyContinuation &&
     !data.assemblyRetry &&

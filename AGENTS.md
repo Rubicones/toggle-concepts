@@ -23,7 +23,21 @@ The current focus is the internal planning and live static-draft workflow:
 
 Shared-workspace mode is intentional today. It is not proof of production-ready isolation between unrelated clients. Scoped authentication, RLS and portal contracts also exist; preserve them.
 
+### Square-only preview update (owner decision, 9 November 2026)
+
+New Build preview quotes carry `brief.squarePreviewVersion: 1`. They build and inspect only 1:1 scenes, including the existing reference/long-copy checks at that ratio. The immutable C1 placements remain the final scope; `brief.orderedFormats` retains them in the draft snapshot. Other ratios and intermediate-canvas checks are deferred. The coder must keep runtime width/height inputs and an adaptable source structure; this is not a claim that other ratios are implemented or checked. Final production remains unavailable as described above.
+
+Direction copy must belong to the selected scenario. New quotes bind otherwise unqualified localization rows to their manifest concept slot, never broadcast them to other directions, and never import a sibling direction's hook storyboard. If only the first direction was localized, other directions may use their exact source-language storyboard, authored hooks and selected CTA; missing translations or hook copy block admission.
+
+The visible Build preview rerun controls create a fresh quote for the selected direction(s), retaining earlier work and planning. Model selection uses the existing Models & agents settings, explicitly disclosed as workspace-wide for future requests. It does not change admitted requests or image models. Quote approval remains necessary before generation.
+
 ## 2. Non-negotiable principles
+
+### Scenario selection (owner decision, 9 November 2026)
+
+Instruction version `2026-11-09.1` carries `Scenario selection protocol: 1.`. This supersedes the earlier visual-first script instructions below: scenarios now contain narrative beats, timing, exact copy, narration and factual proof, with no visual or production prescriptions. After the script's idea review, the AD selects one exact scenario output. Localization and visual direction wait for that choice. Visual direction produces three diverse visual treatments of the same selected story, preserving its beats, timing, meaning, hooks and CTA. Presentation IDs `concept-1..3` are distinct from their common `scenarioId`.
+
+Migration `20261109000100_scenario_selection.sql` stores the choice against script job ID and output hash, gates workflow claims, and validates the choice at admission. Dmitry applies it to the shared database. New requests use the new instructions after Models & agents → Update instructions and a new run or planning restart; existing frozen instructions and admitted work retain their prior behavior. A script revision requires a fresh choice; a visual-only revision retains the current story. Once downstream work is claimed, changing the scenario requires a Scenarios revision. `packages/contracts/scenario-selection.ts` projects only the chosen narrative into downstream model context and binds translations and all three preview presentations to that exact source. Full source evidence remains saved.
 
 ### Creative ownership
 

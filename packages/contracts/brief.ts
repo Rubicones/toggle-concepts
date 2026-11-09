@@ -43,6 +43,26 @@ export function emptyBrief(goal = ""): BriefDraft {
     deadline: "", timeZone: "Europe/Belgrade", immutables: "", synthesis: "", variationNotes: "", rights: "unknown", rightsNotes: "", showPrice: false, price: "", currency: "USD", priceSource: "", priceConfirmed: false,
     facts: [], sourceAssetIds: [], locales: ["en-GB"], hooks: ["primary"], beatSequences: ["primary"], offers: ["primary"], durationsSeconds: [15], placementIds: ["vertical"], referenceLocale: "en-GB", referencePlacement: "vertical", finalConceptCount: 1, runCapMicroUsd: 5000000, entries: [] };
 }
+export function submittedBriefAnswers(briefText: string): BriefDraft | undefined {
+  try {
+    return briefDraftSchema.safeParse(JSON.parse(briefText)?.questionnaire).data;
+  } catch {
+    return undefined;
+  }
+}
+
+export function copyBriefAnswers(source: BriefDraft, target: BriefDraft, makeId: () => string): BriefDraft {
+  return {
+    ...source,
+    facts: source.facts.map((fact) => ({ ...fact, id: makeId() })),
+    entries: source.entries.map((entry) => ({ ...entry, id: makeId() })),
+    sourceAssetIds: target.sourceAssetIds,
+    sourceAssetRoles: target.sourceAssetRoles,
+    runCapMicroUsd: target.runCapMicroUsd,
+    rights: "unknown",
+  };
+}
+
 export function compileBriefScope(draft: BriefDraft, refs: { campaignId: string; scopeId: string; manifestId: string; briefId: string }) {
   const scope = campaignScopeSchema.parse({ schemaVersion: "1.0", revisionId: refs.scopeId, campaignId: refs.campaignId, draftConceptCount: 3, finalConceptCount: draft.finalConceptCount,
     referencePlacement: draft.referencePlacement, referenceLocale: draft.referenceLocale, locales: draft.locales, hooks: draft.hooks, beatSequences: draft.beatSequences, offers: draft.offers,

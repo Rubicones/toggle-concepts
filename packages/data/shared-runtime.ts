@@ -1,15 +1,26 @@
 // Node-only runtime, shared by thin API handlers and the independent local worker.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { dataConfig } from "./config.server";
 import { studioFetch } from './studio-changes';
 export const sharedTenant = process.env.STUDIO_SHARED_TENANT_ID ?? "10000000-0000-4000-8000-000000000001";
 export const sharedMode = () => process.env.STUDIO_SHARED_MODE === "true";
+/** This computer's Local mode device id (~/.toggle/device.json, created by `npm run local-claude:doctor`), or none.
+ * Sent as x-toggle-device so a new run or brand analysis freezes this device's text mode (Local / OpenRouter). */
+let deviceHeader:Record<string,string>|undefined;
+export function localDeviceHeader():Record<string,string>{
+ if(deviceHeader)return deviceHeader;
+ try{const raw=JSON.parse(readFileSync(join(process.env.TOGGLE_HOME??join(homedir(),'.toggle'),'device.json'),'utf8')) as {id?:unknown};deviceHeader=typeof raw.id==='string'&&/^[0-9a-f-]{36}$/.test(raw.id)?{'x-toggle-device':raw.id}:{};}catch{deviceHeader={};}
+ return deviceHeader;
+}
 export function adminClient() {
  const cfg=dataConfig(); if(!process.env.SUPABASE_SERVICE_ROLE_KEY)throw new Error("DATA_NOT_CONFIGURED");
  // Creative RPCs move large frozen payloads and wait on the run lock while the worker settles a step; 20 s aborted
  // requests the database still completed. The database's own statement timeout stays the real bound.
- return createClient(cfg.url,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false},global:{fetch:(input,init)=>studioFetch(input,{...init,cache:"no-store",signal:AbortSignal.timeout(60000)})}});
+ return createClient(cfg.url,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:localDeviceHeader(),fetch:(input,init)=>studioFetch(input,{...init,cache:"no-store",signal:AbortSignal.timeout(60000)})}});
 }
 let actors:Promise<{producer:SupabaseClient;worker:SupabaseClient;producerId:string}>|undefined;let expires=0;
 async function initialize() {

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
 import { test } from "node:test";
-import { briefDraftSchema, emptyBrief, briefBlockers, compileBriefScope, resizeCreativeSlots } from "../packages/contracts/brief";
+import { briefDraftSchema, emptyBrief, briefBlockers, compileBriefScope, copyBriefAnswers, submittedBriefAnswers, resizeCreativeSlots, rowKey } from "../packages/contracts/brief";
 import { defaultAgentSettings } from "../packages/agents/defaults";
 import { buildC1Snapshot } from "../packages/data/brief-snapshot";
 import { parseCheckpoint, planReplay, DRAFT_REPLAY } from "../packages/contracts/workflow";
@@ -68,4 +68,32 @@ test("creative option counts preserve old slot IDs and do not rewrite ordered ro
   draft.hooks=resizeCreativeSlots(draft.hooks,1,'hook');
   assert.deepEqual(draft.entries,rows);
   assert.ok(briefBlockers(draft).some(b=>b.includes('Variant outside accepted scope')));
+});
+
+test("copying a submitted questionnaire preserves its sparse order and keeps destination assets and budget", () => {
+  const source = completeTestBrief(), target = emptyBrief();
+  const sourceAsset = randomUUID(), targetAsset = randomUUID();
+  source.sourceAssetIds = [sourceAsset];
+  source.sourceAssetRoles = { [sourceAsset]: "product" };
+  target.sourceAssetIds = [targetAsset];
+  target.sourceAssetRoles = { [targetAsset]: "logo" };
+  target.runCapMicroUsd = source.runCapMicroUsd + 10000;
+  source.rights = "confirmed";
+  source.entries = source.entries.slice(3, 7).reverse();
+  source.facts = [{ id: randomUUID(), claim: "Solid brass", status: "confirmed", source: "Product specs" }];
+  const submitted = submittedBriefAnswers(JSON.stringify({ questionnaire: source }));
+  assert.ok(submitted);
+  assert.equal(submittedBriefAnswers("legacy text"), undefined);
+
+  const copied = copyBriefAnswers(submitted, target, randomUUID);
+  assert.equal(copied.product, source.product);
+  assert.equal(copied.runCapMicroUsd, target.runCapMicroUsd);
+  assert.deepEqual(copied.sourceAssetIds, [targetAsset]);
+  assert.deepEqual(copied.sourceAssetRoles, { [targetAsset]: "logo" });
+  assert.deepEqual(copied.entries.map(rowKey), source.entries.map(rowKey));
+  assert.ok(copied.entries.every((row, i) => row.id !== source.entries[i].id));
+  assert.equal(copied.facts[0].source, source.facts[0].source);
+  assert.notEqual(copied.facts[0].id, source.facts[0].id);
+  assert.ok(briefBlockers(copied).some((error) => error.includes("Confirm source rights")));
+  assert.equal(briefDraftSchema.safeParse(copied).success, true);
 });

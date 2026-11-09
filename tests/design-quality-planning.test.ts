@@ -22,14 +22,14 @@ test('the strategy states the idea and a visual thought, never the production',(
 
 test('every planning role carries the interface rule; the visual direction resolves conflicts explicitly',()=>{
  assert.match(interfaceRule,/simplified mockup built from scratch in code from the brand's UI-kit components, never a screenshot/);
- for(const r of ['strategy','script','visual-direction']){assert.ok(role(r).includes(interfaceRule),r);assert.ok(role(r).includes(productProof),r);}
+ for(const r of ['strategy','visual-direction']){assert.ok(role(r).includes(interfaceRule),r);assert.ok(role(r).includes(productProof),r);}
  assert.match(role('visual-direction'),/An earlier role's production remark never overrides a brand rule or the interface rule/);
 });
 
 test('the script names a proof per scene, one world per direction, and counts scenes from the message',()=>{
  const s=role('script');
- assert.match(s,/Every scene names in proof what in its frame proves its line/);assert.match(s,/only the brand\/CTA scene may leave proof empty/);
- assert.match(s,/one world, used by every scene/);assert.match(s,/never the duration cut into equal slices/);assert.match(s,/a scene count the brief sets wins/);
+ assert.match(s,/proof \(the supported product fact or mechanism; empty only for brand\/CTA\)/);
+ assert.match(s,/factual product vocabulary and data shared by the beats/);assert.match(s,/scene count follow the message and the brief, never equal slices of duration/);
 });
 
 test('the visual direction gives intent and relationships; brand values stay exact',()=>{

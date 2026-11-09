@@ -1,3 +1,4 @@
+import {squarePreviewOnly} from './preview-scope';
 /**
  * Rendering-free layout inspection for live drafts. The compiled Frame is mounted in a headless browser and its DOM
  * geometry is read for a bounded matrix of views. This module chooses the views, provides the in-page collector and
@@ -51,7 +52,7 @@ export function inspectionViews(input:DirectionInput,options:LiveOptions,design:
  for(const sceneId of scenes)for(const size of sizes)add(reference,size,sceneId);
  if(longest)for(const sceneId of scenes)for(const size of sizes)add(longest,size,sceneId);
  for(const v of alternates)for(const sceneId of scenes)add(v,sizes[0],sceneId);
- for(const size of extras)for(const sceneId of scenes)add(reference,size,sceneId);
+ for(const size of squarePreviewOnly(input)?[]:extras)for(const sceneId of scenes)add(reference,size,sceneId);
  // Real views for the coder and critic (owner decision, 1 November 2026): every ordered format of every scene for the
  // reference copy, so adaptation is judged side by side, plus the longest copy binding in every ordered format for its
  // densest scene. Bounded by MAX_SHOTS; never a sweep over variants.

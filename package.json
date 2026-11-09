@@ -42,7 +42,10 @@
     "render:creative": "node --import tsx scripts/verify-creative-render.ts",
     "test:creative-db": "python3 scripts/verify-creative-migration.py",
     "export:creative": "node --import tsx apps/local-runner/render-creative.ts",
-    "verify:m09:static": "node --import tsx scripts/director/verify-static.ts"
+    "verify:m09:static": "node --import tsx scripts/director/verify-static.ts",
+    "local-claude:doctor": "node --import tsx apps/local-runner/local-claude/doctor.ts",
+    "local-claude:qualify": "node --import tsx apps/local-runner/local-claude/qualify.ts",
+    "local-claude:report": "node --import tsx apps/local-runner/local-claude/report.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1156.0",

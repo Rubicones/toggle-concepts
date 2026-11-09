@@ -58,10 +58,13 @@ export async function paidText(args:{identity:unknown;role:Exclude<Role,'resourc
 }
 
 /** A request the provider rejected before generating (failed, nothing charged) uses no allowance. */
-export const freeRejection=(row:{status:string;cost_micro_usd:number|null})=>row.status==='failed'&&row.cost_micro_usd===0;
+/** A Local (Claude Code CLI) request that reached the model has no money cost but did use a request and tokens
+ * (docs/plans/2026-11-06-local-claude-pipeline-plan.md, §9): it is never a free rejection. */
+export const freeRejection=(row:{status:string;cost_micro_usd:number|null;usage?:unknown})=>row.status==='failed'&&row.cost_micro_usd===0&&!(row.usage as {_local?:unknown}|null|undefined)?._local;
 export function accountedTokens(row:{status:string;cost_micro_usd:number|null;usage?:{prompt_tokens?:unknown;completion_tokens?:unknown;prompt_tokens_details?:{cached_tokens?:unknown;cache_write_tokens?:unknown}}|null;config_snapshot:{directorInputTokens?:number;maxOutputTokens?:number;cachePrompt?:boolean;pricing?:TextSnapshot['pricing']}}){if(freeRejection(row))return {input:0,output:0};const settled=!['reserved','running','unknown'].includes(row.status)&&row.cost_micro_usd!==null;const count=(value:unknown,fallback:number)=>settled&&typeof value==='number'&&Number.isSafeInteger(value)&&value>=0?value:fallback;return {input:settled&&row.config_snapshot.cachePrompt?billedInputTokens(row.usage,row.config_snapshot.pricing,row.config_snapshot.directorInputTokens??0):count(row.usage?.prompt_tokens,row.config_snapshot.directorInputTokens??0),output:count(row.usage?.completion_tokens,row.config_snapshot.maxOutputTokens??0)};}
 /** Human/control wait time does not consume the coding agent's active time allowance. */
-export function resumeBudgetClock<T extends {reviewStartedAt?:number;pausedAt?:number;assembler?:{startedAt:number};roleStartedAt?:Partial<Record<Role,number>>}>(state:T,now=Date.now()):T{const result=structuredClone(state),start=result.reviewStartedAt??result.pausedAt;if(start!==undefined){const pause=Math.max(0,now-start);if(result.assembler)result.assembler.startedAt+=pause;for(const role of Object.keys(result.roleStartedAt??{}) as Role[])if(result.roleStartedAt?.[role]!==undefined)result.roleStartedAt[role]!+=pause;}delete result.reviewStartedAt;delete result.pausedAt;return result;}
+/** Also the designer's clock (designer blocks): a review or a subscription wait does not consume its active time. */
+export function resumeBudgetClock<T extends {reviewStartedAt?:number;pausedAt?:number;assembler?:{startedAt:number};designer?:{startedAt:number};roleStartedAt?:Partial<Record<Role,number>>}>(state:T,now=Date.now()):T{const result=structuredClone(state),start=result.reviewStartedAt??result.pausedAt;if(start!==undefined){const pause=Math.max(0,now-start);if(result.assembler)result.assembler.startedAt+=pause;if(result.designer)result.designer.startedAt+=pause;for(const role of Object.keys(result.roleStartedAt??{}) as Role[])if(result.roleStartedAt?.[role]!==undefined)result.roleStartedAt[role]!+=pause;}delete result.reviewStartedAt;delete result.pausedAt;return result;}
 
 /** Static ceilings at base-rate billed token equivalents. A normal run uses one draft-first coder request. */
 export function estimateStaticDirection(pricing:Record<Exclude<Role,'resources'>,TextSnapshot['pricing']>,perStillMicroUsd:number,maxStills:number,identity:unknown):Estimate{
@@ -117,7 +120,8 @@ export function estimateDesignerDirection(pricing:{designer:TextSnapshot['pricin
 }
 
 /** One measured designer direction (sealed with the draft, point 6c). */
-export type DesignerRun={turns:number;usage?:{costMicroUsd:number;picturesMicroUsd:number;requests:number;inputTokens:number;outputTokens:number}};
+/** usage.local: the designer ran on Local mode (Sonnet through the CLI); never used to calibrate quotes. */
+export type DesignerRun={turns:number;usage?:{costMicroUsd:number;picturesMicroUsd:number;requests:number;inputTokens:number;outputTokens:number;local?:boolean}};
 /** Runs measured before the quote learns from them. */
 export const DESIGNER_MEASURED_RUNS=5;
 const quantile=(values:number[],q:number)=>{const v=[...values].sort((a,b)=>a-b);return v.length?v[Math.min(v.length-1,Math.floor(q*(v.length-1)+0.5))]:0;};
@@ -128,7 +132,7 @@ const quantile=(values:number[],q:number)=>{const v=[...values].sort((a,b)=>a-b)
  */
 export type DesignerMeasurements={runs:number;typicalCostMicroUsd?:number;turns?:{requests:number;inputTokens:number;outputTokens:number}};
 export function designerMeasurements(runs:DesignerRun[]):DesignerMeasurements{
- const measured=runs.filter((r):r is Required<DesignerRun>=>!!r.usage&&r.usage.requests>0);
+ const measured=runs.filter((r):r is Required<DesignerRun>=>!!r.usage&&r.usage.requests>0&&!r.usage.local);
  if(!measured.length)return {runs:0};
  const typicalCostMicroUsd=quantile(measured.map(r=>r.usage.costMicroUsd+r.usage.picturesMicroUsd),0.5);
  if(measured.length<DESIGNER_MEASURED_RUNS)return {runs:measured.length,typicalCostMicroUsd};

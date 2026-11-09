@@ -2,12 +2,13 @@
 // storyboard for this direction, the full accepted kit (not the director's slimmed summary), the interface inventory,
 // the product data, the approved copy of the reference variant, the formats, the feeling brief and the creative focus.
 // The brand sheet travels as images in the cached prefix. Generated data modules never enter the context.
+import {squarePreviewOnly,squarePreviewInstructions} from './preview-scope';
 import {slimDirectorInput} from './inputs';
 import type {DirectionInput} from './types';
 
 export function designerContext(input:DirectionInput){
  const {compaction:_compaction,resourceIds:_ids,...slim}=slimDirectorInput(input);void _compaction;void _ids;
- return {...slim,protocol:'designer@1',
+ return {...slim,protocol:'designer@1',...(squarePreviewOnly(input)?{draftScope:squarePreviewInstructions}:{}),
   brand:{...slim.brand,
    // The complete accepted kit: instructions, boundaries and every rule as accepted, never summarised.
    kit:input.brand.rawKit,

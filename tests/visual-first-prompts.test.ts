@@ -6,10 +6,10 @@ import {liveCriticInstructions} from '../packages/agents/prompts/director-critic
 import {ideaReviewPrompt} from '../packages/contracts/idea-review';
 
 const role=(r:string)=>defaultAgentSettings.find(a=>a.role===r)!.instructions;
-test('ideas are visual systems and scenarios are frame sequences, for any kind of product',()=>{
+test('strategy suggests visual ideas while scenarios leave presentation to visual direction',()=>{
  assert.match(role('strategy'),/three different visual ideas/);assert.match(role('strategy'),/A territory is not a story/);
- assert.match(role('script'),/frame sequences inside each territory's visual system, not plots/);assert.match(role('script'),/never repeats one layout/);assert.match(role('script'),/Each frame shows what its words say/);
- for(const r of ['strategy','script','visual-direction']){const t=role(r);assert.match(t,/WHAT THE AD MUST DO/);assert.match(t,/within two seconds/);assert.match(t,/a product without a physical form is never forced into one/);assert.doesNotMatch(t,/product is the hero|hero of every frame/i);}
+ assert.match(role('script'),/three distinct narrative scenarios/);assert.match(role('script'),/Do not describe visuals/);assert.doesNotMatch(role('script'),/WHAT THE AD MUST DO|HOW TO INVENT|STUDIO TOOLKIT/);
+ for(const r of ['strategy','visual-direction']){const t=role(r);assert.match(t,/WHAT THE AD MUST DO/);assert.match(t,/within two seconds/);assert.match(t,/a product without a physical form is never forced into one/);assert.doesNotMatch(t,/product is the hero|hero of every frame/i);}
 });
 test('the director, the live critic and every idea review check the same things',()=>{
  assert.match(staticDirectorPrompt.instructions,/never repeat one layout across scenes/);assert.match(staticDirectorPrompt.instructions,/shows what its words say/);

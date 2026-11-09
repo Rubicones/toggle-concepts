@@ -48,7 +48,13 @@ export function buildBrandCard(findings:Finding[],materials:Material[]):BrandCar
  const logos=materials.filter(m=>m.role==='logo').map(m=>({id:m.id,file:m.filename,svg:m.mime==='image/svg+xml',delegatesColour:!!m.svgText&&/currentColor/i.test(m.svgText)}));
  const fontFiles=materials.filter(m=>m.role==='font'&&typeof m.metadata?.family==='string');
  const families=new Map<string,BrandCard['fonts'][number]>();
- for(const m of fontFiles){const family=normalizeFontFamily(String(m.metadata!.family)),weight=Number(m.metadata!.weight)||400,style=String(m.metadata!.style??'normal');const f=families.get(family)??{family,weights:[],files:[]};f.files.push({id:m.id,weight,style});if(!f.weights.includes(weight))f.weights.push(weight);f.weights.sort((a,b)=>a-b);families.set(family,f);}
+ for(const m of fontFiles){
+  const family=normalizeFontFamily(String(m.metadata!.family)),weight=Number(m.metadata!.weight)||400,style=String(m.metadata!.style??'normal'),range=m.metadata!.weightRange;
+  const f=families.get(family)??{family,weights:[],files:[]};f.files.push({id:m.id,weight,style});
+  const covered=Array.isArray(range)&&range.length===2&&Number.isFinite(Number(range[0]))&&Number.isFinite(Number(range[1]))?[100,200,300,400,500,600,700,800,900].filter(w=>w>=Number(range[0])&&w<=Number(range[1])):[weight];
+  for(const w of covered)if(!f.weights.includes(w))f.weights.push(w);
+  f.weights.sort((a,b)=>a-b);families.set(family,f);
+ }
  const named=[...new Map(of('displayFonts','bodyFonts','monoFonts').map(i=>fontFamilyOf(i.value)).filter((v):v is string=>!!v).map(v=>[v.toLowerCase().replace(/[^a-z0-9]/g,''),v])).values()];
  const checks:BrandCard['checks']=[];
  // Logo on dark and on light grounds: currentColor drawings get both versions; fixed-colour SVGs are judged by their fills.
