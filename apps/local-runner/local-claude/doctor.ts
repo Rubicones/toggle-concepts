@@ -36,7 +36,8 @@ export async function diagnose(options:{bin:string;env?:Env;device?:Device;profi
  return {steps,next:first?.fix??null,ready:!first};
 }
 
-function install(){return new Promise<boolean>(done=>{const c=spawn('npm',['install','-g','@anthropic-ai/claude-code'],{stdio:'inherit'});c.once('close',code=>done(code===0));c.once('error',()=>done(false));});}
+/** Windows: the official native installer (claude.exe, found without a shell); elsewhere npm. */
+function install(){return new Promise<boolean>(done=>{const c=process.platform==='win32'?spawn('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-Command','irm https://claude.ai/install.ps1 | iex'],{stdio:'inherit'}):spawn('npm',['install','-g','@anthropic-ai/claude-code'],{stdio:'inherit'});c.once('close',code=>done(code===0));c.once('error',()=>done(false));});}
 /** The sign-in is the CLI's own interactive flow in the person's browser; this tool never sees the token. */
 function login(bin:string){return new Promise<boolean>(done=>{const c=spawn(bin,['auth','login'],{stdio:'inherit',env:childEnv(process.env)});c.once('close',code=>done(code===0));c.once('error',()=>done(false));});}
 

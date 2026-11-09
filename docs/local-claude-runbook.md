@@ -8,6 +8,26 @@ Local results are test results: they cannot be accepted at C2 or delivered to a 
 
 Plan: `docs/plans/2026-11-06-local-claude-pipeline-plan.md`. Reviews: `docs/reviews/2026-11-06-local-claude-s*.md`.
 
+## Windows computer (the owner)
+
+Once, in PowerShell (Git must be installed: `winget install Git.Git`):
+
+```powershell
+git clone https://github.com/Rubicones/toggle-concepts.git C:\Users\kholo\YandexDisk\TREATMENTS\POCKET_PITCH\toggle-concepts
+powershell -ExecutionPolicy Bypass -File C:\Users\kholo\YandexDisk\TREATMENTS\POCKET_PITCH\toggle-concepts\scripts\windows\setup.ps1
+```
+
+`scripts/windows/setup.ps1` does the rest:
+- puts a private Node 22 in `POCKET_PITCH\tools`;
+- updates the code to `main` and installs dependencies;
+- creates `.env.local` and opens it to paste the developer's values;
+- installs Claude Code, opens the sign-in and runs the check;
+- writes `POCKET_PITCH\Start-Studio.cmd` and `POCKET_PITCH\Update-Studio.cmd`.
+
+Draft films (director and designer) render only on the studio Mac, because they need the macOS sandbox. On Windows the brief, brand reading and planning run, in either mode.
+
+Yandex Disk syncs `node_modules`. If `npm ci` fails with EPERM or EBUSY, pause sync and run the setup again.
+
 ## 0. Once, by whoever applies shared migrations (Dmitry)
 
 Apply `supabase/migrations/20261106000100_local_text_execution.sql`, either with `npm run data:deploy` or by running the file in the Supabase SQL Editor.
