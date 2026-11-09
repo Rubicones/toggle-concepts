@@ -32,6 +32,8 @@ powershell -ExecutionPolicy Bypass -File Install-Toggle.ps1
   - Claude Code sign-in and the capability check;
 - writes `C:\toggle\Start-Studio.cmd`, `C:\toggle\Update-Studio.cmd` and `C:\toggle\Open-Studio-Folder.cmd`.
 
+The installer also caps Ubuntu in `%USERPROFILE%\.wslconfig`: at most a third of the memory (up to 6 GB) and half the cores. It stops one minute after the studio closes. Runs therefore never take the whole computer.
+
 ## 0. Once, by whoever applies shared migrations (Dmitry)
 
 Apply `supabase/migrations/20261106000100_local_text_execution.sql`, either with `npm run data:deploy` or by running the file in the Supabase SQL Editor.

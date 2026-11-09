@@ -15,11 +15,19 @@ if ($LASTEXITCODE -ne 0 -or $distros -notmatch [regex]::Escape($Distro)) {
   Write-Host 'Then run this installer again.' -ForegroundColor Yellow
   exit 0
 }
-# Windows 11: mirrored networking, so http://127.0.0.1:3100 in Windows reaches the studio in Ubuntu.
+# Limits, so runs never slow down your own work: Ubuntu gets at most a third of the memory (up to 6 GB) and half the
+# processor cores, frees unused memory, and stops a minute after the studio is closed. Windows 11 also gets mirrored
+# networking, so http://127.0.0.1:3100 in Windows reaches the studio in Ubuntu. An existing .wslconfig is kept.
 $wslconfig = Join-Path $env:USERPROFILE '.wslconfig'
-if ([Environment]::OSVersion.Version.Build -ge 22621 -and -not (Test-Path $wslconfig)) {
-  "[wsl2]`nnetworkingMode=mirrored`n" | Set-Content -Encoding ASCII $wslconfig; wsl.exe --shutdown
-}
+if (-not (Test-Path $wslconfig)) {
+  $ramGb = [math]::Floor((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
+  $memGb = [math]::Max(3, [math]::Min(6, [math]::Floor($ramGb / 3)))
+  $cpus = [math]::Max(2, [math]::Floor([Environment]::ProcessorCount / 2))
+  $lines = @('[wsl2]', "memory=${memGb}GB", "processors=$cpus", 'swap=2GB', 'vmIdleTimeout=60000')
+  if ([Environment]::OSVersion.Version.Build -ge 22621) { $lines += 'networkingMode=mirrored'; $lines += '[experimental]'; $lines += 'autoMemoryReclaim=dropcache' }
+  ($lines -join "`n") + "`n" | Set-Content -Encoding ASCII $wslconfig; wsl.exe --shutdown
+  Write-Host "Ubuntu limits: ${memGb} GB memory, $cpus of $([Environment]::ProcessorCount) cores (change in $wslconfig)."
+} else { Write-Host "Keeping your existing $wslconfig." }
 
 Step 'Git for Windows (only for signing in to GitHub from Ubuntu)'
 $gcm = 'C:\Program Files\Git\mingw64\bin\git-credential-manager.exe'
