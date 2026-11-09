@@ -58,8 +58,10 @@ test('a brand font lacking a locale\'s letters is completed from Google Fonts',a
  const kit={rules:[{id:'r',category:'typography' as const,key:'headlineFamily',value:'Archivo',status:'provided' as const,decision:'accepted' as const,sourceVerified:true,provenance:{kind:'ad_instruction' as const,sourceId:null,locator:'x'},reason:'x'}]};
  const asked:string[]=[];const fetch=(async(url:string)=>{asked.push(String(url));return new Response('',{status:404});}) as unknown as typeof globalThis.fetch;
  const store={putStaging:async()=>undefined,head:async()=>undefined};
- await googleFontMaterials(kit,[archivo(400),archivo(700)],()=>'id',{fetch,store});assert.equal(asked.length,0,'complete weights and no extra letters: nothing is fetched');
- await googleFontMaterials(kit,[archivo(400),archivo(700)],()=>'id',{fetch,store},kk);assert.ok(asked.length>0&&asked.every(u=>u.includes('fonts.googleapis.com/css2?family=Archivo')),'missing Kazakh letters: the full family is requested');
+ await googleFontMaterials(kit,[{...archivo(400),metadata:{...archivo(400).metadata,weightRange:[100,900]}}],()=>'id',{fetch,store});assert.equal(asked.length,0,'all weights covered and no extra letters: nothing is fetched');
+ await googleFontMaterials(kit,[archivo(400),archivo(700)],()=>'id',{fetch,store});assert.equal(asked.length,7,'when only 400 and 700 are supplied, the remaining 7 weights are requested from Google Fonts');
+ asked.length=0;
+ await googleFontMaterials(kit,[archivo(400),archivo(700)],()=>'id',{fetch,store},kk);assert.ok(asked.length===9&&asked.every(u=>u.includes('fonts.googleapis.com/css2?family=Archivo')),'missing Kazakh letters: the full family is requested');
 });
 
 test('the quote funds two self-review looks for a coder that sees images',()=>{

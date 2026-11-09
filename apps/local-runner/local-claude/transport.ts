@@ -5,7 +5,7 @@
 import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {cliArgs,childEnv,runCli,streamUserMessage,type CliEvent,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
+import {cliArgs,childEnv,hasUnexpectedCliTools,runCli,streamUserMessage,type CliEvent,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
 import {prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCliRequest,type ImageInput,type PreparedTextRequest} from '../../../packages/agents/prepared-request';
 import {localModelFor,type LocalModelChoice} from '../../../packages/agents/local-models';
 import {textRequestQuote} from '../../../packages/agents/text-quote';
@@ -64,7 +64,7 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    // A leaked tool, MCP server or API key ends the call at once: the answer would not be comparable.
    const stop=new AbortController();let leak:string|undefined;const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
    const r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cli.maxOutputTokens)}),stdin:streamUserMessage(cli.parts),timeoutMs,signal:stop.signal,
-    onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){const tools=(e.tools as unknown[]|undefined)??[],mcp=(e.mcp_servers as unknown[]|undefined)??[];if(tools.length||mcp.length)leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
+    onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,cli.jsonSchema!==undefined))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
    options.signal?.removeEventListener('abort',relay);
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
@@ -76,7 +76,10 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    // No terminal result: whether the model worked is not known. Never retried blindly; partial text stays diagnostic.
    if(r.outcome==='unknown')return {...base,outcome:'unknown',cost:null,text:null,failure:r.failure??'CLI_NO_RESULT'};
    if(r.outcome==='failed')return {...base,outcome:'failed',cost:0,text:null,failure:r.failure??'CLI_ERROR'};
-   const text=r.structured!==undefined?JSON.stringify(r.structured):r.text,finishReason=finishOf(r.stopReason);
+   const text=r.structured!==undefined?JSON.stringify(r.structured):r.text;
+   // Claude Code can finish with StructuredOutput as the final tool call and return its JSON in the terminal event.
+   const structuredToolStop=cli.jsonSchema!==undefined&&r.resultSubtype==='success'&&r.stopReason==='tool_use'&&r.structured!=null;
+   const finishReason=structuredToolStop?'stop':finishOf(r.stopReason);
    // The same failure codes as the OpenRouter path, so the existing validation and recovery paths apply.
    const failure=!text?'TEXT_MISSING':finishReason==='length'?'OUTPUT_TOKEN_LIMIT':finishReason==='content_filter'?'PROVIDER_CONTENT_FILTER':finishReason!=='stop'?'PROVIDER_FINISH_REASON_UNEXPECTED':null;
    return {...base,outcome:failure?'failed':'succeeded',cost:0,text:text||null,finishReason,failure};

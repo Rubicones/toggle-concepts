@@ -47,6 +47,15 @@ export function streamUserMessage(parts:CliPart[]){
 }
 
 export type CliEvent=Record<string,unknown>&{type?:string;subtype?:string};
+
+/** The CLI registers StructuredOutput itself when launched with --json-schema. */
+export function hasUnexpectedCliTools(tools: unknown, mcpServers: unknown, withSchema: boolean): boolean {
+ const allowedTools = tools == null || Array.isArray(tools) && (
+  tools.length === 0 || withSchema && tools.length === 1 && tools[0] === 'StructuredOutput'
+ );
+ return !allowedTools || !(mcpServers == null || Array.isArray(mcpServers) && mcpServers.length === 0);
+}
+
 export type CliResult={
  outcome:'succeeded'|'failed'|'cancelled'|'unknown';
  /** The final text, and the structured output when the CLI enforced a schema. */

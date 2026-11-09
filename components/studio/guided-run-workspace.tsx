@@ -140,7 +140,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
   const cap = Number(run?.cap_micro_usd ?? 0);
   const savedFocus = data.creativeFocus?.text ?? "", focusValue = focusDraft ?? savedFocus, focusReady = !!data.creativeFocus?.ready;
   const targetRole = role || (data.failureStep?.role === "creative-code" ? "script" : data.failureStep?.role) || "script";
-  const scenarioOutput=data.jobs.find(j=>j.job_key==='script'&&j.state==='succeeded')?.output,scenarioData=scenarioOutput?readableOutput(scenarioOutput).deliverable:null,directions=scenarioPresentation(scenarioData)??[];
+  const scenarioJob=data.jobs.find(j=>j.job_key==='script'&&j.state==='succeeded'),scenarioOutput=scenarioJob?.output,scenarioData=scenarioOutput?readableOutput(scenarioOutput).deliverable:null,directions=scenarioPresentation(scenarioData)??[];
   return (
     <div className={styles.workspace}>
       <div className={styles.title}>
@@ -307,6 +307,13 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
               </li>
             ))}
           </ol>
+          {data.scenarioSelection?.required && <section className={styles.review} aria-label="Scenario selection">
+            <h3>{data.scenarioSelection.selection ? 'Selected scenario' : 'Choose one scenario'}</h3>
+            <p>{data.scenarioSelection.selection ? `${directions.find(d=>d.id===data.scenarioSelection?.selection?.scenarioId)?.title ?? data.scenarioSelection.selection.scenarioId} — all three visual treatments use this story.` : 'Review the story beats, then choose one. Visual direction will create three different ways to present the same story.'}</p>
+            {!data.scenarioSelection.ready ? <p role="alert">Apply migration 20261109000100_scenario_selection.sql to enable scenario selection.</p> : !scenarioJob ? <p>The scenarios are being prepared.</p> : !data.scenarioSelection.reviewed ? <p>The scenario review is finishing before you choose.</p> : !data.scenarioSelection.selection && <div className={styles.actions}>{directions.map(d=><Button key={d.id} disabled={busy||run?.status!=='active'||control.status==='paused'} onClick={()=>void command({action:'selectScenario',jobId:scenarioJob.id,outputHash:scenarioJob.output_hash,scenarioId:d.id})}>Use {d.title}</Button>)}</div>}
+            {scenarioData && !data.scenarioSelection.selection && <PlanningOutput value={scenarioData}/>}
+            {data.scenarioSelection.selection && <small>To change the story, send a Scenarios &amp; story revision below. Earlier work stays saved.</small>}
+          </section>}
           {selectedStep && (
             <RunStepOutput
               key={selectedStep}
@@ -511,7 +518,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
           )}
           {control.stage === "assembly" && control.status === "review" && !data.creative && draftAccess.legacy && <PreviewSources campaignId={campaignId} busy={busy} command={command} />}
           {directions.length > 0 && (
-            <Disclosure className={styles.section} open={!draftAccess.show}><summary>Approved scenarios · {directions.length} directions</summary>
+            <Disclosure className={styles.section} open={!draftAccess.show}><summary>Scenario options · {directions.length} stories</summary>
               <div className={styles.sectionHeading}>
                 <div>
                   <p className={styles.eyebrow}>THE CREATIVE THINKING</p>

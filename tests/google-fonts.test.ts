@@ -1,22 +1,25 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {brandFontFamilies,familyNeedsWeights,parseGoogleFontCss,googleFontCssUrl} from '../packages/brand/google-fonts';
+import {brandFontFamilies,familyNeedsWeights,missingFamilyWeights,parseGoogleFontCss,googleFontCssUrl} from '../packages/brand/google-fonts';
 import {fontWeightDescriptor} from '../packages/brand/font-metadata';
 import {googleFontMaterials} from '../lib/server/google-fonts';
 
 const rule=(key:string,value:string,decision='accepted')=>({category:'typography',key,value,decision}) as never;
-test('the families the brand names are read from its accepted typography rules; generic and system names are ignored',()=>{
- const kit={rules:[rule('headlineFamily','Schibsted Grotesk (OFL, можно в рекламе и видео)'),rule('bodyFamily','Schibsted Grotesk (fallback: Arial, sans-serif)'),rule('draftFallback','Noto Sans'),rule('monoFamily','sans-serif'),rule('altFamily','Inter','proposed')]};
- assert.deepEqual(brandFontFamilies(kit),['Schibsted Grotesk']);
+test('the families the brand names are read from its accepted typography rules and supplied font files; generic and system names are ignored',()=>{
+ const kit={rules:[rule('headlineFamily','Schibsted Grotesk (OFL, можно в рекламе и видео)'),rule('bodyFamily','Schibsted Grotesk (fallback: Arial, sans-serif)'),rule('displayFamily','Headlines: Archivo SemiBold'),rule('draftFallback','Noto Sans'),rule('monoFamily','sans-serif'),rule('altFamily','Inter','proposed')]};
+ assert.deepEqual(brandFontFamilies(kit,[{objectKey:'fixtures/noto-latin.woff2',metadata:{family:'Noto Sans'}},{objectKey:'uploads/jakarta.ttf',metadata:{family:'Plus Jakarta Sans 18pt Bold'}}]),['Schibsted Grotesk','Archivo','Plus Jakarta Sans']);
  assert.equal(googleFontCssUrl('Schibsted Grotesk',700),'https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@700');
 });
-test('weights are completed only when the supplied files cannot render regular and bold',()=>{
+test('every missing weight in 100..900 is completed from Google Fonts even when some static weights were attached',()=>{
  const m=(weight:number,extra:Record<string,unknown>={})=>({metadata:{family:'Schibsted Grotesk',weight,style:'normal',...extra}});
  assert.equal(familyNeedsWeights('Schibsted Grotesk',[]),true);
- assert.equal(familyNeedsWeights('Schibsted Grotesk',[m(400)]),true,'a single Regular file is not enough');
- assert.equal(familyNeedsWeights('Schibsted Grotesk',[m(400),m(800)]),false);
- assert.equal(familyNeedsWeights('schibsted-grotesk',[m(400,{weightRange:[400,900]})]),false,'a variable file covers every weight');
+ assert.equal(familyNeedsWeights('Schibsted Grotesk',[m(400)]),true,'a single Regular file still needs the other weights');
+ assert.equal(familyNeedsWeights('Schibsted Grotesk',[m(400),m(700)]),true,'attaching Regular and Bold still completes 100, 200, 300, 500, 600, 800, 900');
+ assert.deepEqual(missingFamilyWeights('Schibsted Grotesk',[m(400),m(700)]),[100,200,300,500,600,800,900]);
+ assert.equal(familyNeedsWeights('Schibsted Grotesk',[100,200,300,400,500,600,700,800,900].map(w=>m(w))),false);
+ assert.equal(familyNeedsWeights('schibsted-grotesk',[m(400,{weightRange:[100,900]})]),false,'a full variable file covers every weight');
+ assert.deepEqual(missingFamilyWeights('schibsted-grotesk',[m(400,{weightRange:[400,700]})]),[100,200,300,800,900]);
  assert.equal(fontWeightDescriptor({weight:400,weightRange:[400,900]}),'400 900');assert.equal(fontWeightDescriptor({weight:700}),'700');assert.equal(fontWeightDescriptor({}),'400');
 });
 test('only one unsplit Google Fonts file per weight is accepted',()=>{
@@ -26,21 +29,25 @@ test('only one unsplit Google Fonts file per weight is accepted',()=>{
  assert.equal(parseGoogleFontCss(one.replace('}','  unicode-range: U+0000-00FF;\n}')),null);
  assert.equal(parseGoogleFontCss(one.replace('fonts.gstatic.com','evil.example')),null);
 });
-test('a named family is downloaded once per weight, pinned by hash, and any failure leaves the materials unchanged',async()=>{
- const bytes=readFileSync('public/fixtures/noto-latin.woff2'),puts:string[]=[];
+test('a named family is downloaded once per missing weight, pinned by hash, and any failure leaves the materials unchanged',async()=>{
+ const bytes=readFileSync('public/fixtures/noto-latin.woff2'),puts:string[]=[],asked:string[]=[];
  const css=(w:number)=>`@font-face { font-family: 'Noto Sans'; font-style: normal; font-weight: ${w}; src: url(https://fonts.gstatic.com/s/notosans/x${w}.woff2) format('woff2'); }`;
- const fetcher=(async(url:string|URL)=>{const u=String(url);if(u.startsWith('https://fonts.googleapis.com/'))return u.endsWith('@400')?new Response(css(400)):new Response('',{status:400});return new Response(bytes);}) as typeof fetch;
+ const fetcher=(async(url:string|URL)=>{const u=String(url);if(u.startsWith('https://fonts.googleapis.com/')){asked.push(u);const m=u.match(/@(\d+)$/);return m&&['400','600','700'].includes(m[1])?new Response(css(Number(m[1]))):new Response('',{status:400});}return new Response(bytes);}) as typeof fetch;
  const store={putStaging:async(key:string)=>{puts.push(key);},head:async()=>({})};
  const kit={rules:[rule('headlineFamily','Noto Sans')]};
  const out=await googleFontMaterials(kit,[],seed=>JSON.stringify(seed),{fetch:fetcher,store});
- assert.equal(out.materials.length,1);const f=out.materials[0];
- assert.match(f.objectKey,/^staging\/google-fonts\/[a-f0-9]{64}\.woff2$/);assert.deepEqual(puts,[f.objectKey]);assert.equal(f.metadata.family,'Noto Sans');assert.equal(f.metadata.source,'google-fonts');
+ assert.deepEqual(out.materials.map(m=>m.metadata.weight),[400,600,700]);const f=out.materials[0];
+ assert.match(f.objectKey,/^staging\/google-fonts\/[a-f0-9]{64}\.woff2$/);assert.equal(f.metadata.family,'Noto Sans');assert.equal(f.metadata.source,'google-fonts');
+ asked.length=0;
+ const partial=await googleFontMaterials(kit,[{id:'x',filename:'a',mime:'font/woff2',sha256:'s',objectKey:'k',metadata:{family:'Noto Sans',weight:400,style:'normal'}}],seed=>JSON.stringify(seed),{fetch:fetcher,store});
+ assert.ok(!asked.some(u=>u.endsWith('@400')),'already supplied weights are not re-fetched');
+ assert.deepEqual(partial.materials.map(m=>m.metadata.weight),[600,700],'missing weights are fetched even when 400 was attached');
  const offline=await googleFontMaterials(kit,[],String,{fetch:(async()=>{throw new Error('offline');}) as typeof fetch,store});
  assert.equal(offline.materials.length,0);assert.match(offline.notes[0],/not available/);
  const wrong=await googleFontMaterials({rules:[rule('headlineFamily','Other Sans')]},[],String,{fetch:fetcher,store});
  assert.equal(wrong.materials.length,0,'a file whose family differs from the named one is never used');
  const supplied=await googleFontMaterials(kit,[{id:'x',filename:'a',mime:'font/ttf',sha256:'s',objectKey:'k',metadata:{family:'Noto Sans',weight:400,weightRange:[100,900]}}],String,{fetch:fetcher,store});
- assert.equal(supplied.materials.length,0,'nothing is downloaded when the supplied files already cover the weights');
+ assert.equal(supplied.materials.length,0,'nothing is downloaded when the supplied files already cover every weight');
 });
 test('font metadata never contains a NUL character (Postgres JSON rejects it), TrueType files included',async()=>{
  const {fontContainer}=await import('../packages/brand/font-metadata');

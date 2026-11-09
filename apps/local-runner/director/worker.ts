@@ -4,6 +4,7 @@ import {withCreativeHandoff} from '../../../packages/director/creative-handoff';
 import {usesLiveDraft,livePipeline,ensureLivePreviewToolchain} from './live-pipeline';
 import {liveTools} from './live-tools';
 import {staticCoderReasoning} from '../../../packages/director/coder-reasoning';
+import {roleReasoning,DRAFT_EFFORT_VERSION} from '../../../packages/agents/effort';
 import {modelCatalog} from '../../../packages/agents/catalog';
 import {designDirection} from './design';
 import {directorTask,directorRequestOutputLimit,hasCutOffAnswer} from '../../../packages/director/design-attempts';
@@ -115,7 +116,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    let config=snapshot.models[modelRole];const wanted=prior?.model_id??agent.model_id;
    if(wanted&&wanted!==config.modelId){const model=(await modelCatalog()).find(m=>m.id===wanted),problem=draftModelProblem(modelRole,model,wanted);
     if(problem)throw Object.assign(new Error('AGENT_MODEL_UNSUITABLE'),{detail:`${problem.message} Choose another model for this role in Models & agents; no request was sent.`});
-    config=draftModelConfig(modelRole,model!,config.instructions,{liveReview:config.liveReview});
+    config=draftModelConfig(modelRole,model!,config.instructions,{liveReview:config.liveReview,thinking:Number(input.brief.effortVersion)>=DRAFT_EFFORT_VERSION});
     if(!prior)await events.emit(`model:${id}`,{stepId:`model:${id}`,kind:'control',status:'done',model:config.modelId,costMicroUsd:0,message:`This ${role==='designer'?'designer':draftRoleNames[modelRole].toLowerCase()} request uses ${model!.name}, the model now chosen in Models & agents.`,detail:{previousModel:snapshot.models[modelRole].modelId,model:config.modelId}});}
    if(role!=='assembler'&&!config.vision)throw new Error('VISION_MODEL_REQUIRED');if(!prior&&agent.model_id!==config.modelId)throw new Error('FROZEN_MODEL_REQUIRED');
    let outputLimit=Math.min(config.maxOutputTokens,agent.max_output_tokens);
@@ -131,7 +132,12 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    const admitted=prior?{snapshot:prior.config_snapshot,remainingMicroUsd:allowance.maxCostMicroUsd}:await directorTextConfig(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,role,snapshot:base,prompt,visionCount:images.length});
    const cfg={...admitted.snapshot,directorCallId:id};
    // Use an advertised effort level: supporting reasoning does not mean it can be disabled. Frozen receipts retain their exact settings.
-   if(!prior&&input.stage==='draft'&&role==='assembler')Object.assign(cfg,staticCoderReasoning((await modelCatalog()).find(model=>model.id===config.modelId)));
+   // Role effort (brief.effortVersion 1): every draft role asks for the role's level (designer, director, coder and critic
+   // are creative: high). Earlier blocks keep the exact earlier rule, which set only the coder's level.
+   if(!prior&&input.stage==='draft'){
+    if(Number(input.brief.effortVersion)>=DRAFT_EFFORT_VERSION)Object.assign(cfg,roleReasoning(role,(await modelCatalog()).find(model=>model.id===config.modelId),execution.mode));
+    else if(role==='assembler')Object.assign(cfg,staticCoderReasoning((await modelCatalog()).find(model=>model.id===config.modelId)));
+   }
    if((cfg.directorRawInputBound??cfg.directorInputTokens??0)+cfg.maxOutputTokens>config.contextLength)throw new Error('PROMPT_TOO_LONG');
    if(role==='director'&&cfg.maxOutputTokens>config.maxOutputTokens)await events.emit(`answer-room:${id}`,{stepId:`answer-room:${id}`,kind:'control',status:'done',model:config.modelId,costMicroUsd:0,message:'The added allowance gives this design answer more room to finish.',detail:{approvedAttempts:estimate.roles.director.requests,maxOutputTokens:cfg.maxOutputTokens}});
    // The AD sees that an answer is being written and since when (a long answer streams for minutes).

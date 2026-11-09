@@ -1,16 +1,19 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizeFontFamily,inkColours,logoInkVariants} from '../packages/brand/normalize';
-import {familyNeedsWeights} from '../packages/brand/google-fonts';
+import {familyNeedsWeights,missingFamilyWeights} from '../packages/brand/google-fonts';
 
 test('style words in a font file family do not make another family',()=>{
  assert.equal(normalizeFontFamily('Archivo SemiBold'),'Archivo');
  assert.equal(normalizeFontFamily('Archivo SemiBold ExtraBold'),'Archivo');
  assert.equal(normalizeFontFamily('JetBrains Mono Medium'),'JetBrains Mono');
+ assert.equal(normalizeFontFamily('Inter 18pt SemiBold'),'Inter');
+ assert.equal(normalizeFontFamily('Plus Jakarta Sans SmBd'),'Plus Jakarta Sans');
  assert.equal(normalizeFontFamily('Noto Sans'),'Noto Sans');
  assert.equal(normalizeFontFamily('Bold'),'Bold','a name made only of a style word stays');
  const files=[400,700,800].map(weight=>({metadata:{family:'Archivo SemiBold',weight,style:'normal'}}));
- assert.equal(familyNeedsWeights('Archivo',files),false,'supplied regular and bold count for the named family');
+ assert.deepEqual(missingFamilyWeights('Archivo',files),[100,200,300,500,600,900],'supplied weights count for the named family');
+ assert.equal(familyNeedsWeights('Archivo',[100,200,300,400,500,600,700,800,900].map(weight=>({metadata:{family:'Archivo SemiBold',weight,style:'normal'}}))),false);
 });
 
 test('a logo drawn in currentColor gets the same drawing for dark and light grounds',()=>{

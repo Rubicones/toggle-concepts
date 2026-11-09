@@ -1,3 +1,4 @@
+import {usesScenarioSelection} from '@/packages/contracts/scenario-selection';
 import {fillBriefIdentity} from '@/packages/brand/brief-identity';
 import {canonicalJson} from '@/packages/contracts/common';
 import {creativeStaleness} from '@/packages/creative/staleness';
@@ -111,7 +112,14 @@ export async function GET(_:Request,ctx:RouteContext<'/api/studio/campaigns/[id]
  }
  const focusRow=cp?await admin.from('studio_run_creative_focus').select('focus,updated_at').eq('run_id',cp.run_id).eq('tenant_id',tenant).maybeSingle():null;
  const creativeFocus={text:focusRow?.data?.focus??'',updatedAt:focusRow?.data?.updated_at??null,ready:!!focusRow&&!focusRow.error};
- return json({creativeFocus,planningConfigRecovery,directorActive,directorReady,creativeWaits,creative,creativeReadiness,limits,budget,failureStep,assemblyRetry:retryAction,assemblyContinuation,continuationError,uncertainMicroUsd,brandResult,schemaReady:!ready.error,workerOnline:!!devices?.length,brief:cp?{id:cp.id,orderedVariants:cp.payload.variantManifest.entries.length,locales:cp.payload.scope.locales,reviewerName}:null,book:book?{id:book.id,version_no:book.version_no,findings:book.summary.findings}:null,run,control:visibleRunControl(directorReady?visibleDraftControl(control,round,{active:directorActive,status:currentDirector?.status}):control,run,assembly?.pending?steps.filter(s=>s.role!=='creative-code'):steps),round,jobs:(jobs??[]).map(j=>{if(!j.job_key.startsWith('creative.')||!j.output)return j;try{const result=JSON.parse(j.output);return {...j,output:JSON.stringify({stage:result.stage,issues:result.issues,repairLog:result.repairLog})};}catch{return j;}}),changes:changes??[],steps:steps??[]});
+ const scenarioJob=jobs?.find(j=>j.job_key==='script'&&j.state==='succeeded');
+ const requiresSelection=usesScenarioSelection(run?.config_snapshot?.find((a:{role:string})=>a.role==='script')?.instructions);
+ const capability=requiresSelection?await admin.rpc('studio_scenario_selection_version'):null;
+ const selectionReady=capability?.data==='scenario-selection@1'&&!capability.error;
+ const selectionRow=selectionReady&&scenarioJob?checked(await admin.from('studio_scenario_selections').select('script_job_id,script_hash,scenario_id').eq('script_job_id',scenarioJob.id).eq('script_hash',scenarioJob.output_hash).maybeSingle()):null;
+ const scenarioGate=selectionReady&&scenarioJob?checked(await admin.from('studio_planning_gates').select('job_id').eq('job_id',scenarioJob.id).eq('output_hash',scenarioJob.output_hash).maybeSingle()):null;
+ const scenarioSelection={required:requiresSelection,ready:selectionReady,reviewed:!!scenarioGate||!control,selection:selectionRow?{scriptJobId:selectionRow.script_job_id,scriptHash:selectionRow.script_hash,scenarioId:selectionRow.scenario_id}:null};
+ return json({scenarioSelection,creativeFocus,planningConfigRecovery,directorActive,directorReady,creativeWaits,creative,creativeReadiness,limits,budget,failureStep,assemblyRetry:retryAction,assemblyContinuation,continuationError,uncertainMicroUsd,brandResult,schemaReady:!ready.error,workerOnline:!!devices?.length,brief:cp?{id:cp.id,orderedVariants:cp.payload.variantManifest.entries.length,locales:cp.payload.scope.locales,reviewerName}:null,book:book?{id:book.id,version_no:book.version_no,findings:book.summary.findings}:null,run,control:visibleRunControl(directorReady?visibleDraftControl(control,round,{active:directorActive,status:currentDirector?.status}):control,run,assembly?.pending?steps.filter(s=>s.role!=='creative-code'):steps),round,jobs:(jobs??[]).map(j=>{if(!j.job_key.startsWith('creative.')||!j.output)return j;try{const result=JSON.parse(j.output);return {...j,output:JSON.stringify({stage:result.stage,issues:result.issues,repairLog:result.repairLog})};}catch{return j;}}),changes:changes??[],steps:steps??[]});
 });}
 function focusDbError(error:{code?:string;message:string}):never{
  if(schemaMissing(error)||error.code==='PGRST202')throw new ApiError(503,'CREATIVE_FOCUS_SCHEMA_REQUIRED','Apply migration 20261102000100_creative_focus.sql to save a creative focus.');
@@ -121,6 +129,15 @@ function focusDbError(error:{code?:string;message:string}):never{
 export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/run'>){return api(async()=>{
  const {id}=await ctx.params;await campaignRecord(id);const input=await body(request,guidedRunCommand),{admin,tenant,actorId}=await studioContext();requireLocalDevice();
  const cp=checked(await admin.from('studio_c1_checkpoints').select('run_id').eq('campaign_id',id).eq('tenant_id',tenant).maybeSingle());if(!cp)throw new ApiError(409,'C1_REQUIRED','Submit the questionnaire first.');
+ if(input.action==='selectScenario'){
+  const result=await admin.rpc('studio_select_scenario',{target_run:cp.run_id,target_job:input.jobId,expected_hash:input.outputHash,scenario:input.scenarioId,acting_user:actorId});
+  if(result.error){
+   if(schemaMissing(result.error)||result.error.code==='PGRST202')throw new ApiError(503,'SCENARIO_SELECTION_SCHEMA_REQUIRED','Apply migration 20261109000100_scenario_selection.sql before choosing a scenario.');
+   throw new ApiError(409,'SCENARIO_SELECTION_CONFLICT',/SCENARIO_SELECTION_LOCKED/.test(result.error.message)?'Visual planning has already started. Request a Scenarios revision to choose again; earlier work stays saved.':'The scenarios or their review changed. Reload and choose from the current reviewed scenarios.');
+  }
+  let processing=true;try{await startLocalWorkflow();}catch{processing=false;}
+  return json({message:processing?'Scenario selected. Three visual treatments and localized copy will use its exact beats.':'Scenario saved. Use Continue work to start local processing.'});
+ }
  if(input.action==='recoverPlanningConfig'){
   const job=checked(await admin.from('studio_workflow_jobs').select('id').eq('id',input.jobId).eq('run_id',cp.run_id).eq('tenant_id',tenant).maybeSingle());if(!job)throw new ApiError(404,'WORKFLOW_JOB_NOT_FOUND','This saved planning step is not available.');
   const result=await admin.rpc('studio_recover_planning_config',{target_job:job.id,request_key:input.requestId,acting_user:actorId});

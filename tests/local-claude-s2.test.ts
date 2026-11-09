@@ -68,9 +68,21 @@ test('plain JSON mode leaves the schema to the application validator', async()=>
  assert.equal(r.outcome,'succeeded');assert.ok(!JSON.parse(await readFile(record,'utf8')).args.includes('--json-schema'));assert.equal((r as LocalTextReceipt).local!.schemaMode,'plain');
 });
 
-test('schema enforcement returns the structured answer as text and counts internal attempts separately', async()=>{
+test('a successful structured tool stop returns the JSON and preserves the raw stop reason', async()=>{
  const r=await send(await setup('schema')) as LocalTextReceipt;
- assert.equal(r.outcome,'succeeded');assert.equal(r.text,'{"answer":"ok"}');assert.equal(r.local!.internalAttempts,2);assert.equal(r.local!.numTurns,2);
+ assert.equal(r.outcome,'succeeded');assert.equal(r.finishReason,'stop');assert.equal(r.text,'{"answer":"ok"}');
+ assert.equal(r.local!.stopReason,'tool_use');assert.equal(r.local!.internalAttempts,2);assert.equal(r.local!.numTurns,2);
+ const missing=await send(await setup('schema-no-payload'));
+ assert.equal(missing.failure,'PROVIDER_FINISH_REASON_UNEXPECTED');
+ const plain=await send(await setup('schema',{schemaMode:'plain'}));
+ assert.equal(plain.failure,'PROVIDER_FINISH_REASON_UNEXPECTED');
+});
+
+test('the structured output tool is only allowed when a schema was passed and MCP is still blocked', async()=>{
+ const plain=await send(await setup('unexpected-structured-tool',{schemaMode:'plain'}));
+ assert.equal(plain.failure,'LOCAL_ISOLATION_BROKEN');
+ const mcp=await send(await setup('mcp-only'));
+ assert.equal(mcp.failure,'LOCAL_ISOLATION_BROKEN');
 });
 
 test('results map onto the existing failure codes; unknown stays unknown and costs are never invented', async()=>{

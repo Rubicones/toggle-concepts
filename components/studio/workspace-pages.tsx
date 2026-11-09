@@ -1,6 +1,7 @@
 "use client";
 import {Select} from '@/components/ui/select';
 import {readPriorities} from '@/packages/agents/priorities';
+import {effortLabel,ROLE_EFFORT_VERSION} from '@/packages/agents/effort';
 import {ProviderReceipts} from "./provider-receipts";
 import {LocalModePanel} from "./local-mode-panel";
 import {useState} from "react";
@@ -32,6 +33,7 @@ export function ModelsPage(){const {data,error,refresh}=useShared<{agents:AgentS
  {usage?.inFlightOnOtherModels.map(f=><p className="notice" key={f.model}>{f.requests} request{f.requests===1?'':'s'} already priced or running on {data.models.find(m=>m.id===f.model)?.name??f.model}; {f.requests===1?'it finishes':'they finish'} on that model.</p>)}
  <form key={`${role}-${agent?.updated_at??agent?.model_id??'new'}`} className="studio-form" onSubmit={async e=>{e.preventDefault();const f=new FormData(e.currentTarget);try{const r=await studioRequest<{message:string}>("/api/studio/agents","POST",{role,modelId:unavailable?null:f.get('model'),instructions:f.get('instructions'),maxOutputTokens:Number(f.get('tokens')),stepCapMicroUsd:Math.round(Number(f.get('cap'))*1000000)});setMessage(`${role}: ${r.message}`);refresh();}catch(error){setMessage(error instanceof Error?error.message:"Save failed.");}}}>
  {unavailable?<p>No compatible generation provider is connected.</p>:<label>Model<Select name="model" required defaultValue={agent?.model_id??''}><option value="" disabled>Choose a model</option>{models.map(m=><option value={m.id} key={m.id}>{m.name}{role==='image'?' · image pricing applies':` · $${(m.inputPrice*1000000).toFixed(2)} in / $${(m.outputPrice*1000000).toFixed(2)} out per M tokens`}</option>)}</Select></label>}
+ {effortLabel(role)&&<p className="notice">Thinking effort: {effortLabel(role)}. Set by the studio for every request of this role; a model without this level uses the closest lower one. Runs started before instructions {ROLE_EFFORT_VERSION} keep their earlier setting.</p>}
  {usage?.draftBriefFromCode&&<p>In live drafts this role follows its built-in draft brief; the instructions below are used outside live drafts (planning steps).</p>}
  <RolePriorities instructions={agent?.instructions}/><label>Full agent instructions<textarea name="instructions" rows={14} maxLength={12000} defaultValue={agent?.instructions??''}/></label><div className="shared-form-row"><label>{role==='image'?'Stored text-token limit (image profile is fixed)':unavailable?'Text planning token limit':'Max output tokens'}<input name="tokens" type="number" required min={64} max={32768} defaultValue={agent?.max_output_tokens??2400}/></label><label>Step cap, USD<input name="cap" type="number" required min="0.01" max="10" step="0.01" defaultValue={(agent?.step_cap_micro_usd??50000)/1000000}/></label></div><Button type="submit">Save agent</Button></form></section>;})}</div></>;
 }

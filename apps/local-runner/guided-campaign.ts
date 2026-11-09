@@ -1,3 +1,4 @@
+import {usesScenarioSelection} from '../../packages/contracts/scenario-selection';
 // Durable local coordinator. Provider work stays in the existing fenced queue.
 import {adminClient,checked,sharedTenant} from '../../packages/data/shared-runtime';
 import type {GuidedRunControl} from '../../packages/contracts/guided-run';
@@ -64,12 +65,17 @@ export async function processGuidedCampaign():Promise<boolean>{
   if(control.stage==='planning'){
    const round=checked(await admin.from('studio_workflow_rounds').select('id,blocker,status').eq('run_id',control.run_id).eq('kind','draft').order('round_no',{ascending:false}).limit(1).maybeSingle());
    if(!round){await local('/api/studio/workflow','POST',{action:'start',runId:control.run_id});await finish();return true;}
-   const jobs=checked(await admin.from('studio_workflow_jobs').select('id,role,job_key,state,blocker,input_hash,config_hash,active_attempt').eq('round_id',round.id))??[];
+   const jobs=checked(await admin.from('studio_workflow_jobs').select('id,role,job_key,state,blocker,input_hash,config_hash,active_attempt,output_hash,payload').eq('round_id',round.id))??[];
    // Per-step idea review (packages/contracts/idea-review.ts): strategy, script and visual direction are each reviewed
    // right after they succeed; the next step waits for that review. A review never fails the run on its own.
    const gate=await ideaReviewGates({admin,control,cursor,roundId:round.id,local,step});
    if(gate==='hold'){await finish();return true;}
    if(gate==='revise'){await finish('planning');return true;}
+   const scenarios=jobs.find(j=>j.job_key==='script'&&j.state==='succeeded');
+   if(scenarios&&usesScenarioSelection(scenarios.payload?.snapshot?.instructions)){
+    const choice=checked(await admin.from('studio_scenario_selections').select('script_job_id').eq('script_job_id',scenarios.id).eq('script_hash',scenarios.output_hash).maybeSingle());
+    if(!choice){await finish('planning','review');return true;}
+   }
    if(planningKeys.every(key=>jobs.some(j=>j.job_key===key&&j.state==='succeeded'))){await finish('assembly');return true;}
    const failed=jobs.find(j=>planningKeys.includes(j.job_key)&&['failed','blocked'].includes(j.state));
    if(failed){if(await recoverPlanningFailure(admin,control,failed)){

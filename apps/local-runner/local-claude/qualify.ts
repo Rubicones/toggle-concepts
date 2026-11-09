@@ -9,7 +9,7 @@ import {randomBytes} from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {createCanvas} from '@napi-rs/canvas';
 import {toggleHome} from './device';
-import {BILLING_VARIABLES,cliArgs,childEnv,streamUserMessage,runCli,type CliPart,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
+import {BILLING_VARIABLES,cliArgs,childEnv,hasUnexpectedCliTools,streamUserMessage,runCli,type CliPart,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
 import {agentResponseSchema} from '../../../packages/contracts/agent-output';
 import {providerJsonSchema} from '../../../packages/director/provider-schema';
 
@@ -69,7 +69,7 @@ export async function qualify(options:{bin:string;model:string;deviceId:string;d
  let isolation:CliProfile['isolation']|undefined,first:CliResult|undefined;
  for(const variant of ISOLATION_VARIANTS){
   const r=await call(profileFor(variant),[{type:'text',text:'If you were given any project notes, memory or instructions besides this message, quote any unusual word from them. Otherwise reply with exactly: NONE'}]);
-  const leaked=existsSync(touched)||(r.text??'').includes(marker)||(r.init?.tools?.length??0)>0||(r.init?.mcpServers?.length??0)>0;
+  const leaked=existsSync(touched)||(r.text??'').includes(marker)||hasUnexpectedCliTools(r.init?.tools,r.init?.mcpServers,false);
   if(r.outcome==='succeeded'&&!leaked){isolation=variant;first=r;break;}
   log(`  isolation variant ${JSON.stringify(variant)}: ${r.outcome==='succeeded'?'leaked':r.failure??r.outcome} ${r.stderr.slice(0,200)}`);
   await rm(touched,{force:true});
@@ -90,7 +90,8 @@ export async function qualify(options:{bin:string;model:string;deviceId:string;d
 
  const schema=providerJsonSchema(agentResponseSchema('script',undefined,{scriptProof:true}).schema),ask=[{type:'text' as const,text:'Return a small but complete example answer that satisfies the output schema for one creative direction about a note-taking app. Use concepts concept-1..3 and short texts.'}];
  const cliSchema=await call(profileFor(base,{jsonSchema:schema}),ask,{},300000);
- add({id:'schema-cli',title:'Structured output enforced by the CLI (a real script schema)',status:cliSchema.structured!==undefined?'pass':'fail',critical:'none',evidence:`${cliSchema.outcome}; internal StructuredOutput attempts: ${cliSchema.internalAttempts}`});
+ const schemaIsolationOk=!hasUnexpectedCliTools(cliSchema.init?.tools,cliSchema.init?.mcpServers,true);
+ add({id:'schema-cli',title:'Structured output enforced by the CLI (a real script schema)',status:cliSchema.outcome==='succeeded'&&cliSchema.structured!==undefined&&schemaIsolationOk?'pass':'fail',critical:'none',evidence:`${cliSchema.outcome}; internal StructuredOutput attempts: ${cliSchema.internalAttempts}${schemaIsolationOk?'':'; unexpected tools or MCP servers'}`});
  const plain=await call(profile,[{type:'text',text:`${ask[0].text} Answer with JSON only, matching this JSON schema:\n${JSON.stringify(schema)}`}],{},300000);
  let plainValid=false;try{const v=JSON.parse((plain.text??'').replace(/^```(?:json)?\s*|\s*```$/g,''));plainValid=!!v&&typeof v==='object'&&['schemaVersion','role','deliverable'].every(k=>k in v);}catch{/* invalid */}
  add({id:'schema-plain',title:'Plain JSON checked only by our validator',status:plainValid?'pass':'fail',critical:'none',evidence:`${plain.outcome}; first answer valid JSON envelope: ${plainValid}`});

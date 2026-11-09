@@ -1,3 +1,5 @@
+import {usesScenarioSelection,scenarioTransport,bindScenarioOutput,type ScenarioSelection} from '../../packages/contracts/scenario-selection';
+import {usesTreatmentSequence,runTreatmentSequence,treatmentSequenceReservation,sequenceRequestOutput} from '../../packages/contracts/treatment-sequence';
 import {processDirectorWork} from './director/worker';
 import {CREATIVE_FOCUS_ROLES,creativeFocusBlock,normalizeCreativeFocus} from '../../packages/contracts/creative-focus';
 import {adShapeForContext,feelingBriefForContext} from '../../packages/contracts/brief-feel';
@@ -34,11 +36,12 @@ import {resolve} from "node:path";
 import {adminClient,checked,sharedTenant} from "../../packages/data/shared-runtime";
 import {modelCatalog} from "../../packages/agents/catalog";
 import type {TextSnapshot} from "../../packages/agents/text-provider";
+import {roleReasoning,usesRoleEffort} from "../../packages/agents/effort";
 import {loadLocalRuntime,textExecutionFor,transportFor,subscriptionWaitUntil,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime,type TextExecution} from "./local-claude/runtime";
 import type {LocalTextReceipt} from "./local-claude/transport";
 import type {AgentSetting} from "../../packages/contracts/shared";
 
-type Snapshot=TextSnapshot&{stepCapMicroUsd:number;budgetScopeId?:string|null;campaignContext?:{variantManifest?:{entries:Record<string,unknown>[]}}};
+type Snapshot=TextSnapshot&{upstream?:{jobId:string;sha256:string;output:string}[];scenarioSelection?:ScenarioSelection;stepCapMicroUsd:number;budgetScopeId?:string|null;campaignContext?:{variantManifest?:{entries:Record<string,unknown>[]}}};
 type Claim={job:{id:string;job_key:string;kind:string;role:string;campaign_id:string;run_id:string;round_id:string;initial_step_id:string|null;input_hash:string;config_hash:string;lease_token:number;attempt_count:number;payload:{prompt:string;snapshot:Snapshot;creativeInputs?:CreativeInputs;manifest?:import('../../packages/contracts/campaign').VariantManifest;brandSystemHash?:string}};attempt:{id:string};round:{kind:string}};
 const admin=adminClient(),device=randomUUID(),directory=resolve("artifacts/m06"),lock=resolve(directory,"worker.lock");
 // Local mode (docs/plans/2026-11-06-local-claude-pipeline-plan.md): this device's qualified profile, and the stable
@@ -114,19 +117,33 @@ async function execute(claim:Claim){
   const modelId:string=reserved?.status==="reserved"&&reserved.model_id?reserved.model_id:agent.model_id;
   const model=(await modelCatalog()).find(m=>m.id===modelId);
   if(!model||model.outputModalities.length!==1||model.outputModalities[0]!=="text")throw new Error("MODEL_UNAVAILABLE");
-  const snapshot:Snapshot={...job.payload.snapshot,upstream,pricing:model,stepCapMicroUsd:agent.step_cap_micro_usd,maxOutputTokens:retryOutputLimit((job.payload.snapshot as unknown as {previewProtocol?:string}).previewProtocol,job.payload.snapshot.maxOutputTokens,agent.max_output_tokens,model.maxOutput),disableReasoning:model.id==="google/gemini-2.5-flash"};
+  const snapshot:Snapshot={...job.payload.snapshot,upstream,pricing:model,stepCapMicroUsd:agent.step_cap_micro_usd,maxOutputTokens:retryOutputLimit((job.payload.snapshot as unknown as {previewProtocol?:string}).previewProtocol,job.payload.snapshot.maxOutputTokens,agent.max_output_tokens,model.maxOutput),
+   // Role effort: runs frozen at ROLE_EFFORT_VERSION or later ask for the role's level; earlier runs keep the exact earlier rule.
+   ...(usesRoleEffort(job.payload.snapshot.instructions)?roleReasoning(job.role,model,execution.mode):{disableReasoning:model.id==="google/gemini-2.5-flash"})};
   const creative=job.payload.creativeInputs?{input:job.payload.creativeInputs,stage:(job.payload.snapshot as unknown as {creativeStage:Exclude<CreativeStage,'compile'>}).creativeStage}:null;
   if(creative)Object.assign(snapshot,creativeExecutionSnapshot({...snapshot,maxOutputTokens:job.payload.snapshot.maxOutputTokens},creative.stage,agent.max_output_tokens,model.maxOutput),{creativeRepair:job.attempt_count>1});
   // Draft planning answers use the agent envelope. Pin it with the strict schema wherever the model supports it, so the
   // role, status and deliverable shape cannot drift (earlier only Gemini 2.5 Flash was pinned).
   const envelope=claim.round.kind==='draft'&&!snapshot.responseSchema;
   // Design quality plan, point 1: the run's frozen instruction version decides the script schema and contracts.
-  const scriptProof=scriptProofFor(snapshot.instructions);
-  const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest,{scriptProof}):null;
+  const scriptProof=scriptProofFor(snapshot.instructions),scenarioSelection=usesScenarioSelection(snapshot.instructions);
+  if(scenarioSelection&&isPlanningJob(job,claim.round.kind)){
+   const capability=await admin.rpc('studio_scenario_selection_version');
+   if(capability.error||capability.data!=='scenario-selection@1')throw new Error('SCENARIO_SELECTION_SCHEMA_REQUIRED');
+   if(['localization','asset-plan'].includes(job.job_key)){
+    const saved=checked(await admin.from('studio_scenario_selections').select('script_job_id,script_hash,scenario_id').in('script_job_id',upstream.map(r=>r.jobId)).eq('run_id',job.run_id).single());
+    if(!saved)throw new Error('SCENARIO_SELECTION_REQUIRED');
+    snapshot.scenarioSelection={scriptJobId:saved.script_job_id,scriptHash:saved.script_hash,scenarioId:saved.scenario_id};
+    scenarioTransport(snapshot);
+   }
+  }
+  // Treatment sequence: the three visual treatments are written one per request (packages/contracts/treatment-sequence.ts).
+  let treatmentSequence=job.role==='visual-direction'&&claim.round.kind==='draft'&&!creative&&!!snapshot.scenarioSelection&&usesTreatmentSequence(snapshot.instructions);
+  const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence}):null;
   if(schema&&planningEnvelopeSchema({id:modelId,supportedParameters:model.supportedParameters},schema)){
    snapshot.responseSchema=modelId==='google/gemini-2.5-flash'?schema:{name:schema.name,schema:typeArraysAsAnyOf(providerJsonSchema(schema.schema)) as Record<string,unknown>};snapshot.outputFormat='json_schema';
   }
-  let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count,{scriptProof})):'';
+  let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence})):'';
   if(envelope)transportTask=envelopeRoleInstruction(job.role)+(transportTask?'\n'+transportTask:'');
   // Guided planning contexts are built in SQL without the feeling brief; it travels with the task text, because the
   // frozen campaignContext is compared byte for byte at admission (studio_begin_workflow) and must stay unchanged.
@@ -148,11 +165,23 @@ async function execute(claim:Claim){
   const initial=job.initial_step_id?checked(await admin.from("studio_agent_steps").select("status,reserve_micro_usd,config_snapshot").eq("id",job.initial_step_id).single()):null;
   if(initial?.status==="reserved"){
    Object.assign(snapshot,initial.config_snapshot,{upstream});transportTask=initial.config_snapshot.transportTask??'';reservation=initial.reserve_micro_usd;
+   // A reserved request runs exactly as it was quoted: one request unless its snapshot was quoted as a sequence.
+   const stored=initial.config_snapshot as {treatmentSequence?:number;responseSchema?:unknown};
+   if(treatmentSequence&&stored.treatmentSequence!==1){treatmentSequence=false;if(!stored.responseSchema){delete snapshot.responseSchema;if(snapshot.outputFormat==='json_schema')delete snapshot.outputFormat;}}
    if(model.inputPrice>snapshot.pricing.inputPrice*1.1||model.outputPrice>snapshot.pricing.outputPrice*1.1)throw new Error("MODEL_PRICE_CHANGED");
   }else{
-   const quote=textRequestQuote(job.payload.prompt,creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:snapshot,transportTask,creative?.stage==='critic'?creative.input.criticSceneCount??6:creative?.stage==='media'?Math.min(3,creative.input.assetAliases.length):((snapshot as unknown as {brandVisionImages?:unknown[]}).brandVisionImages?.length??0)+((snapshot as unknown as {brandSheetImages?:unknown[]}).brandSheetImages?.length??0));
+   // A sequence caches the stable prefix: the three requests differ only in their task text.
+   if(treatmentSequence)Object.assign(snapshot,{cachePrompt:true,cacheSessionId:job.id,treatmentSequence:1});
+   const quote=textRequestQuote(job.payload.prompt,creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:scenarioTransport(snapshot),transportTask,creative?.stage==='critic'?creative.input.criticSceneCount??6:creative?.stage==='media'?Math.min(3,creative.input.assetAliases.length):((snapshot as unknown as {brandVisionImages?:unknown[]}).brandVisionImages?.length??0)+((snapshot as unknown as {brandSheetImages?:unknown[]}).brandSheetImages?.length??0));
    if(quote.inputTokenBound+snapshot.maxOutputTokens>model.contextLength)throw new Error('PROMPT_TOO_LONG');
    reservation=quote.reservationMicroUsd;
+   if(treatmentSequence){
+    // One reservation covers the three requests; each later request is quoted with the earlier treatments at their maximum size.
+    const images=((snapshot as unknown as {brandVisionImages?:unknown[]}).brandVisionImages?.length??0)+((snapshot as unknown as {brandSheetImages?:unknown[]}).brandSheetImages?.length??0);
+    const sequence=treatmentSequenceReservation(job.payload.prompt,scenarioTransport(snapshot),transportTask,images,snapshot.scenarioSelection!.scenarioId);
+    if(sequence.inputTokenBound+sequence.maxOutputTokens>model.contextLength)throw new Error('PROMPT_TOO_LONG');
+    reservation=sequence.reservationMicroUsd;
+   }
 
   }
   // Preview assembly can legitimately run beyond the short non-streaming deadline.
@@ -170,11 +199,16 @@ async function execute(claim:Claim){
   // From this point a crash/timeout is uncertain and can never be automatically resubmitted.
   submitted=true;
   outputLimit=snapshot.maxOutputTokens;
-  result=await transport(modelId,job.payload.prompt+(transportTask?'\n'+transportTask:''),creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:snapshot,vision,submittedStep.id,async generation=>{
+  const anchor=async(generation:string|null)=>{
    // Durable provider identity only: replaying this anchor cannot submit or activate output.
    const path=resolve(directory,'provider-ids',`${attempt.id}.json`),tmp=path+'.tmp';
    await writeFile(tmp,JSON.stringify({attemptId:attempt.id,receipt:{target_job:job.id,token:job.lease_token,device,expected_input:job.input_hash,expected_config:job.config_hash,outcome:'unknown',actual_cost:null,result_text:null,provider_generation:generation,token_usage:null,failure:'PROCESS_INTERRUPTED'}}),{mode:0o600});await rename(tmp,path);
-  });
+  };
+  const sent=creative?{...snapshot,upstream:creativeTransportUpstream(upstream,creative.input.direction)}:scenarioTransport(snapshot),task=job.payload.prompt+(transportTask?'\n'+transportTask:'');
+  // A sequence step has no single generation id (one id would undercount its cost): its anchor records none.
+  if(treatmentSequence)outputLimit=sequenceRequestOutput(snapshot.maxOutputTokens);
+  result=treatmentSequence?await runTreatmentSequence(next=>transport(modelId,task+'\n'+next,{...sent,maxOutputTokens:outputLimit},vision.map(v=>({...v,prefix:true})),submittedStep.id,()=>anchor(null)),snapshot.scenarioSelection!)
+   :await transport(modelId,task,sent,vision,submittedStep.id,anchor);
   if(execution.mode==="local_claude"){
    await keepLocalDiagnostics(submittedStep.id,result as LocalTextReceipt).catch(()=>{});
    // A subscription limit is a known outcome (the model did not work on it): the job waits, it does not fail.
@@ -196,7 +230,8 @@ async function execute(claim:Claim){
     }
     if(!creative&&result.outcome==="succeeded"&&(claim.round.kind==="draft"||snapshot.outputFormat==="json_object"||snapshot.outputFormat==="json_schema")){
      const validation=prepareAgentOutput(result.text!,job.role,claim.round.kind==="draft",snapshot.campaignContext?.variantManifest);
-     if(validation.changes.length)result={...result,text:validation.text,originalOutput:text,normalizations:validation.changes};
+     const bound=bindScenarioOutput(validation.text,job.role,snapshot.scenarioSelection,scenarioSelection);
+     if(validation.changes.length||bound!==validation.text)result={...result,text:bound,originalOutput:text,normalizations:[...validation.changes,...(bound!==validation.text?['selected-scenario-binding']:[])]};
      if(validation.blocked)result={...result,outcome:"blocked",failure:"AGENT_INPUT_BLOCKED"};
     }
    }catch(error){result={...result,outcome:"failed",failure:"INVALID_OUTPUT_SCHEMA",validation:outputDiagnostic(error)};}

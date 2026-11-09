@@ -9,9 +9,10 @@ import { useRouter } from "next/navigation";
 import type { CampaignFlow } from "@/packages/contracts/campaign-flow";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { CopyBriefButton } from "./copy-brief-button";
 import { Badge } from "@/components/ui/badge";
 import { studioRequest, useShared } from "@/lib/shared-http";
-import { briefDraftSchema, briefPlacementOptions, briefBlockers, emptyBrief, combinationCount, resizeCreativeSlots, explicitCombinations, rowKey, type BriefDraft, type BriefRecord } from "@/packages/contracts/brief";
+import { briefDraftSchema, briefPlacementOptions, briefBlockers, copyBriefAnswers, submittedBriefAnswers, emptyBrief, combinationCount, resizeCreativeSlots, explicitCombinations, rowKey, type BriefDraft, type BriefRecord } from "@/packages/contracts/brief";
 import { money } from "@/packages/contracts/shared";
 import type { VariantEntry } from "@/packages/contracts/campaign";
 
@@ -66,12 +67,7 @@ function SubmittedBrief({ campaignId, record, flow, onStarted }: { campaignId: s
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   const checkpoint = record.checkpoint!.payload;
-  let submitted: BriefDraft | undefined;
-  try {
-    submitted = briefDraftSchema.parse(JSON.parse(record.checkpoint!.brief_text).questionnaire);
-  } catch {
-    /* Legacy payloads still show the frozen scope below. */
-  }
+  const submitted = submittedBriefAnswers(record.checkpoint!.brief_text);
   return (
     <section className="detail-panel">
       <div className="step-intro">
@@ -354,6 +350,10 @@ function BriefEditor({
           {prefilled ? `${prefilled} answers were filled from your brandbook — check them. ` : ""}Everything saves as you type. Starting the run fixes these answers.
         </p>
         <SaveStatus {...persisted} retry={persisted.save} />
+        <CopyBriefButton campaignId={campaignId} disabled={busy} onCopy={(source) => {
+          setDraft((target) => copyBriefAnswers(source, target, () => crypto.randomUUID()));
+          setMode(source.entries.length && !isAll(source) ? "pick" : "all");
+        }} />
       </div>
       {initialVersion > version && (
         <p className="notice">

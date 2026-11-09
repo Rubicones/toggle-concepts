@@ -4,6 +4,7 @@ import {z} from 'zod';
 import type {SharedRun} from './shared';
 import type {WorkflowJob} from './orchestration';
 export const guidedRunCommand=z.discriminatedUnion('action',[
+ z.strictObject({action:z.literal('selectScenario'),jobId:z.uuid(),outputHash:z.string().min(1),scenarioId:z.enum(['concept-1','concept-2','concept-3'])}),
  previewContinuationCommand,
  z.strictObject({action:z.literal('retryAssembly'),stepId:z.uuid(),requestId:z.uuid(),confirmPaidRetry:z.literal(true)}),
  z.strictObject({action:z.literal('start'),creativeFocus:z.string().max(2000).optional()}),
@@ -21,7 +22,7 @@ export const guidedRunCommand=z.discriminatedUnion('action',[
  z.strictObject({action:z.literal('confirmDraftInputs'),expectedPlanVersion:z.number().int().positive(),confirm:z.literal(true)}),
 ]);
 export type GuidedRunControl={run_id:string;campaign_id:string;tenant_id:string;c1_id:string;brandbook_id:string;stage:'brand'|'planning'|'assembly'|'draft_review'|'client_review'|'finals';status:'running'|'review'|'blocked'|'paused'|'complete';cursor:Record<string,unknown>;blocker:string|null;version:number;lease_token:number;created_by:string;created_at:string;updated_at:string};
-export type GuidedRunView={creativeFocus?:{text:string;updatedAt:string|null;ready:boolean};planningConfigRecovery?:{jobId:string;role:string;ready:boolean}|null;directorActive?:boolean;directorReady?:boolean;creativeWaits?:Record<string,string>;creative?:import('./creative-drafts').CreativeProgressData|null;creativeReadiness?:import('../brand/resolve-system').BrandResolution|null;budget?:import('./run-budget').RunBudget|null;assemblyContinuation?:PreviewContinuationQuote|null;continuationError?:string|null;limits?:RunLimits;assemblyRetry?:{stepId:string;attempts:number;ready:boolean;kind?:'retry'|'correct'}|null;uncertainMicroUsd?:number;failureStep?:{variantIdentityRecovery?:boolean;recoveryReady:boolean;canRecover:boolean;diagnostics:string[];jobId:string;id:string;role:string;model:string;status:string;code:string|null;output:string|null;cost:number|null;maxOutputTokens:number;message:string}|null;brandResult?:import('../brand/proposal-diagnostic').BrandResult|null;schemaReady:boolean;workerOnline:boolean;brief:{id:string;orderedVariants:number;locales:string[];reviewerName:string}|null;book:{id:string;version_no:number;findings:number}|null;run:SharedRun|null;control:GuidedRunControl|null;round:{id:string;phase:string;blocker:string|null;status:string}|null;jobs:WorkflowJob[];changes:{id:string;role:string;note:string;state:string;created_at:string}[];steps:{id:string;role:string;status:string;error_code:string|null;cost_micro_usd:number|null;output:string|null}[]};
+export type GuidedRunView={scenarioSelection?:import('./scenario-selection').ScenarioSelectionView;creativeFocus?:{text:string;updatedAt:string|null;ready:boolean};planningConfigRecovery?:{jobId:string;role:string;ready:boolean}|null;directorActive?:boolean;directorReady?:boolean;creativeWaits?:Record<string,string>;creative?:import('./creative-drafts').CreativeProgressData|null;creativeReadiness?:import('../brand/resolve-system').BrandResolution|null;budget?:import('./run-budget').RunBudget|null;assemblyContinuation?:PreviewContinuationQuote|null;continuationError?:string|null;limits?:RunLimits;assemblyRetry?:{stepId:string;attempts:number;ready:boolean;kind?:'retry'|'correct'}|null;uncertainMicroUsd?:number;failureStep?:{variantIdentityRecovery?:boolean;recoveryReady:boolean;canRecover:boolean;diagnostics:string[];jobId:string;id:string;role:string;model:string;status:string;code:string|null;output:string|null;cost:number|null;maxOutputTokens:number;message:string}|null;brandResult?:import('../brand/proposal-diagnostic').BrandResult|null;schemaReady:boolean;workerOnline:boolean;brief:{id:string;orderedVariants:number;locales:string[];reviewerName:string}|null;book:{id:string;version_no:number;findings:number}|null;run:SharedRun|null;control:GuidedRunControl|null;round:{id:string;phase:string;blocker:string|null;status:string}|null;jobs:WorkflowJob[];changes:{id:string;role:string;note:string;state:string;created_at:string}[];steps:{id:string;role:string;status:string;error_code:string|null;cost_micro_usd:number|null;output:string|null}[]};
 export const runMilestones=[
  {id:'brand',label:'Brand alignment',description:'Turn your submitted material into campaign rules.'},
  {id:'strategy',label:'Strategy',description:'Find the creative direction and supported message.'},
@@ -44,6 +45,7 @@ export function guidedMilestoneStates(view:GuidedRunView){
  states.strategy=done('research')&&done('strategy')&&done('variants')?'done':stage==='planning'?'active':'waiting';
  states.script=done('script')?'done':done('variants')?'active':'waiting';
  states.visuals=done('localization')&&done('asset-plan')?'done':done('script')?'active':'waiting';
+ if(view.scenarioSelection?.required&&done('script')&&!view.scenarioSelection.selection){states.script='review';states.visuals='waiting';}
  states.assembly=['draft_review','client_review','finals'].includes(stage??'')?'done':stage==='assembly'?'active':'waiting';
  states.review=stage==='finals'?'done':stage==='draft_review'||stage==='client_review'?'review':'waiting';
  states.finals=stage==='finals'?'active':'waiting';
@@ -52,6 +54,7 @@ export function guidedMilestoneStates(view:GuidedRunView){
 }
 export function runAttention(code:string|null|undefined){
  if(!code)return null;
+ if(code==='SCENARIO_SELECTION_SCHEMA_REQUIRED')return {title:'Scenario selection needs a database update',detail:'Apply migration 20261109000100_scenario_selection.sql. No model request was submitted.'};
  if(code==='CHECKPOINT_CONFIG_MISMATCH')return {title:'Planning and draft settings are out of sync',detail:'The saved planning request needs its original configuration. Completed work is retained; use the planning recovery action below.'};
  if(/RUN_CAP|STEP_CAP|budget/.test(code))return {title:'The next step needs more budget',detail:'Saved work is safe. The next request must fit the remaining run and agent allowances.'};
  if(/UNKNOWN|unknown|UNRESOLVED/.test(code))return {title:'A provider receipt needs checking',detail:'Work is paused to avoid charging for the same request twice. Check the receipt before continuing.'};

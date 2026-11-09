@@ -46,7 +46,7 @@ export function readPlanningDirections(raw:unknown):PlanningDirection[]{
 }
 
 /** Existing application localization bindings remain authoritative; exact words are never translated here. */
-export function readPlanningLocalization(raw:unknown,entries:LocalizationVariant[]):ApprovedLocalization[]{
+export function readPlanningLocalization(raw:unknown,entries:LocalizationVariant[],scopeDirections=false):ApprovedLocalization[]{
  const {nodes}=planningNodes(raw),rows:Record<string,unknown>[]=[];
  for(const {value:o}of nodes){const text=planningField(o,['text','copy','translation','localizedText']),slot=planningField(o,['copySlot','slot','semanticSlot']);if(typeof text!=='string'||typeof slot!=='string')continue;
   const direction=planningField(o,['conceptId','directionId','conceptSlot','direction']);
@@ -57,7 +57,16 @@ export function readPlanningLocalization(raw:unknown,entries:LocalizationVariant
  const bound=bindLocalizedCopy({localizedCopy:rows},entries).deliverable.localizedCopy as ApprovedLocalization[];
  if(!bound.length)throw new Error('APPROVED_VARIANT_COPY_REQUIRED');
  for(const row of bound)if(!row.text.trim()||!row.variantIds?.length||row.variantIds.some(id=>!entries.some(e=>e.id===id&&e.locale===row.locale)))throw new Error('LOCALIZATION_BINDING_MISMATCH');
- if(new Set(entries.map(e=>e.conceptSlot)).size>1){
+ if(scopeDirections){
+  for(const row of bound){
+   const slots=[...new Set(entries.filter(e=>row.variantIds.includes(e.id)).map(e=>e.conceptSlot))];
+   if(row.direction===undefined){
+    const named=/^(?:onscreen(?:copy)?|narration|voiceover|scene|beat|shot)[_. -](\d+)[_. -]\d+$/i.exec(row.copySlot)??/(?:^|[_. -])(?:concept|direction|dir)[_. -]?(\d+)(?:$|[_. -])/i.exec(row.copySlot);
+    if(!named&&slots.length!==1)throw new Error('LOCALIZATION_BINDING_MISMATCH');row.direction=`concept-${named?.[1]??slots[0]}`;
+   }
+  }
+ }
+ if(!scopeDirections&&new Set(entries.map(e=>e.conceptSlot)).size>1){
   const byId=new Map(entries.map(e=>[e.id,e]));
   for(const row of bound){
    const matched=row.variantIds.map(id=>byId.get(id)).filter((e):e is LocalizationVariant=>!!e);
@@ -79,7 +88,7 @@ export function localizationForDirection(rows:ApprovedLocalization[],direction:P
 /** Normalized times/words are an input adapter, never a new storyboard or copywriter. */
 export function planningScene(value:unknown):Record<string,unknown>{
  const o=planningObject(value),timing=planningField(o,['timing','time'])??o;
- return {...o,id:planningField(o,['sceneId','shotId','beatId','beatKey','sceneKey','slotId','slot','id','key']),start:planningField(timing,['start','startTime','startTimeSeconds','startSeconds','from']),end:planningField(timing,['end','endTime','endTimeSeconds','endSeconds','to']),duration:planningField(timing,['duration','durationSeconds']),onScreenCopy:planningField(o,['onScreenCopy','onScreenText','onScreen','headline','caption','super','overlayText','displayCopy','copy','text']),visualNotes:planningField(o,['visualNotes','visual','visuals','description','shot','scene','action','staging','imagery','visualDescription']),motionNotes:planningField(o,['motionNotes','motion']),narration:planningField(o,['narration','voiceover'])};
+ return {...o,id:planningField(o,['sceneId','shotId','beatId','beatKey','sceneKey','slotId','slot','id','key']),start:planningField(timing,['start','startTime','startTimeSeconds','startSeconds','from']),end:planningField(timing,['end','endTime','endTimeSeconds','endSeconds','to']),duration:planningField(timing,['duration','durationSeconds']),onScreenCopy:planningField(o,['onScreenCopy','onScreenText','onScreen','headline','caption','super','overlayText','displayCopy','copy','text']),visualNotes:planningField(o,['visualNotes','visual','visuals','description','shot','scene','action','staging','imagery','visualDescription','beat']),motionNotes:planningField(o,['motionNotes','motion']),narration:planningField(o,['narration','voiceover'])};
 }
 
 /**

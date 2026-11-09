@@ -1,5 +1,5 @@
 import type {CatalogModel} from '../agents/catalog';
-import {staticOutputCaps} from './roles';
+import {staticOutputCaps,thinkingOutputCaps} from './roles';
 
 export type DirectorModelRole='director'|'assembler'|'critic';
 export type DirectorModelConfig={modelId:string;instructions:string;maxOutputTokens:number;modelMaxOutputTokens:number;pricing:{inputPrice:number;outputPrice:number;cacheReadPrice?:number;cacheWritePrice?:number};contextLength:number;vision:boolean;liveReview?:boolean};
@@ -25,6 +25,6 @@ export function draftModelProblem(role:DirectorModelRole,model:CatalogModel|unde
 }
 
 /** The per-request configuration of a draft role for a model; instructions stay the role's frozen brief. */
-export function draftModelConfig(role:DirectorModelRole,model:CatalogModel,instructions:string,extra:{liveReview?:boolean}={}):DirectorModelConfig{
- return {modelId:model.id,instructions,maxOutputTokens:Math.min(staticOutputCaps[role],model.maxOutput),modelMaxOutputTokens:model.maxOutput,pricing:{inputPrice:model.inputPrice,outputPrice:model.outputPrice,cacheReadPrice:model.cacheReadPrice,cacheWritePrice:model.cacheWritePrice},contextLength:model.contextLength,vision:model.inputModalities?.includes('image')??false,...(extra.liveReview?{liveReview:true}:{})};
+export function draftModelConfig(role:DirectorModelRole,model:CatalogModel,instructions:string,extra:{liveReview?:boolean;thinking?:boolean}={}):DirectorModelConfig{
+ return {modelId:model.id,instructions,maxOutputTokens:Math.min((extra.thinking?thinkingOutputCaps:staticOutputCaps)[role],model.maxOutput),modelMaxOutputTokens:model.maxOutput,pricing:{inputPrice:model.inputPrice,outputPrice:model.outputPrice,cacheReadPrice:model.cacheReadPrice,cacheWritePrice:model.cacheWritePrice},contextLength:model.contextLength,vision:model.inputModalities?.includes('image')??false,...(extra.liveReview?{liveReview:true}:{})};
 }
