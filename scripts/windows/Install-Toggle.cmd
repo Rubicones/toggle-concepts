@@ -70,8 +70,8 @@ $bootstrap = @(
 [IO.File]::WriteAllText((Join-Path $Launchers 'bootstrap.sh'), $bootstrap + "`n")
 @"
 @echo off
-rem Starts the studio (keep this window open while you work; close it to stop). The browser opens by itself.
-start "" cmd /c "timeout /t 25 >nul & start http://127.0.0.1:3100/settings"
+rem Starts the studio (keep this window open while you work; close it to stop). The browser opens when it is ready.
+start "" /min powershell -NoProfile -WindowStyle Hidden -Command "for(`$i=0;`$i -lt 300;`$i++){try{(New-Object Net.Sockets.TcpClient).Connect('127.0.0.1',3100);break}catch{Start-Sleep 2}};Start-Process 'http://127.0.0.1:3100/settings'"
 wsl.exe -d $Distro -u root -- bash -lc ~/toggle/start.sh
 "@ | Set-Content -Encoding ASCII (Join-Path $Launchers 'Start-Studio.cmd')
 @"
