@@ -48,10 +48,12 @@ export async function authenticated() {
   if (error || !data.user) throw new ApiError(401, "SIGN_IN_REQUIRED", "Sign in to access this workspace.");
   return { supabase, user: data.user };
 }
+/** A "changed meanwhile" refusal: PT409 since 20261110000100 (never retried by PostgREST), 40001 before it. */
+export const staleCode = (code?: string) => code === "PT409" || code === "40001";
 export function dbError(error: { code?: string; message?: string } | null) {
   if (!error) return;
   if (error.code === "42501") throw new ApiError(403, "FORBIDDEN", "Your account does not have access to this action.");
-  if (error.code === "40001") throw new ApiError(409, "STALE_REVISION", "This campaign changed. Refresh before saving again.");
+  if (staleCode(error.code)) throw new ApiError(409, "STALE_REVISION", "This campaign changed. Refresh before saving again.");
   if (error.code === "54000") throw new ApiError(429, "UPLOAD_QUOTA_EXCEEDED", "The local upload quota is reached. Finish pending uploads or try later.");
   if (error.code === "22023" || error.code === "23514" || error.code === "23502") throw new ApiError(409, "INVALID_STATE", "This action is not available for the supplied record or state.");
   throw new Error("DATABASE_UNAVAILABLE");

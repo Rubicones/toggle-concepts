@@ -3,14 +3,14 @@ import { z } from "zod";
 import { briefDraftSchema, briefBlockers } from "@/packages/contracts/brief";
 import { agentRoles } from "@/packages/contracts/workflow";
 import { campaignRecord, checked, studioContext } from "./studio";
-import { ApiError } from "./api";
+import { ApiError, staleCode } from "./api";
 import { buildC1Snapshot } from "@/packages/data/brief-snapshot";
 
 export function schemaMissing(error: { code?: string } | null) { return !!error && ["42P01", "PGRST205", "PGRST202"].includes(error.code ?? ""); }
 export function briefDbError(error: { code?: string; message: string } | null) {
   if (!error) return;
   if (schemaMissing(error)) throw new ApiError(503, "C1_SCHEMA_REQUIRED", "Apply the C1 migration from Settings before saving or submitting a questionnaire.");
-  if (error.code === "40001") throw new ApiError(409, "STALE_BRIEF", "The brief, campaign or model settings changed. Reload before saving or submitting.");
+  if (staleCode(error.code)) throw new ApiError(409, "STALE_BRIEF", "The brief, campaign or model settings changed. Reload before saving or submitting.");
   if (error.message.includes("C1_ALREADY_SUBMITTED")) throw new ApiError(409, "C1_ALREADY_SUBMITTED", "C1 is already submitted. Its scope and budget cannot be overwritten. Scope amendment is a later explicit workflow action.");
   console.error('[brief database]',{code:error.code,message:error.message});
   if(error.message.includes('BRIEF_SNAPSHOT_MISMATCH'))throw new ApiError(409,'STALE_BRIEF','The saved questionnaire changed. Reload before starting the run.');
