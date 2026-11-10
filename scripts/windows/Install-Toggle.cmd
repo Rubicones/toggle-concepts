@@ -80,6 +80,15 @@ if errorlevel 1 pause
 rem Opens the studio folder (code, settings, reports) in Explorer.
 explorer.exe \\wsl.localhost\$Distro\root\toggle
 "@ | Set-Content -Encoding ASCII (Join-Path $Launchers 'Open-Studio-Folder.cmd')
+@"
+@echo off
+rem Applies the studio's pending database updates (migrations) to the shared Supabase project, using the access
+rem token in the settings file. Already applied updates are skipped, so it is safe to run again. Run it when the
+rem studio asks for a migration, or after updating the studio.
+echo Updating the studio database...
+wsl.exe -d Ubuntu-24.04 -u root -- bash -lc "export PATH=`$HOME/toggle/tools/node-v22.22.0-linux-x64/bin:`$PATH; cd ~/toggle/toggle-concepts && npm run -s data:deploy && echo && echo The database is up to date."
+pause
+"@ | Set-Content -Encoding ASCII (Join-Path $Launchers 'Update-Database.cmd')
 # A desktop shortcut to start the studio.
 $shell = New-Object -ComObject WScript.Shell; $link = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Toggle Studio.lnk'))
 $link.TargetPath = Join-Path $Launchers 'Start-Studio.cmd'; $link.WorkingDirectory = $Launchers; $link.Save()
