@@ -32,6 +32,9 @@ test('the CLI arguments isolate the call and never carry the request', ()=>{
 test('the child environment is an allowlist: application and billing keys never reach the CLI', ()=>{
  const env=childEnv({PATH:'/bin',HOME:'/h',CLAUDE_CONFIG_DIR:'/c',LANG:'en_US.UTF-8',HTTPS_PROXY:'http://p',OPENROUTER_API_KEY:'x',SUPABASE_SERVICE_ROLE_KEY:'x',R2_SECRET_ACCESS_KEY:'x',STUDIO_WORKER_ACCESS_TOKEN:'x',NODE_OPTIONS:'--require evil',...Object.fromEntries(BILLING_VARIABLES.map(k=>[k,'x']))});
  assert.deepEqual(Object.keys(env).sort(),['CLAUDE_CONFIG_DIR','HOME','HTTPS_PROXY','LANG','PATH']);
+ // Windows names (Path, ComSpec…) and Git Bash for Claude Code pass; keys still never do.
+ const win=childEnv({Path:'C:\\Windows',PATHEXT:'.EXE',ComSpec:'cmd.exe',SystemRoot:'C:\\Windows',USERPROFILE:'C:\\Users\\k',APPDATA:'a',LOCALAPPDATA:'l',CLAUDE_CODE_GIT_BASH_PATH:'bash.exe',OPENROUTER_API_KEY:'x',ANTHROPIC_API_KEY:'x'});
+ assert.deepEqual(Object.keys(win).sort(),['APPDATA','CLAUDE_CODE_GIT_BASH_PATH','ComSpec','LOCALAPPDATA','PATHEXT','Path','SystemRoot','USERPROFILE']);
 });
 
 test('text and images reach the model whole and in order, through stdin', async()=>{

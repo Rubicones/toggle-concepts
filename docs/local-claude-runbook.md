@@ -8,6 +8,20 @@ Local results are test results: they cannot be accepted at C2 or delivered to a 
 
 Plan: `docs/plans/2026-11-06-local-claude-pipeline-plan.md`. Reviews: `docs/reviews/2026-11-06-local-claude-s*.md`.
 
+## Windows computer (the owner): the studio inside WSL, on par with the Mac
+
+On Windows the studio runs in a light background Ubuntu (WSL). There, agent code gets the same OS sandbox as on macOS (bubblewrap), so the whole pipeline works, draft films included.
+
+Ubuntu is capped in `%USERPROFILE%\.wslconfig`: at most a third of the memory (up to 6 GB) and half the cores. It stops one minute after the studio closes.
+
+**Install:** download the one file `scripts/windows/Install-Toggle.cmd` (on GitHub: *Download raw file*). If you have the developer's settings file, put it at `C:\toggle\.env.local`. Then double-click `Install-Toggle.cmd`; nothing needs to be typed. It keeps a copy of itself in `C:\toggle`.
+
+- The first WSL install turns on Windows' virtualization feature, which needs one restart. Setup continues by itself after sign-in, through a RunOnce entry.
+- No Ubuntu user is created: `--no-launch`, and the studio runs as Ubuntu's root.
+- The GitHub and Claude sign-ins open in the browser.
+- The code lives in Ubuntu at `/root/toggle/toggle-concepts`, not on Yandex Disk.
+- A "Toggle Studio" desktop icon starts the studio. Running `Install-Toggle.cmd` again updates it.
+
 ## 0. Once, by whoever applies shared migrations (Dmitry)
 
 Apply `supabase/migrations/20261106000100_local_text_execution.sql`, either with `npm run data:deploy` or by running the file in the Supabase SQL Editor.
