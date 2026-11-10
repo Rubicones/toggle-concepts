@@ -85,7 +85,11 @@ $shell = New-Object -ComObject WScript.Shell; $link = $shell.CreateShortcut((Joi
 $link.TargetPath = Join-Path $Launchers 'Start-Studio.cmd'; $link.WorkingDirectory = $Launchers; $link.Save()
 
 Step 'Studio setup inside Ubuntu (GitHub and Claude sign-ins open in the browser)'
-if (-not (Test-Path (Join-Path $Launchers '.env.local'))) { Write-Host "Tip: put the settings file from the developer at $Launchers\.env.local and it is used automatically." -ForegroundColor Yellow }
+# Windows often hides a .txt ending: .env.local.txt, env.local or env.local.txt are taken as the settings file too.
+$envFile = Join-Path $Launchers '.env.local'
+if (-not (Test-Path $envFile)) { foreach ($name in '.env.local.txt','env.local','env.local.txt','.env') { $alt = Join-Path $Launchers $name; if (Test-Path $alt) { Copy-Item -Force $alt $envFile; Write-Host "Using $alt as the settings file."; break } } }
+if (Test-Path $envFile) { Write-Host "Settings file found: $envFile" -ForegroundColor Green }
+if (-not (Test-Path $envFile)) { Write-Host "Tip: put the settings file from the developer at $Launchers\.env.local and it is used automatically." -ForegroundColor Yellow }
 wsl.exe -d $Distro -u root -- bash "$wslPath/bootstrap.sh"
 if ($LASTEXITCODE -ne 0) { Write-Host "`nSetup stopped before the end (see the message above). Fix it and double-click Install-Toggle.cmd again." -ForegroundColor Red; exit 1 }
 Write-Host "`nDone. Start the studio with the 'Toggle Studio' icon on the desktop." -ForegroundColor Green
