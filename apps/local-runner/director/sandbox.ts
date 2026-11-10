@@ -5,8 +5,7 @@ import {mkdir,realpath,symlink,rm,writeFile,chmod,access} from 'node:fs/promises
 import {resolve} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 import {limits} from '../../../packages/director/policy.local';
-import {sandboxPlatform,linuxSandboxArgs,envFiles,BWRAP} from './os-sandbox';
-import {headlessShellPath} from './toolchain';
+import {sandboxPlatform,linuxSandboxArgs,envFiles,BWRAP,headlessShellPath} from './os-sandbox';
 const exec=promisify(execFile);
 /** Mandatory OS sandbox: sandbox-exec on macOS, bubblewrap on Linux (and Windows through WSL); fails closed elsewhere. */
 export async function sandboxTool(folder:string,operation:'bundle'|'render'|'typecheck'|'probe'|'preview'|'inspect',args:unknown,runtimeLimitMs:number=limits.renderMs,onStill?:(value:{variantId:string;sceneId:string;moment:string;file:string})=>Promise<void>){

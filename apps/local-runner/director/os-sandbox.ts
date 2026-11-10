@@ -9,6 +9,16 @@ import {promisify} from 'node:util';
 const exec=promisify(execFile);
 
 export const BWRAP='/usr/bin/bwrap';
+
+/** Where the renderer's Chrome Headless Shell lives (Remotion's ensureBrowser download). No renderer import here: Next.js
+ * routes import this module through sandbox.ts, and bundling @remotion/renderer there fails on Linux. */
+export function headlessShellPath(env:Record<string,string|undefined>=process.env,platform=process.platform,arch=process.arch){
+ if(env.DIRECTOR_CHROME_PATH)return env.DIRECTOR_CHROME_PATH;
+ // Remotion's folder names: mac-x64 / mac-arm64 and linux64 / linux-arm64.
+ const folder=platform==='darwin'?`mac-${arch==='arm64'?'arm64':'x64'}`:arch==='arm64'?'linux-arm64':'linux64';
+ return resolve(`node_modules/.remotion/chrome-headless-shell/${folder}/chrome-headless-shell-${folder}/chrome-headless-shell`);
+}
+
 export type SandboxPlatform='darwin'|'linux';
 export const sandboxPlatform=(platform=process.platform):SandboxPlatform|null=>platform==='darwin'||platform==='linux'?platform:null;
 

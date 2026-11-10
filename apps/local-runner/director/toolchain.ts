@@ -1,13 +1,8 @@
 import {access,constants} from 'node:fs/promises';
-import {resolve} from 'node:path';
-import {ensureOsSandbox,sandboxPlatform} from './os-sandbox';
+import {ensureOsSandbox,sandboxPlatform,headlessShellPath} from './os-sandbox';
 /** Where sandbox.ts expects Chrome Headless Shell (installed by Remotion's ensureBrowser). */
-export function headlessShellPath(env:Record<string,string|undefined>=process.env,platform=process.platform,arch=process.arch){
- if(env.DIRECTOR_CHROME_PATH)return env.DIRECTOR_CHROME_PATH;
- // Remotion's folder names: mac-x64 / mac-arm64 and linux64 / linux-arm64.
- const folder=platform==='darwin'?`mac-${arch==='arm64'?'arm64':'x64'}`:arch==='arm64'?'linux-arm64':'linux64';
- return resolve(`node_modules/.remotion/chrome-headless-shell/${folder}/chrome-headless-shell-${folder}/chrome-headless-shell`);
-}
+/** Kept in os-sandbox.ts (no renderer import), so routes that only need the path never bundle @remotion/renderer. */
+export {headlessShellPath};
 let ready:Promise<void>|null=null;
 /**
  * Checked before any paid director request: renders need the OS sandbox (macOS sandbox-exec or Linux bubblewrap) and Chrome Headless Shell. A missing
