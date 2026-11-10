@@ -72,7 +72,8 @@ $bootstrap = @(
 @echo off
 rem Starts the studio (keep this window open while you work; close it to stop). The browser opens when it is ready.
 start "" /min powershell -NoProfile -WindowStyle Hidden -Command "for(`$i=0;`$i -lt 300;`$i++){try{(New-Object Net.Sockets.TcpClient).Connect('127.0.0.1',3100);break}catch{Start-Sleep 2}};Start-Process 'http://127.0.0.1:3100/settings'"
-wsl.exe -d $Distro -u root -- bash -lc ~/toggle/start.sh
+wsl.exe -d $Distro -u root -- bash -lc "test -x ~/toggle/start.sh && exec ~/toggle/start.sh; echo; echo Setup is not finished yet. Double-click C:\toggle\Install-Toggle.cmd and follow it to the end.; exit 1"
+if errorlevel 1 pause
 "@ | Set-Content -Encoding ASCII (Join-Path $Launchers 'Start-Studio.cmd')
 @"
 @echo off
@@ -86,4 +87,5 @@ $link.TargetPath = Join-Path $Launchers 'Start-Studio.cmd'; $link.WorkingDirecto
 Step 'Studio setup inside Ubuntu (GitHub and Claude sign-ins open in the browser)'
 if (-not (Test-Path (Join-Path $Launchers '.env.local'))) { Write-Host "Tip: put the settings file from the developer at $Launchers\.env.local and it is used automatically." -ForegroundColor Yellow }
 wsl.exe -d $Distro -u root -- bash "$wslPath/bootstrap.sh"
+if ($LASTEXITCODE -ne 0) { Write-Host "`nSetup stopped before the end (see the message above). Fix it and double-click Install-Toggle.cmd again." -ForegroundColor Red; exit 1 }
 Write-Host "`nDone. Start the studio with the 'Toggle Studio' icon on the desktop." -ForegroundColor Green

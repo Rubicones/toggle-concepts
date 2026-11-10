@@ -42,9 +42,23 @@ step "Renderer browser (Chrome Headless Shell, free download)"
 node -e "require('@remotion/renderer').ensureBrowser({chromeMode:'headless-shell',logLevel:'error'}).then(()=>console.log('browser ok'))"
 SHELL_PATH="$REPO/node_modules/.remotion/chrome-headless-shell/linux64/chrome-headless-shell-linux64/chrome-headless-shell"
 
+step "Start script"
+cat > "$HOME_DIR/start.sh" <<START
+#!/usr/bin/env bash
+export PATH="$NODE_DIR/bin:\$HOME/.local/bin:\$PATH"
+cd "$REPO"
+if grep -qE '^(NEXT_PUBLIC_SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY|OPENROUTER_API_KEY)=\s*\$' .env.local 2>/dev/null || [ ! -f .env.local ]; then
+  echo "The settings file has empty keys. Put the developer's .env.local in C:\\toggle and double-click Install-Toggle.cmd again."; exit 1
+fi
+echo "Starting the studio (the first start takes a minute or two)..."
+exec npm run dev:shared
+START
+chmod +x "$HOME_DIR/start.sh"
+
 step "Settings file .env.local"
 # A settings file handed over by the developer (on Windows: C:\toggle\.env.local) is used as is.
-if [ ! -f .env.local ] && [ -n "${ENV_SOURCE:-}" ] && [ -f "$ENV_SOURCE" ]; then tr -d '\r' < "$ENV_SOURCE" > .env.local; chmod 600 .env.local; sed -i -E '/^(DIRECTOR_)?CHROME_PATH=/d' .env.local; echo "CHROME_PATH=$SHELL_PATH" >> .env.local; echo "Using the settings file from $ENV_SOURCE."; fi
+EMPTY_KEYS='^(NEXT_PUBLIC_SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY|OPENROUTER_API_KEY)=\s*$'
+if { [ ! -f .env.local ] || grep -qE "$EMPTY_KEYS" .env.local; } && [ -n "${ENV_SOURCE:-}" ] && [ -f "$ENV_SOURCE" ]; then tr -d '\r' < "$ENV_SOURCE" > .env.local; chmod 600 .env.local; sed -i -E '/^(DIRECTOR_)?CHROME_PATH=/d' .env.local; echo "CHROME_PATH=$SHELL_PATH" >> .env.local; echo "Using the settings file from $ENV_SOURCE."; fi
 if [ ! -f .env.local ]; then
   cat > .env.local <<ENV
 # Paste the values from the developer (the same shared Supabase, OpenRouter and R2 as the studio Mac).
@@ -69,14 +83,6 @@ if grep -qE '^(NEXT_PUBLIC_SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY|OPENROUTER_API
   if command -v notepad.exe >/dev/null; then echo "Notepad opens now: paste, save, close."; notepad.exe "$(wslpath -w "$REPO/.env.local")" || true; else ${EDITOR:-nano} .env.local; fi
   if grep -qE '^(NEXT_PUBLIC_SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY|OPENROUTER_API_KEY)=\s*$' .env.local; then echo "Still empty values in .env.local: fill them and run this script again."; exit 1; fi
 fi
-
-step "Start script"
-cat > "$HOME_DIR/start.sh" <<START
-#!/usr/bin/env bash
-export PATH="$NODE_DIR/bin:\$HOME/.local/bin:\$PATH"
-cd "$REPO" && exec npm run dev:shared
-START
-chmod +x "$HOME_DIR/start.sh"
 
 if [ "${SKIP_CLAUDE:-}" != "1" ]; then
   step "Claude Code for Local mode: install, sign in with your subscription, create this computer's id"
