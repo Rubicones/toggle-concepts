@@ -10,19 +10,23 @@ exit /b
 # nothing needs to be typed. The studio runs in a light background Ubuntu (WSL), capped so it never slows the computer.
 # Safe to run again: it only does what is missing, and doubles as the updater.
 $Branch = 'main'; $Distro = 'Ubuntu-24.04'; $Launchers = 'C:\toggle'
-$ErrorActionPreference = 'Stop'
+# Continue: Windows PowerShell treats any message a program writes to its error stream as a failure; each step
+# checks the program's exit code instead.
+$ErrorActionPreference = 'Continue'
 function Step($t) { Write-Host "`n== $t" -ForegroundColor Cyan }
 $Self = Join-Path $Launchers 'Install-Toggle.cmd'
 # The installer keeps a copy of itself in C:\toggle (used to continue after the restart and to update).
 New-Item -ItemType Directory -Force $Launchers | Out-Null
 if ($env:TOGGLE_SELF -and ((Resolve-Path $env:TOGGLE_SELF).Path -ne $Self)) { Copy-Item -Force $env:TOGGLE_SELF $Self }
-function Ready { wsl.exe -d $Distro -u root -- true 2>$null; return $LASTEXITCODE -eq 0 }
+function Ready { try { & wsl.exe -d $Distro -u root -- true *> $null } catch { return $false }; return $LASTEXITCODE -eq 0 }
 
 Step 'Ubuntu in the background (WSL)'
 if (-not (Ready)) {
   Write-Host 'Installing WSL and Ubuntu. Windows asks once for permission.' -ForegroundColor Yellow
   # --no-launch: no Ubuntu window and no user to create; the studio runs as Ubuntu's built-in administrator.
-  Start-Process wsl.exe -Verb RunAs -Wait -ArgumentList "--install -d $Distro --no-launch"
+  try { $p = Start-Process wsl.exe -Verb RunAs -Wait -PassThru -ArgumentList "--install -d $Distro --no-launch" } catch { Write-Host 'Windows did not allow the installation. Run the installer again and answer Yes.' -ForegroundColor Red; exit 1 }
+  # Older WSL versions do not know --no-launch: then Ubuntu asks for a user name once after the restart.
+  if ($p.ExitCode -ne 0) { $p = Start-Process wsl.exe -Verb RunAs -Wait -PassThru -ArgumentList "--install -d $Distro" }
   if (-not (Ready)) {
     # The first WSL install switches on Windows' virtualization feature, which takes effect after one restart.
     # The installer continues by itself after you sign in again.
