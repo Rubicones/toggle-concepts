@@ -18,7 +18,10 @@ $Self = Join-Path $Launchers 'Install-Toggle.cmd'
 # The installer keeps a copy of itself in C:\toggle (used to continue after the restart and to update).
 New-Item -ItemType Directory -Force $Launchers | Out-Null
 if ($env:TOGGLE_SELF -and ((Resolve-Path $env:TOGGLE_SELF).Path -ne $Self)) { Copy-Item -Force $env:TOGGLE_SELF $Self }
-function Ready { try { & wsl.exe -d $Distro -u root -- true *> $null } catch { return $false }; return $LASTEXITCODE -eq 0 }
+# Registered WSL distributions are listed in the registry; asking wsl.exe instead would make it wait for a key press
+# when WSL is not installed yet.
+function Registered { @(Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction SilentlyContinue | ForEach-Object { (Get-ItemProperty $_.PSPath).DistributionName }) -contains $Distro }
+function Ready { if (-not (Registered)) { return $false }; try { '' | & wsl.exe -d $Distro -u root -- true *> $null } catch { return $false }; return $LASTEXITCODE -eq 0 }
 
 Step 'Ubuntu in the background (WSL)'
 if (-not (Ready)) {
