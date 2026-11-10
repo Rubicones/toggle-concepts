@@ -1,7 +1,7 @@
 // Builds the brand sheet (designer pipeline plan, point 1b): each section of packages/brand/brand-sheet.ts is rendered
 // to PNG with headless Chromium, offline (every request except the page itself is refused), at 1280 px wide; taller
 // pages are cut into slices of at most 1600 px. Images are stored content-addressed in staging/brand-sheet/<sha>.png.
-import {headlessShellPath} from './director/toolchain';
+import {headlessShellPath} from './director/os-sandbox';
 import {createHash} from 'node:crypto';
 import {existsSync} from 'node:fs';
 import {chromium} from '@playwright/test';
