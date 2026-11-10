@@ -58,7 +58,7 @@ chmod +x "$HOME_DIR/start.sh"
 step "Settings file .env.local"
 # A settings file handed over by the developer (on Windows: C:\toggle\.env.local) is used as is.
 EMPTY_KEYS='^(NEXT_PUBLIC_SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY|OPENROUTER_API_KEY)=\s*$'
-if { [ ! -f .env.local ] || grep -qE "$EMPTY_KEYS" .env.local; } && [ -n "${ENV_SOURCE:-}" ] && [ -f "$ENV_SOURCE" ]; then tr -d '\r' < "$ENV_SOURCE" > .env.local; chmod 600 .env.local; sed -i -E '/^(DIRECTOR_)?CHROME_PATH=/d' .env.local; echo "CHROME_PATH=$SHELL_PATH" >> .env.local; echo "Using the settings file from $ENV_SOURCE."; fi
+if { [ ! -f .env.local ] || grep -qE "$EMPTY_KEYS" .env.local || [ "${ENV_SOURCE:-/nonexistent}" -nt .env.local ]; } && [ -n "${ENV_SOURCE:-}" ] && [ -f "$ENV_SOURCE" ]; then tr -d '\r' < "$ENV_SOURCE" > .env.local; chmod 600 .env.local; sed -i -E '/^(DIRECTOR_)?CHROME_PATH=/d' .env.local; echo "CHROME_PATH=$SHELL_PATH" >> .env.local; echo "Using the settings file from $ENV_SOURCE."; fi
 if [ ! -f .env.local ]; then
   cat > .env.local <<ENV
 # Paste the values from the developer (the same shared Supabase, OpenRouter and R2 as the studio Mac).

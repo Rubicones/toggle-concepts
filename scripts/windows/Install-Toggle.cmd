@@ -87,7 +87,12 @@ $link.TargetPath = Join-Path $Launchers 'Start-Studio.cmd'; $link.WorkingDirecto
 Step 'Studio setup inside Ubuntu (GitHub and Claude sign-ins open in the browser)'
 # Windows often hides a .txt ending: .env.local.txt, env.local or env.local.txt are taken as the settings file too.
 $envFile = Join-Path $Launchers '.env.local'
-if (-not (Test-Path $envFile)) { foreach ($name in '.env.local.txt','env.local','env.local.txt','.env') { $alt = Join-Path $Launchers $name; if (Test-Path $alt) { Copy-Item -Force $alt $envFile; Write-Host "Using $alt as the settings file."; break } } }
+# The developer's settings file under any name a messenger or browser gave it (doc_2026-...env.local, .env.local.txt,
+# env.local): the newest one in C:\toggle, else in Downloads. A newer file replaces an older copy.
+$found = @($Launchers, (Join-Path $env:USERPROFILE 'Downloads')) | ForEach-Object { Get-ChildItem -LiteralPath $_ -File -Force -ErrorAction SilentlyContinue } |
+  Where-Object { $_.Name -match 'env\.local' -and $_.FullName -ne $envFile -and $_.Length -lt 65536 -and (Select-String -LiteralPath $_.FullName -Pattern '^\s*NEXT_PUBLIC_SUPABASE_URL=\S' -Quiet) } |
+  Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if ($found -and (-not (Test-Path $envFile) -or $found.LastWriteTime -gt (Get-Item $envFile).LastWriteTime)) { Copy-Item -Force $found.FullName $envFile; Write-Host "Using $($found.FullName) as the settings file." }
 if (Test-Path $envFile) { Write-Host "Settings file found: $envFile" -ForegroundColor Green }
 if (-not (Test-Path $envFile)) { Write-Host "Tip: put the settings file from the developer at $Launchers\.env.local and it is used automatically." -ForegroundColor Yellow }
 wsl.exe -d $Distro -u root -- bash "$wslPath/bootstrap.sh"
