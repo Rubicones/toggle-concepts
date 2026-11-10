@@ -14,7 +14,7 @@ On Windows the studio runs in a light background Ubuntu (WSL). There, agent code
 
 Ubuntu is capped in `%USERPROFILE%\.wslconfig`: at most a third of the memory (up to 6 GB) and half the cores. It stops one minute after the studio closes.
 
-**Install:** put `Install-Toggle.cmd` and `Install-Toggle.ps1` (from `scripts/windows/`) in one folder. If you have the developer's settings file, put it at `C:\toggle\.env.local` first. Then double-click `Install-Toggle.cmd`; nothing needs to be typed.
+**Install:** download the one file `scripts/windows/Install-Toggle.cmd` (on GitHub: *Download raw file*). If you have the developer's settings file, put it at `C:\toggle\.env.local`. Then double-click `Install-Toggle.cmd`; nothing needs to be typed. It keeps a copy of itself in `C:\toggle`.
 
 - The first WSL install turns on Windows' virtualization feature, which needs one restart. Setup continues by itself after sign-in, through a RunOnce entry.
 - No Ubuntu user is created: `--no-launch`, and the studio runs as Ubuntu's root.
