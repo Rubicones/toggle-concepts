@@ -32,8 +32,9 @@ export function cliArgs(profile:CliProfile):string[]{
  * so the call cannot switch to API billing or touch the studio's storage. Login works through the user's own
  * keychain / config directory. */
 // Windows keeps its own names (Path, PATHEXT, ComSpec…) and Claude Code there needs Git Bash (CLAUDE_CODE_GIT_BASH_PATH);
-// names are matched without case because Windows environment names are case-insensitive.
-const CHILD_ENV=/^(PATH|HOME|USER|LOGNAME|SHELL|TMPDIR|TMP|TEMP|LANG|LC_[A-Z_]+|TZ|TERM|COLORTERM|XDG_[A-Z_]+|CLAUDE_CONFIG_DIR|CLAUDE_CODE_GIT_BASH_PATH|SYSTEMROOT|SYSTEMDRIVE|WINDIR|COMSPEC|PATHEXT|PROGRAMDATA|PROGRAMFILES|PROGRAMFILES\(X86\)|PROGRAMW6432|COMMONPROGRAMFILES|APPDATA|LOCALAPPDATA|USERPROFILE|USERNAME|USERDOMAIN|COMPUTERNAME|HOMEDRIVE|HOMEPATH|OS|PROCESSOR_ARCHITECTURE|NUMBER_OF_PROCESSORS|NODE_EXTRA_CA_CERTS|SSL_CERT_FILE|HTTPS_PROXY|HTTP_PROXY|NO_PROXY)$/i;
+// names are matched without case because Windows environment names are case-insensitive. BROWSER and the WSL
+// variables let the sign-in open the Windows browser from Ubuntu, so no code has to be pasted.
+const CHILD_ENV=/^(PATH|HOME|USER|LOGNAME|SHELL|TMPDIR|TMP|TEMP|LANG|LC_[A-Z_]+|TZ|TERM|COLORTERM|XDG_[A-Z_]+|CLAUDE_CONFIG_DIR|CLAUDE_CODE_GIT_BASH_PATH|BROWSER|WSL_DISTRO_NAME|WSL_INTEROP|SYSTEMROOT|SYSTEMDRIVE|WINDIR|COMSPEC|PATHEXT|PROGRAMDATA|PROGRAMFILES|PROGRAMFILES\(X86\)|PROGRAMW6432|COMMONPROGRAMFILES|APPDATA|LOCALAPPDATA|USERPROFILE|USERNAME|USERDOMAIN|COMPUTERNAME|HOMEDRIVE|HOMEPATH|OS|PROCESSOR_ARCHITECTURE|NUMBER_OF_PROCESSORS|NODE_EXTRA_CA_CERTS|SSL_CERT_FILE|HTTPS_PROXY|HTTP_PROXY|NO_PROXY)$/i;
 export type Env=Record<string,string|undefined>;
 export function childEnv(parent:Env,extra:Record<string,string>={}):NodeJS.ProcessEnv{
  const env:Env={};for(const [k,v] of Object.entries(parent))if(v!==undefined&&CHILD_ENV.test(k))env[k]=v;

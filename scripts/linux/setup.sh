@@ -17,7 +17,8 @@ step "System packages"
 $SUDO apt-get update -qq
 $SUDO apt-get install -y -qq git curl ca-certificates xz-utils unzip bubblewrap \
   libnss3 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
-  libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 fonts-noto-core fonts-noto-color-emoji >/dev/null
+  libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 fonts-noto-core fonts-noto-color-emoji wslu >/dev/null || \
+  $SUDO apt-get install -y -qq git curl ca-certificates xz-utils unzip bubblewrap libnss3 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 fonts-noto-core fonts-noto-color-emoji >/dev/null
 
 step "Agent sandbox check (bubblewrap)"
 bwrap --unshare-all --die-with-parent --ro-bind / / --dev /dev --proc /proc true && echo "sandbox ok"
@@ -58,7 +59,7 @@ chmod +x "$HOME_DIR/start.sh"
 step "Settings file .env.local"
 # A settings file handed over by the developer (on Windows: C:\toggle\.env.local) is used as is.
 EMPTY_KEYS='^(NEXT_PUBLIC_SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY|OPENROUTER_API_KEY)=\s*$'
-if { [ ! -f .env.local ] || grep -qE "$EMPTY_KEYS" .env.local; } && [ -n "${ENV_SOURCE:-}" ] && [ -f "$ENV_SOURCE" ]; then tr -d '\r' < "$ENV_SOURCE" > .env.local; chmod 600 .env.local; sed -i -E '/^(DIRECTOR_)?CHROME_PATH=/d' .env.local; echo "CHROME_PATH=$SHELL_PATH" >> .env.local; echo "Using the settings file from $ENV_SOURCE."; fi
+if { [ ! -f .env.local ] || grep -qE "$EMPTY_KEYS" .env.local || [ "${ENV_SOURCE:-/nonexistent}" -nt .env.local ]; } && [ -n "${ENV_SOURCE:-}" ] && [ -f "$ENV_SOURCE" ]; then tr -d '\r' < "$ENV_SOURCE" > .env.local; chmod 600 .env.local; sed -i -E '/^(DIRECTOR_)?CHROME_PATH=/d' .env.local; echo "CHROME_PATH=$SHELL_PATH" >> .env.local; echo "Using the settings file from $ENV_SOURCE."; fi
 if [ ! -f .env.local ]; then
   cat > .env.local <<ENV
 # Paste the values from the developer (the same shared Supabase, OpenRouter and R2 as the studio Mac).
@@ -86,6 +87,11 @@ fi
 
 if [ "${SKIP_CLAUDE:-}" != "1" ]; then
   step "Claude Code for Local mode: install, sign in with your subscription, create this computer's id"
+  # In WSL the sign-in opens the Windows browser and finishes by itself (no code to paste).
+  if command -v wslview >/dev/null; then export BROWSER=wslview; fi
+  echo "A browser tab opens for the Claude sign-in: choose your subscription account and allow access."
+  echo "If a code is shown instead, copy it, right-click inside this window to paste it, and press Enter."
+
   if node --import tsx apps/local-runner/local-claude/doctor.ts --fix; then echo "Local mode ready."; else
     printf '\n\033[33mTurn OFF paid extra usage in your Claude account settings.\033[0m\n'
     read -r -p "Done? Press Enter to run the check (about ten short requests on your subscription), or type no to skip: " answer
