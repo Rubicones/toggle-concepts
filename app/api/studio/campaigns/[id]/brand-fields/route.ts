@@ -1,6 +1,6 @@
 import {prefillBrandbookBrief} from '@/lib/server/brandbook-brief';
 import type {BrandVisualSource} from '@/packages/brand/finding-presentation';
-import {brandWorkspaceMetrics,type BrandUsageRow} from '@/packages/brand/workspace-metrics';
+import {brandWorkspaceMetrics,fieldPreviews,type BrandUsageRow} from '@/packages/brand/workspace-metrics';
 import {z} from 'zod';
 import {api,body,json,ApiError} from '@/lib/server/api';
 import {campaignRecord,studioContext,checked} from '@/lib/server/studio';
@@ -98,7 +98,9 @@ export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaign
  const materials=await materialRoleRows(campaign.id),byId=new Map(materials.map(m=>[m.id,{file:m.filename,role:m.role}]));
  const choiceRows=checked(await admin.from('studio_brand_findings').select('id,field,value,edited_value,decision,version,material_id').eq('tenant_id',tenant).eq('campaign_id',campaign.id).in('field',[...singleChoiceFields]).limit(2000))??[];
  const decisions=brandDecisions(choiceRows,id=>byId.get(id));
- return json({schemaReady:true,workspaceReady,updatesReady,submission,materials,decisions,usage:run?brandWorkspaceMetrics(run,steps):null,fields:brandFields.map(([key,label,merge])=>({key,label,merge,count:counts.find((c:{field:string})=>c.field===key)?.count??0,kept:counts.find((c:{field:string})=>c.field===key)?.kept??0,unreviewed:counts.find((c:{field:string})=>c.field===key)?.unreviewed,rejected:counts.find((c:{field:string})=>c.field===key)?.rejected})),analyses,brandSource:null,brandOptions,files:files.map(f=>({...f,status:f.status==='completed'||f.status==='skipped'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status==='active'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status??f.status})),run});
+ // First findings of each field for the collapsed cards (bounded; a field with more is opened for the rest).
+ const previewRows=checked(await admin.from('studio_brand_findings').select('field,value,edited_value,decision').eq('tenant_id',tenant).eq('campaign_id',campaign.id).neq('decision','reject').order('seq').limit(3000))??[],previews=fieldPreviews(previewRows,singleChoiceFields);
+ return json({schemaReady:true,workspaceReady,updatesReady,submission,materials,decisions,usage:run?brandWorkspaceMetrics(run,steps):null,fields:brandFields.map(([key,label,merge])=>({key,label,merge,count:counts.find((c:{field:string})=>c.field===key)?.count??0,kept:counts.find((c:{field:string})=>c.field===key)?.kept??0,unreviewed:counts.find((c:{field:string})=>c.field===key)?.unreviewed,rejected:counts.find((c:{field:string})=>c.field===key)?.rejected,preview:previews.get(key)??[]})),analyses,brandSource:null,brandOptions,files:files.map(f=>({...f,status:f.status==='completed'||f.status==='skipped'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status==='active'?f.status:analyses.find(a=>a.id===f.analysis_id)?.status??f.status})),run});
 });}
 export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/brand-fields'>){return api(async()=>{
  const campaign=await campaignRecord((await ctx.params).id),{admin,tenant,actorId}=await studioContext(),input=await body(request,commands,1000000);

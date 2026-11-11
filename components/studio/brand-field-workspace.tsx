@@ -3,9 +3,9 @@ import {Disclosure} from '@/components/ui/disclosure';
 import styles from "./brand-field-workspace.module.css";
 import { BrandFindingValue } from "./brand-finding-value";
 import type { BrandVisualSource } from "@/packages/brand/finding-presentation";
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ChevronDown, Download, FileText, Pause, Play, Search } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Download, Pause, Play, Search, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { studioRequest, useShared } from "@/lib/shared-http";
@@ -13,11 +13,50 @@ import { money } from "@/packages/contracts/shared";
 import type { BrandAnalysisView, SavedBrandFinding } from "@/packages/brand/field-extraction";
 import { singleChoiceFields } from "@/packages/brand/finding-selection";
 import { brandAnalysisCanContinue, brandAnalysisNotice } from "@/packages/brand/workspace-metrics";
+import type { BrandMaterial } from "@/packages/contracts/brand-intake";
+import { BrandFiles, type FileReading } from "./brand-files";
+import fx from "./brand-files.module.css";
 import { flushCampaignSaves } from "@/lib/use-persisted-draft";
 import { WorkflowMigration } from "./brief-workspace";
-import { BrandCard, BrandDisagreements, BrandFileRoles, BrandLibraryPicker } from "./brand-card";
+import { BrandCard, BrandDisagreements, BrandLibraryPicker } from "./brand-card";
 import { BrandSheetStrip } from "./brand-sheet";
-export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { campaignId: string; sourcesReady: boolean; onContinue?: () => void }) {
+type IntakeFiles = {
+  materials: BrandMaterial[];
+  addFiles: ReactNode;
+  preparing: number;
+  busy: boolean;
+  include: (id: string, included: boolean) => void;
+  intakeEndpoint: string;
+};
+// Fields shown in the order an art director reads a brand; any field not listed falls into “More”.
+const fieldGroups: { title: string; keys: string[] }[] = [
+  { title: "Name & product", keys: ["brandName", "brandDescription", "productIdentity"] },
+  { title: "Logo", keys: ["wordmark", "icon", "logoUsage"] },
+  { title: "Colour", keys: ["primaryColors", "secondaryColors", "semanticColors"] },
+  { title: "Typography", keys: ["displayFonts", "bodyFonts", "monoFonts", "fontLicenses", "typographyRules"] },
+  { title: "Voice & copy", keys: ["voice", "tone", "copyRules", "prohibitions", "localization"] },
+  { title: "Imagery & motion", keys: ["imagery", "photography", "illustration", "motion", "sound"] },
+  { title: "Layout & interface", keys: ["components", "layout", "spacing", "safeArea", "accessibility"] },
+];
+const colourFields = new Set(["primaryColors", "secondaryColors", "semanticColors"]);
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+function SectionHead({ n, title, detail, done, aside }: { n: number; title: string; detail?: string; done?: boolean; aside?: ReactNode }) {
+  return (
+    <header className={fx.sectionHead}>
+      <div>
+        <h3>
+          <i data-done={done || undefined}>{done ? <Check size={13} /> : n}</i>
+          {title}
+        </h3>
+        {detail && <p>{detail}</p>}
+      </div>
+      {aside}
+    </header>
+  );
+}
+
+export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue, intake }: { campaignId: string; sourcesReady: boolean; onContinue?: () => void; intake?: IntakeFiles }) {
   const router = useRouter();
   const endpoint = `/api/studio/campaigns/${campaignId}/brand-fields`,
     { data, error, refresh } = useShared<BrandAnalysisView>(endpoint),
@@ -28,22 +67,34 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
     [open, setOpen] = useState<string | null>(null),
     [filter, setFilter] = useState("populated"),
     [search, setSearch] = useState("");
-  const submitRequest = useRef<string | null>(null);
-  async function command(value: unknown) {
-    setBusy(true);
+  const submitRequest = useRef<string | null>(null),
+    skipped = useRef("");
+  async function command(value: unknown, quiet = false) {
+    if (!quiet) setBusy(true);
     setMessage("");
     try {
       if (["submit", "prefill"].includes((value as { action: string }).action)) await flushCampaignSaves(campaignId);
       const result = await studioRequest<{ message: string }>(endpoint, "POST", value);
-      setMessage(result.message);
+      if (!quiet) setMessage(result.message);
       refresh();
       if ((value as { action: string }).action === "submit") submitRequest.current = null;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not update the brandbook.");
     } finally {
-      setBusy(false);
+      if (!quiet) setBusy(false);
     }
   }
+  // A file switched off while it was being read stops the reading with “source changed”. That file is no longer
+  // wanted, so it is skipped automatically and the rest continues; the AD is never asked about it.
+  const current = data?.analyses.find((a) => !["completed", "cancelled"].includes(a.status));
+  useEffect(() => {
+    if (!current || current.status !== "blocked" || current.blocker !== "BRAND_SOURCE_CHANGED") return;
+    const key = `${current.id}:${data?.files.filter((f) => f.analysis_id === current.id && f.status !== "completed").length}`;
+    if (skipped.current === key) return;
+    skipped.current = key;
+    void command({ action: "skip", analysisId: current.id }, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id, current?.status, current?.blocker, data?.files]);
   // Saving the brandbook is free (no AI); it also fills unanswered questionnaire fields.
   async function continueToBrief() {
     setBusy(true);
@@ -101,44 +152,113 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
         </div>
       </section>
     );
-  const active = data.analyses.find((a) => !["completed", "cancelled"].includes(a.status)),
+  const active = current,
     latest = active ?? data.analyses[0],
     files = data.files.filter((f) => f.analysis_id === latest?.id),
     count = data.fields.reduce((n, f) => n + f.count, 0),
     completed = files.filter((f) => f.status === "completed").length,
-    skipped = files.filter((f) => f.status === "skipped").length,
+    skippedFiles = files.filter((f) => f.status === "skipped").length,
     cap = chosenCap ?? (latest ? latest.request_cap_micro_usd / 1000000 : 0.03),
     filled = data.fields.filter((f) => f.count > 0).length,
     excludedTotal = data.fields.reduce((n, f) => n + (f.rejected ?? 0), 0),
-    continuable = brandAnalysisCanContinue(latest);
+    continuable = brandAnalysisCanContinue(latest),
+    materials = intake?.materials ?? [],
+    inUse = materials.filter((m) => m.included && m.state !== "failed" && m.state !== "unsupported");
+  // What each file is and how far its reading got (the latest analysis first, then any earlier completed read).
+  const roles = new Map((data.materials ?? []).map((m) => [m.id, { role: m.role, sure: m.sure }])),
+    reading = new Map<string, FileReading>();
+  for (const f of files) reading.set(f.material_id, f);
+  for (const f of data.files) if (!reading.has(f.material_id) && f.status === "completed") reading.set(f.material_id, f);
+  const unread = inUse.filter((m) => m.state === "ready" && reading.get(m.id)?.status !== "completed").length;
   const visible = data.fields.filter(
     (f) =>
-      (filter === "all" ||
-        (filter === "populated" && f.count > 0) ||
-        (filter === "excluded" && (f.rejected ?? 0) > 0)) &&
+      (filter === "all" || (filter === "populated" && f.count > 0) || (filter === "excluded" && (f.rejected ?? 0) > 0)) &&
       `${f.label} ${f.key}`.toLowerCase().includes(search.toLowerCase()),
   );
   const stopNotice = brandAnalysisNotice(latest, data.usage?.lastRequestOutputLimit);
-  const staleCancelled = latest?.status === "cancelled",
-    blocked = latest?.status === "blocked",
-    status =
-      latest?.status === "active"
-        ? "Reading your sources"
-        : staleCancelled
-          ? "Work stopped"
-          : latest?.status === "completed"
-            ? "Sources processed"
-            : latest?.status === "budget_blocked"
-              ? "Budget needs attention"
-              : latest?.status === "paused"
-                ? "Work paused"
-                : blocked
-                  ? (stopNotice?.title ?? "Review needed")
-                  : latest?.status === "unknown"
-                    ? "Last request unconfirmed"
-                    : "Ready to build your brandbook";
+  const spent = data.usage?.spentMicroUsd ?? data.run?.charged_micro_usd ?? 0,
+    budget = data.run?.cap_micro_usd ?? 0;
+  const startReading = () =>
+    void command({ action: "start", requestId: crypto.randomUUID(), requestCap: Math.round(cap * 1000000), runCap: Math.round(runCap * 1000000) });
+  const continueReading = () => void command({ action: "continue", analysisId: latest!.id, requestCap: Math.round(cap * 1000000) });
+  // One status line and one action for the whole reading.
+  let tone: "idle" | "busy" | "done" | "attention" = "idle",
+    title = "",
+    detail = "",
+    action: ReactNode = null;
+  const readButton = (label: string, primary = true) => (
+    <Button variant={primary ? "default" : "outline"} disabled={busy || !sourcesReady || !!intake?.busy} onClick={startReading}>
+      <Play size={15} /> {label}
+    </Button>
+  );
+  if (intake?.preparing) {
+    tone = "busy";
+    title = `Preparing ${plural(intake.preparing, "file")}…`;
+    detail = "Files are opened on the studio computer first. Reading can start as soon as they are ready.";
+    action = readButton(latest ? "Read new files" : "Read my brandbook");
+  } else if (latest?.status === "active") {
+    tone = "busy";
+    title = `Reading ${Math.min(completed + skippedFiles + 1, files.length)} of ${plural(files.length, "file")}`;
+    detail = "Findings appear below as each file is read. You can leave this page; reading continues.";
+    action = (
+      <Button variant="outline" disabled={busy} onClick={() => void command({ action: "pause", analysisId: latest.id })}>
+        <Pause size={15} /> Pause
+      </Button>
+    );
+  } else if (latest?.status === "blocked" && latest.blocker === "BRAND_SOURCE_CHANGED") {
+    tone = "busy";
+    title = "Skipping a file you switched off…";
+    detail = "Reading continues with the remaining files.";
+  } else if (latest?.status === "unknown") {
+    tone = "attention";
+    title = "The last request didn’t confirm";
+    detail = "It is not repeated automatically, so nothing is charged twice. Everything found so far is saved — you can continue to the questionnaire.";
+  } else if (latest && ["paused", "cancelled", "budget_blocked", "blocked"].includes(latest.status)) {
+    tone = "attention";
+    title =
+      stopNotice?.title ??
+      (latest.status === "paused"
+        ? "Reading paused"
+        : latest.status === "cancelled"
+          ? "Reading stopped"
+          : latest.status === "budget_blocked"
+            ? "The reading budget is used up"
+            : latest.blocker === "NO_NEW_FINDINGS"
+              ? "A part of a file added nothing new"
+              : "A file couldn’t be read");
+    detail =
+      stopNotice?.detail ??
+      (latest.status === "budget_blocked"
+        ? "Raise the budget in Settings below, or continue to the questionnaire with what was found."
+        : latest.blocker === "NO_NEW_FINDINGS"
+          ? "Continue to move on to the next part."
+          : latest.status === "blocked"
+            ? `${humanize(latest.blocker)}. Skip it to read the rest; everything found so far is saved.`
+            : "Continue from where it stopped. Everything found so far is saved.");
+    action = continuable ? (
+      <Button disabled={busy || !data.workspaceReady} onClick={continueReading}>
+        <Play size={15} /> Continue reading
+      </Button>
+    ) : latest.status === "blocked" ? (
+      <Button disabled={busy} onClick={() => void command({ action: "skip", analysisId: latest.id })}>
+        <SkipForward size={15} /> Skip this file and continue
+      </Button>
+    ) : null;
+  } else if (!materials.length && !latest) {
+    title = "Add files to start";
+    detail = "Reading starts when you press the button. It costs a few cents and you see the price as it goes.";
+  } else if (latest && !unread) {
+    tone = "done";
+    title = `All ${plural(inUse.length, "file")} read`;
+    detail = `${count.toLocaleString()} findings saved.${skippedFiles ? ` ${plural(skippedFiles, "file")} skipped.` : ""} Add more files any time; only new files are read.`;
+  } else {
+    title = latest ? `${plural(unread, "new file")} to read` : `Ready to read ${plural(inUse.length, "file")}`;
+    detail = "Each file is read once and sorted into brand fields. Nothing is sent before you press the button.";
+    action = readButton(latest ? "Read new files" : "Read my brandbook");
+  }
+  const progress = latest?.status === "active" || (latest && tone === "attention") ? (files.length ? Math.round(((completed + skippedFiles) / files.length) * 100) : 0) : null;
   return (
-    <section className={styles.workspace}>
+    <div className={styles.workspace}>
       {error && (
         <div className="notice" role="alert">
           <p>{error} Showing the last loaded findings.</p>
@@ -147,98 +267,56 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
           </Button>
         </div>
       )}
-      <header className="brandbook-heading">
-        <div>
-          <p className="eyebrow">CHECK WHAT WE FOUND</p>
-          <h2>Your brand, field by field.</h2>
-          <p>Everything found in your files is used. Exclude anything wrong or outdated; the agents build what is missing.</p>
-        </div>
-        <div className="brandbook-total">
-          <strong>
-            {filled}
-            <span>/28</span>
-          </strong>
-          <small>fields found · {excludedTotal} excluded</small>
-        </div>
-      </header>
-      {!!data.brandOptions?.length && <BrandLibraryPicker options={data.brandOptions} busy={busy} choose={(id) => void command({ action: "useBrand", sourceCampaignId: id })} />}
-      {!!data.decisions?.length && (
-        <BrandDisagreements
-          decisions={data.decisions}
-          fields={data.fields}
-          busy={busy}
-          keep={(o) => void command({ action: "review", findingId: o.findingId, expectedVersion: o.version, decision: "keep", editedValue: null })}
+      <section className={fx.section} data-first>
+        <SectionHead
+          n={1}
+          done={inUse.length > 0}
+          title="Add your files"
+          detail="Switch off anything outdated or unrelated; it is left out completely. File kinds are guessed — change one only if it is wrong."
+          aside={materials.length ? <span className={fx.summary}><strong>{inUse.length}</strong>{materials.length - inUse.length ? `in use · ${materials.length - inUse.length} left out` : "in use"}</span> : undefined}
         />
-      )}
-      {!!data.materials?.length &&
-        (data.materials.some((m) => !m.sure) ? (
-          <BrandFileRoles materials={data.materials} busy={busy} setRole={(id, role) => void command({ action: "setRole", materialId: id, role })} />
-        ) : (
-          <Disclosure className="brandbook-files">
-            <summary>
-              <FileText size={17} />
-              <strong>What each file is</strong>
-              <span>{data.materials.length} files, each read as its kind</span>
-              <ChevronDown size={16} />
-            </summary>
-            <BrandFileRoles materials={data.materials} busy={busy} setRole={(id, role) => void command({ action: "setRole", materialId: id, role })} />
-          </Disclosure>
-        ))}
-      <div className="brandbook-overview">
-        <section className="brandbook-work-card">
-          <div className="brandbook-status">
-            <span className={`brandbook-status-dot ${latest?.status === "active" ? "is-active" : ""}`} />
-            {status}
-          </div>
-          <h3>{count ? `${count.toLocaleString()} findings from your files` : "Nothing read yet"}</h3>
-          <p>
-            {staleCancelled
-              ? "Continue from the saved position. Files you skipped stay skipped."
-              : blocked && latest?.blocker === "NO_NEW_FINDINGS"
-                ? "The last pass found only existing items. Continue to the next part."
-                : stopNotice
-                  ? stopNotice.detail
-                  : latest?.status === "budget_blocked"
-                    ? "Your findings are safe. Check the request allowance and remaining budget before continuing."
-                    : count
-                      ? "Every finding is saved. New files are read when you press the button."
-                      : "We read each file and sort what we find into brand fields."}
-          </p>
-          <div className="data-heading-actions">
-            {continuable ? (
-              <Button
-                disabled={busy || !data.workspaceReady}
-                onClick={() => void command({ action: "continue", analysisId: latest!.id, requestCap: Math.round(cap * 1000000) })}
-              >
-                <Play size={15} />
-                Continue work
-              </Button>
-            ) : !active ? (
-              <Button
-                disabled={busy || !sourcesReady}
-                onClick={() =>
-                  void command({ action: "start", requestId: crypto.randomUUID(), requestCap: Math.round(cap * 1000000), runCap: Math.round(runCap * 1000000) })
-                }
-              >
-                <Play size={15} />
-                {latest ? "Read new files" : "Read my brandbook"}
-              </Button>
-            ) : (
-              <Badge variant="outline">Review needed</Badge>
-            )}
-            {latest?.status === "active" && (
-              <Button variant="outline" disabled={busy} onClick={() => void command({ action: "pause", analysisId: latest.id })}>
-                <Pause size={15} />
-                Pause
-              </Button>
+        {intake?.addFiles}
+        {!!data.brandOptions?.length && <BrandLibraryPicker options={data.brandOptions} busy={busy} choose={(id) => void command({ action: "useBrand", sourceCampaignId: id })} />}
+        {intake && materials.length > 0 && (
+          <BrandFiles
+            materials={materials}
+            roles={roles}
+            reading={reading}
+            intakeEndpoint={intake.intakeEndpoint}
+            fieldsEndpoint={endpoint}
+            busy={busy || intake.busy}
+            onInclude={intake.include}
+            onRole={(id, role) => void command({ action: "setRole", materialId: id, role })}
+          />
+        )}
+      </section>
+      <section className={fx.section}>
+        <SectionHead n={2} done={tone === "done"} title="Read the brandbook" />
+        <div className={fx.reader} data-tone={tone}>
+          <div>
+            <div className={fx.readerTitle}>
+              <i />
+              {title}
+            </div>
+            {detail && <p className={fx.readerDetail}>{detail}</p>}
+            {progress !== null && (
+              <div className={fx.readerBar}>
+                <b style={{ width: `${progress}%` }} />
+              </div>
             )}
           </div>
-          <Disclosure className="brandbook-settings">
-            <summary>
-              Processing settings
-              <ChevronDown size={14} />
-            </summary>
-            <div className="studio-form">
+          <div className={fx.readerSide}>
+            {action && <div className={fx.readerActions}>{action}</div>}
+            {(spent > 0 || budget > 0) && (
+              <span className={fx.cost} title={`${money(data.usage?.reservedMicroUsd ?? 0)} reserved for requests in flight`}>
+                Spent {money(spent)}
+                {budget ? ` of ${money(budget)}` : ""}
+              </span>
+            )}
+          </div>
+          <Disclosure className={fx.settings}>
+            <summary>Settings</summary>
+            <div className={fx.settingsBody}>
               <label>
                 Maximum price per request, USD
                 <input
@@ -253,176 +331,162 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
               </label>
               {!data.run && (
                 <label>
-                  New preparation budget, USD
+                  Reading budget, USD
                   <input type="number" min="0.01" max="10" step="0.01" value={runCap} onChange={(e) => setRunCap(Number(e.target.value))} />
                 </label>
               )}
             </div>
-            <p className="muted">Requests must fit the price allowance and cumulative budget. Previous charges stay recorded.</p>
-            <div className="data-heading-actions">
-              {active?.status === "blocked" && (
-                <Button variant="outline" disabled={busy} onClick={() => void command({ action: "skip", analysisId: active.id })}>
-                  Skip this file
-                </Button>
-              )}
-              {active && active.status !== "unknown" && (
-                <Button variant="outline" disabled={busy} onClick={() => void command({ action: "cancel", analysisId: active.id })}>
-                  Stop remaining work
-                </Button>
-              )}
-            </div>
+            <p className="muted">Each request must fit the price allowance and the budget. Previous charges stay recorded.</p>
+            {active && active.status !== "unknown" && (
+              <Button variant="outline" disabled={busy} onClick={() => void command({ action: "cancel", analysisId: active.id })}>
+                Stop remaining work
+              </Button>
+            )}
           </Disclosure>
-        </section>
-        <BrandBudget data={data} compact />
-      </div>
-      {!data.workspaceReady ? <WorkflowMigration stage="Brandbook workspace" /> : !data.updatesReady && <WorkflowMigration stage="Brandbook updates" />}
-      {message && (
-        <p className="brandbook-message" role="status">
-          {message}
-        </p>
-      )}
-      {latest?.blocker && !staleCancelled && latest.blocker !== "NO_NEW_FINDINGS" && (
-        <p className="notice" role="status">
-          {stopNotice ? (
-            <>
-              <strong>{stopNotice.title}.</strong> {stopNotice.detail}
-            </>
-          ) : (
-            <>
-              {latest.status === "unknown"
-                ? "The last reading request didn’t confirm whether it finished, so it won’t be repeated automatically. Everything found so far is saved — you can continue to the questionnaire."
-                : `${latest.blocker.replaceAll("_", " ").toLowerCase().replace(/^./, (c) => c.toUpperCase())}. Everything found so far is saved.`}
-            </>
+        </div>
+        {!data.workspaceReady ? <WorkflowMigration stage="Brandbook workspace" /> : !data.updatesReady && <WorkflowMigration stage="Brandbook updates" />}
+        {message && (
+          <p className="brandbook-message" role="status">
+            {message}
+          </p>
+        )}
+      </section>
+      {count > 0 && (
+        <section className={fx.section}>
+          <SectionHead
+            n={3}
+            title="Check your brand"
+            detail="This is what the agents receive. Edit or exclude anything wrong. Anything missing is designed by the agents."
+            aside={
+              <span className={fx.summary}>
+                <strong>
+                  {filled}/{data.fields.length}
+                </strong>
+                fields found{excludedTotal ? ` · ${excludedTotal} excluded` : ""}
+              </span>
+            }
+          />
+          {!!data.decisions?.length && (
+            <BrandDisagreements
+              decisions={data.decisions}
+              fields={data.fields}
+              busy={busy}
+              keep={(o) => void command({ action: "review", findingId: o.findingId, expectedVersion: o.version, decision: "keep", editedValue: null })}
+            />
           )}
-        </p>
-      )}
-      {latest && (
-        <Disclosure className="brandbook-files">
-          <summary>
-            <FileText size={17} />
-            <strong>
-              {completed}/{files.length} files processed
-            </strong>
-            <span>
-              {skipped ? `${skipped} skipped · ` : ""}
-              {count.toLocaleString()} findings saved
-            </span>
-            <ChevronDown size={16} />
-          </summary>
-          <div>
-            {files.map((f) => (
-              <div className="brandbook-file" key={f.id}>
-                <span>{f.filename}</span>
-                <small>
-                  {f.done}/{f.total} parts
-                </small>
-                <Badge variant={f.status === "completed" ? "blue" : "outline"}>{f.status.replaceAll("_", " ")}</Badge>
-              </div>
+          <BrandCard
+            endpoint={endpoint}
+            busy={busy}
+            review={(finding, value) => command({ action: "review", findingId: finding.findingId, expectedVersion: finding.version, decision: "keep", editedValue: value })}
+          />
+          <div className="brandbook-field-toolbar">
+            <div>
+              <h3>Every field</h3>
+            </div>
+            <label className="brandbook-search">
+              <Search size={16} />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find a field…" aria-label="Search brand fields" />
+            </label>
+          </div>
+          <div className="brandbook-filter-row" aria-label="Filter brand fields">
+            {[
+              ["populated", `Found (${filled})`],
+              ["all", `All (${data.fields.length})`],
+              ["excluded", "With exclusions"],
+            ].map(([key, label]) => (
+              <button type="button" aria-pressed={filter === key} key={key} onClick={() => setFilter(key)}>
+                {label}
+              </button>
             ))}
           </div>
-        </Disclosure>
-      )}
-      <div className="brandbook-field-toolbar">
-        <div>
-          <h3>Brand fields</h3>
-        </div>
-        <label className="brandbook-search">
-          <Search size={16} />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find a field…" aria-label="Search brand fields" />
-        </label>
-      </div>
-      <div className="brandbook-filter-row" aria-label="Filter brand fields">
-        {[
-          ["populated", `Found (${filled})`],
-          ["excluded", "Excluded"],
-          ["all", "All fields"],
-        ].map(([key, label]) => (
-          <button type="button" aria-pressed={filter === key} key={key} onClick={() => setFilter(key)}>
-            {label}
-          </button>
-        ))}
-
-      </div>
-      <div className="brandbook-fields">
-        {visible.map((field) => (
-          <Fragment key={field.key}>
-            <article className={`brandbook-field ${open === field.key ? "is-open" : ""}`}>
+          {[...fieldGroups, { title: "More", keys: data.fields.map((f) => f.key).filter((k) => !fieldGroups.some((g) => g.keys.includes(k))) }].map((group) => {
+            const list = visible.filter((f) => group.keys.includes(f.key)).sort((a, b) => group.keys.indexOf(a.key) - group.keys.indexOf(b.key));
+            if (!list.length) return null;
+            return (
+              <div key={group.title} className="brandbook-group">
+                <h4 className="brandbook-group-title">{group.title}</h4>
+                <div className="brandbook-fields">
+                  {list.map((field) => (
+                    <Fragment key={field.key}>
+                      <article className={`brandbook-field ${open === field.key ? "is-open" : ""} ${field.count ? "" : "is-empty"}`}>
+                        <button
+                          id={`brand-field-toggle-${field.key}`}
+                          className="brandbook-field-toggle"
+                          type="button"
+                          aria-expanded={open === field.key}
+                          aria-controls={`brand-field-${field.key}`}
+                          onClick={() => setOpen(open === field.key ? null : field.key)}
+                        >
+                          <span>
+                            <strong>{field.label}</strong>
+                            <FieldPreview field={field} />
+                            <span>
+                              {field.count
+                                ? `${plural(field.count, "finding")}${singleChoiceFields.has(field.key) && field.kept ? " · 1 chosen" : ""}${field.rejected ? ` · ${field.rejected} excluded` : ""}`
+                                : "Not found · the agents will design it"}
+                            </span>
+                          </span>
+                          <ChevronDown size={19} />
+                        </button>
+                      </article>
+                      {open === field.key && (
+                        <section
+                          id={`brand-field-${field.key}`}
+                          aria-labelledby={`brand-field-toggle-${field.key}`}
+                          className="brandbook-field-content"
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") {
+                              event.stopPropagation();
+                              setOpen(null);
+                              document.getElementById(`brand-field-toggle-${field.key}`)?.focus();
+                            }
+                          }}
+                        >
+                          <header className="brandbook-drawer-heading">
+                            <h4>{field.label}</h4>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setOpen(null);
+                                document.getElementById(`brand-field-toggle-${field.key}`)?.focus();
+                              }}
+                            >
+                              Close
+                            </Button>
+                          </header>
+                          <FindingList endpoint={endpoint} field={field.key} merge={field.merge} onChanged={refresh} />
+                        </section>
+                      )}
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {!visible.length && (
+            <p className="brandbook-empty">
+              No fields match this filter.
               <button
-                id={`brand-field-toggle-${field.key}`}
-                className="brandbook-field-toggle"
                 type="button"
-                aria-expanded={open === field.key}
-                aria-controls={`brand-field-${field.key}`}
-                onClick={() => setOpen(open === field.key ? null : field.key)}
-              >
-                <span>
-                  <small>{field.merge === "array" ? "CANDIDATES" : "ACCUMULATED TEXT"}</small>
-                  <strong>{field.label}</strong>
-                  <span>{field.count ? `${field.count} ${field.count === 1 ? "finding" : "findings"}${singleChoiceFields.has(field.key) && field.kept ? ` · ${field.kept} selected` : ""}${field.rejected ? ` · ${field.rejected} excluded` : ""}` : "No findings yet"}</span>
-                </span>
-                <ChevronDown size={19} />
-              </button>
-            </article>
-            {open === field.key && (
-              <section
-                id={`brand-field-${field.key}`}
-                aria-labelledby={`brand-field-toggle-${field.key}`}
-                className="brandbook-field-content"
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    event.stopPropagation();
-                    setOpen(null);
-                    document.getElementById(`brand-field-toggle-${field.key}`)?.focus();
-                  }
+                onClick={() => {
+                  setFilter("all");
+                  setSearch("");
                 }}
               >
-                <header className="brandbook-drawer-heading">
-                  <h4>{field.label}</h4>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setOpen(null);
-                      document.getElementById(`brand-field-toggle-${field.key}`)?.focus();
-                    }}
-                  >
-                    Close findings
-                  </Button>
-                </header>
-                <FindingList endpoint={endpoint} field={field.key} merge={field.merge} onChanged={refresh} />
-              </section>
-            )}
-          </Fragment>
-        ))}
-      </div>
-      {!visible.length && (
-        <p className="brandbook-empty">
-          {count ? "No fields match this filter." : "Findings will appear here as each file is processed."}
-          <button
-            type="button"
-            onClick={() => {
-              setFilter("all");
-              setSearch("");
-            }}
-          >
-            Show all fields
-          </button>
-        </p>
+                Show all fields
+              </button>
+            </p>
+          )}
+          <BrandSheetStrip endpoint={endpoint} busy={busy} build={() => command({ action: "buildSheet" })} />
+        </section>
       )}
-      {count > 0 && (
-        <BrandCard
-          endpoint={endpoint}
-          busy={busy}
-          review={(finding, value) => command({ action: "review", findingId: finding.findingId, expectedVersion: finding.version, decision: "keep", editedValue: value })}
-        />
-      )}
-      {count > 0 && <BrandSheetStrip endpoint={endpoint} busy={busy} build={() => command({ action: "buildSheet" })} />}
       <div className="step-footer">
         <p>
           {data.submission
             ? `Saved as version ${data.submission.version_no}. Continuing saves your latest changes.`
             : count
-              ? `${count - excludedTotal} findings in use. Exclude anything wrong, then continue.`
-              : "Add your brand files so we can find the logo, colors and fonts."}
+              ? `${(count - excludedTotal).toLocaleString()} findings in use.`
+              : "Add your brand files so we can find the logo, colours and fonts."}
         </p>
         <div className="step-footer-actions">
           {data.submission && (
@@ -431,7 +495,7 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
             </a>
           )}
           <a href={`/api/studio/campaigns/${campaignId}/brand-export`} download className="text-link" title="Everything the brandbook reading produced, as one JSON file">
-            <Download size={14} /> Export full JSON
+            <Download size={14} /> Export JSON
           </a>
           <Button disabled={busy || count === 0 || !data.workspaceReady || !data.updatesReady} onClick={() => void continueToBrief()}>
             Continue to questionnaire
@@ -439,85 +503,23 @@ export function BrandFieldWorkspace({ campaignId, sourcesReady, onContinue }: { 
           </Button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
-function BrandBudget({ data, compact = false }: { data: BrandAnalysisView; compact?: boolean }) {
-  const usage = data.usage,
-    cap = data.run?.cap_micro_usd ?? 0,
-    spent = usage?.spentMicroUsd ?? data.run?.charged_micro_usd ?? 0,
-    reserved = usage?.reservedMicroUsd ?? data.run?.reserved_micro_usd ?? 0,
-    available = usage?.availableMicroUsd ?? Math.max(0, cap - spent - reserved),
-    width = (amount: number) => (cap ? Math.max(0, Math.min(100, (amount / cap) * 100)) : 0);
-  if (compact)
+const humanize = (code: string | null) => (code ?? "Review needed").replaceAll("_", " ").toLowerCase().replace(/^./, (c) => c.toUpperCase());
+/** What a field holds, before opening it: swatches for colours, the first statement otherwise. */
+function FieldPreview({ field }: { field: BrandAnalysisView["fields"][number] }) {
+  const values = field.preview ?? [];
+  if (!values.length) return null;
+  if (colourFields.has(field.key))
     return (
-      <section className="brandbook-budget is-compact" title={`${money(reserved)} reserved for requests in flight`}>
-        <span className="eyebrow">READING COST</span>
-        <div className="brandbook-budget-title">
-          <strong>{money(spent)}</strong>
-          <span>{cap ? `of ${money(cap)}` : "spent"}</span>
-        </div>
-        <div className="brandbook-budget-bar" role="img" aria-label={`Spent ${money(spent)}, reserved ${money(reserved)}, available ${money(available)}`}>
-          <i className="is-spent" style={{ width: `${width(spent)}%` }} />
-          <i className="is-reserved" style={{ width: `${width(reserved)}%` }} />
-          <i className="is-free" style={{ width: `${cap ? width(available) : 100}%` }} />
-        </div>
-      </section>
+      <span className="brandbook-field-swatches" aria-hidden>
+        {values.slice(0, 8).map((hex) => (
+          <i key={hex} style={{ background: hex }} title={hex} />
+        ))}
+      </span>
     );
-  return (
-    <section className="brandbook-budget">
-      <span className="eyebrow">BUDGET & TOKEN USAGE</span>
-      <div className="brandbook-budget-title">
-        <strong>{money(spent)}</strong>
-        <span>spent {cap ? `of ${money(cap)} run budget` : ""}</span>
-      </div>
-      <div className="brandbook-budget-bar" role="img" aria-label={`Spent ${money(spent)}, reserved ${money(reserved)}, available ${money(available)}`}>
-        <i className="is-spent" style={{ width: `${width(spent)}%` }} />
-        <i className="is-reserved" style={{ width: `${width(reserved)}%` }} />
-        <i className="is-free" style={{ width: `${cap ? width(available) : 100}%` }} />
-      </div>
-      <div className="brandbook-budget-legend">
-        <div>
-          <span>
-            <i className="is-spent" />
-            Spent
-          </span>
-          <strong>{money(spent)}</strong>
-          <small>
-            {usage?.unreportedSteps ? "At least " : ""}
-            {(usage?.usedTokens ?? 0).toLocaleString()} tokens used
-          </small>
-        </div>
-        <div>
-          <span>
-            <i className="is-reserved" />
-            Reserved
-          </span>
-          <strong>{money(reserved)}</strong>
-          <small>Up to {(usage?.reservedOutputTokens ?? 0).toLocaleString()} output tokens</small>
-        </div>
-        <div>
-          <span>
-            <i className="is-free" />
-            Remaining
-          </span>
-          <strong>{money(available)}</strong>
-          <small>
-            {usage?.availableOutputTokens !== null && usage?.availableOutputTokens !== undefined
-              ? `~${usage.availableOutputTokens.toLocaleString()} output tokens across requests`
-              : "Token estimate unavailable"}
-          </small>
-        </div>
-      </div>
-      <p>
-        {(usage?.inputTokens ?? 0).toLocaleString()} input + {(usage?.outputTokens ?? 0).toLocaleString()} output tokens reported. Remaining-token estimate is
-        purchasing power across future requests, not the limit of one response; future inputs also cost money.
-        {usage?.unreportedSteps
-          ? ` ${usage.unreportedSteps} paid ${usage.unreportedSteps === 1 ? "request has" : "requests have"} unreported token usage.`
-          : ""}
-      </p>
-    </section>
-  );
+  return <span className="brandbook-field-preview">{values[0]}</span>;
 }
 function FindingList({ endpoint, field, merge, onChanged }: { endpoint: string; field: string; merge: "array" | "concat"; onChanged: () => void }) {
   const { data, error, refresh } = useShared<{ findings: SavedBrandFinding[]; next: number | null; visualSources?: BrandVisualSource[] }>(

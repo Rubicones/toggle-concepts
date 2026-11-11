@@ -26,6 +26,16 @@ export async function startLocalImage(stepId:string){
  });
 }
 
+let lastWorkflowStart=0,trailingWorkflowStart:ReturnType<typeof setTimeout>|null=null;
+/** For bursts (dozens of files dropped at once): start the local worker on the first call and once more after the burst
+ * instead of spawning a process per file. The worker keeps a single instance with its lock and watches for new work. */
+export async function startLocalWorkflowSoon(windowMs=2000){
+ const now=Date.now(),since=now-lastWorkflowStart;
+ if(since>=windowMs){lastWorkflowStart=now;await startLocalWorkflow();return;}
+ if(trailingWorkflowStart)return;
+ requireLocalDevice();
+ trailingWorkflowStart=setTimeout(()=>{trailingWorkflowStart=null;lastWorkflowStart=Date.now();void startLocalWorkflow().catch(()=>undefined);},windowMs-since);
+}
 export async function startLocalWorkflow(){
  requireLocalDevice();
  const env:NodeJS.ProcessEnv={...process.env};

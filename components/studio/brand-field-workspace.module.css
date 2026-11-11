@@ -1,9 +1,6 @@
 /* Loaded with the Brandbook component; scoped to its root. */
 
 .workspace {
-  margin-top: 30px;
-  padding-top: 30px;
-  border-top: 1px solid var(--line);
   width: 100%;
   min-width: 0;
   line-height: 1.6
@@ -465,7 +462,7 @@
   background: transparent;
   cursor: pointer;
   color: var(--ink);
-  min-height: 120px
+  min-height: 104px
 }
 
 .workspace :global(.brandbook-field-toggle>span) {
@@ -945,3 +942,13 @@
 }}
 
 
+
+/* Fields grouped the way an art director reads a brand, with a preview before opening. */
+.workspace :global(.brandbook-group) { margin-top: 22px; min-width: 0; }
+.workspace :global(.brandbook-group-title) { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #58717e; margin-bottom: 10px; }
+.workspace :global(.brandbook-field.is-empty) { background: #f8fafb; border-style: dashed; }
+.workspace :global(.brandbook-field.is-empty strong) { color: #58717e; }
+.workspace :global(.brandbook-field-toggle>span) { min-width: 0; }
+.workspace :global(.brandbook-field-toggle .brandbook-field-preview) { font-size: 12px; color: #3f5d6c; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.workspace :global(.brandbook-field-swatches) { display: flex; gap: 4px; flex-wrap: wrap; }
+.workspace :global(.brandbook-field-swatches i) { width: 22px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 1px #0d2f401f; }

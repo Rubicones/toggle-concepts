@@ -1,19 +1,22 @@
 "use client";
-import {Disclosure} from '@/components/ui/disclosure';
+import { Disclosure } from "@/components/ui/disclosure";
 import { BrandFieldWorkspace } from "./brand-field-workspace";
 import { usePersistedDraft, flushCampaignSaves } from "@/lib/use-persisted-draft";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { FolderPlus, Plus, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { studioRequest, useShared, waitForStudio } from "@/lib/shared-http";
+import { studioRequest, useShared } from "@/lib/shared-http";
 import { money } from "@/packages/contracts/shared";
-import { brandFileExtensions, brandUploadForm, type BrandIntakeView, type BrandMaterial } from "@/packages/contracts/brand-intake";
+import { brandFileExtensions, type BrandIntakeView } from "@/packages/contracts/brand-intake";
+import { uploadBrandFiles, type BrandUploadInput, type BrandUploadItem } from "@/lib/brand-upload";
 import { SaveStatus } from "./save-status";
 import { WorkflowMigration } from "./brief-workspace";
-type Incoming = { file: File; path: string };
-async function droppedFiles(items: DataTransferItemList): Promise<Incoming[]> {
-  const output: Incoming[] = [];
+import styles from "./brand-files.module.css";
+
+async function droppedFiles(items: DataTransferItemList): Promise<BrandUploadInput[]> {
+  const output: BrandUploadInput[] = [];
   async function visit(entry: FileSystemEntry, path = ""): Promise<void> {
     if (entry.isFile) {
       const file = await new Promise<File>((yes, no) => (entry as FileSystemFileEntry).file(yes, no));
@@ -34,16 +37,24 @@ async function droppedFiles(items: DataTransferItemList): Promise<Incoming[]> {
   }
   return output;
 }
+const picked = (list: FileList | null) => Array.from(list ?? []).map((file) => ({ file, path: file.webkitRelativePath || file.name }));
+
+/** Step 1: add the brand files, read them, check the brand. Everything that can happen on its own does. */
 export function BrandIntake({ campaignId, kitVersion = 0, onKitApplied }: { campaignId: string; kitVersion?: number; onKitApplied?: () => void }) {
   const endpoint = `/api/studio/campaigns/${campaignId}/brand-intake`,
     { data, error, refresh } = useShared<BrandIntakeView>(endpoint),
     [busy, setBusy] = useState(false),
     [hover, setHover] = useState(false),
     [message, setMessage] = useState(""),
-    [selectedCap] = useState(0.03),
-    [uploads, setUploads] = useState<{ path: string; state: string }[]>([]),
+    [writing, setWriting] = useState(false),
+    [uploads, setUploads] = useState<BrandUploadItem[]>([]),
+    [uploading, setUploading] = useState(false),
+    [retryable, setRetryable] = useState<BrandUploadInput[]>([]),
     files = useRef<HTMLInputElement>(null),
-    folder = useRef<HTMLInputElement>(null);
+    folder = useRef<HTMLInputElement>(null),
+    // Files the page has already handled on its own: one automatic re-read, then left out instead of blocking.
+    autoRetry = useRef(new Map<string, "sent" | "seen">()),
+    autoExcluded = useRef(new Set<string>());
   const notesDraft = usePersistedDraft({
       key: `${endpoint}:notes`,
       initial: data?.notesDraft ?? "",
@@ -60,83 +71,43 @@ export function BrandIntake({ campaignId, kitVersion = 0, onKitApplied }: { camp
     }),
     notes = notesDraft.value,
     setNotes = notesDraft.setValue;
-  async function upload(incoming: Incoming[], manageBusy = true) {
-    if (manageBusy) setBusy(true);
+  async function upload(incoming: BrandUploadInput[]) {
+    if (!incoming.length) return [];
+    setUploading(true);
     setMessage("");
-    let success = true;
-    const ids: string[] = [];
-    const progress: { path: string; state: string }[] = [];
+    setRetryable([]);
     try {
-      for (const item of incoming) {
-        if (item.file.name.startsWith(".") || item.path.split("/").includes("__MACOSX")) continue;
-        const current = { path: item.path, state: "Uploading" };
-        progress.push(current);
-        setUploads([...progress]);
-        try {
-          if (item.file.size > 52428800) throw new Error("Over the 50 MiB upload transport limit");
-          const form = brandUploadForm(item.file, item.path, crypto.randomUUID());
-          const saved = await studioRequest<{ id: string }>(endpoint, "PUT", form);
-          ids.push(saved.id);
-          current.state = "Saved · processing";
-        } catch (e) {
-          success = false;
-          current.state = e instanceof Error ? e.message : "Upload failed";
-        }
-        setUploads([...progress]);
-      }
+      const items = await uploadBrandFiles(endpoint, incoming, { onChange: setUploads });
       refresh();
-      const saved = progress.filter((item) => item.state === "Saved · processing").length,
-        failed = progress.length - saved;
+      const failed = items.filter((item) => item.state === "failed"),
+        saved = items.length - failed.length;
+      setRetryable(incoming.filter((input) => failed.some((f) => f.path === input.path)));
       setMessage(
-        failed
-          ? `${saved} of ${progress.length} files saved. ${failed} failed; see Upload results and select those files again.`
-          : saved
-            ? `${saved} files saved. Local reading starts automatically; build the kit when the included sources are ready.`
-            : "No files were added. Hidden system files are skipped.",
+        !items.length
+          ? "No files were added. Hidden system files are skipped."
+          : failed.length
+            ? `${saved} of ${items.length} files added.`
+            : `${saved} ${saved === 1 ? "file" : "files"} added. They are prepared on the studio computer, then you can read them.`,
       );
-    } catch (e) {
-      success = false;
-      setMessage(e instanceof Error ? e.message : "Could not add files.");
+      if (!failed.length) setUploads([]);
+      return items;
     } finally {
-      if (manageBusy) setBusy(false);
-    }
-    return { success, ids };
-  }
-  async function analyzeSource(id: string) {
-    setBusy(true);
-    setMessage("Waiting for the new source to finish local reading…");
-    try {
-      const fields = endpoint.replace("/brand-intake", "/brand-fields");
-      await waitForStudio<{ state: string; error_code: string | null }>(`${fields}?materialState=${id}`, (status) => {
-        if (["failed", "unsupported"].includes(status.state)) throw new Error("The source was saved but could not be read. Check its status below.");
-        return status.state === "ready";
-      });
-      const result = await studioRequest<{ message: string }>(fields, "POST", {
-        action: "startSelected",
-        requestId: crypto.randomUUID(),
-        materialIds: [id],
-        requestCap: Math.round(selectedCap * 1000000),
-        runCap: data?.run?.cap_micro_usd ?? 300000,
-      });
-      setMessage(result.message);
-      refresh();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Could not analyze the source.");
-    } finally {
-      setBusy(false);
+      setUploading(false);
     }
   }
-  async function addNotes(analyze: boolean) {
+  async function addNotes() {
     setBusy(true);
     try {
       await notesDraft.save();
       const file = new File([notes], `Brand notes ${Date.now()}.txt`, { type: "text/plain" });
-      const result = await upload([{ file, path: file.name }], false);
-      if (result.success) {
+      const items = await upload([{ file, path: file.name }]);
+      if (items.every((item) => item.state === "saved")) {
         setNotes("");
+        setWriting(false);
         await notesDraft.save();
-        if (analyze && result.ids[0]) await analyzeSource(result.ids[0]);
       }
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Could not save the text.");
     } finally {
       setBusy(false);
     }
@@ -152,7 +123,7 @@ export function BrandIntake({ campaignId, kitVersion = 0, onKitApplied }: { camp
         command = { ...command, expectedVersion: versions[key] ?? command.expectedVersion };
       }
       const result = await studioRequest<{ message: string }>(endpoint, "POST", command);
-      setMessage(result.message);
+      if (!["include", "retry", "resume"].includes(String(command.action))) setMessage(result.message);
       refresh();
       return true;
     } catch (e) {
@@ -162,6 +133,37 @@ export function BrandIntake({ campaignId, kitVersion = 0, onKitApplied }: { camp
       setBusy(false);
     }
   }
+  /** Background housekeeping: no message, no busy state. */
+  async function quietly(payload: Record<string, unknown>) {
+    try {
+      await studioRequest(endpoint, "POST", payload);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refresh();
+    }
+  }
+  // A file that fails to open is re-read once; if it fails again (or its format cannot be read) it is left out, so
+  // reading the rest of the brandbook is never blocked by it. The AD can switch it back on.
+  const materialStates = data?.materials.map((m) => `${m.id}:${m.state}:${m.included}`).join(",") ?? "";
+  useEffect(() => {
+    for (const m of data?.materials ?? []) {
+      if (!m.included || autoExcluded.current.has(m.id)) continue;
+      const retry = autoRetry.current.get(m.id);
+      if (m.state === "failed" && !retry) {
+        autoRetry.current.set(m.id, "sent");
+        void quietly({ action: "retry", materialId: m.id }).then((ok) => {
+          if (!ok) autoRetry.current.set(m.id, "seen");
+        });
+      } else if (retry === "sent" && m.state !== "failed") autoRetry.current.set(m.id, "seen");
+      else if (m.state === "unsupported" || (m.state === "failed" && retry === "seen")) {
+        autoExcluded.current.add(m.id);
+        void quietly({ action: "include", materialId: m.id, included: false });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [materialStates]);
   if (error && !data)
     return (
       <section className="detail-panel">
@@ -180,12 +182,61 @@ export function BrandIntake({ campaignId, kitVersion = 0, onKitApplied }: { camp
   if (!data.schemaReady) return <WorkflowMigration stage="Brand intake" />;
   const included = data.materials.filter((m) => m.included),
     ready = included.filter((m) => m.state === "ready"),
+    preparing = included.filter((m) => m.state === "uploaded" || m.state === "processing").length,
     working = data.proposals.some((p) => ["reserved", "running"].includes(p.status)),
     latest = data.proposals.find((p) => p.proposal && p.current),
     proposal = latest?.proposal,
     recoverable = data.proposals.find((p) => p.recoverable && p.current);
+  const dropFiles = (list: DataTransferItemList) => {
+    if (uploading) return;
+    void droppedFiles(list)
+      .then((items) => upload(items))
+      .catch((e) => setMessage(e instanceof Error ? e.message : "Could not read the dropped files."));
+  };
+  const addFiles = (
+    <AddFiles
+      empty={!data.materials.length}
+      uploading={uploading}
+      busy={busy}
+      uploads={uploads}
+      message={message}
+      retryable={retryable.length}
+      writing={writing}
+      notes={notes}
+      notesStatus={<SaveStatus {...notesDraft} retry={notesDraft.save} />}
+      setNotes={setNotes}
+      setWriting={setWriting}
+      chooseFiles={() => files.current?.click()}
+      chooseFolder={() => {
+        folder.current?.setAttribute("webkitdirectory", "");
+        folder.current?.click();
+      }}
+      retry={() => void upload(retryable)}
+      addNotes={() => void addNotes()}
+      pasteFiles={(list) => void upload(list)}
+      stuck={preparing > 0 && !uploading}
+      resume={() => void command({ action: "resume" })}
+    />
+  );
   return (
-    <section className="detail-panel brand-intake">
+    <section
+      className={`detail-panel brand-intake ${styles.intake}`}
+      data-dragging={hover || undefined}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        setHover(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHover(false);
+      }}
+      onDrop={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        setHover(false);
+        dropFiles(e.dataTransfer.items);
+      }}
+    >
       {error && (
         <div className="notice" role="alert">
           <p>{error} Showing the last loaded brand materials.</p>
@@ -194,178 +245,51 @@ export function BrandIntake({ campaignId, kitVersion = 0, onKitApplied }: { camp
           </Button>
         </div>
       )}
-      <p className="eyebrow">STEP 1 OF 3</p>
-      <h2>Drop your brandbook.</h2>
-      <p>The whole brand folder is best: guidelines, logos, fonts, product shots. We read everything and sort it into fields for you to choose from.</p>
-      <div
-        className={`brand-drop-zone ${hover ? "is-dragging" : ""}`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setHover(true);
-        }}
-        onDragLeave={() => setHover(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setHover(false);
-          if (busy) return;
-          void droppedFiles(e.dataTransfer.items)
-            .then((items) => upload(items))
-            .catch((e) => setMessage(e.message));
-        }}
-        onPaste={(e) => {
-          if (e.clipboardData.files.length) {
-            e.preventDefault();
-            void upload(Array.from(e.clipboardData.files).map((file) => ({ file, path: file.name })));
-          } else {
-            const text = e.clipboardData.getData("text/plain");
-            if (text) {
-              e.preventDefault();
-              setNotes(text.slice(0, 40000));
-              setMessage(
-                text.length > 40000
-                  ? "Pasted the first 40,000 characters. Add the remaining text as a file."
-                  : "Notes pasted below. Add them to include them in the brand pack.",
-              );
-            }
-          }
-        }}
-        tabIndex={0}
-        aria-label="Drop or paste brand files here"
-      >
-        <strong>Drop files or folders here</strong>
-        <p>Images · PDFs · Word documents · notes · font files</p>
-        <div className="data-heading-actions">
-          <Button type="button" disabled={busy} onClick={() => files.current?.click()}>
-            Choose files
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={busy}
-            onClick={() => {
-              folder.current?.setAttribute("webkitdirectory", "");
-              folder.current?.click();
-            }}
-          >
-            Choose folder
-          </Button>
-        </div>
-        <p className="muted">Or paste with ⌘V. Up to 50 MiB per file.</p>
-        <input
-          ref={files}
-          hidden
-          type="file"
-          multiple
-          accept={brandFileExtensions.map((e) => "." + e).join(",")}
-          onChange={(e) => {
-            void upload(Array.from(e.target.files ?? []).map((file) => ({ file, path: file.webkitRelativePath || file.name })));
-            e.target.value = "";
-          }}
-        />
-        <input
-          ref={folder}
-          hidden
-          type="file"
-          multiple
-          onChange={(e) => {
-            void upload(Array.from(e.target.files ?? []).map((file) => ({ file, path: file.webkitRelativePath || file.name })));
-            e.target.value = "";
-          }}
-        />
+      <div className={styles.stepHead}>
+        <p className="eyebrow">STEP 1 OF 3 · BRAND</p>
+        <h2>Your brand</h2>
+        <p>Drop the brand folder — guidelines, logos, fonts, product shots. We sort the files, read them and show the brand back to you.</p>
       </div>
-      <Disclosure className="brand-notes">
-        <summary>Add text instead — guidelines, story, links</summary>
-        <div className="studio-form">
-          <textarea
-            rows={4}
-            disabled={busy}
-            maxLength={40000}
-            value={notes}
-            aria-label="Brand notes"
-            onChange={(e) => setNotes(e.target.value)}
-            onPaste={(e) => {
-              if (e.clipboardData.files.length) {
-                e.preventDefault();
-                void upload(Array.from(e.clipboardData.files).map((file) => ({ file, path: file.name })));
-              }
-            }}
-            placeholder="Paste what you already have."
-          />
-          <SaveStatus {...notesDraft} retry={notesDraft.save} />
-          <div className="data-heading-actions">
-            <Button
-              variant="outline"
-              disabled={busy || !notes.trim()}
-              onClick={() => void addNotes(false).catch((e) => setMessage(e instanceof Error ? e.message : "Could not save notes."))}
-            >
-              Add to brandbook
-            </Button>
-          </div>
-        </div>
-      </Disclosure>
-      {uploads.length > 0 && (
-        <Disclosure open={uploads.some((u) => u.state !== "Saved · processing")}>
-          <summary>Upload results</summary>
-          {uploads.map((u, i) => (
-            <p key={i}>
-              {u.path} · {u.state}
-            </p>
-          ))}
-        </Disclosure>
-      )}
-      {data.materials.length > 0 && (
-        <Disclosure className="brand-files" open={data.materials.some((m) => m.state === "failed" || m.state === "unsupported")}>
-          <summary>
-            <strong>{data.materials.length} files</strong> · {ready.length} of {included.length} read
-            {data.materials.some((m) => m.state === "failed" || m.state === "unsupported") ? " · some need attention" : ""}
-          </summary>
-        {data.materials.map((m) => (
-          <article className="brand-source-row" key={m.id}>
-            <label className="checkbox-field">
-              <input
-                type="checkbox"
-                checked={m.included}
-                disabled={busy}
-                onChange={(e) => void command({ action: "include", materialId: m.id, included: e.target.checked })}
-              />
-              <span>
-                <strong>{m.relative_path}</strong>
-                <br />
-                <small>
-                  {m.extraction?.kind ?? m.mime} · {(m.bytes / 1024).toFixed(0)} KiB
-                </small>
-              </span>
-            </label>
-            <Badge variant={m.state === "ready" ? "blue" : "outline"}>{m.state === "ready" ? "Extracted" : m.state === "uploaded" ? "Queued" : m.state}</Badge>
-            {m.error_code && <p role="alert">Couldn’t read this file ({m.error_code.replaceAll("_", " ").toLowerCase()}). Untick it to continue without it.</p>}
-            {m.state === "failed" && (
-              <Button variant="outline" disabled={busy} onClick={() => void command({ action: "retry", materialId: m.id })}>
-                Retry file reading
-              </Button>
-            )}
-            {m.extraction && <SourceDetails material={m} endpoint={endpoint} />}
-            <div className="data-heading-actions">
-              <a className="text-link" href={`${endpoint}?source=${m.id}`} download>
-                Download
-              </a>
-            </div>
-          </article>
-        ))}
-        </Disclosure>
-      )}
-      {data.materials.some((m) => m.state === "uploaded" || m.state === "processing") && (
-        <Button variant="outline" disabled={busy} onClick={() => void command({ action: "resume" })}>
-          Resume file reading
-        </Button>
-      )}
-      <BrandFieldWorkspace campaignId={campaignId} sourcesReady={included.length > 0 && ready.length === included.length} onContinue={onKitApplied} />
+      {data.a1Accepted && <p className="notice">The brand for this run is approved. New files are saved for later runs.</p>}
+      <input
+        ref={files}
+        hidden
+        type="file"
+        multiple
+        accept={brandFileExtensions.map((e) => "." + e).join(",")}
+        onChange={(e) => {
+          void upload(picked(e.target.files));
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={folder}
+        hidden
+        type="file"
+        multiple
+        onChange={(e) => {
+          void upload(picked(e.target.files));
+          e.target.value = "";
+        }}
+      />
+      <BrandFieldWorkspace
+        campaignId={campaignId}
+        sourcesReady={ready.length > 0 && ready.length === included.length}
+        onContinue={onKitApplied}
+        intake={{
+          materials: data.materials,
+          addFiles,
+          preparing,
+          busy: busy || uploading,
+          include: (id, value) => void command({ action: "include", materialId: id, included: value }),
+          intakeEndpoint: endpoint,
+        }}
+      />
       {recoverable && data.recoveryReady && (
         <Button variant="outline" disabled={busy || working} onClick={() => void command({ action: "revalidate", stepId: recoverable.id })}>
           Recover earlier complete response · free
         </Button>
       )}
-      <p role="status">{!working && (message.startsWith("Gemini is reading") || message === "Existing brand build resumed.") ? "" : message}</p>
-      {data.a1Accepted && <p className="notice">The brand for this run is approved. New files are saved for later runs.</p>}
       {data.proposals.length > 0 && (
         <Disclosure className="brand-legacy">
           <summary>Earlier whole-kit builds ({data.proposals.length})</summary>
@@ -519,33 +443,137 @@ export function BrandIntake({ campaignId, kitVersion = 0, onKitApplied }: { camp
   );
 }
 
-function SourceDetails({ material: m, endpoint }: { material: BrandMaterial; endpoint: string }) {
-  const [open, setOpen] = useState(false);
-  if (!m.extraction) return null;
-  return (
-    <Disclosure onToggle={(e) => setOpen(e.currentTarget.open)}>
-      <summary>What was read{m.extraction.metadata.family ? ` · ${m.extraction.metadata.family}` : ""}</summary>
-      {open && (
-        <>
-          <p>
-            {m.extraction.images.length} actual image/page previews
-            {m.extractedChars !== undefined ? ` · ${m.extractedChars.toLocaleString()} extracted characters` : ""}
-          </p>
-          {m.extraction.warnings.map((w, i) => (
-            <p key={i}>{w}</p>
-          ))}
-          <SourceText key={m.extraction_sha} path={`${endpoint}?text=${m.id}`} />
-          {m.extraction.images.length > 0 && (
-            <a href={`${endpoint}?preview=${m.id}&page=1`} target="_blank" rel="noopener noreferrer">
-              Open first visual preview
-            </a>
-          )}
-        </>
-      )}
-    </Disclosure>
+
+type AddFilesProps = {
+  empty: boolean;
+  uploading: boolean;
+  busy: boolean;
+  uploads: BrandUploadItem[];
+  message: string;
+  retryable: number;
+  writing: boolean;
+  notes: string;
+  notesStatus: ReactNode;
+  setNotes: (value: string) => void;
+  setWriting: (value: boolean) => void;
+  chooseFiles: () => void;
+  chooseFolder: () => void;
+  retry: () => void;
+  addNotes: () => void;
+  pasteFiles: (files: BrandUploadInput[]) => void;
+  stuck: boolean;
+  resume: () => void;
+};
+/** The drop area: large while the brand is empty, a single bar afterwards. Files can be dropped anywhere on the step. */
+function AddFiles(p: AddFilesProps) {
+  const done = p.uploads.filter((u) => u.state === "saved").length,
+    failed = p.uploads.filter((u) => u.state === "failed"),
+    retrying = p.uploads.filter((u) => u.state === "retrying").length,
+    total = p.uploads.length;
+  const actions = (
+    <div className={styles.addActions}>
+      <Button type="button" variant={p.empty ? "default" : "outline"} disabled={p.uploading} onClick={p.chooseFiles}>
+        <Plus size={15} /> Add files
+      </Button>
+      <Button type="button" variant="outline" disabled={p.uploading} onClick={p.chooseFolder}>
+        <FolderPlus size={15} /> Add a folder
+      </Button>
+      <Button type="button" variant="ghost" disabled={p.busy} onClick={() => p.setWriting(!p.writing)}>
+        <Type size={15} /> Write or paste text
+      </Button>
+    </div>
   );
-}
-function SourceText({ path }: { path: string }) {
-  const { data, error } = useShared<{ text: string }>(path, { live: false });
-  return error ? <p role="alert">{error}</p> : data ? <pre className="shared-output">{data.text}</pre> : <p>Loading source excerpt…</p>;
+  return (
+    <div className={styles.add}>
+      <div
+        className={p.empty ? styles.dropBig : styles.dropBar}
+        tabIndex={0}
+        aria-label="Drop or paste brand files here"
+        onPaste={(e) => {
+          if (e.clipboardData.files.length) {
+            e.preventDefault();
+            p.pasteFiles(Array.from(e.clipboardData.files).map((file) => ({ file, path: file.name })));
+          } else {
+            const text = e.clipboardData.getData("text/plain");
+            if (text) {
+              e.preventDefault();
+              p.setNotes(text.slice(0, 40000));
+              p.setWriting(true);
+            }
+          }
+        }}
+      >
+        <div>
+          <strong>{p.empty ? "Drop your brand folder here" : "Drop more files anywhere on this page"}</strong>
+          <span>Guidelines (PDF, Word, text) · logos · fonts · product shots · design tokens. Up to 50 MB per file.</span>
+        </div>
+        {actions}
+      </div>
+      {p.writing && (
+        <div className={styles.notes}>
+          <textarea
+            rows={5}
+            disabled={p.busy}
+            maxLength={40000}
+            value={p.notes}
+            aria-label="Brand text"
+            autoFocus
+            onChange={(e) => p.setNotes(e.target.value)}
+            placeholder="Paste guidelines, the brand story, product facts or links. It is read like any other file."
+          />
+          <div className={styles.notesFoot}>
+            {p.notesStatus}
+            <Button type="button" variant="ghost" onClick={() => p.setWriting(false)}>
+              Cancel
+            </Button>
+            <Button type="button" disabled={p.busy || !p.notes.trim()} onClick={p.addNotes}>
+              Add to the brand
+            </Button>
+          </div>
+        </div>
+      )}
+      {total > 0 && p.uploading && (
+        <div className={styles.progress} role="status">
+          <span>
+            Adding {Math.min(done + failed.length + 1, total)} of {total} files…{retrying ? ` ${retrying} retrying automatically.` : ""}
+          </span>
+          <i>
+            <b style={{ width: `${Math.round(((done + failed.length) / total) * 100)}%` }} />
+          </i>
+        </div>
+      )}
+      {!p.uploading && failed.length > 0 && (
+        <div className={`notice ${styles.failed}`} role="alert">
+          <p>
+            <strong>
+              {failed.length} {failed.length === 1 ? "file was" : "files were"} not added
+            </strong>{" "}
+            after several automatic attempts.
+          </p>
+          <ul>
+            {failed.slice(0, 6).map((f) => (
+              <li key={f.path}>
+                {f.path} — {f.error}
+              </li>
+            ))}
+            {failed.length > 6 && <li>and {failed.length - 6} more</li>}
+          </ul>
+          {p.retryable > 0 && (
+            <Button type="button" variant="outline" onClick={p.retry}>
+              Try these again
+            </Button>
+          )}
+        </div>
+      )}
+      {!p.uploading && p.message && !failed.length && <p className={styles.added} role="status">{p.message}</p>}
+      {p.stuck && (
+        <p className={styles.added}>
+          Some files are still being prepared on the studio computer.{" "}
+          <button type="button" className="text-link" onClick={p.resume} disabled={p.busy}>
+            Restart preparing
+          </button>
+        </p>
+      )}
+    </div>
+  );
 }

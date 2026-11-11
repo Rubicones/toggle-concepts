@@ -4,7 +4,8 @@ import { AdShapeField, BriefFeelFields } from "./brief-feel-fields";
 import {Select} from '@/components/ui/select';
 import {usePersistedDraft} from "@/lib/use-persisted-draft";
 import {SaveStatus} from "./save-status";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import css from "./brief-workspace.module.css";
 import { useRouter } from "next/navigation";
 import type { CampaignFlow } from "@/packages/contracts/campaign-flow";
 import Link from "next/link";
@@ -29,7 +30,6 @@ export function WorkflowMigration({stage}:{stage:"M07b"|"C1"|"A1"|"M06"|"M07"|"M
 }
 const DEFAULT_IMMUTABLES = "Product name, logo, app interface and product shape stay exactly as supplied.";
 const DEFAULT_SYNTHESIS = "Backgrounds, environments, abstract shapes and lighting may be generated. People, the product and its interface are never invented.";
-const daysFromNow = (days: number) => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
 const browserZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; } };
 
 /** Step 2. One page of plain questions; submitting it starts the run. */
@@ -51,10 +51,8 @@ export function BriefWorkspace({ campaignId, goal, onSubmitted, flow }: { campai
       campaignId={campaignId}
       initial={data.draft?.payload ?? emptyBrief(goal)}
       initialVersion={data.draft?.version ?? 0}
-      assets={data.assets}
-      prefilled={data.brandbookPrefill ? Object.keys(data.brandbookPrefill.fields).length : 0}
+      prefilled={Object.keys(data.brandbookPrefill?.fields ?? {})}
       flow={flow ?? null}
-      refreshAssets={refresh}
       onSubmitted={() => {
         refresh();
         onSubmitted();
@@ -192,19 +190,15 @@ function BriefEditor({
   campaignId,
   initial,
   initialVersion,
-  assets,
   prefilled,
   flow,
-  refreshAssets,
   onSubmitted,
 }: {
   campaignId: string;
   initial: BriefDraft;
   initialVersion: number;
-  assets: BriefRecord["assets"];
-  prefilled: number;
+  prefilled: string[];
   flow: CampaignFlow | null;
-  refreshAssets: () => void;
   onSubmitted: () => void;
 }) {
   const router = useRouter();
@@ -232,8 +226,7 @@ function BriefEditor({
   });
   const { value: draft, setValue: setDraft, version } = persisted;
   const formRef = useRef<HTMLFormElement>(null),
-    requestId = useRef<string | null>(null),
-    knownAssets = useRef<Set<string> | null>(null);
+    requestId = useRef<string | null>(null);
   // Visible, editable defaults instead of empty required fields.
   useEffect(() => {
     setDraft((old) => {
@@ -249,7 +242,6 @@ function BriefEditor({
         ...old,
         immutables: old.immutables || DEFAULT_IMMUTABLES,
         synthesis: old.synthesis || DEFAULT_SYNTHESIS,
-        deadline: old.deadline || daysFromNow(14),
         timeZone: zoneValid ? old.timeZone : browserZone(),
       };
       const withRows = !old.entries.length ? { ...next, entries: allRows(next) } : next;
@@ -257,17 +249,6 @@ function BriefEditor({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // Images uploaded on this page are used in this campaign.
-  useEffect(() => {
-    if (!knownAssets.current) {
-      knownAssets.current = new Set(assets.map((a) => a.id));
-      return;
-    }
-    const fresh = assets.filter((a) => a.mime.startsWith("image/") && !knownAssets.current!.has(a.id));
-    if (!fresh.length) return;
-    fresh.forEach((a) => knownAssets.current!.add(a.id));
-    setDraft((old) => ({ ...old, sourceAssetIds: [...new Set([...old.sourceAssetIds, ...fresh.map((a) => a.id)])].slice(0, 20) }));
-  }, [assets, setDraft]);
   const blockers = briefBlockers(draft),
     possible = combinationCount(draft);
   const set = <K extends keyof BriefDraft>(key: K, value: BriefDraft[K]) =>
@@ -278,13 +259,18 @@ function BriefEditor({
       if (mode === "all") next = { ...next, entries: allRows(next) };
       return next;
     });
-  const field = (key: TextKey, label: string, opts: { multiline?: boolean; type?: string; placeholder?: string; hint?: string } = {}) => (
-    <label>
-      {label}
+  const fromBook = new Set(prefilled);
+  const field = (key: TextKey, label: string, opts: { multiline?: boolean; type?: string; placeholder?: string; hint?: string; optional?: boolean; rows?: number } = {}) => (
+    <label className={css.field}>
+      <span className={css.label}>
+        {label}
+        {opts.optional && <em>optional</em>}
+        {fromBook.has(key) && !!draft[key]?.trim() && <b title="Filled from your brandbook. Check it.">from brandbook</b>}
+      </span>
       {opts.multiline ? (
-        <textarea rows={2} value={draft[key] ?? ""} maxLength={limits[key]} placeholder={opts.placeholder} onChange={(e) => set(key, e.target.value)} />
+        <textarea id={`brief-${key}`} rows={opts.rows ?? 2} value={draft[key] ?? ""} maxLength={limits[key]} placeholder={opts.placeholder} onChange={(e) => set(key, e.target.value)} />
       ) : (
-        <input type={opts.type ?? "text"} value={draft[key] ?? ""} maxLength={limits[key]} placeholder={opts.placeholder} onChange={(e) => set(key, e.target.value)} />
+        <input id={`brief-${key}`} type={opts.type ?? "text"} value={draft[key] ?? ""} maxLength={limits[key]} placeholder={opts.placeholder} onChange={(e) => set(key, e.target.value)} />
       )}
       {opts.hint && <small className="muted">{opts.hint}</small>}
     </label>
@@ -322,9 +308,7 @@ function BriefEditor({
       </Select>
     </label>
   );
-  const images = assets.filter((a) => a.mime.startsWith("image/")),
-    selectedImages = images.filter((a) => draft.sourceAssetIds.includes(a.id)).length,
-    bookReady = !!flow?.brandbook.submitted;
+  const bookReady = !!flow?.brandbook.submitted;
   async function start() {
     setBusy(true);
     setMessage("");
@@ -344,16 +328,19 @@ function BriefEditor({
   return (
     <form noValidate ref={formRef} className="studio-form brief-editor" onSubmit={(e) => e.preventDefault()}>
       <div className="step-intro">
-        <p className="eyebrow">STEP 2 OF 3</p>
-        <h2>Tell us about this campaign.</h2>
+        <p className="eyebrow">STEP 2 OF 3 · QUESTIONNAIRE</p>
+        <h2>Tell us about this campaign</h2>
         <p>
-          {prefilled ? `${prefilled} answers were filled from your brandbook — check them. ` : ""}Everything saves as you type. Starting the run fixes these answers.
+          {prefilled.length ? `${prefilled.length} answers came from your brandbook — they are marked; check them. ` : ""}Logos, fonts, colours and product images come from the
+          brandbook, so nothing needs uploading here. Everything saves as you type.
         </p>
-        <SaveStatus {...persisted} retry={persisted.save} />
-        <CopyBriefButton campaignId={campaignId} disabled={busy} onCopy={(source) => {
-          setDraft((target) => copyBriefAnswers(source, target, () => crypto.randomUUID()));
-          setMode(source.entries.length && !isAll(source) ? "pick" : "all");
-        }} />
+        <div className={css.introActions}>
+          <SaveStatus {...persisted} retry={persisted.save} />
+          <CopyBriefButton campaignId={campaignId} disabled={busy} onCopy={(source) => {
+            setDraft((target) => copyBriefAnswers(source, target, () => crypto.randomUUID()));
+            setMode(source.entries.length && !isAll(source) ? "pick" : "all");
+          }} />
+        </div>
       </div>
       {initialVersion > version && (
         <p className="notice">
@@ -363,30 +350,49 @@ function BriefEditor({
           </Button>
         </p>
       )}
-      <fieldset disabled={busy}>
-        <legend>The campaign</legend>
+      <Section n={1} title="The product" detail="What the ad sells and why someone should care." disabled={busy}>
+        {field("product", "What are we advertising?", { multiline: true, rows: 3, placeholder: "Name it and say what it is, in a sentence or two." })}
         <div className="brief-field-grid">
-          {field("product", "What are we advertising?", { multiline: true })}
-          {field("benefit", "The main benefit, in one sentence", { placeholder: "What people get from it (optional)" })}
-          {field("proof", "Why should people believe it?", { multiline: true, placeholder: "A fact, number or feature that proves it (optional)" })}
-          {field("objective", "What should the ad achieve?", { multiline: true })}
+          {field("benefit", "The main benefit, in one sentence", { optional: true, placeholder: "What people get from it" })}
+          {field("proof", "Why should people believe it?", { multiline: true, optional: true, placeholder: "A fact, number or feature that proves it" })}
+        </div>
+      </Section>
+      <Section n={2} title="Audience and market" detail="Who sees the ad and what stands in their way." disabled={busy}>
+        <div className="brief-field-grid">
           {field("audience", "Who is it for?", { multiline: true })}
-          {field("audienceTension", "What gets in their way today?", { multiline: true, placeholder: "The problem or habit the product solves (optional)" })}
-          {field("markets", "Where will it run?", { placeholder: "UK, Germany…" })}
+          {field("audienceTension", "What gets in their way today?", { multiline: true, optional: true, placeholder: "The problem or habit the product solves" })}
+        </div>
+        {field("markets", "Where will it run?", { placeholder: "UK, Germany…" })}
+      </Section>
+      <Section n={3} title="Goal and offer" detail="What the ad should make people do." disabled={busy}>
+        {field("objective", "What should the ad achieve?", { multiline: true })}
+        <div className="brief-field-grid">
           {field("offer", "Offer", { multiline: true, placeholder: "Free 14-day trial…" })}
           {field("cta", "Call to action", { placeholder: "Try it free / Start your project", hint: "Several options? Separate them with /; each ad uses one." })}
-          {field("destination", "Link the ad opens", { type: "url", placeholder: "https://" })}
         </div>
-      </fieldset>
-      <fieldset disabled={busy}>
-        <legend>How it should feel</legend>
+      </Section>
+      <Section n={4} title="How it should feel" detail="Pick what fits; the agents invent the visual style from it." disabled={busy}>
         <BriefFeelFields value={draft.feel} onChange={(feel) => set("feel", feel)} />
-      </fieldset>
-      <fieldset disabled={busy}>
-        <legend>What to make</legend>
+        {field("variationNotes", "Anything else for the creative team", { multiline: true, optional: true, rows: 3, placeholder: "Ideas, references in words, what to avoid…" })}
+      </Section>
+      <Section n={5} title="What to make" detail="Formats, languages and how many versions." disabled={busy}>
         <AdShapeField value={draft.adShape} onChange={(id) => set("adShape", id as NonNullable<typeof draft.adShape>)} />
+        <p className={css.sub}>Formats</p>
+        <div className="format-choice" role="group" aria-label="Formats">
+          {briefPlacementOptions.map((p) => (
+            <label key={p.id} data-checked={draft.placementIds.includes(p.id) || undefined}>
+              <input
+                type="checkbox"
+                checked={draft.placementIds.includes(p.id)}
+                onChange={(e) => set("placementIds", e.target.checked ? [...draft.placementIds, p.id] : draft.placementIds.filter((id) => id !== p.id))}
+              />
+              <i style={{ aspectRatio: `${p.width} / ${p.height}` }} />
+              <span>{p.label}</span>
+            </label>
+          ))}
+        </div>
         <div className="brief-field-grid">
-          <AxisField label="Languages" hint="Comma separated, e.g. en-GB, ru-RU" values={draft.locales} onChange={(v) => set("locales", v)} />
+          <AxisField label="Languages" hint="Language codes, comma separated: en-GB, de-DE, ru-RU" values={draft.locales} onChange={(v) => set("locales", v)} />
           <AxisField label="Lengths, seconds" hint="e.g. 15, 6" values={draft.durationsSeconds} onChange={(v) => set("durationsSeconds", v.map(Number).filter((n) => n > 0))} />
           <label>
             Opening hooks per video
@@ -408,19 +414,6 @@ function BriefEditor({
               ))}
             </Select>
           </label>
-        </div>
-        <div className="format-choice" role="group" aria-label="Formats">
-          {briefPlacementOptions.map((p) => (
-            <label key={p.id} data-checked={draft.placementIds.includes(p.id) || undefined}>
-              <input
-                type="checkbox"
-                checked={draft.placementIds.includes(p.id)}
-                onChange={(e) => set("placementIds", e.target.checked ? [...draft.placementIds, p.id] : draft.placementIds.filter((id) => id !== p.id))}
-              />
-              <i style={{ aspectRatio: `${p.width} / ${p.height}` }} />
-              <span>{p.label}</span>
-            </label>
-          ))}
         </div>
         <div className="videos-mode" role="radiogroup" aria-label="Which videos">
           <label>
@@ -468,7 +461,6 @@ function BriefEditor({
             </div>
           </div>
         )}
-        {field("variationNotes", "Creative direction (optional)", { multiline: true, placeholder: "Ideas, tone, what to avoid…" })}
         <Disclosure>
           <summary>More options</summary>
           <div className="brief-field-grid">
@@ -503,35 +495,11 @@ function BriefEditor({
             </label>
           </div>
         </Disclosure>
-      </fieldset>
-      <fieldset disabled={busy}>
-        <legend>Images for the ads</legend>
-        <p className="muted">Add your product or app screenshots and your logo — at least two images. Brandbook files are not reused here yet.</p>
-        <MediaDrop campaignId={campaignId} onUploaded={refreshAssets} />
-        {images.length > 0 && (
-          <div className="brief-images">
-            {images.map((a) => (
-              <label className="checkbox-field" key={a.id}>
-                <input
-                  type="checkbox"
-                  checked={draft.sourceAssetIds.includes(a.id)}
-                  onChange={(e) => set("sourceAssetIds", e.target.checked ? [...draft.sourceAssetIds, a.id] : draft.sourceAssetIds.filter((id) => id !== a.id))}
-                />
-                <span>{a.filename}</span>
-              </label>
-            ))}
-          </div>
-        )}
-        {selectedImages < 2 && <p className="notice">Previews need at least two images: the product and the logo.</p>}
-      </fieldset>
-      <fieldset disabled={busy}>
-        <legend>Rules & responsibility</legend>
+      </Section>
+      <Section n={6} title="Rules" detail="What must stay exactly as it is, and what may be generated." disabled={busy}>
         <div className="brief-field-grid">
-          {field("ownerName", "Your name")}
-          {field("ownerEmail", "Your email", { type: "email" })}
-          {field("deadline", "Delivery date", { type: "date" })}
-          {field("immutables", "What must never change", { multiline: true })}
-          {field("synthesis", "What AI may generate", { multiline: true })}
+          {field("immutables", "What must never change", { multiline: true, rows: 3 })}
+          {field("synthesis", "What AI may generate", { multiline: true, rows: 3 })}
         </div>
         <label className="checkbox-field">
           <input
@@ -539,7 +507,7 @@ function BriefEditor({
             checked={draft.rights === "confirmed"}
             onChange={(e) => set("rights", e.target.checked ? "confirmed" : draft.sourceAssetIds.length ? "unknown" : "not_needed")}
           />
-          <span>I have permission to use the uploaded images, logos, fonts and brand materials in these ads.</span>
+          <span>I may use the brand’s logos, fonts, images and other brand files in these ads.</span>
         </label>
         <Disclosure>
           <summary>Claims, prices and rights notes (optional)</summary>
@@ -592,7 +560,7 @@ function BriefEditor({
             </div>
           )}
         </Disclosure>
-      </fieldset>
+      </Section>
       <div className="step-footer">
         <label className="step-budget">
           Run budget, USD
@@ -617,9 +585,20 @@ function BriefEditor({
             <Disclosure className="step-blockers">
               <summary>{blockers.length === 1 ? "1 answer missing" : `${blockers.length} answers missing`}</summary>
               <ul>
-                {blockers.map((b, index) => (
-                  <li key={index}>{b}</li>
-                ))}
+                {blockers.map((b, index) => {
+                  const target = blockerField(b);
+                  return (
+                    <li key={index}>
+                      {target ? (
+                        <button type="button" className="text-link" onClick={() => focusField(target)}>
+                          {b}
+                        </button>
+                      ) : (
+                        b
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </Disclosure>
           ) : (
@@ -638,60 +617,33 @@ function BriefEditor({
     </form>
   );
 }
-/** Multi-file drop for campaign images; each file is validated on the studio computer. */
-function MediaDrop({ campaignId, onUploaded }: { campaignId: string; onUploaded: () => void }) {
-  const input = useRef<HTMLInputElement>(null),
-    [state, setState] = useState(""),
-    [hover, setHover] = useState(false);
-  async function upload(files: File[]) {
-    let done = 0,
-      failed = 0;
-    for (const file of files) {
-      setState(`Uploading ${done + failed + 1} of ${files.length}…`);
-      try {
-        const form = new FormData();
-        form.set("file", file);
-        form.set("campaignId", campaignId);
-        await studioRequest("/api/studio/media", "POST", form);
-        done++;
-      } catch {
-        failed++;
-      }
-    }
-    setState(`${done} uploaded${failed ? ` · ${failed} failed (PNG, JPEG or WebP up to 10 MiB)` : ""}. Checking files…`);
-    onUploaded();
-  }
+/** Which questionnaire field a missing answer points to, so the list can take the AD straight there. */
+const blockerFields: [RegExp, TextKey][] = [
+  [/^Product is required/, "product"],
+  [/^Objective/, "objective"],
+  [/^Audience/, "audience"],
+  [/^Market/, "markets"],
+  [/^Offer/, "offer"],
+  [/^CTA/, "cta"],
+  [/^Product invariants/, "immutables"],
+  [/^Synthetic-content/, "synthesis"],
+];
+const blockerField = (message: string) => blockerFields.find(([pattern]) => pattern.test(message))?.[1];
+function focusField(key: TextKey) {
+  const element = document.getElementById(`brief-${key}`);
+  element?.scrollIntoView({ behavior: "smooth", block: "center" });
+  element?.focus({ preventScroll: true });
+}
+function Section({ n, title, detail, disabled, children }: { n: number; title: string; detail: string; disabled: boolean; children: ReactNode }) {
   return (
-    <div
-      className={`brand-drop-zone is-compact ${hover ? "is-dragging" : ""}`}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setHover(true);
-      }}
-      onDragLeave={() => setHover(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setHover(false);
-        void upload(Array.from(e.dataTransfer.files));
-      }}
-    >
-      <strong>Drop images here</strong>
-      <Button type="button" variant="outline" onClick={() => input.current?.click()}>
-        Choose images
-      </Button>
-      <input
-        ref={input}
-        hidden
-        type="file"
-        multiple
-        accept="image/png,image/jpeg,image/webp"
-        onChange={(e) => {
-          void upload(Array.from(e.target.files ?? []));
-          e.target.value = "";
-        }}
-      />
-      {state && <small role="status">{state}</small>}
-    </div>
+    <fieldset disabled={disabled} className={css.section}>
+      <legend>
+        <i>{n}</i>
+        {title}
+      </legend>
+      <p className={css.detail}>{detail}</p>
+      {children}
+    </fieldset>
   );
 }
 function AxisField({ label, hint, values, onChange }: { label: string; hint?: string; values: readonly (string | number)[]; onChange: (values: string[]) => void }) {
