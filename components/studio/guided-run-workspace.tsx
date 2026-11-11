@@ -8,6 +8,7 @@ import {DirectorWorkspace} from './director-workspace';
 import {CreativeProgress} from './creative-progress';
 import {CreativeReadiness} from './creative-readiness';
 import { RunBudgetCard, PreviewContinuation } from "./run-budget";
+import { LocalRunUsage } from "./local-usage";
 import { CompileReview } from "./compile-review";
 import type { BrandResult } from "@/packages/brand/proposal-diagnostic";
 import { useEffect, useRef, useState } from "react";
@@ -263,6 +264,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
               </div>
             </section>
             <RunBudgetCard data={data} busy={busy} command={command} />
+            {run?.id && <LocalRunUsage runId={run.id} />}
           </div>
           <ol className={styles.steps}>
             {runMilestones.map((step, index) => (

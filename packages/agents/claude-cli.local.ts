@@ -68,6 +68,8 @@ export type CliResult={
  usage?:{input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number};
  /** Internal attempts the CLI made inside this one call (StructuredOutput tool calls), separate from engine retries. */
  internalAttempts:number;numTurns?:number;stopReason?:string|null;resultSubtype?:string;isError?:boolean;
+ /** The CLI's own API-equivalent price of the call (total_cost_usd). On a subscription this is a relative measure, not money spent. */
+ apiEquivalentUsd?:number;
  /** Set when the CLI reports a subscription limit; the task waits instead of failing. */
  limitReached?:boolean;failure?:string;durationMs:number;exitCode:number|null;
  events:CliEvent[];stderr:string;
@@ -103,6 +105,6 @@ export async function runCli(args:{bin:string;argv:string[];cwd:string;env:NodeJ
  if(!result){const limited=LIMIT.test(stderr);return {...base,outcome:'unknown',text:partialText||null,failure:reason==='timeout'?'CLI_TIMEOUT':limited?'SUBSCRIPTION_LIMIT':'CLI_NO_RESULT',...(limited?{limitReached:true}:{})};}
  const isError=result.is_error===true,text=typeof result.result==='string'?result.result:null,limited=isError&&LIMIT.test(`${text??''} ${stderr}`);
  return {...base,outcome:isError?'failed':'succeeded',text,...(result.structured_output!==undefined?{structured:result.structured_output}:{}),
-  usage:result.usage as CliResult['usage'],numTurns:result.num_turns as number|undefined,stopReason:(result.stop_reason as string|null|undefined)??null,resultSubtype:result.subtype as string|undefined,isError,
+  usage:result.usage as CliResult['usage'],numTurns:result.num_turns as number|undefined,...(typeof result.total_cost_usd==='number'?{apiEquivalentUsd:result.total_cost_usd}:{}),stopReason:(result.stop_reason as string|null|undefined)??null,resultSubtype:result.subtype as string|undefined,isError,
   ...(limited?{limitReached:true,failure:'SUBSCRIPTION_LIMIT'}:isError?{failure:`CLI_${String(result.subtype??'error').toUpperCase()}`}:{})};
 }

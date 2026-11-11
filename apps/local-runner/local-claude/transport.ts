@@ -26,6 +26,8 @@ export type LocalTextDetails={
  transport:'claude-cli';mapping:LocalModelChoice;semanticInputHash:string;schemaMode:'cli'|'plain'|'none';unsupported:string[];
  cliVersion:string;executedModel?:string;sessionId?:string;apiKeySource?:string;
  internalAttempts:number;numTurns?:number;stopReason?:string|null;durationMs:number;exitCode:number|null;limitReached?:boolean;
+ /** LC0: the effort asked for and the CLI's API-equivalent price (subscription quota, not money). */
+ effort?:string;apiEquivalentUsd?:number;
  usage?:CliResult['usage'];events:CliEvent[];stderr:string;recordPath?:string;
  /** Hypothetical text cost on the target model (plan §9, quantity 3): Sonnet's tokens at the target's prices. A forecast
   * with an unmeasured error, never an actual cost or a receipt. */
@@ -69,7 +71,7 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{})};
+    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};
