@@ -45,15 +45,24 @@ async function context(campaignId:string,directionId:string,iterationId?:string)
  }
  const work=checked(await admin.from('studio_director_work').select('state,iteration_id,status').eq('block_id',block.id).eq('direction_id',directionId).maybeSingle());if(!work)throw new ApiError(404,'DIRECTION_NOT_FOUND','This direction is not available.');
  const state=work.state as WorkState;input.iterationId=work.iteration_id;
- const folder=resolve('artifacts/m08/workspaces',input.runId,input.roundId,input.directionId,input.iterationId);
- // Work done on another studio computer (a colleague's Local Claude run) has no workspace folder here. Its sealed
- // iteration keeps the full source in the database, so the preview is rebuilt from that instead of staying empty.
+ let folder=resolve('artifacts/m08/workspaces',input.runId,input.roundId,input.directionId,input.iterationId),remote=false;
+ // Work made on another studio computer (a colleague's Local Claude run) has no workspace folder here.
+ // 1. While it is being made: the worker shares each working revision in storage (live-share.ts); show the latest.
+ // 2. Otherwise its sealed iteration keeps the full source in the database.
  if(!existsSync(folder)){
-  const sealed=work.iteration_id?checked(await admin.from('studio_director_iterations').select('id').eq('id',work.iteration_id).eq('direction_id',directionId).maybeSingle()):null;
-  if(sealed)return {...await context(campaignId,directionId,sealed.id),route:['queued','running'].includes(work.status)?'live':['review','waiting'].includes(work.status)?'paused':'quote',remote:true};
-  return {blockId:block.id,route:'live',folder,input,snapshot,catalog:[],remote:true};
+  remote=true;
+  const shared=checked(await admin.from('studio_director_events').select('live:payload->detail->liveSource').eq('block_id',block.id).eq('direction_id',directionId).eq('iteration_id',work.iteration_id).not('payload->detail->liveSource','is',null).order('created_at',{ascending:false}).limit(1).maybeSingle()) as {live?:{hash?:unknown;objectKey?:unknown}}|null;
+  const live=shared?.live;
+  if(live&&typeof live.hash==='string'&&/^[a-f0-9]{64}$/.test(live.hash)&&typeof live.objectKey==='string'&&live.objectKey.startsWith(`media/${tenant}/${campaignId}/director/live/`)){
+   const hash=live.hash,objectKey=live.objectKey;folder=resolve('artifacts/m09/remote-live',directionId,hash);
+   await restoreSavedLiveSource(folder,hash,async()=>JSON.parse(Buffer.from((await objectStore().get(objectKey)).body).toString('utf8')));
+  }else{
+   const sealed=work.iteration_id?checked(await admin.from('studio_director_iterations').select('id').eq('id',work.iteration_id).eq('direction_id',directionId).maybeSingle()):null;
+   if(sealed)return {...await context(campaignId,directionId,sealed.id),route:['queued','running'].includes(work.status)?'live':['review','waiting'].includes(work.status)?'paused':'quote',remote:true};
+   return {blockId:block.id,route:'live',folder,input,snapshot,catalog:[],remote:true};
+  }
  }
- return {blockId:block.id,route:['queued','running'].includes(work.status)?'live':['review','waiting'].includes(work.status)?'paused':'quote',folder,input,snapshot,catalog:state.catalog??[],design:state.design,...(state.designer?.lastRender?{measured:state.designer.lastRender.findings.map(f=>({code:f.code,detail:f.detail}))}:{}),designer:{...(state.designer?.hero?{hero:{sceneId:state.designer.hero.sceneId,format:state.designer.hero.format,accepted:state.designer.hero.state==='accepted'}}:{}),renders:state.designer?.renders,findings:state.designer?.lastRender?state.designer.lastRender.findings.filter(f=>f.severity==='hard').map(f=>({views:[f.view]})):[]}};
+ return {blockId:block.id,route:['queued','running'].includes(work.status)?'live':['review','waiting'].includes(work.status)?'paused':'quote',remote,folder,input,snapshot,catalog:state.catalog??[],design:state.design,...(state.designer?.lastRender?{measured:state.designer.lastRender.findings.map(f=>({code:f.code,detail:f.detail}))}:{}),designer:{...(state.designer?.hero?{hero:{sceneId:state.designer.hero.sceneId,format:state.designer.hero.format,accepted:state.designer.hero.state==='accepted'}}:{}),renders:state.designer?.renders,findings:state.designer?.lastRender?state.designer.lastRender.findings.filter(f=>f.severity==='hard').map(f=>({views:[f.view]})):[]}};
 }
 function assets(ctx:Context){
  const rows=new Map<string,LiveAsset&{objectKey?:string;revisionId?:string;proxy?:boolean}>();
