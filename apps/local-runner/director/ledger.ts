@@ -23,6 +23,12 @@ export function directorLedger(admin:SupabaseClient,context:{runId:string;blockI
     await writeFile(path+'.tmp',JSON.stringify(proof),{mode:0o600});await rename(path+'.tmp',path);throw error;
    }
   },
+  async release(id){
+   // Local mode only (migration 20261111000100). Without the migration the step keeps asking for a receipt, as before.
+   const result=await admin.rpc('studio_release_local_text_step',{target_step:id,device:context.device,token:context.token});
+   if(result.error){if(['PGRST202','42883'].includes(result.error.code??'')||/NOT_LOCAL_TEXT_STEP/.test(result.error.message))return false;throw new Error(result.error.message);}
+   return result.data===true;
+  },
   async anchor(id,generation){checked(await admin.rpc('studio_anchor_director_step',{target_step:id,generation}));},
   async settle(id:string,r:TextReceipt){const receipt={target_step:id,final_state:r.outcome,actual_cost:r.cost,result_text:r.text,provider_generation:r.generation,token_usage:r.usage,failure:r.failure},dir=resolve('artifacts/m08/receipts');await mkdir(dir,{recursive:true,mode:0o700});const path=resolve(dir,id+'.json');await writeFile(path+'.tmp',JSON.stringify(receipt),{mode:0o600});await rename(path+'.tmp',path);checked(await admin.rpc('studio_finish_step',receipt));await unlink(path);}
  };

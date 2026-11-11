@@ -142,7 +142,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    if(role==='director'&&cfg.maxOutputTokens>config.maxOutputTokens)await events.emit(`answer-room:${id}`,{stepId:`answer-room:${id}`,kind:'control',status:'done',model:config.modelId,costMicroUsd:0,message:'The added allowance gives this design answer more room to finish.',detail:{approvedAttempts:estimate.roles.director.requests,maxOutputTokens:cfg.maxOutputTokens}});
    // The AD sees that an answer is being written and since when (a long answer streams for minutes).
    state.activeCall={role,startedAt:Date.now()};note(`${role}: request sent${JSON.stringify(identity).includes('"retry"')?' (retry)':''}.`);await save();
-   try{const transport=transportFor(execution,local);const answer=await paidText({identity:localIdentity?{call:id,...localIdentity}:id,transport,role:modelRole,model:prior?.model_id??config.modelId,prompt:prior?.prompt??prompt,snapshot:cfg,allowanceMicroUsd:admitted.remainingMicroUsd,images,ledger:directorLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,device,token:work.lease_token})});note(`${role}: answer received (${answer.text.length.toLocaleString('en-US')} characters, $${(answer.costMicroUsd/1e6).toFixed(3)}${answer.reused?', saved earlier':''}).`);return answer;}
+   try{const transport=transportFor(execution,local);const answer=await paidText({identity:localIdentity?{call:id,...localIdentity}:id,transport,localText:execution.mode==='local_claude',role:modelRole,model:prior?.model_id??config.modelId,prompt:prior?.prompt??prompt,snapshot:cfg,allowanceMicroUsd:admitted.remainingMicroUsd,images,ledger:directorLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,device,token:work.lease_token})});note(`${role}: answer received (${answer.text.length.toLocaleString('en-US')} characters, $${(answer.costMicroUsd/1e6).toFixed(3)}${answer.reused?', saved earlier':''}).`);return answer;}
    catch(error){note(`${role}: request failed — ${error instanceof Error?error.message:'unknown'}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}.`);throw error;}
    finally{delete state.activeCall;}
   };
@@ -154,7 +154,12 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    const key=`${role}:${JSON.stringify(identity)}`;let budget=3;
    for(;;){const retry=state.callRetries?.[key]??0;
     try{return await callOnce(role,prompt,protocolInstructions,responseSchema,context,retry?{identity,retry}:identity,images);}
-    catch(error){const saved=error instanceof Error&&error.message==='SAVED_REQUEST_FAILED';if(!retryableProviderFailure(error)||!saved&&budget<=0)throw error;if(!saved)budget--;state.callRetries={...state.callRetries,[key]:retry+1};await save();if(!saved)await wait(5000*2**(2-budget));}
+    catch(error){
+     // Local mode: a CLI request left open by an earlier runner session, or one that ended without a final answer, has no
+     // OpenRouter receipt to check. It was closed at zero cost; warn on the timeline and continue instead of stopping.
+     const localStop=error instanceof Error&&['LOCAL_REQUEST_INTERRUPTED','LOCAL_RESULT_MISSING'].includes(error.message);
+     if(localStop){const warning=`local-warning:${requestId({key,retry})}`;await events.emit(warning,{stepId:warning,kind:'control',status:'done',costMicroUsd:0,message:(error as Error).message==='LOCAL_REQUEST_INTERRUPTED'?'Warning: a Local Claude request was interrupted (the runner or computer stopped). It had no OpenRouter receipt and cost nothing; it was closed and the step continues with a new request.':'Warning: Local Claude ended without a final answer. Nothing was charged; the step tries again within its approved requests.',detail:{code:(error as Error).message,role,retry:retry+1,note:(error as {detail?:string}).detail}});}
+     const saved=error instanceof Error&&(error.message==='SAVED_REQUEST_FAILED'||error.message==='LOCAL_REQUEST_INTERRUPTED');if(!retryableProviderFailure(error)||!saved&&budget<=0)throw error;if(!saved)budget--;state.callRetries={...state.callRetries,[key]:retry+1};await save();if(!saved)await wait(5000*2**(2-budget));}
    }
   };
 

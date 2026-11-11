@@ -27,7 +27,7 @@ export function estimateDirection(pricing:Record<Exclude<Role,'resources'>,{inpu
 /** outcome=failed: the request is settled (no open receipt), so a new request with a new identity is safe. */
 export function providerFailure(code:string,outcome:'failed'|'unknown',detail?:string){return Object.assign(new Error(code),{outcome,...(detail?{detail}:{})});}
 /** Settled provider failures that a fresh identical request usually fixes (rate limits, empty or cut streams, overloads). */
-export function retryableProviderFailure(error:unknown){const e=error as Error&{outcome?:string};return e?.outcome==='failed'&&/^(PROVIDER_(408|409|425|429|5\d\d)|SAVED_REQUEST_FAILED|TEXT_MISSING|PROVIDER_FINISH_REASON_UNEXPECTED|STREAM_INCOMPLETE)$/.test(e.message);}
+export function retryableProviderFailure(error:unknown){const e=error as Error&{outcome?:string};return e?.outcome==='failed'&&/^(PROVIDER_(408|409|425|429|5\d\d)|SAVED_REQUEST_FAILED|TEXT_MISSING|PROVIDER_FINISH_REASON_UNEXPECTED|STREAM_INCOMPLETE|LOCAL_REQUEST_INTERRUPTED|LOCAL_RESULT_MISSING)$/.test(e.message);}
 export const digest=(value:unknown)=>createHash('sha256').update(canonicalJson(value)).digest('hex');
 export function requestId(identity:unknown){const h=digest(identity);return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;}
 export type SavedRequest={id:string;status:string;output:string|null;cost:number|null;error?:string|null};
@@ -37,12 +37,32 @@ export interface TextLedger {
  claim(stepId:string):Promise<boolean>;
  anchor(stepId:string,generation:string):Promise<void>;
  settle(stepId:string,receipt:TextReceipt):Promise<void>;
+ /** Local mode only: close an open Claude Code CLI step left by an earlier runner session (failed, zero cost, still
+  * counted as a request). False when it is not releasable here (migration missing, not a Local text step). */
+ release?(stepId:string):Promise<boolean>;
 }
-/** Reservation/claim precede submission. Unknown/running submissions are never submitted again. */
-export async function paidText(args:{identity:unknown;role:Exclude<Role,'resources'>;model:string;prompt:string;snapshot:TextSnapshot;allowanceMicroUsd:number;images?:{url:string;label:string}[];ledger:TextLedger;transport?:typeof submitText}){
+/** Local mode: an open CLI request from an earlier runner session. It has no OpenRouter receipt and no money cost, so it
+ * is closed (failed, zero cost) and the caller retries with a new identity instead of asking for a receipt. */
+export const LOCAL_INTERRUPTED_DETAIL='A Local Claude request from an earlier runner session never finished (the runner or computer stopped). Local requests have no OpenRouter receipt and cost no money, so it was closed and the step continues with a new request.';
+/** Local mode: a CLI answer whose outcome is not known (no final result, timeout). Settled as failed at zero cost, never
+ * as an uncertain paid request: there is nothing to reconcile and the run stays open. Cancellation is not retried. */
+export function localUnknownReceipt(receipt:TextReceipt):TextReceipt{
+ if(receipt.outcome!=='unknown')return receipt;
+ const usage=receipt.usage&&typeof receipt.usage==='object'?receipt.usage as Record<string,unknown>:{},local=usage._local&&typeof usage._local==='object'?usage._local as Record<string,unknown>:{};
+ return {...receipt,provider:'claude-cli',outcome:'failed',cost:0,failure:receipt.failure==='CANCELLED'?'CANCELLED':'LOCAL_RESULT_MISSING',usage:{...usage,_local:{...local,unknownFailure:receipt.failure??null}}};
+}
+/** Reservation/claim precede submission. Unknown/running submissions are never submitted again (OpenRouter). Local
+ * text requests (localText) are subscription calls without receipts: open ones are released, unknown ones fail free. */
+export async function paidText(args:{identity:unknown;role:Exclude<Role,'resources'>;model:string;prompt:string;snapshot:TextSnapshot;allowanceMicroUsd:number;images?:{url:string;label:string}[];ledger:TextLedger;transport?:typeof submitText;localText?:boolean}){
  const id=requestId({identity:args.identity,role:args.role,model:args.model,prompt:args.prompt,snapshot:args.snapshot,images:args.images??[]}),prior=await args.ledger.find(id);
- const reuse=(saved:SavedRequest)=>{if((saved.status==='succeeded'||saved.error==='RECONCILED_NO_ACTIVATION')&&saved.output&&saved.cost!==null)return {text:saved.output,costMicroUsd:saved.cost,requestId:id,reused:true};const open=['running','unknown'].includes(saved.status);throw providerFailure(open?'PROVIDER_RECONCILIATION_REQUIRED':saved.error==='OUTPUT_TOKEN_LIMIT'?'OUTPUT_TOKEN_LIMIT':'SAVED_REQUEST_FAILED',open?'unknown':'failed');};
- if(prior&&prior.status!=='reserved')return reuse(prior);
+ const reuse=async(saved:SavedRequest)=>{if((saved.status==='succeeded'||saved.error==='RECONCILED_NO_ACTIVATION')&&saved.output&&saved.cost!==null)return {text:saved.output,costMicroUsd:saved.cost,requestId:id,reused:true};const open=['running','unknown'].includes(saved.status);
+  if(args.localText){
+   if(open){if(args.ledger.release&&await args.ledger.release(saved.id))throw providerFailure('LOCAL_REQUEST_INTERRUPTED','failed',LOCAL_INTERRUPTED_DETAIL);throw providerFailure('PROVIDER_RECONCILIATION_REQUIRED','unknown','Local Claude request left open by an earlier runner session. Apply migration 20261111000100 (studio_release_local_text_step) so it can be closed automatically.');}
+   // Released earlier (here or by the AD's Continue): report it once; the caller moves to a new identity.
+   if(saved.error==='LOCAL_REQUEST_INTERRUPTED')throw providerFailure('LOCAL_REQUEST_INTERRUPTED','failed',LOCAL_INTERRUPTED_DETAIL);
+  }
+  throw providerFailure(open?'PROVIDER_RECONCILIATION_REQUIRED':saved.error==='OUTPUT_TOKEN_LIMIT'?'OUTPUT_TOKEN_LIMIT':'SAVED_REQUEST_FAILED',open?'unknown':'failed');};
+ if(prior&&prior.status!=='reserved')return await reuse(prior);
  if(args.snapshot.requestInputCap&&textRequestQuote(args.prompt,args.snapshot,'',args.images?.length??0).inputTokenBound>args.snapshot.requestInputCap)throw new Error('DRAFT_REQUEST_SIZE_CAP');
  const reservation=textRequestQuote(args.prompt,args.snapshot,'',args.images?.length??0).reservationMicroUsd;
  if(reservation>args.allowanceMicroUsd)throw Object.assign(new Error('ROLE_ALLOWANCE_EXHAUSTED'),{detail:`${args.role}: this request may cost up to $${(reservation/1e6).toFixed(2)}; $${(args.allowanceMicroUsd/1e6).toFixed(2)} of its allowance is left`});
@@ -51,8 +71,11 @@ export async function paidText(args:{identity:unknown;role:Exclude<Role,'resourc
  let receipt:TextReceipt;
  try{receipt=await (args.transport??submitText)(args.model,args.prompt,args.snapshot,args.images??[],step.id,generation=>args.ledger.anchor(step.id,generation));}
  catch{receipt={outcome:'unknown',cost:null,text:null,generation:null,usage:null,failure:'SUBMISSION_OUTCOME_UNKNOWN'};}
+ const unknownFailure=receipt.outcome==='unknown'?receipt.failure:null;
+ if(args.localText)receipt=localUnknownReceipt(receipt);
  await args.ledger.settle(step.id,receipt);
  if(receipt.cost!==null&&receipt.cost>reservation)throw new Error('COST_EXCEEDED_RESERVATION');
+ if(receipt.failure==='LOCAL_RESULT_MISSING')throw providerFailure('LOCAL_RESULT_MISSING','failed',`Local Claude returned no final answer (${unknownFailure??'no result'}). No money was charged; the request counts against the approved requests and tokens.`);
  if(receipt.outcome!=='succeeded'||receipt.cost===null||!receipt.text)throw providerFailure(receipt.failure??'PROVIDER_RECONCILIATION_REQUIRED',receipt.outcome==='failed'&&receipt.cost!==null?'failed':'unknown',receipt.providerError?`${receipt.providerError.provider??'Provider'}: ${[receipt.providerError.message,...receipt.providerError.details].join(' · ')}`.slice(0,500):undefined);
  return {text:receipt.text,costMicroUsd:receipt.cost,requestId:id,reused:false};
 }

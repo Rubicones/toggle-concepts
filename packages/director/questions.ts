@@ -22,6 +22,8 @@ const plain:Record<string,string>={
  DRAFT_SIZE_SCHEMA_REQUIRED:'The app and database request limits need migration 058. Apply it, then retry within the approved allowance. No request was sent.',
  DRAFT_REQUEST_SIZE_CAP:'The required material still exceeds the request limit after automatic compaction. Saved work is retained; no new request was sent.',
  LEGACY_DRAFT_READ_ONLY:'This earlier run used the motion pipeline. Start a new static draft run; saved versions stay available.',
+ LOCAL_RESULT_MISSING:'Local Claude ended without a final answer several times in a row. Nothing was charged; saved work is retained.',
+ LOCAL_REQUEST_LIVE:'A Local Claude request for this direction is still running in another runner session. Wait for it to finish, then retry.',
  PROVIDER_400:'The model provider rejected the request format before generating anything (nothing was charged).',
 };
 export {exhaustedRole} from './failure-role';

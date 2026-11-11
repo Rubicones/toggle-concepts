@@ -9,12 +9,13 @@ import type {ProviderReceipt,Reconciliation} from '@/packages/contracts/provider
 import {WorkflowMigration} from './brief-workspace';
 type Uncertain={id:string;campaign_id:string;run_id:string;role:string;model_id:string;provider_id:string|null;reserve_micro_usd:number;cost_micro_usd:number|null;error_code:string|null;created_at:string;status?:string;unsubmittedRecovery?:{ready:boolean}};
 type Closed={id:string;name:string;closure_reason:string|null;charged_micro_usd:number;reserved_micro_usd:number;cap_micro_usd:number};
-type View={schemaReady:boolean;steps:Uncertain[];runs:Closed[];reconciliations:Reconciliation[]};
+type View={schemaReady:boolean;steps:Uncertain[];runs:Closed[];reconciliations:Reconciliation[];localInterrupted?:number};
 export function ProviderReceipts({runId,onContinue}:{runId?:string;onContinue?:()=>void}={}){
  const {data,error,refresh}=useShared<View>(`/api/studio/provider-receipts${runId?`?run=${encodeURIComponent(runId)}`:''}`);
  if(error)return <section className="detail-panel"><p role="alert">{error}</p><Button onClick={refresh}>Refresh receipt recovery</Button></section>;
  if(!data)return <p role="status">Loading provider charge recovery…</p>;if(!data.schemaReady)return <WorkflowMigration stage="M09"/>;
  return <section className="detail-panel" id="provider-receipts" tabIndex={-1} aria-label="Provider receipt recovery"><p className="eyebrow">PROVIDER RECEIPTS</p><h2>{runId?'Recover the interrupted request.':'Resolve uncertain charges.'}</h2><p>Check existing provider metadata without generating again. Reconciliation updates costs only; output stays historical and a new paid attempt remains explicit.</p>
+ {!!data.localInterrupted&&<p role="status">Warning: {data.localInterrupted===1?'a Local Claude request was':`${data.localInterrupted} Local Claude requests were`} interrupted (the runner or computer stopped). Local requests have no OpenRouter receipt and cost nothing, so there is nothing to check here. Continue closes {data.localInterrupted===1?'it':'them'} and the step sends a new request.</p>}
  {!data.steps.length&&<p>No open or uncertain provider requests.</p>}{!data.steps.length&&!data.runs.length&&onContinue&&<Button onClick={onContinue}>Continue within approved allowance</Button>}{data.steps.map(step=><ReceiptStep key={step.id} step={step} reconciliation={data.reconciliations.find(r=>r.step_id===step.id)} refresh={refresh}/>)}
  {data.runs.map(run=><ReopenRun key={run.id} run={run} unresolved={data.steps.some(s=>s.run_id===run.id)} refresh={refresh}/>)}
  <Disclosure><summary>Reconciliation history · {data.reconciliations.length}</summary>{data.reconciliations.map(r=><p key={r.id}>{r.outcome==='applied'?'Reconciled':'Overrun · blocked'} · actual {money(r.actual_cost_micro_usd)} · previous ledger charge {money(r.previous_charge_micro_usd)} · {r.provider_id}</p>)}<p>No original attempts, costs, caps, inputs or approvals are reset.</p></Disclosure></section>;
