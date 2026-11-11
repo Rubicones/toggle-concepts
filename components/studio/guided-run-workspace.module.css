@@ -102,3 +102,12 @@
 .rules{grid-template-columns:1fr}.rules>div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:20px;border:0;border-bottom:1px solid #e0e9ed;border-radius:0;padding:15px 0}.rules p{padding:0;max-height:none}.rules small{font-size:12px;line-height:1.6}
 .feedback{border-radius:14px}.attention{border-radius:12px;padding:18px 20px}
 @media(max-width:900px){.overview{grid-template-columns:1fr}.rules>div{grid-template-columns:1fr;gap:6px}}
+
+/* Work continues on its own; this only tells the AD why nothing moved for a moment. */
+.waking { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #2b6d8c; }
+.waking svg { animation: run-spin 1s linear infinite; }
+@keyframes run-spin { to { transform: rotate(360deg); } }
+/* Secondary tools, out of the way of the decisions. */
+.more { display: grid; gap: 12px; padding-top: 26px; border-top: 1px solid #dce7ec; }
+.more > h3 { font-size: 15px !important; font-weight: 600; color: #3f6476; letter-spacing: -.2px; }
+.more > * + * { margin-top: 0; }

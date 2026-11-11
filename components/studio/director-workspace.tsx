@@ -3,7 +3,7 @@
 import {PreviewModelPicker} from './preview-model-picker';
 import {Disclosure} from '@/components/ui/disclosure';
 import {Select} from '@/components/ui/select';
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {publicStepMessage} from '@/packages/director/events';
 import {DirectorAttempts,directionQuestionSummary,directionStatus,recoveryActions} from '@/packages/director/ad-flow';
 import {useShared,studioRequest} from '@/lib/shared-http';
@@ -21,7 +21,7 @@ type Mode='start'|'rebuild'|'revision';
 const price=(micro:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:4}).format(micro/1000000);
 const roleLabel:Record<string,string>={director:'Creative direction',designer:'Designer · idea, layout and pictures',resources:'Picture resources',assembler:'Component and code',critic:'Creative review'};
 
-export function DirectorWorkspace({campaignId,canStart=true}:{campaignId:string;canStart?:boolean}){
+export function DirectorWorkspace({campaignId,canStart=true,buildRequest}:{campaignId:string;canStart?:boolean;/** “Build this look” from the visual looks: a direction index and a fresh nonce per click. */buildRequest?:{index:number;nonce:number}|null}){
  const endpoint=`/api/studio/campaigns/${campaignId}/director`,{data,error,refresh}=useShared<DirectorView>(endpoint,{isActive:data=>['running','queued'].includes(data.status)||data.iterations.some(i=>i.deliveries.some(d=>!d.ready&&['queued','running'].includes(d.state??'')))});
  const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[failed,setFailed]=useState(false),[quote,setQuote]=useState<Quote|null>(null),[mode,setMode]=useState<Mode>('start'),[count,setCount]=useState<string>('');
  // Designer pipeline plan, point 4e: who makes the drafts. The earlier pipeline stays the default for comparisons.
@@ -49,6 +49,11 @@ export function DirectorWorkspace({campaignId,canStart=true}:{campaignId:string;
   if(!begin())return;
   try{const action=next==='start'?'start':approved?'rebuild':'quoteRebuild',parsedSelection=count===''?{}:count==='dir-2'?{directionIndices:[1]}:count==='dir-3'?{directionIndices:[2]}:count==='remaining'?{directionIndices:[1,2]}:{directions:Number(count)};const result=await studioRequest<{message?:string;quote?:Quote}>(`/api/studio/campaigns/${campaignId}/creative`,'POST',{action,...(approved?{quoteId:approved.quoteId,maxCostMicroUsd:approved.maxCostMicroUsd}:{...(directionIndices?.length?{directionIndices}:parsedSelection),...(pipeline==='designer'?{pipeline}:{})})},{signal:AbortSignal.timeout(30000)});setQuote(result.quote??null);setMode(next);setExtension(null);if(result.quote)requestAnimationFrame(()=>pricePanel.current?.scrollIntoView({block:'center',behavior:'smooth'}));setMessage(result.message??(result.quote?'Review the price before starting.':'The draft run started.'));refresh();}catch(e){setFailed(true);setMessage(e instanceof Error?e.message:'The draft request could not be confirmed.');}finally{finish();focusResult();}
  }
+ // A look chosen above opens its price here; nothing starts before the AD approves that price.
+ const handled=useRef<number|null>(null);
+ useEffect(()=>{if(!buildRequest||!data||!canStart||handled.current===buildRequest.nonce)return;handled.current=buildRequest.nonce;setQuote(null);void run(data.blockId?'rebuild':'start',undefined,[buildRequest.index]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[buildRequest?.nonce,!!data,canStart]);
  if(!data)return <section className={styles.workspace} aria-label="Director drafts"><p role={error?'alert':'status'}>{error||'Loading saved draft directions…'}</p>{error&&<Button variant="outline" onClick={refresh}>Reload drafts</Button>}</section>;
  if(!data.schemaReady)return <section className={styles.workspace}><h2>Draft directions</h2><p>The draft workspace needs its supplied database migrations before work can start.</p></section>;
  if(!canStart&&!data.blockId&&!data.directions.length)return null;
@@ -71,7 +76,7 @@ export function DirectorWorkspace({campaignId,canStart=true}:{campaignId:string;
    {direction.progress&&<Disclosure><summary>Agent working log · {direction.progress.turns} {direction.progress.owner==='designer'?'designer':'coder'} turn{direction.progress.turns===1?'':'s'}</summary>{direction.progress.activeSince&&!question&&<p>{direction.progress.activeRole==='designer'?'The designer':direction.progress.activeRole==='director'?'The director':'The coder'} is writing its answer since {new Date(direction.progress.activeSince).toLocaleTimeString()}.</p>}{direction.progress.designerNotes&&<section className={styles.designerNotes} aria-label="Designer's notes"><h5>Designer&apos;s notes</h5><p>{direction.progress.designerNotes}</p></section>}<pre className={styles.technical}>{[...(direction.progress.events??[]),...direction.progress.log].join('\n\n')}</pre></Disclosure>}
   </section>;};
  return <section id="draft-directions" className={styles.workspace} aria-label="Director drafts">
-  <header className={styles.header}><div><h2>Draft directions</h2><p>New previews build and review square (1:1) scenes only. Other formats are deferred to final production; the source keeps width and height inputs for later adaptation.</p></div></header>
+  <header className={styles.header}><div><h2>Draft directions</h2><p>Near-final drafts of the looks you build: real pictures, real copy, every scene. Drafts are square for now; the other formats and the animation come with final production. Direction 1, 2 and 3 are Look 1, 2 and 3 above.</p></div></header>
   {!data.blockId&&canStart?<div className={styles.launch}><p>{archivedDirections.length?'The saved previews below belong to earlier planning or an earlier pipeline. Review a new price to build from the current approved inputs.':'The approved brand, brief and scenarios are ready. Review the maximum price before starting.'}</p><div className={styles.actions}>{startControls}</div></div>:canStart?<div className={styles.launch}><h3>Rerun Build preview</h3><p>Creates new drafts from the approved planning with the models chosen in Models & agents. Earlier versions and costs remain saved.</p><div className={styles.actions}>{startControls}</div></div>:null}
   {error&&<p role="alert">Updates are temporarily unavailable. Your saved draft remains visible. <Button variant="outline" onClick={refresh}>Check updates</Button></p>}
   {message&&<p ref={feedback} tabIndex={-1} role={failed?'alert':'status'} className={failed?styles.error:styles.notice}>{publicStepMessage(message,4000)}</p>}

@@ -30,7 +30,7 @@ import {guidedRunCommand} from '@/packages/contracts/guided-run';
 import {normalizeCreativeFocus} from '@/packages/contracts/creative-focus';
 import {guidedDbError,approveRunBrand,resumeGuidedCreative} from '@/lib/server/guided-run';
 import {submittedBrandbook} from '@/lib/server/brandbook-a1';
-import {startLocalWorkflow,requireLocalDevice} from '@/lib/server/local-compute';
+import {startLocalWorkflow,startLocalWorkflowSoon,requireLocalDevice} from '@/lib/server/local-compute';
 import {draftContext,draftDbError} from '@/lib/server/drafts';
 export async function GET(_:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/run'>){return api(async()=>{
  const {id}=await ctx.params;await campaignRecord(id);const {admin,tenant}=await studioContext();
@@ -98,6 +98,9 @@ export async function GET(_:Request,ctx:RouteContext<'/api/studio/campaigns/[id]
  if(creative&&creativeProbe?.data){const a1=checked(await admin.from('studio_a1_reviews').select('brand_revision_id').eq('id',round!.a1_id).maybeSingle());if(a1){const revision=checked(await admin.from('studio_brand_revisions').select('id,payload').eq('id',a1.brand_revision_id).maybeSingle());if(revision){const current=await creativeBrand(id,{id:revision.id,kit:revision.payload.kit});fillBriefIdentity(current.system,JSON.parse(cp?.brief_text??'{}').questionnaire?.product);Object.assign(creative,creativeStaleness(creativeProbe.data.snapshot,creativeProbe.data.brand_system_hash,createHash('sha256').update(canonicalJson(current.system)).digest('hex')));}}}
  const creativeReadiness=null;const directorProbe=await admin.from('studio_director_blocks').select('id,run_id,round_id,status,snapshot').eq('tenant_id',tenant).eq('campaign_id',id).neq('status','quoted').order('created_at',{ascending:false});const lineage=round?draftLineage(round,jobs??[]):null,currentDirector=directorProbe.data?.find(b=>isCurrentDraftBlock(b,lineage)),directorActive=!!currentDirector,directorReady=!directorProbe.error;
  const devices=checked(await admin.from('studio_workflow_devices').select('id').eq('tenant_id',tenant).eq('state','online').gte('heartbeat_at',new Date(Date.now()-45000).toISOString()).limit(1));
+ // A running run never waits for a click: when no worker is online (it idles out after a minute), start one. Only the
+ // quota and the build price stop the work (owner decision, 11 November 2026).
+ if(control?.status==='running'&&!devices?.length)await startLocalWorkflowSoon(15000).catch(()=>undefined);
  let reviewerName='';try{reviewerName=JSON.parse(cp?.brief_text??'{}').questionnaire?.ownerName??'';}catch{}
  // Why each queued creative step is not running yet, so a stall is never silent.
  const creativeWaits:Record<string,string>={};

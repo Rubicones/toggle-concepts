@@ -24,13 +24,13 @@ export const guidedRunCommand=z.discriminatedUnion('action',[
 export type GuidedRunControl={run_id:string;campaign_id:string;tenant_id:string;c1_id:string;brandbook_id:string;stage:'brand'|'planning'|'assembly'|'draft_review'|'client_review'|'finals';status:'running'|'review'|'blocked'|'paused'|'complete';cursor:Record<string,unknown>;blocker:string|null;version:number;lease_token:number;created_by:string;created_at:string;updated_at:string};
 export type GuidedRunView={scenarioSelection?:import('./scenario-selection').ScenarioSelectionView;creativeFocus?:{text:string;updatedAt:string|null;ready:boolean};planningConfigRecovery?:{jobId:string;role:string;ready:boolean}|null;directorActive?:boolean;directorReady?:boolean;creativeWaits?:Record<string,string>;creative?:import('./creative-drafts').CreativeProgressData|null;creativeReadiness?:import('../brand/resolve-system').BrandResolution|null;budget?:import('./run-budget').RunBudget|null;assemblyContinuation?:PreviewContinuationQuote|null;continuationError?:string|null;limits?:RunLimits;assemblyRetry?:{stepId:string;attempts:number;ready:boolean;kind?:'retry'|'correct'}|null;uncertainMicroUsd?:number;failureStep?:{variantIdentityRecovery?:boolean;recoveryReady:boolean;canRecover:boolean;diagnostics:string[];jobId:string;id:string;role:string;model:string;status:string;code:string|null;output:string|null;cost:number|null;maxOutputTokens:number;message:string}|null;brandResult?:import('../brand/proposal-diagnostic').BrandResult|null;schemaReady:boolean;workerOnline:boolean;brief:{id:string;orderedVariants:number;locales:string[];reviewerName:string}|null;book:{id:string;version_no:number;findings:number}|null;run:SharedRun|null;control:GuidedRunControl|null;round:{id:string;phase:string;blocker:string|null;status:string}|null;jobs:WorkflowJob[];changes:{id:string;role:string;note:string;state:string;created_at:string}[];steps:{id:string;role:string;status:string;error_code:string|null;cost_micro_usd:number|null;output:string|null}[]};
 export const runMilestones=[
- {id:'brand',label:'Brand alignment',description:'Turn your submitted material into campaign rules.'},
- {id:'strategy',label:'Strategy',description:'Find the creative direction and supported message.'},
- {id:'script',label:'Scenarios',description:'Develop the ordered stories, hooks and scene beats.'},
- {id:'visuals',label:'Visual direction',description:'Develop copy, imagery and source requirements.'},
- {id:'assembly',label:'Build previews',description:'Build one adaptive creative per direction for your review.'},
- {id:'review',label:'Review drafts',description:'Review the actual creatives and choose directions.'},
- {id:'finals',label:'Final production',description:'Prepare ordered outputs after draft acceptance.'},
+ {id:'brand',label:'Brand check',description:'Check that the agents will use your brand the way you want.'},
+ {id:'strategy',label:'Strategy',description:'Finding what to say, to whom, and why they should care.'},
+ {id:'script',label:'Scenarios',description:'Writing three short stories for the product. You choose one.'},
+ {id:'visuals',label:'Visual looks',description:'Designing three different looks for your story. You choose what to build.'},
+ {id:'assembly',label:'Build drafts',description:'Building near-final drafts of the looks you chose, with real pictures.'},
+ {id:'review',label:'Review drafts',description:'Look at the drafts, leave notes and choose the ones to keep.'},
+ {id:'finals',label:'Final production',description:'Every ordered format, animated. Not connected yet.'},
 ] as const;
 /** Build/review is one draft workspace. Earlier planning remains inspectable without exposing a premature start. */
 export function draftWorkspaceAccess(view:GuidedRunView){

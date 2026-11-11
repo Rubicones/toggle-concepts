@@ -7,6 +7,7 @@ import {studioContext,campaignRecord,checked} from './studio';
 import {ApiError} from './api';
 import {objectStore} from '@/packages/media/s3.server';
 import {confinedPath} from '@/packages/director/policy.local';
+import {existsSync} from 'node:fs';
 import {liveSource} from '@/apps/local-runner/director/live-bundle';
 import {restoreSavedLiveSource} from '@/apps/local-runner/director/saved-live-source';
 import {sandboxTool} from '@/apps/local-runner/director/sandbox';
@@ -26,7 +27,7 @@ import type {DraftConstruction} from '@/packages/director/construction';
 import {sourceChecks,recordPreviewEvidence} from '@/apps/local-runner/director/review-evidence';
 import type {SourceChecks,ReviewRecord} from '@/packages/director/review';
 const hash=(value:Uint8Array|string)=>createHash('sha256').update(value).digest('hex');
-type Context={blockId:string;route:'live'|'paused'|'quote';sourceChecks?:SourceChecks;folder:string;input:DirectionInput;snapshot:Pick<BlockSnapshot,'files'>;catalog:CatalogEntry[];design?:Design;construction?:DraftConstruction;designer?:{renders?:Record<string,number>;findings?:{views:string[]}[];hero?:{sceneId:string;format:string;accepted:boolean}};/** Point 2d: the latest measured findings, when any. */measured?:{code:string;detail:string}[]};
+type Context={blockId:string;route:'live'|'paused'|'quote';sourceChecks?:SourceChecks;folder:string;input:DirectionInput;snapshot:Pick<BlockSnapshot,'files'>;catalog:CatalogEntry[];design?:Design;construction?:DraftConstruction;designer?:{renders?:Record<string,number>;findings?:{views:string[]}[];hero?:{sceneId:string;format:string;accepted:boolean}};/** Point 2d: the latest measured findings, when any. */measured?:{code:string;detail:string}[];/** The work lives on another studio computer. */remote?:boolean};
 async function context(campaignId:string,directionId:string,iterationId?:string):Promise<Context>{
  await campaignRecord(campaignId);const {admin,tenant}=await studioContext();
  const iteration=iterationId?checked(await admin.from('studio_director_iterations').select('id,block_id,source_hash,design:payload->design,catalog:payload->catalog,construction:payload->construction,sourceChecks:payload->sourceChecks,designer:payload->designer,review:payload->review').eq('id',iterationId).eq('direction_id',directionId).maybeSingle()):null;
@@ -45,6 +46,13 @@ async function context(campaignId:string,directionId:string,iterationId?:string)
  const work=checked(await admin.from('studio_director_work').select('state,iteration_id,status').eq('block_id',block.id).eq('direction_id',directionId).maybeSingle());if(!work)throw new ApiError(404,'DIRECTION_NOT_FOUND','This direction is not available.');
  const state=work.state as WorkState;input.iterationId=work.iteration_id;
  const folder=resolve('artifacts/m08/workspaces',input.runId,input.roundId,input.directionId,input.iterationId);
+ // Work done on another studio computer (a colleague's Local Claude run) has no workspace folder here. Its sealed
+ // iteration keeps the full source in the database, so the preview is rebuilt from that instead of staying empty.
+ if(!existsSync(folder)){
+  const sealed=work.iteration_id?checked(await admin.from('studio_director_iterations').select('id').eq('id',work.iteration_id).eq('direction_id',directionId).maybeSingle()):null;
+  if(sealed)return {...await context(campaignId,directionId,sealed.id),route:['queued','running'].includes(work.status)?'live':['review','waiting'].includes(work.status)?'paused':'quote',remote:true};
+  return {blockId:block.id,route:'live',folder,input,snapshot,catalog:[],remote:true};
+ }
  return {blockId:block.id,route:['queued','running'].includes(work.status)?'live':['review','waiting'].includes(work.status)?'paused':'quote',folder,input,snapshot,catalog:state.catalog??[],design:state.design,...(state.designer?.lastRender?{measured:state.designer.lastRender.findings.map(f=>({code:f.code,detail:f.detail}))}:{}),designer:{...(state.designer?.hero?{hero:{sceneId:state.designer.hero.sceneId,format:state.designer.hero.format,accepted:state.designer.hero.state==='accepted'}}:{}),renders:state.designer?.renders,findings:state.designer?.lastRender?state.designer.lastRender.findings.filter(f=>f.severity==='hard').map(f=>({views:[f.view]})):[]}};
 }
 function assets(ctx:Context){
@@ -57,7 +65,7 @@ function assets(ctx:Context){
 }
 type Bundle={revision:string;options:LiveOptions;legacy:boolean};const builds=new Map<string,Promise<Bundle>>();
 export async function liveDirectorPreview(campaignId:string,directionId:string,iterationId?:string):Promise<LivePreview>{
- const ctx=await context(campaignId,directionId,iterationId);let source;try{const root=await realpath(ctx.folder);if(root!==ctx.folder)throw new Error('WORKSPACE_SYMLINK_REJECTED');source=await liveSource(ctx.folder);}catch(error){if(['ENOENT','FRAME_NOT_WRITTEN'].includes((error as NodeJS.ErrnoException).code??(error as Error).message)){if(iterationId)throw new ApiError(409,'SAVED_PREVIEW_SOURCE_UNAVAILABLE','This saved component could not be loaded. Its stored source is retained; retry this saved preview.');return {status:'waiting',message:'The coder’s first Frame.tsx will appear here as soon as it builds.'};}throw error;}
+ const ctx=await context(campaignId,directionId,iterationId);let source;try{const root=await realpath(ctx.folder);if(root!==ctx.folder)throw new Error('WORKSPACE_SYMLINK_REJECTED');source=await liveSource(ctx.folder);}catch(error){if(['ENOENT','FRAME_NOT_WRITTEN'].includes((error as NodeJS.ErrnoException).code??(error as Error).message)){if(iterationId)throw new ApiError(409,'SAVED_PREVIEW_SOURCE_UNAVAILABLE','This saved component could not be loaded. Its stored source is retained; retry this saved preview.');return {status:'waiting',message:ctx.remote?'This direction is being made on another studio computer. Its preview appears here as soon as a version is saved.':'The coder’s first Frame.tsx will appear here as soon as it builds.'};}throw error;}
  let info:Bundle|undefined,message:string|undefined;
  try{const saved=JSON.parse(await readFile(resolve(ctx.folder,'.reports','live',source.revision,'manifest.json'),'utf8'));info=saved;}catch{
   try{let pending=builds.get(ctx.folder);if(!pending){pending=sandboxTool(ctx.folder,'preview',{}).then(text=>JSON.parse(text.trim().split('\n').at(-1)!) as Bundle).finally(()=>builds.delete(ctx.folder));builds.set(ctx.folder,pending);}info=await pending;}catch(error){if(iterationId){console.error('[saved preview] build failed',error);throw new ApiError(409,'SAVED_PREVIEW_BUILD_FAILED','This saved component could not be built for preview. Its stored source is unchanged. Retry this saved preview; no generation is needed.');}message='The coder is updating the source. The last working preview stays available.';try{info=JSON.parse(await readFile(resolve(ctx.folder,'.reports','live-latest.json'),'utf8'));}catch{return {status:'waiting',message:'The first preview is still building. Code errors are shown in Activity.'};}}
