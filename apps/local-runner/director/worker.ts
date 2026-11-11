@@ -46,6 +46,7 @@ import {directorStillProducer} from '../creative-stills';
 import {assemble} from './assembler';
 import {compositionTools} from './tools';
 import {snapshotFolder} from './snapshots';
+import {shareLiveSource} from './live-share';
 import {sandboxTool} from './sandbox';
 import {ensureDirectorToolchain} from './toolchain';
 import {compactTranscript,assemblerContext} from '../../../packages/director/transcript';
@@ -184,7 +185,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    // Image methods: pin source pictures and application-made references before any request is built.
    await prepareImageMethods(folder,input,design,state.catalog as PricedResource[],async message=>{await events.emit(`picture:method:${state.iteration??1}`,{stepId:`picture:method:${state.iteration??1}`,kind:'picture',status:'done',costMicroUsd:0,message});});
    await writeFile(resolve(folder,'draft.json'),JSON.stringify(design));await writeResources(folder,input,state.catalog);await save();
-   const preview=async(info:{revision?:string;options?:unknown;error?:string})=>{await events.emit(`preview:${info.revision??state.assembler!.turn}:${info.error?'updating':'ready'}`,{stepId:`preview:${info.revision??state.assembler!.turn}`,kind:'preview',status:info.error?'failed':'done',costMicroUsd:0,message:info.error?'The source is updating; the last working component stays available.':'Frame.tsx is live. New options and adaptive changes are ready to try.',detail:info});};
+   const preview=async(info:{revision?:string;options?:unknown;error?:string})=>{const liveSource=info.error?undefined:await shareLiveSource(folder,input.iterationId,block.campaign_id).catch(()=>undefined);await events.emit(`preview:${info.revision??state.assembler!.turn}:${info.error?'updating':'ready'}`,{stepId:`preview:${info.revision??state.assembler!.turn}`,kind:'preview',status:info.error?'failed':'done',costMicroUsd:0,message:info.error?'The source is updating; the last working component stays available.':'Frame.tsx is live. New options and adaptive changes are ready to try.',detail:liveSource?{...info,liveSource}:info});};
    const seal=async(review?:LiveReviewRecord)=>{
     // Point 6c: the designer's real usage is recorded with the sealed draft and shown in the timeline.
     const usage=state.designer?await designerUsage(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId}).catch(()=>undefined):undefined,usd=(value:number)=>'$'+(value/1e6).toFixed(2);

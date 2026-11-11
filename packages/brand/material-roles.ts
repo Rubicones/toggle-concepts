@@ -65,6 +65,9 @@ export function autoMaterialRole(m:MaterialLike):{role:MaterialRole;sure:boolean
  if(kind==='pdf'||kind==='document'||kind==='text'||/\.(md|pdf|docx?|txt)$/.test(name))return {role:'brandbook',sure:/brand|guide|style|identity|book/.test(name)||text.length>2000};
  return {role:'unknown',sure:false};
 }
+/** The role a file is read and ranked as: the AD's choice, a sure guess, or a plain guess. Only a file the application
+ * cannot place at all ('unknown') has none. A guess never waits for the AD; the AD can still correct it. */
+export function usedMaterialRole(m:{role:MaterialRole;sure:boolean}):MaterialRole|undefined{return m.sure||m.role!=='unknown'?m.role:undefined;}
 export function effectiveMaterialRole(m:MaterialLike&{role?:string|null}):{role:MaterialRole;sure:boolean;bySomeone:boolean}{
  if(m.role&&(materialRoles as readonly string[]).includes(m.role))return {role:m.role as MaterialRole,sure:true,bySomeone:true};
  return {...autoMaterialRole(m),bySomeone:false};

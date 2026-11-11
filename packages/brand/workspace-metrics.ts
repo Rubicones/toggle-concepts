@@ -22,3 +22,16 @@ export function brandAnalysisNotice(analysis:{status:string;blocker:string|null}
  return null;
 }
 export function brandAnalysisCanContinue(analysis:{status:string;blocker:string|null}|undefined){return !!analysis&&['active','paused','cancelled','budget_blocked','blocked'].includes(analysis.status)&&(!['blocked'].includes(analysis.status)||['NO_NEW_FINDINGS','PROVIDER_429'].includes(analysis.blocker??''));}
+
+const previewColourFields=new Set(['primaryColors','secondaryColors','semanticColors']);
+/** A glimpse of each field for the collapsed field cards: colour codes for colour fields, otherwise the first few
+ * statements in use (the chosen one first in a single-choice field). Excluded findings never appear. */
+export function fieldPreviews(rows:{field:string;value:string;edited_value:string|null;decision:string}[],singleChoice:ReadonlySet<string>){
+ const out=new Map<string,string[]>();
+ const ordered=[...rows.filter(r=>r.decision==='keep'&&singleChoice.has(r.field)),...rows.filter(r=>!(r.decision==='keep'&&singleChoice.has(r.field)))];
+ for(const row of ordered){if(row.decision==='reject')continue;const list=out.get(row.field)??[];const text=String(row.edited_value??row.value).trim();
+  if(previewColourFields.has(row.field)){for(const hex of text.match(/#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/gi)??[]){const h=hex.toLowerCase();if(list.length<8&&!list.includes(h))list.push(h);}}
+  else if(list.length<3&&text){const short=text.replace(/\s+/g,' ');list.push(short.length>140?short.slice(0,139)+'…':short);}
+  out.set(row.field,list);}
+ return out;
+}

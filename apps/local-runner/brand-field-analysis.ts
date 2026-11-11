@@ -10,7 +10,7 @@ import type {TextReceipt} from '../../packages/agents/text-provider';
 import {textExecutionFor,transportFor,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime} from './local-claude/runtime';
 import type {LocalTextReceipt} from './local-claude/transport';
 import {fieldExtractionRequest,parseFieldResponse,splitBrandText} from '../../packages/brand/field-extraction';
-import {effectiveMaterialRole,findingsForRole,roleReadingNotes} from '../../packages/brand/material-roles';
+import {effectiveMaterialRole,findingsForRole,roleReadingNotes,usedMaterialRole} from '../../packages/brand/material-roles';
 import type {AgentSetting} from '../../packages/contracts/shared';
 import {effectiveRunAgents} from '../../packages/data/run-limits';
 const directory=resolve('artifacts/brand-fields/receipts');
@@ -51,7 +51,7 @@ export async function processBrandFieldAnalysis(device?:string,local:LocalRuntim
   const step=await rpc('studio_begin_brand_read',{target_part:part.id,token:part.lease_token,request_key:randomUUID(),snapshot,prompt_text:prompt,reservation});submitted=true;
   const result:TextReceipt=await transport(agent.model_id,prompt,snapshot,images,step.id);
   if(execution.mode==='local_claude'){await keepLocalDiagnostics(step.id,result as LocalTextReceipt).catch(()=>{});if(result.failure==='SUBSCRIPTION_LIMIT')await markSubscriptionLimit();}
-  const read=result.text?parseFieldResponse(result.text,result.finishReason):{findings:[],more:false,partial:false,invalid:0},roleRead=fileRole.sure?{...read,findings:findingsForRole(fileRole.role,read.findings)}:read,parsed=componentsReady?roleRead:{...roleRead,findings:roleRead.findings.filter(f=>f.field!=='components')};
+  const read=result.text?parseFieldResponse(result.text,result.finishReason):{findings:[],more:false,partial:false,invalid:0},usedRole=usedMaterialRole(fileRole),roleRead=usedRole?{...read,findings:findingsForRole(usedRole,read.findings)}:read,parsed=componentsReady?roleRead:{...roleRead,findings:roleRead.findings.filter(f=>f.field!=='components')};
   let split_payloads=null;
   if(result.failure==='OUTPUT_TOKEN_LIMIT'&&!parsed.findings.length&&typeof part.payload.text==='string'&&part.payload.text.length>512&&!part.payload.image){const pieces=splitBrandText(part.payload.text,Math.ceil(part.payload.text.length/2));split_payloads=pieces.map(p=>({...p,start:(part.payload.start??0)+p.start,end:(part.payload.start??0)+p.end}));}
   const outcome=result.outcome==='succeeded'&&parsed.partial?'failed':result.outcome,failure=result.outcome==='succeeded'&&parsed.partial?'INVALID_FIELD_RESPONSE':result.failure;

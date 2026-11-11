@@ -27,6 +27,7 @@ import { emptyBrief } from "@/packages/contracts/brief";
 import { objectStore } from "@/packages/media/s3.server";
 import {
     startLocalWorkflow,
+    startLocalWorkflowSoon,
     requireLocalDevice,
 } from "@/lib/server/local-compute";
 import { modelCatalog } from "@/packages/agents/catalog";
@@ -138,7 +139,8 @@ export async function GET(
                         ? "image/jpeg"
                         : "application/octet-stream",
                     "Content-Disposition": `${visual ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(visual ? material.filename + ".jpg" : material.filename)}`,
-                    "Cache-Control": "private, no-store",
+                    // Visual previews are content-addressed (the page image's digest is checked above); thumbnails may be cached.
+                    "Cache-Control": visual ? "private, max-age=3600" : "private, no-store",
                     "X-Content-Type-Options": "nosniff",
                     "Content-Security-Policy": "default-src 'none'; sandbox",
                 },
@@ -309,7 +311,8 @@ export async function PUT(
         sameOrigin(request);
         requireLocalDevice();
         const { id } = await ctx.params,
-            saved = await intakeContext(z.uuid().parse(id));
+            // The upload only needs paths, digests and the file count: skip loading every file's extracted text.
+            saved = await intakeContext(z.uuid().parse(id), true);
         const reader = request.body?.getReader();
         if (!reader)
             throw new ApiError(
@@ -403,14 +406,14 @@ export async function PUT(
             sha = createHash("sha256").update(data).digest("hex");
         if (prior) {
             if (prior.sha256 !== sha) throw new Error("REQUEST_CONFLICT");
-            await startLocalWorkflow();
+            await startLocalWorkflowSoon();
             return json({ id: prior.id });
         }
         const duplicate = saved.materials.find(
             (m) => m.relative_path === path && m.sha256 === sha,
         );
         if (duplicate) {
-            await startLocalWorkflow();
+            await startLocalWorkflowSoon();
             return json({ id: duplicate.id });
         }
         if (file.size > 10485760 || saved.materials.length >= 100) {
@@ -450,7 +453,7 @@ export async function PUT(
             await objectStore()
                 .delete(key)
                 .catch(() => {});
-        await startLocalWorkflow();
+        await startLocalWorkflowSoon();
         return json({ id: result.data.id }, 201);
     });
 }

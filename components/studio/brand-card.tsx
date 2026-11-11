@@ -11,7 +11,7 @@ import styles from "./brand-card.module.css";
 type Review = (finding: { findingId: string; version: number }, value: string | null) => Promise<void>;
 
 /** The brand as the agents will receive it. Text values are edited in place (saved as the AD's version of that finding). */
-export function BrandCard({ endpoint, busy, review: save }: { endpoint: string; busy: boolean; review: Review }) {
+export function BrandCard({ endpoint, busy, review: save, readOnly = false }: { endpoint: string; busy: boolean; review: Review; readOnly?: boolean }) {
   const { data, error, refresh } = useShared<Card>(`${endpoint}?card=1`);
   const review: Review = async (finding, value) => {
     await save(finding, value);
@@ -31,17 +31,17 @@ export function BrandCard({ endpoint, busy, review: save }: { endpoint: string; 
       <style>{faces}</style>
       <header className={styles.cardHead}>
         <p className="eyebrow">YOUR BRAND, AS THE AGENTS WILL SEE IT</p>
-        <Editable finding={data.name} busy={busy} review={review} heading empty="Name not found — the brand agent will propose it" />
-        <Editable finding={data.description} busy={busy} review={review} empty="No description found" />
+        <Editable finding={data.name} busy={busy} review={review} readOnly={readOnly} heading empty="Name not found — the brand agent will propose it" />
+        <Editable finding={data.description} busy={busy} review={review} readOnly={readOnly} empty="No description found" />
       </header>
-      <ul className={styles.checks} aria-label="Checks before submitting">
+      {!readOnly && <ul className={styles.checks} aria-label="Checks before submitting">
         {data.checks.map((c) => (
           <li key={c.text} className={`${styles.check} ${c.ok ? styles.ok : styles.warn}`}>
             {c.ok ? <Check size={15} /> : <TriangleAlert size={15} />}
             <span>{c.text}</span>
           </li>
         ))}
-      </ul>
+      </ul>}
       <div className={styles.grid}>
         <div className={styles.section}>
           <h4>Logos</h4>
@@ -107,7 +107,7 @@ export function BrandCard({ endpoint, busy, review: save }: { endpoint: string; 
         </div>
         <div className={styles.section}>
           <h4>Product</h4>
-          <Editable finding={data.product} busy={busy} review={review} empty="No product description found" />
+          <Editable finding={data.product} busy={busy} review={review} readOnly={readOnly} empty="No product description found" />
         </div>
         {(data.interfaceFiles.length > 0 || data.components.length > 0 || data.interfaceColours.length > 0) && (
           <div className={styles.section}>
@@ -125,7 +125,7 @@ export function BrandCard({ endpoint, busy, review: save }: { endpoint: string; 
               </div>
             )}
             {data.components.map((f) => (
-              <Editable key={f.findingId} finding={f} busy={busy} review={review} />
+              <Editable key={f.findingId} finding={f} busy={busy} review={review} readOnly={readOnly} />
             ))}
             {data.interfaceColours.length > 0 && (
               <div className={styles.swatches}>
@@ -148,7 +148,7 @@ export function BrandCard({ endpoint, busy, review: save }: { endpoint: string; 
             <div key={label} className={styles.section}>
               <h4>{label}</h4>
               {list.map((f) => (
-                <Editable key={f.findingId} finding={f} busy={busy} review={review} />
+                <Editable key={f.findingId} finding={f} busy={busy} review={review} readOnly={readOnly} />
               ))}
             </div>
           ) : null,
@@ -158,7 +158,7 @@ export function BrandCard({ endpoint, busy, review: save }: { endpoint: string; 
   );
 }
 
-function Editable({ finding, busy, review, heading, empty }: { finding: CardFinding | null; busy: boolean; review: Review; heading?: boolean; empty?: string }) {
+function Editable({ finding, busy, review, heading, empty, readOnly = false }: { finding: CardFinding | null; busy: boolean; review: Review; heading?: boolean; empty?: string; readOnly?: boolean }) {
   const [editing, setEditing] = useState(false),
     [value, setValue] = useState(finding?.value ?? "");
   if (!finding) return empty ? <p className={styles.empty}>{empty}</p> : null;
@@ -183,7 +183,7 @@ function Editable({ finding, busy, review, heading, empty }: { finding: CardFind
       <span className={styles.source} title={finding.file} style={{ flex: "none" }}>
         {finding.file}
       </span>
-      <button
+      {!readOnly && <button
         type="button"
         className={styles.edit}
         onClick={() => {
@@ -192,7 +192,7 @@ function Editable({ finding, busy, review, heading, empty }: { finding: CardFind
         }}
       >
         Edit
-      </button>
+      </button>}
     </div>
   );
 }

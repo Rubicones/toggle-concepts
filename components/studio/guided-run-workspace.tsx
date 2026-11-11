@@ -12,7 +12,7 @@ import { CompileReview } from "./compile-review";
 import type { BrandResult } from "@/packages/brand/proposal-diagnostic";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Pause, Play, RotateCcw, Send, Sparkles, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Check, LoaderCircle, Pause, Play, RotateCcw, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { studioRequest, useShared } from "@/lib/shared-http";
 import { canContinueFailure } from "@/packages/contracts/run-limits";
@@ -22,13 +22,13 @@ import {savedStageOutputs,readableOutput} from '@/packages/contracts/run-output'
 import {scenarioPresentation} from '@/packages/contracts/run-presentation';
 import {PlanningOutput} from './planning-output';
 import { draftWorkspaceAccess, guidedMilestoneStates, runAttention, runMilestones, type GuidedRunView } from "@/packages/contracts/guided-run";
-import { applyRunBrandReview, brandAcceptanceBlockers, type BrandWorkspaceRecord } from "@/packages/contracts/brand-kit";
 import type { DraftWorkspaceRecord } from "@/packages/contracts/drafts";
 import { WorkflowMigration } from "./brief-workspace";
 import { SharedMedia } from "./shared-media";
 import { ProviderReceipts } from "./provider-receipts";
 import { DraftReview } from "./draft-review";
 import styles from "./guided-run-workspace.module.css";
+import { BrandCheck, ScenarioChoice, VisualTreatments, visualTreatments } from "./run-decisions";
 function focusPlanningNote(){
  const note=document.getElementById('run-note'),panel=note?.closest('details');
  if(panel)panel.open=true;
@@ -121,6 +121,32 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
       setBusy(false);
     }
   }
+  // Work never waits for a click (owner decision, 11 November 2026): only the quota and the build price stop it.
+  // A worker that idled out is woken, and a transient local stop is resumed a few times before asking the AD.
+  const [buildRequest, setBuildRequest] = useState<{ index: number; nonce: number } | null>(null);
+  const autoResumes = useRef(0);
+  const ctl = data?.control,
+    offline = !!ctl && ctl.status === "running" && !data?.workerOnline && data?.run?.status === "active",
+    transient =
+      !!ctl &&
+      data?.run?.status === "active" &&
+      ((ctl.status === "blocked" && ["LOCAL_API_UNAVAILABLE", "RUN_COORDINATOR_FAILED"].includes(ctl.blocker ?? "")) || (ctl.status === "paused" && ctl.blocker === "saved_output_recovered"));
+  useEffect(() => {
+    if (!offline) return;
+    const wake = () => void studioRequest(endpoint, "POST", { action: "wake" }).then(refresh).catch(() => undefined);
+    const first = setTimeout(wake, 4000),
+      again = setInterval(wake, 30000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(again);
+    };
+  }, [offline, endpoint, refresh]);
+  useEffect(() => {
+    if (!transient || !ctl || autoResumes.current >= 3) return;
+    autoResumes.current++;
+    const timer = setTimeout(() => void studioRequest(endpoint, "POST", { action: "resume", expectedVersion: ctl.version }).then(refresh).catch(() => undefined), 3000);
+    return () => clearTimeout(timer);
+  }, [transient, ctl, endpoint, refresh]);
   if (!data)
     return (
       <section className={styles.panel}>
@@ -141,6 +167,9 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
   const savedFocus = data.creativeFocus?.text ?? "", focusValue = focusDraft ?? savedFocus, focusReady = !!data.creativeFocus?.ready;
   const targetRole = role || (data.failureStep?.role === "creative-code" ? "script" : data.failureStep?.role) || "script";
   const scenarioJob=data.jobs.find(j=>j.job_key==='script'&&j.state==='succeeded'),scenarioOutput=scenarioJob?.output,scenarioData=scenarioOutput?readableOutput(scenarioOutput).deliverable:null,directions=scenarioPresentation(scenarioData)??[];
+  const verdictsFor=(key:string)=>ideaReview.find(l=>l.key===key)?.state.result?.directions??[];
+  const lookJob=data.jobs.find(j=>j.job_key==='asset-plan'&&j.state==='succeeded'),looks=lookJob?.output?visualTreatments(readableOutput(lookJob.output).deliverable):[];
+  const resumable=control&&(control.status==='paused'||(control.status==='blocked'&&["LOCAL_API_UNAVAILABLE","RUN_COORDINATOR_FAILED","ASSETS_REQUIRED"].includes(control.blocker??"")));
   return (
     <div className={styles.workspace}>
       <div className={styles.title}>
@@ -213,8 +242,13 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
                     : (active?.description ?? "Completed work and costs stay saved as you move forward.")}
               </p>
               <div className={styles.actions}>
-                {control.status === "running" && !data.workerOnline && (
-                  <Button disabled={busy} onClick={() => void command({ action: "wake" })}>
+                {offline && (
+                  <span className={styles.waking}>
+                    <LoaderCircle size={14} /> Starting the studio computer — work continues on its own.
+                  </span>
+                )}
+                {resumable && (
+                  <Button disabled={busy} onClick={() => void command({ action: "resume", expectedVersion: control.version })}>
                     <Play size={14} />
                     Continue work
                   </Button>
@@ -224,46 +258,6 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
                     <Pause size={14} />
                     Stop run
                   </Button>
-                )}
-                {(control.status === "paused" ||
-                  (control.status === "blocked" && ["LOCAL_API_UNAVAILABLE", "RUN_COORDINATOR_FAILED", "ASSETS_REQUIRED"].includes(control.blocker ?? ""))) && (
-                  <Button disabled={busy} onClick={() => void command({ action: "resume", expectedVersion: control.version })}>
-                    <Play size={14} />
-                    Continue work
-                  </Button>
-                )}
-                {ideaReview.length > 0 && (
-                  <Disclosure><summary>Idea review · {ideaReview.map(line => `${line.label} ${line.status}`).join(" · ")}</summary>
-                    {ideaReview.map(({key, label, status, state}) => (
-                      <div key={key}>
-                        <p><strong>{label} · {status}</strong>{state.reason ? ` — ${state.reason}` : ""}</p>
-                        {state.result?.summary && <p>{state.result.summary}</p>}
-                        {state.result?.directions.map(d => <p key={d.conceptId}>{d.conceptId} · {d.verdict === "strong" ? "strong" : "needs work"}{d.problems ? ` — ${d.problems}` : ""}</p>)}
-                        {status === "sent back for one revision" && state.result?.note && <p>Sent back: {state.result.note}</p>}
-                      </div>
-                    ))}
-                    <small>An independent critic checks strategy, scenarios and visual direction, each right after it is written; the next step waits for that check. At most one automatic correction per step; a check that cannot run never stops the run.</small>
-                  </Disclosure>
-                )}
-                {focusReady && (
-                  <Disclosure>
-                    <summary>Creative focus · {savedFocus ? (savedFocus.length > 60 ? savedFocus.slice(0, 60) + "…" : savedFocus) : "open, the agents choose"}</summary>
-                    <CreativeFocusField id="creative-focus-run" value={focusValue} disabled={busy} onChange={setFocusDraft} />
-                    <p>Steps that have not started yet use the saved focus. Use Start run over to apply it to everything.</p>
-                    <Button variant="outline" disabled={busy || focusValue.trim() === savedFocus.trim()} onClick={async () => { if (await command({ action: "focus", creativeFocus: focusValue })) setFocusDraft(null); }}>
-                      Save focus
-                    </Button>
-                  </Disclosure>
-                )}
-                {data.run?.status === "active" && control.stage !== "brand" && (
-                  <Disclosure onToggle={event=>{if(!event.currentTarget.open)setConfirmRestart(false);}}><summary>Restart planning</summary><p>Repeats planning and draft work from the approved brief and brand, with the current creative focus and the current models, instructions and limits from Models & agents. Earlier costs stay counted toward the run cap.</p><Button variant="outline" disabled={busy} onClick={async () => {
-                    if (!confirmRestart) { setConfirmRestart(true); setMessage("Start over from planning? Research, scenarios, plans and drafts are made again from the same brief and Brand Kit, using the current Models & agents settings. Their requests are charged again; spent costs stay counted toward the run cap. Click again to restart."); return; }
-                    setConfirmRestart(false);
-                    await command({ action: "restart", confirm: true });
-                  }}>
-                    <RotateCcw size={14} />
-                    {confirmRestart ? "Confirm: start run over" : "Start run over"}
-                  </Button></Disclosure>
                 )}
                 <span className={styles.saved}>Progress saved</span>
               </div>
@@ -307,13 +301,25 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
               </li>
             ))}
           </ol>
-          {data.scenarioSelection?.required && <section className={styles.review} aria-label="Scenario selection">
-            <h3>{data.scenarioSelection.selection ? 'Selected scenario' : 'Choose one scenario'}</h3>
-            <p>{data.scenarioSelection.selection ? `${directions.find(d=>d.id===data.scenarioSelection?.selection?.scenarioId)?.title ?? data.scenarioSelection.selection.scenarioId} — all three visual treatments use this story.` : 'Review the story beats, then choose one. Visual direction will create three different ways to present the same story.'}</p>
-            {!data.scenarioSelection.ready ? <p role="alert">Apply migration 20261109000100_scenario_selection.sql to enable scenario selection.</p> : !scenarioJob ? <p>The scenarios are being prepared.</p> : !data.scenarioSelection.reviewed ? <p>The scenario review is finishing before you choose.</p> : !data.scenarioSelection.selection && <div className={styles.actions}>{directions.map(d=><Button key={d.id} disabled={busy||run?.status!=='active'||control.status==='paused'} onClick={()=>void command({action:'selectScenario',jobId:scenarioJob.id,outputHash:scenarioJob.output_hash,scenarioId:d.id})}>Use {d.title}</Button>)}</div>}
-            {scenarioData && !data.scenarioSelection.selection && <PlanningOutput value={scenarioData}/>}
-            {data.scenarioSelection.selection && <small>To change the story, send a Scenarios &amp; story revision below. Earlier work stays saved.</small>}
-          </section>}
+          {data.brandResult && <SavedBrandResult result={data.brandResult} blocker={control.blocker} busy={busy} command={command} controlVersion={control.version} />}
+          {control.stage === "brand" &&
+            control.status !== "paused" &&
+            (control.status === "review" ||
+              data.brandResult?.imported ||
+              (control.status === "blocked" && !!data.brandResult && !data.brandResult.canImport && !["reserved", "running"].includes(data.brandResult.status))) && (
+            <BrandCheck campaignId={campaignId} name={data.brief?.reviewerName ?? ""} busy={busy} command={command} />
+          )}
+          {data.scenarioSelection?.required && (
+            <ScenarioChoice
+              directions={directions}
+              scenarioData={scenarioData}
+              verdicts={verdictsFor("script")}
+              selectedId={data.scenarioSelection.selection?.scenarioId ?? null}
+              state={!data.scenarioSelection.ready ? "migration" : !scenarioJob ? "preparing" : !data.scenarioSelection.reviewed ? "reviewing" : "ready"}
+              disabled={busy || run?.status !== "active" || control.status === "paused"}
+              choose={(id) => scenarioJob && void command({ action: "selectScenario", jobId: scenarioJob.id, outputHash: scenarioJob.output_hash, scenarioId: id })}
+            />
+          )}
           {selectedStep && (
             <RunStepOutput
               key={selectedStep}
@@ -505,19 +511,25 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
             </section>
           )}
           {control.blocker==='M07B_SCHEMA_REQUIRED'&&<WorkflowMigration stage="M07b"/>}
-          {draftAccess.show&&<DirectorWorkspace campaignId={campaignId} canStart={draftAccess.canStart}/>}
+          {looks.length > 0 && (
+            <VisualTreatments
+              treatments={looks}
+              verdicts={verdictsFor("asset-plan")}
+              built={new Set()}
+              campaignId={campaignId}
+              canBuild={draftAccess.show && draftAccess.canStart}
+              busy={busy}
+              build={(index) => {
+                setBuildRequest({ index, nonce: Date.now() });
+                requestAnimationFrame(() => document.getElementById("draft-directions")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+              }}
+            />
+          )}
+          {draftAccess.show&&<DirectorWorkspace campaignId={campaignId} canStart={draftAccess.canStart} buildRequest={buildRequest}/>}
           {data.creative&&(data.directorReady?<Disclosure><summary>Earlier creative pipeline · saved history</summary><p>Earlier pipeline records are retained here. Current work and recovery controls are in Draft directions.</p><p>{data.jobs.filter(j=>j.job_key.startsWith('creative.')).length} earlier creative steps · {data.creative.questions.length} saved questions</p><Disclosure><summary>Full earlier results, costs and decisions</summary><pre className={styles.response}>{JSON.stringify({creative:data.creative,jobs:data.jobs.filter(j=>j.job_key.startsWith('creative.'))},null,2)}</pre></Disclosure></Disclosure>:<CreativeProgress value={data.creative} campaignId={campaignId} jobs={data.jobs} waits={data.creativeWaits} onWake={()=>void command({action:'wake'})} busy={busy}/>)}
           {data.creativeReadiness&&<Disclosure><summary>Source readiness from planning</summary><CreativeReadiness value={data.creativeReadiness}/></Disclosure>}
-          {data.brandResult && <SavedBrandResult result={data.brandResult} blocker={control.blocker} busy={busy} command={command} controlVersion={control.version} />}
-          {control.stage === "brand" &&
-            control.status !== "paused" &&
-            (control.status === "review" ||
-              data.brandResult?.imported ||
-              (control.status === "blocked" && !!data.brandResult && !data.brandResult.canImport && !["reserved", "running"].includes(data.brandResult.status))) && (
-            <BrandDecision campaignId={campaignId} name={data.brief?.reviewerName ?? ""} busy={busy} command={command} />
-          )}
           {control.stage === "assembly" && control.status === "review" && !data.creative && draftAccess.legacy && <PreviewSources campaignId={campaignId} busy={busy} command={command} />}
-          {directions.length > 0 && (
+          {directions.length > 0 && !data.scenarioSelection?.required && (
             <Disclosure className={styles.section} open={!draftAccess.show}><summary>Scenario options · {directions.length} stories</summary>
               <div className={styles.sectionHeading}>
                 <div>
@@ -531,6 +543,41 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
           )}
           {control.stage === "draft_review" && !data.directorActive && draftAccess.legacy && <DraftReview campaignId={campaignId} />}
           {control.stage === "client_review" && <DraftReview campaignId={campaignId} audience="client" />}
+          <section className={styles.more} aria-label="Run settings and history">
+            <h3>Settings and history</h3>
+            {ideaReview.length > 0 && (
+              <Disclosure><summary>Independent review · {ideaReview.map(line => `${line.label} ${line.status}`).join(" · ")}</summary>
+                {ideaReview.map(({key, label, status, state}) => (
+                  <div key={key}>
+                    <p><strong>{label} · {status}</strong>{state.reason ? ` — ${state.reason}` : ""}</p>
+                    {state.result?.summary && <p>{state.result.summary}</p>}
+                    {state.result?.directions.map(d => <p key={d.conceptId}>{d.conceptId} · {d.verdict === "strong" ? "strong" : "needs work"}{d.problems ? ` — ${d.problems}` : ""}</p>)}
+                    {status === "sent back for one revision" && state.result?.note && <p>Sent back: {state.result.note}</p>}
+                  </div>
+                ))}
+                <small>An independent critic checks the strategy, the stories and the visual looks right after each is written. It sends work back at most once per step, automatically; the run continues on its own.</small>
+              </Disclosure>
+            )}
+            {focusReady && (
+              <Disclosure>
+                <summary>Creative focus · {savedFocus ? (savedFocus.length > 60 ? savedFocus.slice(0, 60) + "…" : savedFocus) : "open, the agents choose"}</summary>
+                <CreativeFocusField id="creative-focus-run" value={focusValue} disabled={busy} onChange={setFocusDraft} />
+                <p>Steps that have not started yet use the saved focus. Use Start run over to apply it to everything.</p>
+                <Button variant="outline" disabled={busy || focusValue.trim() === savedFocus.trim()} onClick={async () => { if (await command({ action: "focus", creativeFocus: focusValue })) setFocusDraft(null); }}>
+                  Save focus
+                </Button>
+              </Disclosure>
+            )}
+            {data.run?.status === "active" && control.stage !== "brand" && (
+              <Disclosure onToggle={event=>{if(!event.currentTarget.open)setConfirmRestart(false);}}><summary>Restart planning</summary><p>Repeats planning and draft work from the approved brief and brand, with the current creative focus and the current models, instructions and limits from Models & agents. Earlier costs stay counted toward the run cap.</p><Button variant="outline" disabled={busy} onClick={async () => {
+                if (!confirmRestart) { setConfirmRestart(true); setMessage("Start over from planning? Research, scenarios, plans and drafts are made again from the same brief and Brand Kit, using the current Models & agents settings. Their requests are charged again; spent costs stay counted toward the run cap. Click again to restart."); return; }
+                setConfirmRestart(false);
+                await command({ action: "restart", confirm: true });
+              }}>
+                <RotateCcw size={14} />
+                {confirmRestart ? "Confirm: start run over" : "Start run over"}
+              </Button></Disclosure>
+            )}
           {run?.status === "active" &&
             control.blocker !== "UNRESOLVED_PROVIDER_RECEIPT" &&
             control.stage !== "finals" &&
@@ -661,6 +708,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
             ))}
             <p>Final production and A3/C3 automation are not connected in this build. No completed final outputs are implied by planning progress.</p>
           </Disclosure>
+          </section>
         </>
       )}
       {(message || error) && (
@@ -669,111 +717,6 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
         </p>
       )}
     </div>
-  );
-}
-function BrandDecision({ campaignId, name, busy, command }: { campaignId: string; name: string; busy: boolean; command: (v: unknown) => Promise<boolean> }) {
-  const { data, error } = useShared<BrandWorkspaceRecord>(`/api/studio/campaigns/${campaignId}/brand-kit`),
-    [reviewer, setReviewer] = useState(name),
-    [confirm, setConfirm] = useState(false),
-    [fallback, setFallback] = useState(true),
-    [fontRights, setFontRights] = useState<string | null>(null);
-  const rules = data?.draft?.payload.rules ?? [];
-  // Same transformation the server applies on approval, so nothing fails after the click.
-  const remaining =
-    data?.draft && data.c1
-      ? brandAcceptanceBlockers(
-          applyRunBrandReview(data.draft.payload, { reviewerName: reviewer || "Reviewer", note: "", fontRights: fontRights ?? undefined, fallbackRuleId: fallback ? "00000000-0000-4000-8000-000000000000" : null }),
-          data.c1.payload.scope.locales,
-          data.c1.id,
-          data.assets,
-          data.materials ?? [],
-        )
-      : [];
-  return (
-    <section className={styles.review}>
-      <div>
-        <p className={styles.eyebrow}>ONE CHECK</p>
-        <h3>Does this feel like your brand?</h3>
-        <p>Approve once and the scenarios start.</p>
-      </div>
-      {error && <p role="alert">{error}</p>}
-      <div className={styles.rules}>
-        {rules
-          .filter((r) => r.decision !== "rejected")
-          .map((rule) => (
-            <div key={rule.id}>
-              <small>{rule.key.replaceAll(".", " · ")}</small>
-              <p>
-                {rule.category === "color" && /^#[a-f\d]{6}(?:[a-f\d]{2})?$/i.test(rule.value) && (
-                  <i className={styles.swatch} style={{ background: rule.value }} />
-                )}
-                {rule.value || "Missing — add this in brand details before approval."}
-              </p>
-            </div>
-          ))}
-      </div>
-      <Disclosure>
-        <summary>Source and direction details</summary>
-        <p>{data?.draft?.payload.instructions}</p>
-        <p>{data?.draft?.payload.boundaries}</p>
-        <p>{data?.draft?.payload.fontRights}</p>
-        <Link className="text-link" href={`/campaigns/${campaignId}/brand-kit`}>
-          Edit full brand details
-        </Link>
-      </Disclosure>
-      <div className={styles.reviewControls}>
-        <label>
-          Your name
-          <input value={reviewer} onChange={(e) => setReviewer(e.target.value)} maxLength={160} />
-        </label>
-        <Disclosure>
-          <summary>Font licence note (optional)</summary>
-          <textarea
-            rows={2}
-            maxLength={2000}
-            aria-label="Font licence note"
-            placeholder="Where the font licence comes from…"
-            value={fontRights ?? data?.draft?.payload.fontRights ?? ""}
-            onChange={(e) => setFontRights(e.target.value)}
-          />
-        </Disclosure>
-        <label className={styles.check}>
-          <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} />
-          <span>These are the right brand rules, and we may use these fonts and materials.</span>
-        </label>
-        <label className={styles.check}>
-          <input type="checkbox" checked={fallback} onChange={(e) => setFallback(e.target.checked)} />
-          <span>Previews may use Noto Sans until brand fonts are connected.</span>
-        </label>
-        {remaining.length > 0 && (
-          <div className={styles.attention} role="alert">
-            <strong>Fix before approving</strong>
-            {remaining.slice(0, 5).map((b, i) => (
-              <p key={i}>{b}</p>
-            ))}
-            <Link className="text-link" href={`/campaigns/${campaignId}/brand-kit`}>
-              Open brand rules
-            </Link>
-          </div>
-        )}
-        <Button
-          disabled={busy || !data || !reviewer.trim() || !confirm || remaining.length > 0}
-          onClick={() =>
-            void command({
-              action: "approveBrand",
-              reviewerName: reviewer,
-              notes: "Reviewed the campaign rules and source details in the run dashboard.",
-              confirm: true,
-              allowDraftFontFallback: fallback,
-              fontRights: fontRights ?? data?.draft?.payload.fontRights ?? "",
-            })
-          }
-        >
-          <CheckCircle2 size={16} />
-          Approve brand & continue
-        </Button>
-      </div>
-    </section>
   );
 }
 function PreviewSources({ campaignId, busy, command }: { campaignId: string; busy: boolean; command: (v: unknown) => Promise<boolean> }) {
@@ -858,7 +801,7 @@ function SavedBrandResult({
       <section className={styles.review} aria-label="Brand alignment stopped">
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>BRAND ALIGNMENT</p>
+            <p className={styles.eyebrow}>BRAND CHECK</p>
             <h3>The agent didn’t finish — your brandbook is enough to continue</h3>
           </div>
           <span>{result.costMicroUsd === null ? "Cost unresolved" : `${money(result.costMicroUsd)} charged`}</span>
@@ -912,7 +855,7 @@ function SavedBrandResult({
     <section className={styles.review} aria-label="Saved agent result">
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>BRAND ALIGNMENT · SAVED RESULT</p>
+          <p className={styles.eyebrow}>BRAND CHECK · SAVED RESULT</p>
           <h3>{title}</h3>
         </div>
         <span>{result.costMicroUsd === null ? "Cost unresolved" : `${money(result.costMicroUsd)} charged`}</span>

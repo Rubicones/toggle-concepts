@@ -73,11 +73,13 @@ export function compileBriefScope(draft: BriefDraft, refs: { campaignId: string;
 }
 export function briefBlockers(draft: BriefDraft): string[] {
   const errors: string[] = [];
-  for (const [label, value] of [["Product", draft.product], ["Objective", draft.objective], ["Audience", draft.audience], ["Market", draft.markets], ["Responsible person", draft.ownerName],
+  for (const [label, value] of [["Product", draft.product], ["Objective", draft.objective], ["Audience", draft.audience], ["Market", draft.markets],
     ["Offer", draft.offer], ["CTA", draft.cta], ["Product invariants", draft.immutables], ["Synthetic-content permissions", draft.synthesis]]) if (!value.trim()) errors.push(`${label} is required.`);
-  if (!z.email().safeParse(draft.ownerEmail).success) errors.push("Enter the responsible person's email.");
-  try { const url = new URL(draft.destination); if (!["https:", "http:"].includes(url.protocol)) throw new Error(); } catch { errors.push("Enter an HTTP(S) CTA destination."); }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.deadline) || Number.isNaN(Date.parse(draft.deadline)) || new Date(draft.deadline).toISOString().slice(0, 10) !== draft.deadline) errors.push("Enter a valid delivery date.");
+  // Owner name, email, link and delivery date are no longer asked in the questionnaire (owner decision, 11 November
+  // 2026). They stay in the schema for earlier drafts and checkpoints; a value that is present must still be valid.
+  if (draft.ownerEmail.trim() && !z.email().safeParse(draft.ownerEmail).success) errors.push("Enter the responsible person's email.");
+  if (draft.destination.trim()) try { const url = new URL(draft.destination); if (!["https:", "http:"].includes(url.protocol)) throw new Error(); } catch { errors.push("Enter an HTTP(S) CTA destination."); }
+  if (draft.deadline.trim() && (!/^\d{4}-\d{2}-\d{2}$/.test(draft.deadline) || Number.isNaN(Date.parse(draft.deadline)) || new Date(draft.deadline).toISOString().slice(0, 10) !== draft.deadline)) errors.push("Enter a valid delivery date.");
   try { new Intl.DateTimeFormat("en", { timeZone: draft.timeZone }).format(); } catch { errors.push("Enter a valid IANA time zone."); }
   if (draft.rights === "unknown" || (draft.sourceAssetIds.length && draft.rights !== "confirmed")) errors.push("Confirm source rights before submission; selected media cannot use 'not needed'.");
   if (draft.showPrice && (!draft.priceConfirmed || !Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0 || !/^[A-Z]{3}$/.test(draft.currency) || !draft.priceSource.trim())) errors.push("Displayed price needs a positive amount, currency, source and confirmation.");
