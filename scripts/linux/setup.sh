@@ -37,7 +37,12 @@ if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "Local cod
 git log --oneline -1
 
 step "Dependencies"
-npm ci --no-audit --no-fund
+# Reinstalling deletes node_modules under a running worker, so it happens only when package-lock.json changed.
+LOCK_HASH="$(sha256sum package-lock.json | cut -d' ' -f1)"
+# First run after this rule: an install newer than package-lock.json (npm's own node_modules/.package-lock.json) counts as current.
+if [ -d node_modules ] && [ ! -f node_modules/.toggle-lock-hash ] && [ node_modules/.package-lock.json -nt package-lock.json ]; then echo "$LOCK_HASH" > node_modules/.toggle-lock-hash; fi
+if [ -d node_modules ] && [ "$(cat node_modules/.toggle-lock-hash 2>/dev/null)" = "$LOCK_HASH" ]; then echo "Unchanged; kept as installed."
+else npm ci --no-audit --no-fund && echo "$LOCK_HASH" > node_modules/.toggle-lock-hash; fi
 
 step "Renderer browser (Chrome Headless Shell, free download)"
 node -e "require('@remotion/renderer').ensureBrowser({chromeMode:'headless-shell',logLevel:'error'}).then(()=>console.log('browser ok'))"
