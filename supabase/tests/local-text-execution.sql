@@ -76,6 +76,12 @@ begin
  if (select x.state from public.studio_workflow_jobs x where x.id=job)<>'queued' then raise exception 'RECOVER_STATE';end if;
  if (select x.blocker from public.studio_workflow_rounds x where x.id=round_id) is not null then raise exception 'ROUND_STILL_BLOCKED';end if;
  if public.studio_recover_local_workflow(tenant)<>0 then raise exception 'RECOVERED_TWICE';end if;
+ -- 20261112000700: Local text requests are not held to the agent's money cap, and a step stopped by it is recovered.
+ if (select count(*) from regexp_matches(pg_get_functiondef('app_private.reserve_step_before_creative(uuid,uuid,text,text,text,jsonb,bigint)'::regprocedure),'not app_private\.local_text_role\(target_run,agent_role\) and reservation>','g'))<>2 then raise exception 'STEP_CAP_NOT_EXEMPT';end if;
+ if not app_private.local_text_role(local_run,'visual-direction') or app_private.local_text_role(local_run,'image') or app_private.local_text_role(remote_run,'visual-direction') then raise exception 'LOCAL_TEXT_ROLE';end if;
+ update public.studio_workflow_jobs x set state='failed',blocker='STEP_CAP_REACHED' where x.id=job;
+ n:=public.studio_recover_local_workflow(tenant);
+ if n<>1 or (select x.state from public.studio_workflow_jobs x where x.id=job)<>'queued' then raise exception 'CAP_STOP_NOT_RECOVERED % % %',n,(select x.state||'/'||coalesce(x.blocker,'-')||'/'||x.attempt_count from public.studio_workflow_jobs x where x.id=job),(select count(*) from public.studio_workflow_jobs x where x.state in ('failed','blocked'));end if;
  update public.studio_workflow_jobs x set available_at=now()+interval '1 hour' where x.id=job;
 
  -- The edited functions carry their new rules.
