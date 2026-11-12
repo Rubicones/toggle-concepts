@@ -10,6 +10,7 @@ import {prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCl
 import {localModelFor,type LocalModelChoice} from '../../../packages/agents/local-models';
 import {sharedLayout,sharedLayoutDifferences,continuingLayout,type RunContext} from '../../../packages/agents/run-context';
 import type {Plan} from '../../../packages/agents/local-session';
+import type {StageId} from '../../../packages/agents/stage-effort';
 import {textRequestQuote} from '../../../packages/agents/text-quote';
 import type {TextReceipt,TextSnapshot} from '../../../packages/agents/text-provider';
 import type {CapabilityProfile} from './qualify';
@@ -44,6 +45,8 @@ export type LocalTextDetails={
  sharedContext?:{sha256:string;tokens:number;holds:RunContext['holds'];images:number};
  /** LC3/LC4: how this request used a stored conversation. */
  conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted';resumedFrom?:string};
+ /** LC5: the skills this request carried (common and its role's own). */
+ skills?:string[];
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
 
@@ -59,7 +62,9 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
  /** LC2: the frozen run context of a 'shared' run; null keeps the fresh layout (for example before the brand is accepted). */
  shared?:()=>Promise<RunContext|null>;
  /** LC3/LC4: continue (or branch from) a stored conversation; null starts a new, persisted one. Shared runs only. */
- session?:()=>Promise<Plan>}={}){
+ session?:()=>Promise<Plan>;
+ /** LC5: the requesting role's skill key, so its own skills follow its instructions. LC6: the stage of a request. */
+ role?:string;stage?:(prompt:string)=>StageId}={}){
  return async function cliText(model:string,prompt:string,cfg:TextSnapshot,images:ImageInput[]=[],requestTag?:string):Promise<LocalTextReceipt>{
   const refuse=(failure:string):LocalTextReceipt=>({provider:'claude-cli',outcome:'failed',cost:0,text:null,generation:null,usage:null,failure});
   // The same refusals as submitText, before anything is sent.
@@ -73,11 +78,12 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   if(projectionDifferences(projectPrepared(prepared),projectCli(cli,prepared.output.schema?.schema)).length)return refuse('LOCAL_CONTEXT_MISMATCH');
   // LC2: in a 'shared' run every request starts with the same run context; the role's instructions and input follow it.
   const ctx=options.shared?await options.shared():null;
-  if(ctx){const original=cli;cli=sharedLayout(original,prepared,ctx);if(sharedLayoutDifferences(cli,original,prepared,ctx).length)return refuse('LOCAL_CONTEXT_MISMATCH');}
+  if(ctx){const original=cli;cli=sharedLayout(original,prepared,ctx,options.role);if(sharedLayoutDifferences(cli,original,prepared,ctx,options.role).length)return refuse('LOCAL_CONTEXT_MISMATCH');}
+  const skillsUsed=ctx?[...ctx.holds.skills,...(options.role?ctx.roleSkills?.[options.role]??[]:[]).map(s=>s.id)]:[];
   // LC3/LC4: a shared run's conversations are persisted; a continuation sends only what the history does not hold yet.
   const plan=ctx&&options.session?await options.session():null,fullShared=cli;
   let conversation:LocalTextDetails['conversation']|undefined=ctx&&options.session?{kind:plan?.condensed?'condensed':'new'}:undefined;
-  if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode}),prepared,ctx,plan);conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
+  if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode}),prepared,ctx,plan,options.role);conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
   const persist=!!conversation;let resume=plan&&!plan.condensed&&plan.resume?{resume:plan.resume,fork:plan.fork}:null;
   const recordPath=options.record?await options.record(prepared):undefined;
   const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=setup.workDir??join(dir,'work');
@@ -100,7 +106,7 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{}),...(conversation?{conversation}:{})};
+    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};

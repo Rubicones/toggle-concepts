@@ -172,3 +172,45 @@ test('LC4: append-only turns send new results and changed files only; renders an
  assert.equal(RENDER_LONG_SIDE,1024);
  const issue=Array.from({length:40},(_,i)=>`line ${i}`).join('\n');assert.equal(shortIssue(issue).split('\n').length,12);
 });
+
+import {readSkills,parseSkill,splitSkills,SKILL_ROLES,SKILL_TOKEN_LIMIT,ROLE_SKILLS_TOKEN_LIMIT,skillRoleOf} from '../packages/agents/skill-files';
+test('LC5: skills are short principles: no examples, styles or names, within the size limits', ()=>{
+ const skills=readSkills();assert.ok(skills.length>=1);
+ for(const s of skills){
+  assert.doesNotMatch(s.text,/for example|e\.g\.|such as|like this|in the style of|\binspired by\b/i,`${s.id}: principles only, no examples`);
+  assert.doesNotMatch(s.text,/https?:|®|™|\b(Helvetica|Arial|Inter|Roboto|Futura|Garamond|Material|Bootstrap|Tailwind)\b/i,`${s.id}: no font, brand or design-system names`);
+  assert.ok(s.tokens<=SKILL_TOKEN_LIMIT,`${s.id} within ${SKILL_TOKEN_LIMIT} tokens`);assert.ok(s.purpose&&s.title&&s.version);
+ }
+ assert.ok(skills.reduce((n,s)=>n+s.tokens,0)<=ROLE_SKILLS_TOKEN_LIMIT,'all skills together fit one role');
+ assert.throws(()=>parseSkill('no frontmatter'),/SKILL_FRONTMATTER_REQUIRED/);
+ assert.equal(skillRoleOf('director'),'visual-direction');assert.equal(skillRoleOf('designer'),'designer');
+});
+
+test('LC5: common skills join the shared prefix; role skills follow the role instructions; the prefix stays identical', async()=>{
+ const skills=readSkills(),[a,b]=skills;
+ const attachments=[...SKILL_ROLES.map(role=>({skill_id:a.id,role})),{skill_id:b.id,role:'designer'}];
+ const {common,byRole}=splitSkills(skills,attachments);
+ assert.deepEqual(common.map(s=>s.id),[a.id]);assert.deepEqual(byRole.designer.map(s=>s.id),[b.id]);assert.equal(byRole.critic,undefined);
+ const ctx=buildRunContext({briefText:BRIEF,brandText:BRAND,commonSkills:common,roleSkills:byRole}),plain=buildRunContext({briefText:BRIEF,brandText:BRAND,commonSkills:common});
+ assert.ok(ctx.system.includes(a.text)&&!ctx.system.includes(b.text));assert.equal(ctx.sha256,plain.sha256,'role skills never change the shared prefix');
+ const dir=await mkdtemp(join(tmpdir(),'lc5-')),designer=fixture('designer-cached-claude'),critic=fixture('critic-no-images-cached'),prefixImages=designer.images.filter(i=>i.prefix);
+ const r1=join(dir,'d.json'),r2=join(dir,'c.json');
+ const d=await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:r1}),{shared:async()=>ctx,role:'designer'})(designer.model,designer.prompt,designer.cfg,designer.images);
+ await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:r2}),{shared:async()=>ctx,role:'critic'})(critic.model,critic.prompt,critic.cfg,prefixImages);
+ const x=JSON.parse(await readFile(r1,'utf8')),y=JSON.parse(await readFile(r2,'utf8'));
+ assert.equal(x.system,y.system);
+ const upToRole=(content:{type:string;text?:string}[])=>content.slice(0,content.findIndex(c=>c.type==='text'&&c.text!.startsWith('YOUR ROLE\n')));
+ assert.deepEqual(upToRole(x.content),upToRole(y.content),'the cached prefix is identical with and without role skills');
+ const roleText=(content:{type:string;text?:string}[])=>content.find(c=>c.type==='text'&&c.text!.startsWith('YOUR ROLE\n'))!.text!;
+ assert.ok(roleText(x.content).includes(`ROLE SKILLS\nSKILL ${b.id}`));assert.ok(!roleText(y.content).includes('ROLE SKILLS'));
+ assert.deepEqual((d.usage as {_local:{skills:string[]}})._local.skills,[a.id,b.id],'the skills used are recorded');
+});
+
+test('LC5: a frozen run keeps its skills when attachments change later', async()=>{
+ process.env.TOGGLE_HOME=await mkdtemp(join(tmpdir(),'lc5-home-'));
+ const {freezeRunContext}=await import('../apps/local-runner/local-claude/run-context');
+ const skills=readSkills(),before=splitSkills(skills,SKILL_ROLES.map(role=>({skill_id:skills[0].id,role}))),after=splitSkills(skills,[]);
+ const frozen=await freezeRunContext('run-5',buildRunContext({briefText:BRIEF,brandText:BRAND,commonSkills:before.common}));
+ const kept=await freezeRunContext('run-5',buildRunContext({briefText:BRIEF,brandText:BRAND,commonSkills:after.common}));
+ assert.deepEqual(kept.holds.skills,[skills[0].id]);assert.equal(kept.sha256,frozen.sha256);
+});

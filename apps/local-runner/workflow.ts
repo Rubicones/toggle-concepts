@@ -103,7 +103,7 @@ async function execute(claim:Claim){
  let result:{outcome:string;cost:number|null;text:string|null;generation:string|null;usage:unknown;failure:string|null;finishReason?:string|null;validation?:unknown;providerError?:ProviderErrorDetail;originalOutput?:string;normalizations?:string[]}={outcome:"failed",cost:0,text:null,generation:null,usage:null,failure:null};
  try{
   // The mode frozen on the run decides the transport; Local runs never fall back to OpenRouter.
-  execution=await textExecutionFor(admin,"run",job.run_id);const shared=sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{})});
+  execution=await textExecutionFor(admin,"run",job.run_id);const shared=sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,role:job.role,...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{})});
   if(execution.mode!=="local_claude"&&!process.env.OPENROUTER_API_KEY)throw new Error("PROVIDER_NOT_CONFIGURED");
   const run=checked(await admin.from("studio_runs").select("id,config_snapshot").eq("id",job.run_id).eq("tenant_id",sharedTenant).single());
   if(!run)throw new Error("RUN_NOT_ACTIVE");

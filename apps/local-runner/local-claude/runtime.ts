@@ -13,8 +13,9 @@ import {profilePath,readProfile} from './qualify';
 import {cliTextTransport,localSetupFrom,type LocalCliSetup,type LocalTextReceipt} from './transport';
 import {recordPreparedRequest} from './record';
 import {loadRunContext} from './run-context';
-import {commonSkills} from './skills';
+import {contextExtras} from './skills';
 import type {RunContext} from '../../../packages/agents/run-context';
+import type {StageId} from '../../../packages/agents/stage-effort';
 import {CHAIN_ROLES,conversationTokens,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
 
 export type TextExecution={mode:'openrouter'|'local_claude';device_id?:string|null;execution_model?:string|null;cli_version?:string|null;mapping_version?:string|null;
@@ -49,7 +50,7 @@ export async function textExecutionFor(admin:SupabaseClient,kind:'run'|'brand-an
 /** submitText for OpenRouter scopes; the CLI transport for this device's Local scopes; a named stop otherwise. */
 /** LC2: the run context loader of a 'shared' run; undefined for 'fresh' runs. */
 export function sharedContextFor(admin:SupabaseClient,execution:TextExecution,runId:string){
- return execution.mode==='local_claude'&&execution.context_mode==='shared'?()=>loadRunContext(admin,runId,()=>commonSkills(admin,runId)):undefined;
+ return execution.mode==='local_claude'&&execution.context_mode==='shared'?()=>loadRunContext(admin,runId,()=>contextExtras(admin,runId)):undefined;
 }
 /** LC3: the stored points a planning job can continue from: its parent jobs' succeeded Local requests. */
 export async function planningPoints(admin:SupabaseClient,jobId:string):Promise<StoredPoint[]>{
@@ -66,14 +67,14 @@ export async function latestPlanningPoint(admin:SupabaseClient,runId:string):Pro
 function pointsOf(rows:{role:string;usage:unknown;created_at:string}[]):StoredPoint[]{
  return rows.flatMap(r=>{const l=(r.usage as {_local?:{sessionId?:string;usage?:Parameters<typeof conversationTokens>[0]}}|null)?._local;return l?.sessionId?[{role:r.role,sessionId:l.sessionId,tokens:conversationTokens(l.usage),at:r.created_at}]:[];});
 }
-export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>;session?:()=>Promise<Plan>}={}):typeof submitText{
+export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>;session?:()=>Promise<Plan>;role?:string;stage?:(prompt:string)=>StageId}={}):typeof submitText{
  if(execution.mode!=='local_claude')return submitText;
  if(!runtime.setup||!runtime.device)throw new Error(runtime.reason??'LOCAL_PROFILE_REQUIRED');
  if(execution.device_id!==runtime.device.id)throw new Error('LOCAL_DEVICE_MISMATCH');
  // A run keeps the model and CLI it started with; a change is an explicit stop, never a silent switch.
  if(execution.execution_model!==runtime.setup.sonnet)throw new Error('LOCAL_MODEL_CHANGED');
  if(execution.cli_version&&execution.cli_version.split(/\s+/)[0]!==runtime.setup.cliVersion.split(/\s+/)[0])throw new Error('LOCAL_CLI_CHANGED');
- return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p),...(options.shared?{shared:options.shared}:{}),...(options.shared&&options.session?{session:options.session}:{})});
+ return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p),...(options.shared?{shared:options.shared}:{}),...(options.shared&&options.session?{session:options.session}:{}),...(options.role?{role:options.role}:{}),...(options.stage?{stage:options.stage}:{})});
 }
 
 // ---- Subscription waiting (plan §10): durable on the device, bounded probes, no busy loop. ----

@@ -22,7 +22,8 @@ export async function freezeRunContext(runId:string,ctx:RunContext):Promise<RunC
 }
 
 /** The frozen context, or one built now from the approved brief and the accepted brand; null before A1. */
-export async function loadRunContext(admin:SupabaseClient,runId:string,commonSkills:()=>Promise<Skill[]>=async()=>[]):Promise<RunContext|null>{
+export type ContextExtras={commonSkills:Skill[];roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>};
+export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()=>Promise<ContextExtras>=async()=>({commonSkills:[]})):Promise<RunContext|null>{
  const frozen=await readRunContext(runId);if(frozen)return frozen;
  const c1=await admin.from('studio_c1_checkpoints').select('brief_text').eq('run_id',runId).maybeSingle();
  if(c1.error||!c1.data?.brief_text)return null;
@@ -30,5 +31,5 @@ export async function loadRunContext(admin:SupabaseClient,runId:string,commonSki
  if(a1.error||!a1.data?.brand_revision_id)return null;
  const brand=await admin.from('studio_brand_revisions').select('canonical_text').eq('id',a1.data.brand_revision_id).maybeSingle();
  if(brand.error||!brand.data?.canonical_text)return null;
- return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandText:brand.data.canonical_text,commonSkills:await commonSkills()}));
+ return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandText:brand.data.canonical_text,...await extras()}));
 }
