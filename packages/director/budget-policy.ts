@@ -28,8 +28,9 @@ export function autoContinuationKey(questionId:string,role:string,roleMaxCostMic
  return `${h.slice(0,8)}-${h.slice(8,12)}-5${h.slice(13,16)}-${(8|parseInt(h[16],16)&3).toString(16)}${h.slice(17,20)}-${h.slice(20,32)}`;
 }
 
-/** How many base allowances one automatic continuation adds: the coder's base allowance fits less than one answer. */
-export const autoContinuationTimes=(role:string)=>role==='assembler'?3:1;
+/** How many base allowances one automatic continuation adds. A static draft's base allowances are small (the coder's
+ * fits less than one answer, the director's two requests), so one addition stopped the role again almost at once. */
+export const autoContinuationTimes=(role:string)=>role==='assembler'?3:2;
 /** The timeline line for an automatic continuation, in plain words. */
 export function autoContinuationMessage(role:string,costMicroUsd:number){
  const who=({director:'The director',assembler:'The layout coder',critic:'The review agent',designer:'The designer'} as Record<string,string>)[role]??'This step';

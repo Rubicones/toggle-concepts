@@ -11,7 +11,11 @@ export type AutoContinued={continued:true;role:string;costMicroUsd:number}|{cont
 /** Reads the stop, the run's frozen execution and its policy; continues once, or says why it did not. */
 export async function continueWithoutReapproval(admin:SupabaseClient,args:{blockId:string;directionId:string;device:string}):Promise<AutoContinued>{
  const work=await admin.from('studio_director_work').select('status,question,state').eq('block_id',args.blockId).eq('direction_id',args.directionId).maybeSingle();
- const question=work.data?.question as ADQuestion|null|undefined,role=continuableRole(question);
+ const question=work.data?.question as ADQuestion|null|undefined;
+ // A stop saved without its role (an input-allowance stop from before the runner named it) belongs to the role that was
+ // working: the active call, else the phase.
+ const state=(work.data?.state??{}) as {activeCall?:{role?:string};phase?:string},working=state.activeCall?.role??state.phase;
+ const role=continuableRole(question)??(question?.reason==='budget'&&question.technical?.startsWith('ROLE_ALLOWANCE_EXHAUSTED')&&['director','assembler','critic','designer'].includes(working??'')?working as 'director'|'assembler'|'critic'|'designer':null);
  if(work.error||work.data?.status!=='review'||!question||!role)return {continued:false,reason:'NOT_AN_ALLOWANCE_STOP'};
  const block=await admin.from('studio_director_blocks').select('run_id,snapshot').eq('id',args.blockId).maybeSingle();if(block.error||!block.data)return {continued:false,reason:'BLOCK_NOT_FOUND'};
  const [execution,policy]=await Promise.all([
