@@ -41,7 +41,9 @@ import {draftModelProblem,draftModelConfig} from '@/packages/director/role-model
 import {synthesisPermitted} from '@/packages/director/resources';
 import {brandScope} from './brand-source';
 function priced<T>(estimate:()=>T){try{return estimate();}catch(error){const code=error instanceof Error?error.message:'';if(code==='ESTIMATE_EXCEEDS_RUN_LIMIT')throw new ApiError(409,code,'One direction would cost more than the $100 limit of a run with these models. Choose less expensive models for the creative roles in Settings → Agents.');if(code==='MODEL_PRICE_UNAVAILABLE')throw new ApiError(409,code,'The provider did not publish a price for one of the creative models. Choose another model in Settings → Agents.');throw error;}}
-function schema(error:{code?:string;message:string}|null){if(!error)return;if(['42P01','PGRST202','PGRST205','42883'].includes(error.code??''))throw new ApiError(503,'M08_SCHEMA_REQUIRED','The director workspace is not enabled yet. Apply the supplied M08 migrations.');throw new ApiError(409,'DIRECTOR_ADMISSION_FAILED',error.message.slice(0,300));}
+function schema(error:{code?:string;message:string}|null){if(!error)return;
+ // A database time limit is reported as busy (retried), never as a refused admission.
+ if(/canceling statement due to (?:statement|lock) timeout/i.test(error.message))throw new Error(error.message);if(['42P01','PGRST202','PGRST205','42883'].includes(error.code??''))throw new ApiError(503,'M08_SCHEMA_REQUIRED','The director workspace is not enabled yet. Apply the supplied M08 migrations.');throw new ApiError(409,'DIRECTOR_ADMISSION_FAILED',error.message.slice(0,300));}
 /** Free planning output and brand data are checked before any price is shown; each stop says what to fix. */
 function plainStartError(error:unknown,index:number):Error{
  if(error instanceof ApiError||!(error instanceof Error))return error as Error;
