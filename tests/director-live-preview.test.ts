@@ -30,6 +30,15 @@ test('readiness declarations are literal, issued, incremental and never execute 
  const props={width:1080,height:1080,format:'square',locale:'en-GB',hook:'primary',cta:'primary',length:6,sceneId:'scene-1',moment:'hero'};assert.equal(liveSelection(i.variants,props,'hook','hook-1').cta,'alt');
  const quote=estimateLiveDirection({director:{inputPrice:3e-6,outputPrice:15e-6},assembler:{inputPrice:3e-6,outputPrice:15e-6},critic:{inputPrice:3e-6,outputPrice:15e-6}},100000,4,'recorded-live');assert.equal(quote.roles.critic.maxCostMicroUsd,0);assert.equal(quote.roles.critic.requests,0);assert.ok(quote.maxCostMicroUsd<2000000);
 });
+test('designer drafts: every ordered locale, hook, CTA and length is switchable even when the source lists only some',async()=>{
+ const frame=(await source()).replace("'primary','hook-1'","'primary'"),i=input();
+ const before=readLiveOptions(frame,i).options;assert.equal(before.hooks.length,1,'director + coder drafts keep what the source declared');
+ const designer={...i,stage:'draft' as const,brief:{...i.brief,designerVersion:2}};
+ const after=readLiveOptions(frame,designer).options;
+ assert.deepEqual(after.hooks,['primary','hook-1'],'declared first, then the rest of the order');
+ assert.deepEqual([...after.locales].sort(),[...new Set(i.variants.map(v=>v.locale))].sort());
+ assert.deepEqual([...after.ctas].sort(),[...new Set(i.variants.map(v=>v.cta))].sort());
+});
 test('sandboxed live build publishes source revisions with no image output and rejects unsafe code',async()=>{
  const root=await mkdtemp(join(tmpdir(),'m09-live-build-'));try{const i=input(),folder=await createWorkspace(root,i),code=await source();await writeFile(join(folder,'Frame.tsx'),code);
  const first=JSON.parse((await sandboxTool(folder,'preview',{})).trim().split('\n').at(-1)!);assert.equal(first.options.adaptive,true);await assert.rejects(()=>access(join(folder,'renders')));

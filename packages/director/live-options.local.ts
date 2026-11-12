@@ -1,4 +1,5 @@
 import ts from 'typescript';
+import {usesDesigner} from './designer';
 import {squarePreviewOnly} from './preview-scope';
 import {issuedScenes} from './scenes';
 import type {DirectionInput} from './types';
@@ -31,6 +32,10 @@ export function readLiveOptions(source:string,input:DirectionInput):{options:Liv
  if(!declared||Array.isArray(declared)||typeof declared!=='object')throw new Error('PREVIEW_OPTIONS_MUST_BE_LITERAL');
  if(['hooks','ctas','locales','lengths','scenes','adaptive'].some(key=>!(key in declared)))throw new Error('PREVIEW_OPTIONS_FIELDS_REQUIRED');
  for(const [key,axis]of [['hooks','hook'],['ctas','cta'],['locales','locale'],['lengths','length']] as const){const rawRows=declared[key]??defaults[key],allowed=new Set<string|number>(input.variants.map(v=>v[axis])),rows=Array.isArray(rawRows)?rawRows.map(v=>key==='lengths'&&typeof v==='string'&&/^\d+(?:\.\d+)?$/.test(v.trim())&&allowed.has(Number(v.trim()))?Number(v.trim()):v):rawRows;if(!Array.isArray(rows)||rows.some(v=>typeof v!=='string'&&typeof v!=='number'||!allowed.has(v)))throw new Error('UNISSUED_PREVIEW_OPTION');(options[key] as (string|number)[])= [...new Set(rows)] as (string|number)[];}
+ // Designer drafts: locales, hooks, calls to action and lengths are data on top of the composition (the component
+ // reads approved copy by its props), so every ordered value is switchable from the first render, whether or not the
+ // model listed it. The declared values keep their order and come first.
+ if(usesDesigner(input))for(const [key,axis]of [['hooks','hook'],['ctas','cta'],['locales','locale'],['lengths','length']] as const)(options[key] as (string|number)[])=[...new Set([...(options[key] as (string|number)[]),...input.variants.map(v=>v[axis])])];
  if(declared.scenes!==undefined){const issued=issuedScenes(input),resolveScene=(id:unknown)=>{if(typeof id!=='string')return undefined;if(issued.some(scene=>scene.id===id))return id;const bySource=issued.filter(scene=>scene.sourceSceneId===id);return bySource.length===1?bySource[0].id:undefined;};if(!Array.isArray(declared.scenes))throw new Error('UNISSUED_PREVIEW_OPTION');const resolved=declared.scenes.map(resolveScene);if(resolved.some(id=>!id))throw new Error('UNISSUED_PREVIEW_OPTION');options.scenes=[...new Set(resolved as string[])];}
  if(declared.adaptive!==undefined&&typeof declared.adaptive!=='boolean')throw new Error('INVALID_PREVIEW_ADAPTIVENESS');options.adaptive=!squarePreviewOnly(input)&&declared.adaptive===true;
  if(declared.labels!==undefined){if(!declared.labels||Array.isArray(declared.labels)||typeof declared.labels!=='object')throw new Error('INVALID_PREVIEW_LABELS');const labels:NonNullable<LiveOptions['labels']>={};for(const key of ['hooks','ctas','locales','lengths','scenes'] as const){const group=(declared.labels as Record<string,unknown>)[key];if(group===undefined)continue;if(!group||Array.isArray(group)||typeof group!=='object')throw new Error('INVALID_PREVIEW_LABELS');labels[key]=Object.fromEntries(Object.entries(group).map(([id,label])=>{if(!options[key].some(v=>String(v)===id)||typeof label!=='string'||!label.trim()||label.length>80)throw new Error('INVALID_PREVIEW_LABELS');return [id,label];}));}options.labels=labels;}
