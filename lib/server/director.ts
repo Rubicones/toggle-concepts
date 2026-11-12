@@ -107,10 +107,11 @@ async function budgetStop(campaignId:string,directionId:string,questionId:string
  await campaignRecord(campaignId);const {admin,tenant}=await studioContext(),blocks=checked(await admin.from('studio_director_blocks').select('*').eq('tenant_id',tenant).eq('campaign_id',campaignId).order('created_at',{ascending:false}))??[];
  for(const b of blocks){const w=checked(await admin.from('studio_director_work').select('*').eq('block_id',b.id).eq('direction_id',directionId).maybeSingle());if(w?.question?.id===questionId&&w.question.reason==='budget'){
   const role=exhaustedRole(w.question.technical);if(!role)throw new ApiError(409,'DIRECTOR_EXTENSION_UNAVAILABLE','This stop needs a revised plan, not more coder turns. Review a continuation price.');const snapshot=b.snapshot as BlockSnapshot&{extensionBase?:Record<string,Record<string,RoleAllowance>>},base=snapshot.extensionBase?.[directionId]?.[role]??snapshot.estimates[directionId].roles[role];
+  if(!base)throw new ApiError(409,'DIRECTOR_EXTENSION_UNAVAILABLE','This stop needs a revised plan, not more turns. Review a continuation price.');
   return {block:b,work:w,role,allowance:base,priceMicroUsd:base.maxCostMicroUsd};}}
  throw new ApiError(409,'STALE_QUESTION','This question has already changed.');
 }
-const roleLabel={director:'creative direction',assembler:'layout and code',critic:'creative review'} as const;
+const roleLabel={director:'creative direction',assembler:'layout and code',critic:'creative review',designer:'design'} as const;
 export async function quoteDirectorExtension(campaignId:string,directionId:string,questionId:string){const stop=await budgetStop(campaignId,directionId,questionId);return {extension:{directionId,questionId,role:stop.role,maxCostMicroUsd:stop.priceMicroUsd,requestsAdded:stop.allowance.requests,outputTokensAdded:stop.allowance.outputTokens},message:`Continue this direction with more ${roleLabel[stop.role]}: up to $${(stop.priceMicroUsd/1e6).toFixed(2)}. Adds up to ${stop.allowance.requests} more ${stop.role==='director'?'design attempts':'requests'} within the allowance.${stop.role==='director'?' A cut-off answer can use more room on continuation.':''} The saved design, pictures and code are kept.`};}
 export async function extendDirector(campaignId:string,input:{directionId:string;questionId:string;maxCostMicroUsd:number;requestId:string}){
  await campaignRecord(campaignId);const {admin,tenant,actorId}=await studioContext();
