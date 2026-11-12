@@ -56,6 +56,8 @@ import {ensureDirectorToolchain} from './toolchain';
 import {compactTranscript,assemblerContext} from '../../../packages/director/transcript';
 import {providerJsonSchema} from '../../../packages/director/provider-schema';
 import {questionForFailure} from '../../../packages/director/questions';
+import {continueWithoutReapproval} from '../../../packages/director/auto-continue';
+import {autoContinuationMessage} from '../../../packages/director/budget-policy';
 import {draftModelProblem,draftModelConfig,draftRoleNames} from '../../../packages/director/role-models';
 import {inspectionViews,analyzeInspection} from '../../../packages/director/layout-inspection';
 import {runLiveReview,newReviewState,CONTROL_FAILURE,type LiveReviewRecord} from '../../../packages/director/live-review';
@@ -378,6 +380,11 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    if(failure.message==='SUBSCRIPTION_LIMIT'){const until=await markSubscriptionLimit();state.retryAt=until;state.pausedAt??=Date.now();await events.emit(`waiting-subscription:${until}`,{stepId:`waiting-subscription:${until}`,kind:'control',status:'queued',costMicroUsd:0,message:'Waiting for the Claude subscription limit on this device. Approved allowances and the active-time clock are paused; work resumes by itself.',detail:{code:'waiting_subscription',retryAt:until}});await save('queued');return;}
    if(transientExecutionFailure(failure.message)&&(state.transientRetries??0)<10){state.transientRetries=(state.transientRetries??0)+1;state.retryAt=Date.now()+Math.min(120000,3000*2**Math.min(state.transientRetries,6));state.pausedAt=Date.now();await events.emit(`local-retry:${state.transientRetries}`,{stepId:`local-retry:${state.transientRetries}`,kind:'control',status:'queued',costMicroUsd:0,message:'The local worker is recovering a temporary interruption. Saved source and approved limits are retained; no decision is needed.',detail:{code:failure.message,retryAt:state.retryAt}});await save('queued');return;}
    await save('review',questionForFailure(input,failure,failure.message==='RESOURCE_PERMISSION_REQUIRED'?estimate.perStillMicroUsd:estimate.maxCostMicroUsd));
+   // A Local preview whose run has budget re-approval off continues through the same priced extension, once per stop.
+   // Without the policy (or when the run limit is reached) the question stays for the AD, as before.
+   const auto=await continueWithoutReapproval(admin,{blockId:block.id,directionId:input.directionId,device}).catch((e:unknown)=>({continued:false as const,reason:e instanceof Error?e.message:'AUTO_CONTINUE_FAILED'}));
+   if(auto.continued)await events.emit(`auto-continue:${input.iterationId}:${auto.role}:${Date.now()}`,{stepId:`auto-continue:${input.iterationId}:${auto.role}`,kind:'control',status:'done',costMicroUsd:0,message:autoContinuationMessage(auto.role,auto.costMicroUsd),detail:{code:'budget_auto_continue',role:auto.role,addedMicroUsd:auto.costMicroUsd}}).catch(()=>{});
+   else if(auto.reason!=='BUDGET_REAPPROVAL_REQUIRED'&&auto.reason!=='NOT_AN_ALLOWANCE_STOP')console.error('[director] automatic continuation did not apply; the question stays',auto.reason);
   }catch(saveError){console.error('[director] could not save the stop reason; the lease will expire and the work is retried',failure.message,saveError instanceof Error?saveError.message:saveError);}
  }
  finally{clearInterval(beat);}

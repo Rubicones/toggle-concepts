@@ -5,13 +5,14 @@ import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import {studioRequest,useShared} from "@/lib/shared-http";
 
-type LocalMode={mode:"openrouter"|"local_claude";contextMode?:"fresh"|"shared";contextReady?:boolean;updatedAt:string|null;schemaReady:boolean;blocked:string|null;device:{id:string;label:string}|null;
+type LocalMode={mode:"openrouter"|"local_claude";contextMode?:"fresh"|"shared";contextReady?:boolean;budgetReapproval?:"ask"|"skip";budgetPolicyReady?:boolean;updatedAt:string|null;schemaReady:boolean;blocked:string|null;device:{id:string;label:string}|null;
  profile:{cliVersion:string;model:string|null;textRoles:string;visualRoles:string;reasons:string[];limitations:string[];createdAt:string}|null};
 
 export function LocalModePanel(){
  const state=useShared<LocalMode>("/api/studio/local-mode",{live:false});const [message,setMessage]=useState("");const [busy,setBusy]=useState(false);
  const data=state.data,local=data?.mode==="local_claude";
  const setContext=async(contextMode:"fresh"|"shared")=>{setBusy(true);try{const r=await studioRequest<{message:string}>("/api/studio/local-mode","PUT",{contextMode});setMessage(r.message);state.refresh();}catch(error){setMessage(error instanceof Error?error.message:"The setting was not saved.");}finally{setBusy(false);}};
+ const setBudget=async(budgetReapproval:"ask"|"skip")=>{setBusy(true);try{const r=await studioRequest<{message:string}>("/api/studio/local-mode","PUT",{budgetReapproval});setMessage(r.message);state.refresh();}catch(error){setMessage(error instanceof Error?error.message:"The setting was not saved.");}finally{setBusy(false);}};
  const choose=async(mode:LocalMode["mode"])=>{setBusy(true);try{const result=await studioRequest<{message:string}>("/api/studio/local-mode","PUT",{mode});setMessage(result.message);state.refresh();}catch(error){setMessage(error instanceof Error?error.message:"The setting was not saved.");}finally{setBusy(false);}};
  return <section className="detail-panel" id="text-execution">
   <h2>Text agents: Local / OpenRouter {data&&<Badge variant={local?"blue":"outline"}>{local?"Local":"OpenRouter"}</Badge>}</h2>
@@ -27,6 +28,9 @@ export function LocalModePanel(){
   {local&&data?.contextReady&&<fieldset className="studio-form"><legend>How Local runs use context</legend>
    <label className="checkbox-field"><input type="radio" name="context" checked={data.contextMode!=="shared"} disabled={busy} onChange={()=>void setContext("fresh")}/><span>Fresh: each request is prepared on its own (current behaviour).</span></label>
    <label className="checkbox-field"><input type="radio" name="context" checked={data.contextMode==="shared"} disabled={busy} onChange={()=>void setContext("shared")}/><span>Shared: one context (brief and brand) is prepared once per run and read from the cache by every agent. Applies to new runs.</span></label>
+  </fieldset>}
+  {local&&data?.budgetPolicyReady&&<fieldset className="studio-form"><legend>Local preview builds</legend>
+   <label className="checkbox-field"><input type="checkbox" checked={data.budgetReapproval==="skip"} disabled={busy} onChange={e=>void setBudget(e.currentTarget.checked?"skip":"ask")}/><span>Continue local preview builds without asking to approve more budget. Applies to the Claude pipeline, shared projects included, on this computer; new runs use it. Costs are still counted and you can stop a run at any time. The run limit still applies.</span></label>
   </fieldset>}
   <p role="status">{message||state.error}</p>
  </section>;
