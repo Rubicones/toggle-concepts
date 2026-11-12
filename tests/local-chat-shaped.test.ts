@@ -214,3 +214,27 @@ test('LC5: a frozen run keeps its skills when attachments change later', async()
  const kept=await freezeRunContext('run-5',buildRunContext({briefText:BRIEF,brandText:BRAND,commonSkills:after.common}));
  assert.deepEqual(kept.holds.skills,[skills[0].id]);assert.equal(kept.sha256,frozen.sha256);
 });
+
+import {stageOf,stageEffort,DEFAULT_STAGE_EFFORT,STAGES} from '../packages/agents/stage-effort';
+test('LC6: effort per stage — high where the idea is invented, medium for repairs, revisions, the critic and support', ()=>{
+ assert.equal(stageOf('strategy'),'planning-create');assert.equal(stageOf('visual-direction'),'planning-create');
+ assert.equal(stageOf('research'),'supporting');assert.equal(stageOf('localization'),'supporting');
+ assert.equal(stageOf('designer'),'design-create');assert.equal(stageOf('designer',{revising:true}),'design-revise');
+ assert.equal(stageOf('assembler',{repair:true}),'code-repair');assert.equal(stageOf('critic'),'critic');
+ assert.equal(DEFAULT_STAGE_EFFORT['design-create'],'high');assert.equal(DEFAULT_STAGE_EFFORT['planning-create'],'high');
+ for(const s of ['design-revise','code-repair','critic','supporting'] as const)assert.equal(DEFAULT_STAGE_EFFORT[s],'medium');
+ assert.equal(stageEffort('critic',{critic:'low'}),'low','the owner can change a stage');assert.equal(stageEffort('critic',{critic:'bogus'}),'medium');
+ assert.equal(STAGES.length,new Set(STAGES.map(s=>s.id)).size);
+});
+
+test('LC6: a shared request uses its stage effort from the frozen context; fresh runs keep the role effort', async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'lc6-')),f=fixture('designer-cached-claude'),cfg={...f.cfg,reasoningEffort:'high' as const};
+ const ctx=buildRunContext({briefText:BRIEF,brandText:BRAND,stageEffort:{'design-revise':'low'}});
+ const argvOf=async(name:string,opts:Parameters<typeof cliTextTransport>[1])=>{const rec=join(dir,`${name}.json`);const r=await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:rec}),opts)(f.model,f.prompt,cfg,f.images);return {argv:JSON.parse(await readFile(rec,'utf8')).args as string[],r};};
+ const effortIn=(argv:string[])=>argv[argv.indexOf('--effort')+1];
+ const revise=await argvOf('revise',{shared:async()=>ctx,role:'designer',stage:'design-revise'});
+ assert.equal(effortIn(revise.argv),'low');assert.equal((revise.r.usage as {_local:{stage:string;effort:string}})._local.stage,'design-revise');
+ assert.equal((revise.r.usage as {_local:{effort:string}})._local.effort,'low','the effort used is recorded');
+ assert.equal(effortIn((await argvOf('create',{shared:async()=>ctx,role:'designer',stage:'design-create'})).argv),'high');
+ assert.equal(effortIn((await argvOf('fresh',{role:'designer',stage:'design-revise'})).argv),'high','no run context: the role effort stays');
+});

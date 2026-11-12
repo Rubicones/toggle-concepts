@@ -67,7 +67,7 @@ export async function latestPlanningPoint(admin:SupabaseClient,runId:string):Pro
 function pointsOf(rows:{role:string;usage:unknown;created_at:string}[]):StoredPoint[]{
  return rows.flatMap(r=>{const l=(r.usage as {_local?:{sessionId?:string;usage?:Parameters<typeof conversationTokens>[0]}}|null)?._local;return l?.sessionId?[{role:r.role,sessionId:l.sessionId,tokens:conversationTokens(l.usage),at:r.created_at}]:[];});
 }
-export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>;session?:()=>Promise<Plan>;role?:string;stage?:(prompt:string)=>StageId}={}):typeof submitText{
+export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>;session?:()=>Promise<Plan>;role?:string;stage?:StageId}={}):typeof submitText{
  if(execution.mode!=='local_claude')return submitText;
  if(!runtime.setup||!runtime.device)throw new Error(runtime.reason??'LOCAL_PROFILE_REQUIRED');
  if(execution.device_id!==runtime.device.id)throw new Error('LOCAL_DEVICE_MISMATCH');

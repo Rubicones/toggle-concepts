@@ -7,6 +7,7 @@ import {objectStore} from '../../packages/media/s3.server';
 import {modelCatalog} from '../../packages/agents/catalog';
 import {roleReasoning,usesRoleEffort} from '../../packages/agents/effort';
 import type {TextReceipt} from '../../packages/agents/text-provider';
+
 import {textExecutionFor,transportFor,sharedContextFor,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime} from './local-claude/runtime';
 import type {LocalTextReceipt} from './local-claude/transport';
 import {fieldExtractionRequest,parseFieldResponse,splitBrandText} from '../../packages/brand/field-extraction';
@@ -46,7 +47,7 @@ export async function processBrandFieldAnalysis(device?:string,local:LocalRuntim
   const maxOutputTokens=Math.min(8192,agent.max_output_tokens,model.maxOutput,outputAffordable);if(maxOutputTokens<256)throw new Error('REQUEST_PRICE_CAP');if(inputBound+maxOutputTokens>model.contextLength)throw new Error('REQUEST_PRICE_CAP');
   const reservation=Math.max(1,Math.ceil((inputBound*model.inputPrice+maxOutputTokens*model.outputPrice)*1100000));
   // The mode frozen on this analysis decides the transport (plan §4); a mismatch stops before anything is reserved.
-  const execution=await textExecutionFor(admin,'brand-analysis',analysis.id),transport=transportFor(execution,local,{shared:sharedContextFor(admin,execution,analysis.run_id),role:'brand-kit'});
+  const execution=await textExecutionFor(admin,'brand-analysis',analysis.id),transport=transportFor(execution,local,{shared:sharedContextFor(admin,execution,analysis.run_id),role:'brand-kit',stage:'supporting'});
   const snapshot={instructions:agent.instructions,maxOutputTokens,pricing:model,campaignContext:context,outputFormat:'json_schema',responseSchema,...(usesRoleEffort(agent.instructions)?roleReasoning('brand-kit',model,execution.mode):{disableReasoning:agent.model_id==='google/gemini-2.5-flash'}),stepCapMicroUsd:agent.step_cap_micro_usd,modelId:agent.model_id,requestPriceCapMicroUsd:analysis.request_cap_micro_usd,budgetScopeId:checkpoint?`budget-step-${analysis.run_id}-brand-kit`:null,brandFieldAnalysis:{analysisId:analysis.id,partId:part.id,page:part.page_no,sourceSha:file.source_sha}};
   const step=await rpc('studio_begin_brand_read',{target_part:part.id,token:part.lease_token,request_key:randomUUID(),snapshot,prompt_text:prompt,reservation});submitted=true;
   const result:TextReceipt=await transport(agent.model_id,prompt,snapshot,images,step.id);

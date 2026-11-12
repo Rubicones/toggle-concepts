@@ -7,9 +7,11 @@ export type LocalCallUsage={
  input:number;cacheCreation:number;cacheRead:number;output:number;apiEquivalentUsd?:number;
  /** LC3/LC4: how the request used a stored conversation (new, continued, branched, condensed, restarted). */
  conversation?:string;
+ /** LC6: the effort stage of a shared run's request; LC5: the skills it carried. */
+ effortStage?:string;skills?:string[];
 };
 type Raw={input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number};
-type LocalRecord={executedModel?:string;effort?:string;numTurns?:number;durationMs?:number;usage?:Raw;apiEquivalentUsd?:number;conversation?:{kind:string}};
+type LocalRecord={executedModel?:string;effort?:string;numTurns?:number;durationMs?:number;usage?:Raw;apiEquivalentUsd?:number;conversation?:{kind:string};stage?:string;skills?:string[]};
 
 /** One call's usage from a step row; null for OpenRouter steps and Local refusals that never reached the CLI. */
 export function localCallUsage(row:{role:string;usage?:unknown;config_snapshot?:unknown}):LocalCallUsage|null{
@@ -18,7 +20,7 @@ export function localCallUsage(row:{role:string;usage?:unknown;config_snapshot?:
  return {role:snapshot.directorRole??row.role,...(snapshot.localStage??snapshot.creativeStage?{stage:snapshot.localStage??snapshot.creativeStage}:{}),
   ...(local.executedModel?{model:local.executedModel}:{}),...(local.effort?{effort:local.effort}:{}),...(local.numTurns!==undefined?{turns:local.numTurns}:{}),...(local.durationMs!==undefined?{durationMs:local.durationMs}:{}),
   input:u.input_tokens??0,cacheCreation:u.cache_creation_input_tokens??0,cacheRead:u.cache_read_input_tokens??0,output:u.output_tokens??0,
-  ...(typeof local.apiEquivalentUsd==='number'?{apiEquivalentUsd:local.apiEquivalentUsd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{})};
+  ...(typeof local.apiEquivalentUsd==='number'?{apiEquivalentUsd:local.apiEquivalentUsd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{}),...(local.stage?{effortStage:local.stage}:{}),...(local.skills?.length?{skills:local.skills}:{})};
 }
 
 const k=(n:number)=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1000?`${Math.round(n/1000)}k`:String(n);

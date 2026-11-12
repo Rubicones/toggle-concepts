@@ -1,7 +1,8 @@
 // Effort per stage (docs/plans/2026-11-11-local-chat-shaped-runs.md, LC6), for 'shared' Local runs: high where the
 // visual idea is invented, medium for repair turns, check-driven edits and roles that do not invent. The owner can
 // change any stage in Models & agents; the values are frozen with the run context.
-import type {Effort} from './effort';
+/** The efforts the Claude Code CLI takes. */
+export type Effort='low'|'medium'|'high'|'xhigh'|'max';
 
 export const STAGES=[
  {id:'planning-create',label:'Strategy, script and visual planning',default:'high'},
