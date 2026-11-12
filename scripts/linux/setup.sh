@@ -106,4 +106,16 @@ if [ "${SKIP_CLAUDE:-}" != "1" ]; then
     if [ "$answer" != "no" ]; then node --import tsx apps/local-runner/local-claude/doctor.ts --fix --extra-usage-off || true; fi
   fi
 fi
+# On Windows the installer in C:\toggle is a copy made at the first install. Keep it and the database launcher equal to
+# the repository's, so installer changes (Ubuntu's memory and core limits) arrive with an update: they apply the next
+# time the installer runs.
+if [ -n "${ENV_SOURCE:-}" ] && [ -d "$(dirname "$ENV_SOURCE")" ] && [ -d "$REPO/scripts/windows" ]; then
+  LAUNCHERS="$(dirname "$ENV_SOURCE")"
+  for f in Install-Toggle.cmd Update-Database.cmd; do
+    if [ -f "$REPO/scripts/windows/$f" ] && ! cmp -s "$REPO/scripts/windows/$f" "$LAUNCHERS/$f"; then
+      cp "$REPO/scripts/windows/$f" "$LAUNCHERS/$f.new" && mv "$LAUNCHERS/$f.new" "$LAUNCHERS/$f" && [ "$f" = Install-Toggle.cmd ] && INSTALLER_UPDATED=1
+    fi
+  done
+  if [ "${INSTALLER_UPDATED:-}" = 1 ]; then printf '\n\033[33mThe installer itself was updated. Run Install-Toggle.cmd once more (with the studio closed) to apply its new settings.\033[0m\n'; fi
+fi
 printf '\n\033[32mReady. Start: %s/start.sh (on Windows: C:\\toggle\\Start-Studio.cmd)\033[0m\n' "$HOME_DIR"
