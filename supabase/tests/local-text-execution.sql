@@ -58,6 +58,22 @@ begin
  if (select available_at from public.studio_workflow_jobs where id=job)<now()+interval '59 minutes' then raise exception 'WAIT_TOO_SHORT';end if;
  if public.studio_claim_workflow(tenant,lease_mac) is not null then raise exception 'CLAIMED_WHILE_WAITING';end if;
  begin perform public.studio_wait_workflow_subscription(gen_random_uuid(),1,lease_mac,now(),'{}');raise exception 'WAIT_WITHOUT_LOCAL';exception when others then if sqlerrm<>'LOCAL_RUN_REQUIRED' then raise;end if;end;
+ -- 20261112000500: a Local request that ended without an answer goes back to the queue at no cost; a job already
+ -- stopped that way is recovered; neither applies to other failures or to another device.
+ update public.studio_workflow_jobs x set available_at=now(),blocker=null where x.id=job;
+ claim:=public.studio_claim_workflow(tenant,lease_mac);if (claim->'job'->>'id')::uuid is distinct from job then raise exception 'REQUEUE_FIXTURE_NOT_CLAIMED';end if;
+ begin perform public.studio_requeue_local_workflow(job,(claim->'job'->>'lease_token')::int,lease_mac,'PROVIDER_400','{}');raise exception 'REQUEUE_ANY_FAILURE';exception when others then if sqlerrm<>'INVALID_FAILURE' then raise;end if;end;
+ if public.studio_requeue_local_workflow(job,(claim->'job'->>'lease_token')::int,lease_other,'CLI_TIMEOUT','{}') then raise exception 'FOREIGN_REQUEUE';end if;
+ if not public.studio_requeue_local_workflow(job,(claim->'job'->>'lease_token')::int,lease_mac,'CLI_TIMEOUT','{}') then raise exception 'NOT_REQUEUED';end if;
+ if (select x.state from public.studio_workflow_jobs x where x.id=job)<>'queued' or not exists(select 1 from public.studio_workflow_attempts x where x.job_id=job and x.state='failed' and x.error_code='CLI_TIMEOUT') then raise exception 'REQUEUE_STATE';end if;
+ update public.studio_workflow_jobs x set available_at=now() where x.id=job;
+ claim:=public.studio_claim_workflow(tenant,lease_mac);if claim is null then raise exception 'RECOVER_FIXTURE_NOT_CLAIMED';end if;
+ update public.studio_workflow_attempts x set state='unknown',error_code='CLI_TIMEOUT',finished_at=now() where x.id=(claim->'attempt'->>'id')::uuid;
+ update public.studio_workflow_jobs x set state='failed',lease_owner=null,lease_until=null,active_attempt=null where x.id=job;
+ if public.studio_recover_local_workflow(tenant)<>1 then raise exception 'NOT_RECOVERED';end if;
+ if (select x.state from public.studio_workflow_jobs x where x.id=job)<>'queued' then raise exception 'RECOVER_STATE';end if;
+ if public.studio_recover_local_workflow(tenant)<>0 then raise exception 'RECOVERED_TWICE';end if;
+ update public.studio_workflow_jobs x set available_at=now()+interval '1 hour' where x.id=job;
 
  -- The edited functions carry their new rules.
  if position('text_execution_allows' in pg_get_functiondef('public.studio_claim_director(uuid,uuid)'::regprocedure))=0 then raise exception 'DIRECTOR_CLAIM_UNCHANGED';end if;
