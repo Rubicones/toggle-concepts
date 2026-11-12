@@ -15,6 +15,7 @@ import {recordPreparedRequest} from './record';
 import {loadRunContext} from './run-context';
 import {commonSkills} from './skills';
 import type {RunContext} from '../../../packages/agents/run-context';
+import {CHAIN_ROLES,conversationTokens,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
 
 export type TextExecution={mode:'openrouter'|'local_claude';device_id?:string|null;execution_model?:string|null;cli_version?:string|null;mapping_version?:string|null;
  /** LC2: 'shared' runs start every request with the frozen run context; absent or 'fresh' keeps today's layout. */
@@ -50,14 +51,29 @@ export async function textExecutionFor(admin:SupabaseClient,kind:'run'|'brand-an
 export function sharedContextFor(admin:SupabaseClient,execution:TextExecution,runId:string){
  return execution.mode==='local_claude'&&execution.context_mode==='shared'?()=>loadRunContext(admin,runId,()=>commonSkills(admin,runId)):undefined;
 }
-export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>}={}):typeof submitText{
+/** LC3: the stored points a planning job can continue from: its parent jobs' succeeded Local requests. */
+export async function planningPoints(admin:SupabaseClient,jobId:string):Promise<StoredPoint[]>{
+ const deps=await admin.from('studio_workflow_dependencies').select('requires_id').eq('job_id',jobId);if(deps.error||!deps.data?.length)return [];
+ const attempts=await admin.from('studio_workflow_attempts').select('step_id').in('job_id',deps.data.map(d=>d.requires_id)).eq('state','succeeded');
+ const ids=(attempts.data??[]).map(a=>a.step_id).filter(Boolean);if(!ids.length)return [];
+ return pointsOf((await admin.from('studio_agent_steps').select('role,usage,created_at').in('id',ids)).data??[]);
+}
+/** LC3: the approved planning point of a run (the latest stored planning conversation), where directions branch from. */
+export async function latestPlanningPoint(admin:SupabaseClient,runId:string):Promise<StoredPoint|null>{
+ const rows=await admin.from('studio_agent_steps').select('role,usage,created_at').eq('run_id',runId).eq('status','succeeded').in('role',[...CHAIN_ROLES]).not('usage->_local->sessionId','is',null).order('created_at',{ascending:false}).limit(1);
+ return pointsOf(rows.data??[])[0]??null;
+}
+function pointsOf(rows:{role:string;usage:unknown;created_at:string}[]):StoredPoint[]{
+ return rows.flatMap(r=>{const l=(r.usage as {_local?:{sessionId?:string;usage?:Parameters<typeof conversationTokens>[0]}}|null)?._local;return l?.sessionId?[{role:r.role,sessionId:l.sessionId,tokens:conversationTokens(l.usage),at:r.created_at}]:[];});
+}
+export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>;session?:()=>Promise<Plan>}={}):typeof submitText{
  if(execution.mode!=='local_claude')return submitText;
  if(!runtime.setup||!runtime.device)throw new Error(runtime.reason??'LOCAL_PROFILE_REQUIRED');
  if(execution.device_id!==runtime.device.id)throw new Error('LOCAL_DEVICE_MISMATCH');
  // A run keeps the model and CLI it started with; a change is an explicit stop, never a silent switch.
  if(execution.execution_model!==runtime.setup.sonnet)throw new Error('LOCAL_MODEL_CHANGED');
  if(execution.cli_version&&execution.cli_version.split(/\s+/)[0]!==runtime.setup.cliVersion.split(/\s+/)[0])throw new Error('LOCAL_CLI_CHANGED');
- return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p),...(options.shared?{shared:options.shared}:{})});
+ return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p),...(options.shared?{shared:options.shared}:{}),...(options.shared&&options.session?{session:options.session}:{})});
 }
 
 // ---- Subscription waiting (plan §10): durable on the device, bounded probes, no busy loop. ----

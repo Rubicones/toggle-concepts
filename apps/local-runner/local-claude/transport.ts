@@ -6,9 +6,10 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {cliArgs,childEnv,hasUnexpectedCliTools,runCli,streamUserMessage,type CliEvent,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
-import {prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCliRequest,type ImageInput,type PreparedTextRequest} from '../../../packages/agents/prepared-request';
+import {prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCliRequest,type ImageInput,type PreparedTextRequest,type CliTextRequest} from '../../../packages/agents/prepared-request';
 import {localModelFor,type LocalModelChoice} from '../../../packages/agents/local-models';
-import {sharedLayout,sharedLayoutDifferences,type RunContext} from '../../../packages/agents/run-context';
+import {sharedLayout,sharedLayoutDifferences,continuingLayout,type RunContext} from '../../../packages/agents/run-context';
+import type {Plan} from '../../../packages/agents/local-session';
 import {textRequestQuote} from '../../../packages/agents/text-quote';
 import type {TextReceipt,TextSnapshot} from '../../../packages/agents/text-provider';
 import type {CapabilityProfile} from './qualify';
@@ -41,6 +42,8 @@ export type LocalTextDetails={
  forecast?:{targetModel:string;microUsd:number;method:'cli-tokens-x-target-price@1';errorMeasured:false};
  /** LC2: the shared run context this request started with ('shared' runs). */
  sharedContext?:{sha256:string;tokens:number;holds:RunContext['holds'];images:number};
+ /** LC3/LC4: how this request used a stored conversation. */
+ conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted';resumedFrom?:string};
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
 
@@ -54,7 +57,9 @@ function usageOf(r:CliResult,d:Omit<LocalTextDetails,'events'|'stderr'>){
 
 export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSignal;record?:(p:PreparedTextRequest)=>Promise<string>;onEvent?:(e:CliEvent)=>void;
  /** LC2: the frozen run context of a 'shared' run; null keeps the fresh layout (for example before the brand is accepted). */
- shared?:()=>Promise<RunContext|null>}={}){
+ shared?:()=>Promise<RunContext|null>;
+ /** LC3/LC4: continue (or branch from) a stored conversation; null starts a new, persisted one. Shared runs only. */
+ session?:()=>Promise<Plan>}={}){
  return async function cliText(model:string,prompt:string,cfg:TextSnapshot,images:ImageInput[]=[],requestTag?:string):Promise<LocalTextReceipt>{
   const refuse=(failure:string):LocalTextReceipt=>({provider:'claude-cli',outcome:'failed',cost:0,text:null,generation:null,usage:null,failure});
   // The same refusals as submitText, before anything is sent.
@@ -63,29 +68,39 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   if(images.length&&!setup.visual)return refuse('LOCAL_VISUAL_NOT_QUALIFIED');
   let mapping:LocalModelChoice;try{mapping=localModelFor(model,{sonnet:setup.sonnet});}catch(error){return refuse((error as Error).message);}
   const prepared=prepareTextRequest(model,prompt,cfg,images,{requestTag});
-  let cli;try{cli=toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode});}catch(error){return refuse((error as Error).message);}
+  let cli:CliTextRequest;try{cli=toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode});}catch(error){return refuse((error as Error).message);}
   // The input check of plan §3.2 runs on every call, not only in tests.
   if(projectionDifferences(projectPrepared(prepared),projectCli(cli,prepared.output.schema?.schema)).length)return refuse('LOCAL_CONTEXT_MISMATCH');
   // LC2: in a 'shared' run every request starts with the same run context; the role's instructions and input follow it.
   const ctx=options.shared?await options.shared():null;
   if(ctx){const original=cli;cli=sharedLayout(original,prepared,ctx);if(sharedLayoutDifferences(cli,original,prepared,ctx).length)return refuse('LOCAL_CONTEXT_MISMATCH');}
+  // LC3/LC4: a shared run's conversations are persisted; a continuation sends only what the history does not hold yet.
+  const plan=ctx&&options.session?await options.session():null,fullShared=cli;
+  let conversation:LocalTextDetails['conversation']|undefined=ctx&&options.session?{kind:plan?.condensed?'condensed':'new'}:undefined;
+  if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode}),prepared,ctx,plan);conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
+  const persist=!!conversation;let resume=plan&&!plan.condensed&&plan.resume?{resume:plan.resume,fork:plan.fork}:null;
   const recordPath=options.record?await options.record(prepared):undefined;
   const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=setup.workDir??join(dir,'work');
   try{
    await mkdir(work,{recursive:true});const systemFile=join(dir,'system.txt'),mcpFile=join(dir,'mcp.json');
    await writeFile(systemFile,cli.systemPrompt,{mode:0o600});await writeFile(mcpFile,'{"mcpServers":{}}');
-   const argv=cliArgs({bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:setup.isolation,...(setup.turnLimit?{maxTurns:cli.jsonSchema?TURN_LIMIT.schema:TURN_LIMIT.plain}:{}),...(cli.jsonSchema?{jsonSchema:cli.jsonSchema}:{}),...(cli.effort?{effort:cli.effort}:{})});
+   // A stored conversation is resumed (and branched); a missing one (another device, cleared history) starts again once.
+   let r:Awaited<ReturnType<typeof runCli>>,leak:string|undefined;const stop=new AbortController();
+   for(let attempt=0;;attempt++){
+   const argv=cliArgs({bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:persist?{...setup.isolation,noSessionPersistence:false}:setup.isolation,...(resume?{resume:resume.resume,forkSession:resume.fork}:{}),...(setup.turnLimit?{maxTurns:cli.jsonSchema?TURN_LIMIT.schema:TURN_LIMIT.plain}:{}),...(cli.jsonSchema?{jsonSchema:cli.jsonSchema}:{}),...(cli.effort?{effort:cli.effort}:{})});
    // Same time limits as the OpenRouter path for the same snapshot.
    const timeoutMs=cfg.stream?Math.max(1,Math.min(cfg.timeoutMs??600000,1800000)):Math.max(1,Math.min(cfg.timeoutMs??Math.max(100000,60000+cfg.maxOutputTokens*16),900000));
    // A leaked tool, MCP server or API key ends the call at once: the answer would not be comparable.
-   const stop=new AbortController();let leak:string|undefined;const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
-   const r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cli.maxOutputTokens)}),stdin:streamUserMessage(cli.parts),timeoutMs,signal:stop.signal,
+   const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
+   r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cli.maxOutputTokens)}),stdin:streamUserMessage(cli.parts),timeoutMs,signal:stop.signal,
     onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,cli.jsonSchema!==undefined))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
    options.signal?.removeEventListener('abort',relay);
+   if(attempt===0&&resume&&r.outcome==='failed'&&/no conversation found/i.test(`${r.text??''} ${r.stderr}`)){cli=fullShared;resume=null;conversation={kind:'restarted'};continue;}
+   break;}
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{})};
+    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{}),...(conversation?{conversation}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};

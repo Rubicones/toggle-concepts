@@ -46,6 +46,24 @@ export function sharedLayout(cli:CliTextRequest,prepared:PreparedTextRequest,ctx
  return {...cli,systemPrompt:ctx.system,parts:[...lead,{type:'text',text:ctx.brief},{type:'text',text:roleHeading(cli.systemPrompt)},...cli.parts.slice(prefixImages*2)]};
 }
 
+/** LC3/LC4: how a request continues a stored conversation. */
+export type SessionPlan={resume:string;fork:boolean;/** the conversation's last request was the same role (designer turns) */sameRole:boolean};
+const TASK_MARK='TASK:\n';
+/**
+ * The next message of a resumed conversation: its history already holds the run context, the brand sheet images and,
+ * for the same role, the role's instructions and stable context. Same role: only the task and its new images. Another
+ * role: the role's instructions and its whole input (its own context may differ), without the images already above.
+ */
+export function continuingLayout(cli:CliTextRequest,prepared:PreparedTextRequest,ctx:RunContext,plan:SessionPlan):CliTextRequest{
+ const prefixImages=prepared.attachments.filter(a=>a.prefix).length,rest=cli.parts.slice(prefixImages*2);
+ if(!plan.sameRole)return {...cli,systemPrompt:ctx.system,parts:[{type:'text',text:roleHeading(cli.systemPrompt)},...rest]};
+ // The task starts at the part whose text begins with TASK (cached layout) or at TASK inside the context text.
+ const at=rest.findIndex(p=>p.type==='text'&&p.text.includes(TASK_MARK));
+ if(at<0)return {...cli,systemPrompt:ctx.system,parts:rest};
+ const first=rest[at] as {type:'text';text:string},task=first.text.slice(first.text.indexOf(TASK_MARK));
+ return {...cli,systemPrompt:ctx.system,parts:[{type:'text',text:task},...rest.slice(at+1)]};
+}
+
 /** Differences between a shared-layout request and what it must contain; empty when nothing was lost, added or moved. */
 export function sharedLayoutDifferences(shared:CliTextRequest,original:CliTextRequest,prepared:PreparedTextRequest,ctx:RunContext):string[]{
  const out:string[]=[],key=(p:CliTextRequest['parts'][number])=>p.type==='text'?`t:${p.text}`:`i:${p.mediaType}:${p.dataBase64}`;

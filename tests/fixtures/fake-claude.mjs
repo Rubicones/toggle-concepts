@@ -14,8 +14,10 @@ process.stdin.on('end',()=>{
  const system=(()=>{const i=args.indexOf('--system-prompt-file');return i>=0?readFileSync(args[i+1],'utf8'):'';})();
  if(process.env.FAKE_CLAUDE_RECORD)writeFileSync(process.env.FAKE_CLAUDE_RECORD,JSON.stringify({args,system,content,cwd:process.cwd(),env:Object.keys(process.env).sort(),maxOutput:process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS??null}));
  const leak=scenario==='leak',schema=args.includes('--json-schema');
+ const resumeAt=args.indexOf('--resume'),resumed=resumeAt>=0?args[resumeAt+1]:null,sessionId=resumed?(args.includes('--fork-session')?`${resumed}>f${Date.now()%100000}${Math.floor(Math.random()*1000)}`:resumed):(process.env.FAKE_CLAUDE_SESSION??'s1');
+ if(scenario==='nosession'&&resumed){out({type:'result',subtype:'error_during_execution',is_error:true,result:`No conversation found with session ID: ${resumed}`,session_id:sessionId});process.exit(1);}
  const tools=[...(schema||scenario==='unexpected-structured-tool'?['StructuredOutput']:[]),...(leak?['Bash']:[])];
- out({type:'system',subtype:'init',session_id:'s1',model:process.env.FAKE_CLAUDE_MODEL??'claude-sonnet-test',tools,mcp_servers:leak||scenario==='mcp-only'?[{name:'canary',status:'connected'}]:[],apiKeySource:process.env.FAKE_CLAUDE_KEY_SOURCE??'none',claude_code_version:'9.9.9'});
+ out({type:'system',subtype:'init',session_id:sessionId,model:process.env.FAKE_CLAUDE_MODEL??'claude-sonnet-test',tools,mcp_servers:leak||scenario==='mcp-only'?[{name:'canary',status:'connected'}]:[],apiKeySource:process.env.FAKE_CLAUDE_KEY_SOURCE??'none',claude_code_version:'9.9.9'});
  if(scenario==='hang'){setInterval(()=>{},1000);return;}
  if(scenario==='noresult'){out({type:'assistant',message:{content:[{type:'text',text:'partial'}]}});process.exit(0);}
  const usage={input_tokens:120,output_tokens:30,cache_creation_input_tokens:0,cache_read_input_tokens:0};
