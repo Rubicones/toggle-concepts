@@ -72,3 +72,15 @@
   - `tests/local-pipeline-reliability.test.ts`: a long streaming answer succeeds past the silence limit; a silent stuck process ends as `CLI_STALLED`; a non-streaming CLI is bounded by the total limit;
   - director, designer, Local, guided and workflow suites: 366 pass, 1 existing failure ("AD browser flow…").
   - Not checked against the live CLI: that it streams pieces while thinking. If it does not, the silence limit never arms and only the total limit applies.
+
+## 8. Follow-up (same day): an unanswered Local planning step goes back to the queue
+
+- **Symptom:** "Visual direction stopped · CLI TIMEOUT · Cost unresolved", with no way to retry on the run page.
+- **Cause:** a planning request that ended without an answer was recorded as an unknown outcome. Unknown outcomes block retry until a provider receipt is reconciled, and a Local request has no receipt.
+- **Migration `20261112000500_local_workflow_requeue.sql`** (apply with `Update-Database.cmd`; safe to run twice):
+  - `studio_requeue_local_workflow`: the runner sends its own unanswered request (`CLI_TIMEOUT`, `CLI_STALLED`, `CLI_NO_RESULT`) back to the queue; the step is settled at zero cost. Local runs only, own lease only.
+  - `studio_recover_local_workflow`: a job already stopped this way (also `WORKER_LEASE_EXPIRED`, `PROCESS_INTERRUPTED` on a Local text step) is requeued. The runner calls it every 30 seconds on a Local device.
+  - Both are bounded by the job's attempt allowance (at most 12 attempts). OpenRouter steps are never touched.
+- **`apps/local-runner/workflow.ts`:** uses both.
+- **Verification:** typecheck, lint; `supabase/tests/local-text-execution.sql` on a temporary Postgres: requeue (own device only, listed failures only), recover once, not twice.
+- **Not verified live:** that the run page leaves "stopped" by itself once the job succeeds.

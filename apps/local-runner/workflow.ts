@@ -96,7 +96,7 @@ async function flushReceipts(){
  }
 }
 async function execute(claim:Claim){
- const {job,attempt}=claim;let submitted=false,heartbeatBusy=false,execution:TextExecution={mode:"openrouter"},waitUntil:{until:number;usage:unknown}|null=null;
+ const {job,attempt}=claim;let submitted=false,heartbeatBusy=false,execution:TextExecution={mode:"openrouter"},waitUntil:{until:number;usage:unknown}|null=null,requeue:{failure:string;usage:unknown}|null=null;
  if(Boolean(job.payload.creativeInputs)||job.kind==='compile'){await rpc('studio_retire_creative_claim',{target_job:job.id,token:job.lease_token,device});return;}
  const beat=setInterval(()=>{if(heartbeatBusy)return;heartbeatBusy=true;void rpc("studio_heartbeat_workflow",{target_job:job.id,token:job.lease_token,device}).catch(()=>{}).finally(()=>{heartbeatBusy=false;});},15000);
  if(job.kind==="compile"){try{if(job.payload.creativeInputs)await compileCreativeClaim(job as Parameters<typeof compileCreativeClaim>[0],device);else await compileDraftClaim(job,device);}finally{clearInterval(beat);}return;}
@@ -215,6 +215,9 @@ async function execute(claim:Claim){
    await keepLocalDiagnostics(submittedStep.id,result as LocalTextReceipt).catch(()=>{});
    // A subscription limit is a known outcome (the model did not work on it): the job waits, it does not fail.
    if(result.failure==="SUBSCRIPTION_LIMIT")waitUntil={until:await markSubscriptionLimit(),usage:result.usage};
+   // No answer arrived (timed out, stalled or ended without a result): on the subscription that cost nothing, so the
+   // step goes back to the queue instead of stopping the run with an unresolved cost.
+   else if(result.outcome!=="succeeded"&&["CLI_TIMEOUT","CLI_STALLED","CLI_NO_RESULT"].includes(result.failure??""))requeue={failure:result.failure!,usage:result.usage};
   }
   if(result.outcome==="succeeded"&&result.text){
    try{
@@ -240,6 +243,7 @@ async function execute(claim:Claim){
   }
  }catch(error){result={outcome:submitted?"unknown":"failed",cost:submitted?null:0,text:null,generation:null,usage:null,failure:submitted?"SUBMISSION_OUTCOME_UNKNOWN":error instanceof Error?error.message:"PREFLIGHT_FAILED"};}
  finally{clearInterval(beat);}
+ if(requeue){const again=await admin.rpc("studio_requeue_local_workflow",{target_job:job.id,token:job.lease_token,device,failure:requeue.failure,token_usage:requeue.usage??{}});if(!again.error&&again.data===true){await unlink(resolve(directory,'provider-ids',`${attempt.id}.json`)).catch(()=>{});return;}}
  if(waitUntil){await rpc("studio_wait_workflow_subscription",{target_job:job.id,token:job.lease_token,device,retry_at:new Date(waitUntil.until).toISOString(),token_usage:waitUntil.usage??{}});await syncLocalDevice();await unlink(resolve(directory,'provider-ids',`${attempt.id}.json`)).catch(()=>{});return;}
  const receipt={target_job:job.id,token:job.lease_token,device,expected_input:job.input_hash,expected_config:job.config_hash,outcome:result.outcome,actual_cost:result.cost,result_text:result.text,provider_generation:result.generation,token_usage:(result.usage||result.providerError||result.finishReason)?{...(result.usage as Record<string,unknown>),_studio:{finishReason:result.finishReason??null,maxOutputTokens:outputLimit,validation:result.validation??null,providerError:result.providerError??null,normalizations:result.normalizations??[],...(result.originalOutput?{originalOutput:result.originalOutput}:{}),responseSchema:protocolSchema}}:null,failure:result.failure};
  const file=resolve(directory,"receipts",`${attempt.id}.json`),tmp=file+'.tmp';await writeFile(tmp,JSON.stringify(receipt),{mode:0o600});await rename(tmp,file);
@@ -258,11 +262,12 @@ async function main(){
   localRuntime=await loadLocalRuntime(admin);await syncLocalDevice();
   if(localRuntime.schema&&!localRuntime.setup&&localRuntime.reason!=="LOCAL_DEVICE_NOT_SET_UP")console.error(`Local mode is unavailable on this device (${localRuntime.reason}); OpenRouter work continues. Run: npm run local-claude:doctor`);
   timer=setInterval(()=>{void rpc("studio_workflow_device",{device,target_tenant:sharedTenant,online:true}).then(syncLocalDevice).catch(()=>{});},15000);
-  let idle=Date.now(),checked_at=Date.now();const startedWith=await codeFingerprint();
+  let idle=Date.now(),checked_at=Date.now(),recovered_at=0;const startedWith=await codeFingerprint();
   // Idle for a minute → exit, unless a guided run touched in the last six hours is still running: it would otherwise sit waiting for a manual
   // "Continue work" (owner decision, 11 November 2026: only the quota and the build price stop work).
   const runsWaiting=async()=>{const r=await admin.from('studio_campaign_run_controls').select('run_id').eq('tenant_id',sharedTenant).eq('status','running').gte('updated_at',new Date(Date.now()-6*3600000).toISOString()).limit(1);return !r.error&&!!r.data?.length;};
   while(!stopping&&(Date.now()-idle<60000||(await runsWaiting().catch(()=>false)&&(idle=Date.now()-50000,true)))){
+   if(localRuntime.setup&&Date.now()-recovered_at>30000){recovered_at=Date.now();await admin.rpc('studio_recover_local_workflow',{target_tenant:sharedTenant}).then(r=>{if(!r.error&&Number(r.data)>0){idle=Date.now();console.log(`[local] ${r.data} planning step(s) that ended without an answer went back to the queue.`);}},()=>{});}
    if(Date.now()-checked_at>5000){checked_at=Date.now();if(await codeFingerprint()!==startedWith){restartForNewCode=true;break;}}
    await flushReceipts();await flushProviderAnchors();try{const side=directorParallel(localRuntime);if(side>1){if(await startDirectorWork(device,localRuntime,side)||directorsRunning())idle=Date.now();}else if(await processDirectorWork(device,localRuntime)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis(device,localRuntime)){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
    const claim=await rpc("studio_claim_workflow",{target_tenant:sharedTenant,device}) as Claim|null;
