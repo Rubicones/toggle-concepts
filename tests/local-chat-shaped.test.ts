@@ -112,3 +112,63 @@ test('LC2: a run context is frozen once; later builds never replace it', async()
  await freezeRunContext('run-1',first);const kept=await freezeRunContext('run-1',second);
  assert.equal(kept.sha256,first.sha256);assert.equal((await readRunContext('run-1'))!.sha256,first.sha256);
 });
+
+import {planningPlan,designerPlan,conversationTokens,CONVERSATION_CAP} from '../packages/agents/local-session';
+import {continuingLayout} from '../packages/agents/run-context';
+import {sinceLastTurn,changedFiles,fileHashes,shortIssue,RENDER_LONG_SIDE} from '../apps/local-runner/director/designer-loop';
+
+test('LC3: the planning chain branches from the stored point of the previous stage; the critic never joins it', ()=>{
+ const strategy={role:'strategy',sessionId:'s-strategy',tokens:30000,at:'1'},research={role:'research',sessionId:'s-research',tokens:5000,at:'2'};
+ assert.deepEqual(planningPlan('script',[strategy,research]),{resume:'s-strategy',fork:true,sameRole:false},'branch from the chain parent, not an independent role');
+ assert.equal(planningPlan('critic',[strategy]),null,'the critic is a separate call');
+ assert.equal(planningPlan('strategy',[research]),null,'no chain parent: a new conversation');
+ // A retry finds the same point: a failed attempt is a separate branch and never part of the history.
+ assert.deepEqual(planningPlan('script',[strategy]),planningPlan('script',[strategy]));
+ assert.deepEqual(planningPlan('asset-plan',[{...strategy,tokens:CONVERSATION_CAP+1}]),{condensed:true},'above the cap: condensed');
+ assert.equal(conversationTokens({input_tokens:1,cache_creation_input_tokens:2,cache_read_input_tokens:3,output_tokens:4}),10);
+});
+
+test('LC4: a direction branches from the approved planning point, then continues from its last accepted turn', ()=>{
+ const point={role:'asset-plan',sessionId:'s-plan',tokens:40000};
+ assert.deepEqual(designerPlan({},point),{resume:'s-plan',fork:true,sameRole:false});
+ assert.deepEqual(designerPlan({session:{role:'designer',sessionId:'s-d3',tokens:60000}},point),{resume:'s-d3',fork:true,sameRole:true});
+ assert.deepEqual(designerPlan({session:{role:'designer',sessionId:'s-d9',tokens:CONVERSATION_CAP+1}},point),{condensed:true});
+ assert.equal(designerPlan({},null),null);
+});
+
+test('LC3/LC4: a continued request resumes and branches the stored conversation and sends only what it lacks', async()=>{
+ const ctx=buildRunContext({briefText:BRIEF,brandText:BRAND}),dir=await mkdtemp(join(tmpdir(),'lc3-')),work=join(dir,'work'),f=fixture('designer-cached-claude');
+ const rec=join(dir,'cont.json');
+ const r=await cliTextTransport(await fakeSetup('echo',{FAKE_CLAUDE_RECORD:rec},{workDir:work}),{shared:async()=>ctx,session:async()=>({resume:'s-d3',fork:true,sameRole:true})})(f.model,f.prompt,f.cfg,f.images) as LocalTextReceipt;
+ const a=JSON.parse(await readFile(rec,'utf8'));
+ assert.equal(a.args[a.args.indexOf('--resume')+1],'s-d3');assert.ok(a.args.includes('--fork-session'));
+ assert.ok(!a.args.includes('--no-session-persistence'),'conversations are stored');
+ const texts=a.content.filter((c:{type:string})=>c.type==='text').map((c:{text:string})=>c.text);
+ assert.ok(texts[0].startsWith('TASK:\n'),'same role: only the task');assert.ok(!texts.some((t:string)=>t.startsWith('BRIEF')||t.startsWith('YOUR ROLE')),'no brief or role text again');
+ assert.equal(a.content.filter((c:{type:string})=>c.type==='image').length,f.images.filter(i=>!i.prefix).length,'only the new render images');
+ assert.equal(a.system,ctx.system);
+ assert.deepEqual(r.local!.conversation,{kind:'branched',resumedFrom:'s-d3'});assert.match(r.local!.sessionId!,/^s-d3>f/,'a branch gets its own id');
+ // Another role continuing: its instructions and input, without the shared images and brief already in the history.
+ const p=prepareTextRequest(f.model,f.prompt,f.cfg,f.images),cli=toCliRequest(p,{executionModel:'m',schemaMode:'cli'});
+ const other=continuingLayout(cli,p,ctx,{resume:'s',fork:true,sameRole:false});
+ assert.ok((other.parts[0] as {text:string}).text.startsWith('YOUR ROLE\n'));assert.equal(other.parts.length,cli.parts.length-4+1);
+});
+
+test('LC3: the critic request holds no creator history; a missing stored conversation starts again with the shared context', async()=>{
+ const ctx=buildRunContext({briefText:BRIEF,brandText:BRAND}),dir=await mkdtemp(join(tmpdir(),'lc3b-')),f=fixture('critic-no-images-cached');
+ const rec=join(dir,'critic.json');
+ await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:rec}),{shared:async()=>ctx})(f.model,f.prompt,f.cfg,f.images);
+ const c=JSON.parse(await readFile(rec,'utf8'));assert.ok(!c.args.includes('--resume'),'a separate call');assert.ok(c.content.some((x:{text?:string})=>x.text?.startsWith('YOUR ROLE')));
+ const restart=await cliTextTransport(await fakeSetup('nosession'),{shared:async()=>ctx,session:async()=>({resume:'gone',fork:true,sameRole:true})})(f.model,f.prompt,f.cfg,f.images) as LocalTextReceipt;
+ assert.equal(restart.local!.conversation!.kind,'restarted');assert.equal(restart.outcome,'succeeded');
+});
+
+test('LC4: append-only turns send new results and changed files only; renders and build errors are small', ()=>{
+ const t=[{from:'tool' as const,text:'a'},{from:'agent' as const,text:'turn 1'},{from:'tool' as const,text:'written'},{from:'tool' as const,text:'rendered'}];
+ assert.deepEqual(sinceLastTurn(t).map(x=>x.text),['written','rendered']);
+ const files=[{path:'Frame.tsx',source:'A'},{path:'resources.ts',source:'R1'}],seen=fileHashes(files);
+ assert.deepEqual(changedFiles(files,seen),[]);assert.deepEqual(changedFiles([files[0],{path:'resources.ts',source:'R2'}],seen).map(f=>f.path),['resources.ts']);
+ assert.equal(changedFiles(files).length,2,'a new conversation gets every file');
+ assert.equal(RENDER_LONG_SIDE,1024);
+ const issue=Array.from({length:40},(_,i)=>`line ${i}`).join('\n');assert.equal(shortIssue(issue).split('\n').length,12);
+});

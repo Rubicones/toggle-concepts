@@ -32,7 +32,8 @@ import {staticDesignResponseFor,hasAudio} from '../../../packages/director/contr
 import {assemblerInstructions,assemblerProviderSchema} from '../../../packages/agents/prompts/assembler-v1';
 import {readDesign} from '../../../packages/director/contract';
 import {localCallUsage,usageLine} from '../../../packages/agents/local-usage';
-import {textExecutionFor,transportFor,sharedContextFor,markSubscriptionLimit,type LocalRuntime} from '../local-claude/runtime';
+import {designerPlan,conversationTokens,conversationLabel,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
+import {textExecutionFor,transportFor,sharedContextFor,latestPlanningPoint,markSubscriptionLimit,type LocalRuntime} from '../local-claude/runtime';
 import {paidText,requestId,roleNames,resumeBudgetClock,retryableProviderFailure,type Role} from '../../../packages/director/money';
 import type {BlockSnapshot,WorkState,ADQuestion} from '../../../packages/director/state';
 import {directorLedger,designerUsage,directorTextConfig,directorInputAllowance,flushDirectorReceipts} from './ledger';
@@ -145,7 +146,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    // The AD sees that an answer is being written and since when (a long answer streams for minutes).
    state.activeCall={role,startedAt:Date.now()};note(`${role}: request sent${JSON.stringify(identity).includes('"retry"')?' (retry)':''}.`);await save();
    // LC0: a Local answer's usage becomes a request line in the timeline ("in 12k · cached 140k · out 3k").
-   let lastUsage:unknown=null;const baseTransport=transportFor(execution,local,{shared:sharedContextFor(admin,execution,input.runId)}),transport:typeof baseTransport=execution.mode==='local_claude'?async(...a:Parameters<typeof baseTransport>)=>{const r=await baseTransport(...a);lastUsage=r.usage;return r;}:baseTransport;
+   let lastUsage:unknown=null;const sharedCtx=sharedContextFor(admin,execution,input.runId),baseTransport=transportFor(execution,local,{shared:sharedCtx,...(sharedCtx&&role==='designer'?{session:designerConversation.plan}:{})}),transport:typeof baseTransport=execution.mode==='local_claude'?async(...a:Parameters<typeof baseTransport>)=>{const r=await baseTransport(...a);lastUsage=r.usage;if(role==='designer')designerConversation.answered(r.usage);return r;}:baseTransport;
    try{const answer=await paidText({identity:localIdentity?{call:id,...localIdentity}:id,transport,localText:execution.mode==='local_claude',role:modelRole,model:prior?.model_id??config.modelId,prompt:prior?.prompt??prompt,snapshot:cfg,allowanceMicroUsd:admitted.remainingMicroUsd,images,ledger:directorLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,device,token:work.lease_token})});note(`${role}: answer received (${answer.text.length.toLocaleString('en-US')} characters, $${(answer.costMicroUsd/1e6).toFixed(3)}${answer.reused?', saved earlier':''}).`);
     const used=lastUsage?localCallUsage({role,usage:lastUsage}):null;if(used)await events.emit(`local-usage:${id}`,{stepId:`local-usage:${id}`,kind:'request',status:'done',model:used.model,costMicroUsd:0,message:`${role} (Claude subscription): ${usageLine(used)}`,detail:{localUsage:used}}).catch(()=>{});
     return answer;}
@@ -154,6 +155,13 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
   };
   // A settled provider failure (rate limit, overload, empty or cut stream) is retried with a new request identity, at most
   // three times per call, inside the approved allowance. Open (unknown) receipts are never resubmitted.
+  // LC4: the designer's own conversation (shared runs): each turn continues from the last accepted turn; a refused or
+  // unreadable answer is never accepted, so it never becomes part of the history.
+  const designerConversation=(()=>{let pending:StoredPoint|null=null;const loopState=()=>(state.designer??{}) as DesignerLoopState;
+   return {plan:async():Promise<Plan>=>designerPlan({session:loopState().session},loopState().session?null:await latestPlanningPoint(admin,input.runId)),
+    answered:(usage:unknown)=>{const l=(usage as {_local?:{sessionId?:string;usage?:Parameters<typeof conversationTokens>[0];conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted'}}}|null)?._local;pending=l?.sessionId&&l.conversation?{role:'designer',sessionId:l.sessionId,tokens:conversationTokens(l.usage)}:null;if(pending&&l?.conversation&&['condensed','restarted'].includes(l.conversation.kind))void events.emit(`conversation:${l.sessionId}`,{stepId:`conversation:${l.sessionId}`,kind:'compaction',status:'done',costMicroUsd:0,message:conversationLabel(l.conversation.kind,'designer')}).catch(()=>{});},
+    accept:async()=>{if(!pending)return;const s=loopState();s.session=pending;pending=null;},
+    continuing:()=>!!loopState().session};})();
   const call=async(role:Exclude<Role,'resources'>|'designer',prompt:string,protocolInstructions:string,responseSchema:{name:string;schema:Record<string,unknown>},context:unknown,identity:unknown,images:{url:string;label:string}[]=[])=>{
    // Identities only move forward, so an earlier failed request is never replayed; each execution may submit at most
    // three new requests for one call. Skipping an already-failed saved request costs nothing and uses no attempt.
@@ -295,6 +303,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      save:async next=>{state.designer=next;await save();},heroReviews:heroCritic,
      // Point 3d: the hero frame's milestones in the timeline.
      onHero:async event=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);},
+     ...(execution.mode==='local_claude'&&execution.context_mode==='shared'?{conversation:{continuing:designerConversation.continuing,accept:designerConversation.accept}}:{}),
      call:async(request,images)=>(await call('designer',JSON.stringify(request),withCreativeHandoff(input,'director',designerInstructionsFor(input)),designerTurnResponseFor(input),{input:designerContext(input),notes:agentReviewNotes(state.notes??[])},{designer:request.turn},[...prefix,...images.map(i=>({...i,required:true}))])).text,
      onTurn:async(turn,results,looked)=>{await events.emit(`designer:${state.iteration??1}:${loop.turn}`,{stepId:`designer:${state.iteration??1}:${loop.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:designerActivityLine(turn,sceneNumber),detail:{sceneId:turn.focus.sceneId,activity:turn.focus.activity,summary:designerTurnSummary(results),...(turn.seen?{seen:seenLines(turn.seen)}:{})}},looked);}});
     if(loop.finish)finishDesign(design,loop.finish);
