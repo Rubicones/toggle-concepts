@@ -37,3 +37,12 @@
 - `npm run lint`: pass.
 - SQL on a temporary Postgres: all migrations apply. With sequential scans off, the block lookup and the iterations read use the new indexes.
 - Not measured against the production database from here.
+
+## 5. Follow-up (same day): the run page's draft status read
+
+- **Symptom:** the run page showed "This step needs your attention — canceling statement due to statement timeout" (`DIRECTOR_ADMISSION_FAILED`) while the run was still working.
+- **Cause:** `directorTick` (`lib/server/director-start.ts`) is polled by the run page. It read the full `snapshot` (source archives, files, prices) of every draft block in the round on each poll.
+- **Fix:** it now reads only the protocol, checkpoint, A1, planning and inputs, the same projection the draft page uses. The result is the same.
+- **Verification:**
+  - typecheck and lint pass;
+  - `tests/director-draft-lineage.test.ts`: 6/6.
