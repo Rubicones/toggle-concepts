@@ -53,7 +53,7 @@ export async function assembleStatic(args:{state:LoopState;maxTurns:number;timeM
 
 /** Revision/repair requests see the same authored source, never generated brand or input data. */
 export async function staticSourceContext(folder:string,iterationId:string){
- const generated=new Set(['brand.ts','resources.ts','runtime.ts','entry.tsx','input.json','catalog.json','draft.json','toolchain.json','tsconfig.json']);
+ const generated=new Set(['brand.ts','resources.ts','runtime.ts','kit.ts','entry.tsx','input.json','catalog.json','draft.json','toolchain.json','tsconfig.json']);
  const files=(await sourceFiles(folder,iterationId)).filter(f=>!generated.has(f.path)).map(f=>({path:f.path,source:f.source}));
  const input:DirectionInput=JSON.parse(await readFile(resolve(folder,'input.json'),'utf8'));
  return {files,oversized:Buffer.byteLength(JSON.stringify(files))>16000,construction:await draftConstruction(folder,input)};
