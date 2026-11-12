@@ -32,7 +32,10 @@ async function context(campaignId:string,directionId:string,iterationId?:string)
  await campaignRecord(campaignId);const {admin,tenant}=await studioContext();
  const iteration=iterationId?checked(await admin.from('studio_director_iterations').select('id,block_id,source_hash,design:payload->design,catalog:payload->catalog,construction:payload->construction,sourceChecks:payload->sourceChecks,designer:payload->designer,review:payload->review').eq('id',iterationId).eq('direction_id',directionId).maybeSingle()):null;
  const query=admin.from('studio_director_blocks').select('id,inputs:snapshot->inputs,files:snapshot->files').eq('campaign_id',campaignId).eq('tenant_id',tenant).neq('status','quoted');
- const block=checked(await (iteration?query.eq('id',iteration.block_id):query.contains('snapshot',{inputs:[{directionId}]})).order('created_at',{ascending:false}).limit(1).maybeSingle());
+ // The direction's block, found through its inputs only (indexed, migration 20261112000200); the earlier whole-snapshot
+ // search is kept as a fallback for a database without that index.
+ const fast=iteration?null:await query.filter('snapshot->inputs','cs',JSON.stringify([{directionId}])).order('created_at',{ascending:false}).limit(1).maybeSingle();
+ const block=fast&&!fast.error&&fast.data?fast.data:checked(await (iteration?admin.from('studio_director_blocks').select('id,inputs:snapshot->inputs,files:snapshot->files').eq('campaign_id',campaignId).eq('tenant_id',tenant).neq('status','quoted').eq('id',iteration.block_id):admin.from('studio_director_blocks').select('id,inputs:snapshot->inputs,files:snapshot->files').eq('campaign_id',campaignId).eq('tenant_id',tenant).neq('status','quoted').contains('snapshot',{inputs:[{directionId}]})).order('created_at',{ascending:false}).limit(1).maybeSingle());
  if(!block||iterationId&&!iteration)throw new ApiError(404,'DIRECTION_NOT_FOUND','This direction is not available.');
  const snapshot={files:block.files as BlockSnapshot['files']},input=structuredClone((block.inputs as DirectionInput[]).find(i=>i.directionId===directionId)!);if(input.stage!=='draft')throw new ApiError(409,'LIVE_STATIC_DRAFT_REQUIRED','Live preview is available for static drafts.');
  if(iteration){
