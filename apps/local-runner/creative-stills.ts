@@ -4,8 +4,7 @@ import {validateNextUpload} from '../../packages/media/validate-upload.local';
 import type {StillProducer} from '../../packages/creative/media';
 import {stillPromptText} from '../../packages/creative/still-prompt';
 import type {CreativeInputs} from '../../packages/creative/protocol';
-/** Image step failures on this computer before the provider was asked: nothing was sent and nothing charged. */
-const LOCAL_PREFLIGHT=new Set(['MEDIA_TOOLS_UNAVAILABLE','PROVIDER_NOT_CONFIGURED','CATALOG_UNAVAILABLE','IMAGE_PREFLIGHT_FAILED']),MAX_LOCAL_PREFLIGHT=20;
+import {localPreflightFailure,MAX_LOCAL_PREFLIGHT,PROVIDER_ATTEMPTS} from '../../packages/creative/still-attempts';
 type StillStep={id:string;status:string;output:string|null;cost_micro_usd:number|null;error_code:string|null};
 /** Which request of a still to use: the first that is not a settled refusal. Three provider attempts per still; a
  * failure on this computer before anything reached the provider (missing ffmpeg, no key, catalog down; nothing
@@ -17,8 +16,8 @@ export async function pickStillAttempt(lookup:(attempt:number)=>Promise<{request
   found=await lookup(attempt);const step=found.step;
   // A still whose cost was reconciled after an unknown outcome was delivered and paid for: use it, never buy it again.
   if(step?.status!=='failed'||step.error_code==='RECONCILED_NO_ACTIVATION')return found;
-  if(LOCAL_PREFLIGHT.has(step.error_code??'')&&!step.cost_micro_usd&&localFailures<MAX_LOCAL_PREFLIGHT){localFailures++;continue;}
-  if(attempt>=2+localFailures)return found;
+  if(localPreflightFailure(step)&&localFailures<MAX_LOCAL_PREFLIGHT){localFailures++;continue;}
+  if(attempt>=PROVIDER_ATTEMPTS-1+localFailures)return found;
  }
 }
 /** Use the existing image admission/receipt path. Never retry a failed or unknown submission. */
