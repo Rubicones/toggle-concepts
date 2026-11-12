@@ -23,14 +23,14 @@ const ANSWER=`ANSWER FORMAT. Plain text with tags, nothing else:
 <file path="Frame.tsx">
 ...the whole file...
 </file>
-<render scene="scene-id" formats="square,vertical"/>
+<render scenes="scene-id,scene-id" formats="square,vertical"/>
 <done/>   only when every scene works in every format, locale and hook
-Send a file whole each time you change it; do not resend unchanged files. Name in <render> the scene and the formats you want to see next (at most four formats). No markdown fences, no JSON.`;
+Send a file whole each time you change it; do not resend unchanged files. Name in <render> the scenes and the formats you want to see next (at most six renders in all: scenes times formats). No markdown fences, no JSON.`;
 
 const WORK=`HOW YOU WORK. You are the designer and the builder of an advertising engine for one brand: one design that renders every ordered scene, format, language and hook as data.
 1. Idea first. Before code, decide the one visual idea: something only this product and this brand could do, that makes the words land harder than the words alone. A reader gives the frame two seconds on a silent feed. If the idea is the category's first thought, find another.
 2. Hero frame first. Your first answer builds only the hero scene, finished, in the reference format. You then see its render and the measured findings. Fix what is weak. Do not start other scenes until the hero frame is one you would sign.
-3. Then extend: the other scenes in the same system (each its own composition, never one layout repeated), then every format as its own composition of the same idea, never a squeezed copy. Languages and hooks are data: the same code must hold the longest and the shortest words.
+3. Then extend: the other scenes in the same system. Each scene shows what its own words say: a scene whose picture would fit another scene's words is not designed yet. The system (type, colour, the brand's devices) is shared; the composition and the visual event are the scene's own. Then then every format as its own composition of the same idea, never a squeezed copy. Languages and hooks are data: the same code must hold the longest and the shortest words.
 4. Look before you change. When a render is attached, say what a viewer reads first, second, third and name the weakest point; then fix that.
 The measured findings (clipping, overlap, small text, safe area, contrast) are facts: fix every hard one.
 Keep the code small: shared pieces written once, one set of rules, per scene only what differs.`;
@@ -84,11 +84,11 @@ export function benchTurn(report:Report,turn:number,maxTurns:number){
  ].filter(Boolean).join('\n\n');
 }
 
-export type BenchAnswer={files:{path:string;source:string}[];say:string;scene?:string;formats:string[];done:boolean;pictures:{id:string;ratio:string;cutout:boolean;brief:string}[]};
+export type BenchAnswer={files:{path:string;source:string}[];say:string;scenes:string[];formats:string[];done:boolean;pictures:{id:string;ratio:string;cutout:boolean;brief:string}[]};
 /** Reads the tagged answer. Tolerates a code fence around a file body. */
 export function readBenchAnswer(text:string):BenchAnswer{
  const files=[...text.matchAll(/<file\s+path="([^"]+)"\s*>\n?([\s\S]*?)\n?<\/file>/g)].map(m=>({path:m[1].trim(),source:m[2].replace(/^```[a-z]*\n/,'').replace(/\n```\s*$/,'')+'\n'}));
- const outside=text.replace(/<file\s[\s\S]*?<\/file>/g,''),render=outside.match(/<render\s+scene="([^"]+)"(?:\s+formats="([^"]*)")?\s*\/?>/);
+ const outside=text.replace(/<file\s[\s\S]*?<\/file>/g,''),render=outside.match(/<render\s+scenes?="([^"]+)"(?:\s+formats="([^"]*)")?\s*\/?>/);
  const pictures=[...outside.matchAll(/<picture\s+id="([^"]+)"(?:\s+ratio="([^"]*)")?(?:\s+cutout="([^"]*)")?\s*>([\s\S]*?)<\/picture>/g)].map(m=>({id:m[1],ratio:m[2]||'1:1',cutout:m[3]==='true',brief:m[4].trim()}));
- return {files,say:(outside.match(/<say>([\s\S]*?)<\/say>/)?.[1]??'').trim(),scene:render?.[1],formats:(render?.[2]??'').split(',').map(s=>s.trim()).filter(Boolean).slice(0,4),done:/<done\s*\/?>/.test(outside),pictures};
+ return {files,say:(outside.match(/<say>([\s\S]*?)<\/say>/)?.[1]??'').trim(),scenes:(render?.[1]??'').split(',').map(s=>s.trim()).filter(Boolean),formats:(render?.[2]??'').split(',').map(s=>s.trim()).filter(Boolean).slice(0,4),done:/<done\s*\/?>/.test(outside),pictures};
 }

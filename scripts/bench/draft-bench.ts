@@ -53,20 +53,28 @@ async function main(){
   let report:{build:string;findings?:unknown;views?:string[]}={build:built.ok?'passed':`failed: ${built.issue.split('\n').slice(0,12).join('\n')}`};
   const images:Part[]=[];
   if(built.ok){
-   const views=designerViews(input,answer.scene??input.storyboard[0].id,answer.formats);
+   const scenes=(answer.scenes.length?answer.scenes:[input.storyboard[0].id]).filter(id=>input.storyboard.some(x=>x.id===id)),per=Math.max(1,Math.floor(6/Math.max(1,scenes.length)));
+   const views=scenes.flatMap(id=>designerViews(input,id,answer.formats.slice(0,per)));
    const rendered=await tools.render(views);shots=[];
-   for(const shot of rendered.shots){const file=join(out,`turn-${turn}-${shot.key.replace(/[^\w.-]+/g,'_')}.jpg`),jpeg=await screenshotForDesigner(shot.file);await writeFile(file,Buffer.from(jpeg.split(',')[1],'base64'));shots.push(file);
-    images.push({type:'text',text:`Render: ${views.find(v=>v.key===shot.key)?.label??shot.key}`},{type:'image',mediaType:'image/jpeg',dataBase64:jpeg.split(',')[1]});}
-   report={build:'passed',findings:(rendered.summary as {findings?:unknown[]}).findings?.slice(0,20),views:views.map(v=>v.label)};
+   for(const shot of rendered.shots){const file=join(out,`turn-${turn}-${shot.key.replace(/[^\w.-]+/g,'_')}.jpg`),jpeg=await screenshotForDesigner(shot.file,768);await writeFile(file,Buffer.from(jpeg.split(',')[1],'base64'));shots.push(file);
+    images.push({type:'text',text:`Render: ${shot.key.split('|')[2]} · ${views.find(v=>v.key===shot.key)?.label??shot.key}`},{type:'image',mediaType:'image/jpeg',dataBase64:jpeg.split(',')[1]});}
+   report={build:'passed',findings:rendered.summary.reports.flatMap(r=>r.findings).sort((a,b)=>Number(b.severity==='hard')-Number(a.severity==='hard')).slice(0,20),views:[...new Set(views.map(v=>`${v.key.split('|')[2]} ${v.label}`))]};
   }
   await writeFile(join(out,`turn-${turn}-report.json`),JSON.stringify(report,null,1));
   if(answer.done&&built.ok)break;
   parts=[{type:'text',text:benchTurn(report,turn,maxTurns)},...images];
  }
+ // The sweep a person looks at: every scene in every format, in each language (not sent to the model).
+ const sweep=resolve(out,'sweep');await mkdir(sweep,{recursive:true});let hard=0,soft=0;
+ try{for(const scene of input.storyboard){const formats=input.formats.map(f=>f.id),views=[...new Set(input.variants.map(v=>`${v.locale}|${v.hook}`))].flatMap(k=>{const [locale,hook]=k.split('|'),first=input.variants.filter(v=>v.locale===locale&&v.hook===hook);return designerViews({...input,variants:first},scene.id,formats).filter(v=>v.shot);});
+   const r=await tools.render(views);hard+=r.summary.hard;soft+=r.summary.soft;
+   await writeFile(join(sweep,`${scene.id}-findings.json`),JSON.stringify(r.summary.reports.flatMap(x=>x.findings),null,1));
+   for(const shot of r.shots){const jpeg=await screenshotForDesigner(shot.file,540);await writeFile(join(sweep,`${shot.key.replace(/[^\w.-]+/g,'_')}.jpg`),Buffer.from(jpeg.split(',')[1],'base64'));}}
+ }catch(error){console.error('sweep:',error instanceof Error?error.message:error);}
  const total=log.reduce((t,l)=>({seconds:t.seconds+l.seconds,input:t.input+(l.usage.input_tokens??0)+(l.usage.cache_creation_input_tokens??0),cached:t.cached+(l.usage.cache_read_input_tokens??0),output:t.output+(l.usage.output_tokens??0),usd:t.usd+(l.usd??0)}),{seconds:0,input:0,cached:0,output:0,usd:0});
- const summary={brand:brand.id,mode,model,effort,turns:log.length,...total,usd:Math.round(total.usd*100)/100,log,shots,workspace:folder,frame:await readFile(join(folder,'Frame.tsx'),'utf8').then(s=>s.length,()=>0)};
+ const summary={brand:brand.id,mode,model,effort,turns:log.length,...total,usd:Math.round(total.usd*100)/100,log,shots,workspace:folder,sweep:{hard,soft},frame:await readFile(join(folder,'Frame.tsx'),'utf8').then(s=>s.length,()=>0)};
  await writeFile(join(out,'summary.json'),JSON.stringify(summary,null,1));
- console.log(JSON.stringify({out,turns:summary.turns,seconds:summary.seconds,input:summary.input,cached:summary.cached,output:summary.output,usd:summary.usd,frameChars:summary.frame,shots:shots.length}));
+ console.log(JSON.stringify({out,turns:summary.turns,seconds:summary.seconds,input:summary.input,cached:summary.cached,output:summary.output,usd:summary.usd,frameChars:summary.frame,hard,soft,shots:shots.length}));
  await rm(dir,{recursive:true,force:true});
 }
 

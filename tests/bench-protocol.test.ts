@@ -6,9 +6,9 @@ import {brands,benchInput} from '../scripts/bench/brands';
 import {readSkills} from '../packages/agents/skill-files';
 
 test('a tagged answer gives its files, render request, pictures and done flag', ()=>{
- const a=readBenchAnswer('<say>Doors as type.</say>\n<file path="Frame.tsx">\nexport default ()=>null;\n</file>\n<file path="parts.ts">\n```ts\nexport const a=1;\n```\n</file>\n<picture id="picture-1" ratio="3:4" cutout="true">A carton, centred.</picture>\n<render scene="scene-2" formats="square, vertical"/>');
+ const a=readBenchAnswer('<say>Doors as type.</say>\n<file path="Frame.tsx">\nexport default ()=>null;\n</file>\n<file path="parts.ts">\n```ts\nexport const a=1;\n```\n</file>\n<picture id="picture-1" ratio="3:4" cutout="true">A carton, centred.</picture>\n<render scenes="scene-2" formats="square, vertical"/>');
  assert.deepEqual(a.files,[{path:'Frame.tsx',source:'export default ()=>null;\n'},{path:'parts.ts',source:'export const a=1;\n'}]);
- assert.equal(a.say,'Doors as type.');assert.equal(a.scene,'scene-2');assert.deepEqual(a.formats,['square','vertical']);assert.equal(a.done,false);
+ assert.equal(a.say,'Doors as type.');assert.equal(a.scenes[0],"scene-2");assert.deepEqual(a.formats,['square','vertical']);assert.equal(a.done,false);
  assert.deepEqual(a.pictures,[{id:'picture-1',ratio:'3:4',cutout:true,brief:'A carton, centred.'}]);
  assert.equal(readBenchAnswer('<say>ok</say><done/>').done,true);
  // Tags inside a file body are code, not instructions.
