@@ -9,6 +9,7 @@ export const STAGES=[
  {id:'supporting',label:'Research, brand reading, variants and localization',default:'medium'},
  {id:'design-create',label:'Designing a frame (first design, hero frame, recomposition)',default:'high'},
  {id:'design-revise',label:'Revising after a render or measured findings',default:'medium'},
+ {id:'code-build',label:'Building the component from the design (coder)',default:'medium'},
  {id:'code-repair',label:'Code repairs',default:'medium'},
  {id:'critic',label:'Critic review',default:'medium'},
 ] as const satisfies readonly {id:string;label:string;default:Effort}[];
@@ -20,7 +21,8 @@ const PLANNING=new Set(['strategy','script','asset-plan','visual-direction','lay
 export function stageOf(role:string,detail:{revising?:boolean;repair?:boolean}={}):StageId{
  if(role==='critic')return 'critic';
  if(role==='designer')return detail.revising?'design-revise':'design-create';
- if(role==='assembler'||role==='coder'||role==='creative-code')return detail.repair?'code-repair':'design-create';
+ // The coder implements the director's design; it does not invent it, so its turns are not the inventing stage.
+ if(role==='assembler'||role==='coder'||role==='creative-code')return detail.repair?'code-repair':'code-build';
  if(role==='director')return 'design-create';
  return PLANNING.has(role)?'planning-create':'supporting';
 }
