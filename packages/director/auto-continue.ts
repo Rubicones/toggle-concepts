@@ -3,7 +3,7 @@
 // app when the policy is switched on for a run that is already waiting. Server-side only.
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {resumeBudgetClock} from './money';
-import {skipsBudgetReapproval,continuableRole,autoContinuationKey} from './budget-policy';
+import {skipsBudgetReapproval,continuableRole,autoContinuationKey,autoContinuationTimes} from './budget-policy';
 import type {ADQuestion} from './state';
 
 export type AutoContinued={continued:true;role:string;costMicroUsd:number}|{continued:false;reason:string};
@@ -23,7 +23,11 @@ export async function continueWithoutReapproval(admin:SupabaseClient,args:{block
  const stage=snapshot.inputs?.find(i=>i.directionId===args.directionId)?.stage??null;
  if(!skipsBudgetReapproval({mode:execution.data?.mode,executionDevice:execution.data?.device_id,device:args.device,policy:policy.error?null:policy.data?.policy,stage}))return {continued:false,reason:'BUDGET_REAPPROVAL_REQUIRED'};
  const roleMax=snapshot.estimates?.[args.directionId]?.roles?.[role]?.maxCostMicroUsd;if(!roleMax)return {continued:false,reason:'DIRECTOR_ALLOWANCE_REQUIRED'};
- const r=await admin.rpc('studio_auto_extend_director',{target:args.blockId,direction:args.directionId,question_id:question.id,role_key:role,request_key:autoContinuationKey(question.id,role,roleMax),device:args.device,resume_state:{...resumeBudgetClock((work.data.state??{}) as Parameters<typeof resumeBudgetClock>[0]),wrapUp:false}});
+ const params={target:args.blockId,direction:args.directionId,question_id:question.id,role_key:role,request_key:autoContinuationKey(question.id,role,roleMax),device:args.device,resume_state:{...resumeBudgetClock((work.data.state??{}) as Parameters<typeof resumeBudgetClock>[0]),wrapUp:false}};
+ // The coder's base allowance is smaller than one of its answers: add it several times, so it is not stopped after
+ // every answer (migration 20261112000300). Only the tokens actually used are counted.
+ let r=await admin.rpc('studio_auto_extend_director',{...params,times:autoContinuationTimes(role)});
+ if(r.error&&['PGRST202','42883'].includes(r.error.code??''))r=await admin.rpc('studio_auto_extend_director',params);
  if(r.error)return {continued:false,reason:r.error.message.slice(0,200)};
  return {continued:true,role,costMicroUsd:Number(r.data)};
 }

@@ -50,6 +50,16 @@ begin
  if (select (snapshot->'estimates'->direction::text->'roles'->'assembler'->>'requests')::int from public.studio_director_blocks where id=block)<>36 then raise exception 'ALLOWANCE_NOT_ADDED';end if;
  if (select x.cap_micro_usd from public.studio_runs x where x.id=run_id)<cap0+1200000 then raise exception 'CAP_NOT_RAISED';end if;
 
+ -- 20261112000300: one continuation may add the base allowance several times (the coder's base is smaller than one
+ -- answer); each addition is priced, the log keeps one row with the total, a replay changes nothing.
+ k:=gen_random_uuid();n:=(select (x.snapshot->'estimates'->direction::text->'roles'->'assembler'->>'requests')::int from public.studio_director_blocks x where x.id=block);
+ cost:=public.studio_auto_extend_director(block,direction,'stop-1','assembler',k,mac,'{}'::jsonb,3);
+ if cost<>1200000 then raise exception 'TIMES_COST %',cost;end if;
+ if (select (x.snapshot->'estimates'->direction::text->'roles'->'assembler'->>'requests')::int from public.studio_director_blocks x where x.id=block)<>n+27 then raise exception 'TIMES_NOT_ADDED';end if;
+ if (select x.status from public.studio_director_work x where x.block_id=block)<>'queued' then raise exception 'TIMES_NOT_QUEUED';end if;
+ if public.studio_auto_extend_director(block,direction,'stop-1','assembler',k,mac,'{}'::jsonb,3)<>1200000 then raise exception 'TIMES_REPLAY';end if;
+ begin perform public.studio_auto_extend_director(block,direction,'stop-1','assembler',gen_random_uuid(),mac,'{}'::jsonb,9);raise exception 'TIMES_UNBOUNDED';exception when others then if sqlerrm<>'INVALID_TIMES' then raise;end if;end;
+ update public.studio_director_work x set status='review',question=q where x.block_id=block;
  -- A late manual approval of a stop that was already continued is stale; nothing is added twice.
  k:=gen_random_uuid();perform public.studio_auto_extend_director(block,direction,'stop-1','assembler',k,mac,'{}'::jsonb);
  begin perform public.studio_extend_director(block,direction,'stop-1','assembler',400000,gen_random_uuid(),actor,'{}');raise exception 'DOUBLE_EXTENSION';exception when others then if sqlerrm<>'STALE_QUESTION' then raise;end if;end;

@@ -221,6 +221,7 @@ test('LC6: effort per stage — high where the idea is invented, medium for repa
  assert.equal(stageOf('research'),'supporting');assert.equal(stageOf('localization'),'supporting');
  assert.equal(stageOf('designer'),'design-create');assert.equal(stageOf('designer',{revising:true}),'design-revise');
  assert.equal(stageOf('assembler',{repair:true}),'code-repair');assert.equal(stageOf('critic'),'critic');
+ assert.equal(stageOf('assembler'),'code-build','the coder implements the design: not the inventing stage');assert.equal(DEFAULT_STAGE_EFFORT['code-build'],'medium');
  assert.equal(DEFAULT_STAGE_EFFORT['design-create'],'high');assert.equal(DEFAULT_STAGE_EFFORT['planning-create'],'high');
  for(const s of ['design-revise','code-repair','critic','supporting'] as const)assert.equal(DEFAULT_STAGE_EFFORT[s],'medium');
  assert.equal(stageEffort('critic',{critic:'low'}),'low','the owner can change a stage');assert.equal(stageEffort('critic',{critic:'bogus'}),'medium');

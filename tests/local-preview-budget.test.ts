@@ -60,7 +60,7 @@ test('the runner continues a waiting Local preview once, through the priced exte
  const out=await continueWithoutReapproval(admin,{blockId:'b',directionId:'d',device:'mac'});
  assert.deepEqual(out,{continued:true,role:'assembler',costMicroUsd:400000});
  assert.equal(calls.length,1);assert.equal(calls[0].fn,'studio_auto_extend_director');
- assert.equal(calls[0].args.role_key,'assembler');assert.equal(calls[0].args.request_key,autoContinuationKey('q1','assembler',400000));
+ assert.equal(calls[0].args.role_key,'assembler');assert.equal(calls[0].args.times,3,'the coder gets three base allowances at once');assert.equal(calls[0].args.request_key,autoContinuationKey('q1','assembler',400000));
  assert.equal((calls[0].args.resume_state as {wrapUp:boolean}).wrapUp,false);
 });
 
