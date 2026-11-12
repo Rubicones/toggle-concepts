@@ -98,3 +98,14 @@
 - **Cause:** the recovery was called from the runner loop, but the runner exits while the run is blocked (it stays alive only for runs whose control is `running`). The owner's studio window showed page requests only.
 - **Fix:** `app/api/studio/campaigns/[id]/run/route.ts` (GET, the run page's own read) calls `studio_recover_local_workflow` and starts the runner when a step was requeued. A failure of the recovery is now printed in the studio window instead of being swallowed.
 - **Verification:** typecheck, lint. Not verified live.
+
+## 11. Follow-up (same day): Local text requests are not held to the agent's money cap
+
+- **Symptom:** after the stopped planning step was recovered, Visual looks stopped with `STEP_CAP_REACHED` ("The next step needs more budget").
+- **Cause:** admission (`app_private.reserve_step_before_creative`) reserves the request's API-equivalent price against the agent's step cap, also for a Local request that settles at zero. A large planning request (300k input tokens) or a few repeats exceeded the cap.
+- **Migration `20261112000700_local_text_no_step_cap.sql`:**
+  - `app_private.local_text_role(run, role)`: a text role of a Local run.
+  - The two step-cap checks in the admission function are edited in place to skip Local text requests. The run cap, image requests and OpenRouter runs keep their rules.
+  - `studio_recover_local_workflow` also requeues a Local text step already stopped by `STEP_CAP_REACHED`.
+- **Bounds that remain for Local text:** output-token limit per request, attempt allowance per step (at most 12), the run cap.
+- **Verification:** all migrations apply on a temporary Postgres; `supabase/tests/local-text-execution.sql` checks both checks were edited, the role helper, and the recovery of a cap-stopped step. Admission itself was not exercised end to end in the test.
