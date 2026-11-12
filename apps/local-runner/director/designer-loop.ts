@@ -2,6 +2,7 @@
 // write → render → look → revise. Every tool is injected, so the loop is tested without paid calls; the worker (4e)
 // supplies the real ones (live build, browser inspection, priced pictures inside the approved count).
 import {readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {createCanvas,loadImage} from '@napi-rs/canvas';
 import {readDesignerTurn,heroFirst,heroScene,type DesignerPicture,type DesignerTurn} from '../../../packages/director/designer';
 import {applySourceEdits} from '../../../packages/director/source-edits';
@@ -54,16 +55,25 @@ export function designerViews(input:Pick<DirectionInput,'variants'|'formats'|'va
 }
 
 /** Screenshots go to the designer as JPEG at about 1080 px on the long side (point 6b): enough to judge, cheap to send. */
+/** LC4 (shared Local runs): renders reach the designer at a fixed size that is enough to judge (long side 1024 px, JPEG). */
+export const RENDER_LONG_SIDE=1024;
 export async function screenshotForDesigner(file:string,maxSide=1080){
  const bytes=await readFile(file);let image;try{image=await loadImage(bytes);}catch{return `data:image/jpeg;base64,${bytes.toString('base64')}`;}
  const scale=Math.min(1,maxSide/Math.max(image.width,image.height));if(scale===1)return `data:image/jpeg;base64,${bytes.toString('base64')}`;
  const canvas=createCanvas(Math.max(1,Math.round(image.width*scale)),Math.max(1,Math.round(image.height*scale)));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
  return `data:image/jpeg;base64,${canvas.toBuffer('image/jpeg',82).toString('base64')}`;
 }
-const jpeg=(file:string)=>screenshotForDesigner(file);
+/** LC4: build errors as their first lines, never a file dump. */
+export const shortIssue=(issue:string)=>issue.split('\n').filter(l=>l.trim()).slice(0,12).join('\n').slice(0,1200);
+/** Tool results since the designer's last answer: what a continued conversation does not hold yet. */
+export function sinceLastTurn(transcript:{from:'agent'|'tool';text:string}[]){let i=transcript.length;while(i>0&&transcript[i-1].from!=='agent')i--;return transcript.slice(i);}
+const hash=(text:string)=>createHash('sha256').update(text).digest('hex').slice(0,16);
+export const fileHashes=(files:{path:string;source:string}[])=>Object.fromEntries(files.map(f=>[f.path,hash(f.source)]));
+/** Files the conversation has not seen in their current form (changed by the app or new). */
+export function changedFiles(files:{path:string;source:string}[],seen?:Record<string,string>){return seen?files.filter(f=>seen[f.path]!==hash(f.source)):files;}
 const short=(value:unknown,max=4096)=>JSON.stringify(value).slice(0,max);
 
-export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;save:(state:DesignerLoopState)=>Promise<void>;/** For the timeline: the turn, its results and the screenshot the designer looked at when it wrote the turn. *//** Point 3: at most this many critic reviews of the hero frame (from the quote). */heroReviews?:number;onHero?:(event:HeroEvent)=>Promise<void>;onTurn?:(turn:DesignerTurn,results:unknown[],looked?:string)=>Promise<void>;now?:()=>number}){
+export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;/** LC4: a continued conversation (shared Local runs): send only what it does not hold, and accept readable turns into it. */conversation?:{continuing:()=>boolean;accept:()=>Promise<void>};save:(state:DesignerLoopState)=>Promise<void>;/** For the timeline: the turn, its results and the screenshot the designer looked at when it wrote the turn. *//** Point 3: at most this many critic reviews of the hero frame (from the quote). */heroReviews?:number;onHero?:(event:HeroEvent)=>Promise<void>;onTurn?:(turn:DesignerTurn,results:unknown[],looked?:string)=>Promise<void>;now?:()=>number}){
  const {input,state,tools}=args,now=args.now??Date.now,scenes=input.storyboard.map(s=>s.id),referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  const pending=new Map<string,Promise<PictureResult>>(),arrived=new Map<string,PictureResult>();
  // A control or lease failure inside a background purchase stops the loop at the next step instead of escaping unseen.
@@ -87,17 +97,21 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
  while(!state.complete&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   await collect();stopIfFatal();
   const files=await tools.files(),last=state.lastRender;
-  const images=last?await Promise.all(last.views.map(async v=>({url:await jpeg(v.file),label:`${v.label} (rendered, scene ${scenes.indexOf(last.sceneId)+1})`}))):[];
+  const images=last?await Promise.all(last.views.map(async v=>({url:await screenshotForDesigner(v.file,args.conversation?RENDER_LONG_SIDE:1080),label:`${v.label} (rendered, scene ${scenes.indexOf(last.sceneId)+1})`}))):[];
   let text:string;
   try{text=await args.call({...(heroOn?{notes:state.notes??'',...(last?{lookFirst:true}:{})}:{}),turn:state.turn,budget:{turnsLeft:args.maxTurns-state.turn,picturesLeft:Math.max(0,args.maxPictures-state.pictures)},
    scenes:scenes.map(sceneId=>({sceneId,formats:input.formats.map(f=>({format:f.id,renders:state.renders[renderKey(sceneId,f.id)]??0,revisionsLeft:Math.max(0,DESIGNER_REVISIONS_PER_SCENE+1-(state.renders[renderKey(sceneId,f.id)]??0))})).filter(f=>f.renders>0||f.format===referenceFormat)})),
-   toolResults:state.transcript.slice(-12),currentFiles:files,
+   // LC4: in a continued conversation the history holds everything earlier: only new results and changed files go.
+   ...(args.conversation?.continuing()?{toolResults:sinceLastTurn(state.transcript),currentFiles:changedFiles(files,state.filesSeen)}:{toolResults:state.transcript.slice(-12),currentFiles:files}),
    ...(state.hero?{hero:{sceneId:state.hero.sceneId,format:state.hero.format,settled:state.hero.state==='accepted',reviewsLeft:Math.max(0,(args.heroReviews??0)-state.hero.reviews)}}:{}),
    ...(last?{lastRender:{sceneId:last.sceneId,views:last.views.map(v=>v.label),findings:last.findings.slice(0,30).map(f=>({view:f.view,severity:f.severity,detail:f.detail}))}}:{})},images);}
   catch(error){if(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'){state.turn++;await log({error:'Your answer was cut off. Return a smaller turn: fewer files, exact edits.'});continue;}throw error;}
+  if(args.conversation)state.filesSeen=fileHashes(files);
   const looked=last?.views[0]?.file;state.turn++;state.transcript.push({from:'agent',text:text.slice(0,2000)});delete state.lastRender;await args.save(state);
   let turn:DesignerTurn;
   try{turn=readDesignerTurn(JSON.parse(text),input);}catch(error){await log({error:(error instanceof Error?error.message:'Unreadable answer').slice(0,600)});continue;}
+  // LC4: a readable turn becomes part of the direction's conversation; an unreadable one is left out of it.
+  await args.conversation?.accept();
   // Point 4: notes are working memory; a turn after a render must first say what it saw (look, name, then fix).
   if(heroOn&&turn.notes){state.notes=turn.notes;await args.save(state);}
   // Refused once per render: a second turn without seen is applied, so a model that keeps omitting it cannot burn
@@ -113,7 +127,8 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
     const latest=await tools.files();if(turn.edits.some(e=>latest.find(f=>f.path===e.path)?.source!==files.find(f=>f.path===e.path)?.source))throw new Error('EDIT_SOURCE_CHANGED: the source changed while this turn was written; use the refreshed currentFiles.');
     for(const file of [...turn.files,...applySourceEdits(latest,turn.edits)]){await tools.write(file.path,file.source);results.push({written:file.path});}
    }
-   const built=await tools.build();results.push(built.ok?{build:'passed'}:{build:'failed',issue:built.issue.slice(0,1600)});
+   const built=await tools.build();results.push(built.ok?{build:'passed'}:{build:'failed',issue:args.conversation?shortIssue(built.issue):built.issue.slice(0,1600)});
+   if(args.conversation)state.filesSeen=fileHashes(await tools.files());
    // 2. Pictures: recorded and bought in the background inside the approved count; they arrive on later turns.
    for(const picture of turn.pictures){
     if(state.pictures>=args.maxPictures){results.push({picture:'refused',detail:'The approved number of pictures is used. Build the rest in code or with the pictures you have.'});continue;}

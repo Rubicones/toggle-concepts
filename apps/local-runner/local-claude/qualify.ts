@@ -80,6 +80,14 @@ export async function qualify(options:{bin:string;model:string;deviceId:string;d
 
  const n1=nonce();const text=await call(profile,[{type:'text',text:`Reply with exactly this code and nothing else: ${n1}`}]);
  add({id:'text',title:'A text request',status:(text.text??'').includes(n1)?'pass':'fail',critical:'all',evidence:`${text.outcome}, ${text.durationMs} ms, usage ${JSON.stringify(text.usage??{})}`});
+ // LC1: the turn limit, and the prompt cache across two identical calls in one fixed folder.
+ const n3=nonce(),limited1=await call(profileFor(base,{maxTurns:1}),[{type:'text',text:`Reply with exactly this code and nothing else: ${n3}`}]);
+ const turnLimit=(limited1.text??'').includes(n3)&&limited1.outcome==='succeeded';
+ add({id:'max-turns',title:'A call can be limited to one turn',status:turnLimit?'pass':'unknown',critical:'none',evidence:`${limited1.outcome}${limited1.failure?` (${limited1.failure})`:''}`});
+ const prefix=`Background that stays the same between two requests. ${'The same brand context paragraph, repeated to pass the cache minimum. '.repeat(160)}`;
+ const first1=await call(profile,[{type:'text',text:`${prefix}\nReply with exactly: ONE`}]),second1=await call(profile,[{type:'text',text:`${prefix}\nReply with exactly: TWO`}]);
+ const cached=(second1.usage?.cache_read_input_tokens??0)>0;
+ add({id:'prefix-cache',title:'A second call with the same prefix reads it from the cache',status:cached?'pass':'unknown',critical:'none',evidence:`first: cache write ${first1.usage?.cache_creation_input_tokens??0}, read ${first1.usage?.cache_read_input_tokens??0}; second: read ${second1.usage?.cache_read_input_tokens??0}`});
  const n2=nonce();const long=await call(profile,[{type:'text',text:`${'Background paragraph about the brand, kept only to make this request long. '.repeat(320)}\nAt the very end: reply with exactly this code and nothing else: ${n2}`}]);
  add({id:'long-input',title:'A request over 16 000 characters arrives whole',status:(long.text??'').includes(n2)?'pass':'fail',critical:'all',evidence:`${long.outcome}; the code sits after character ${'Background paragraph about the brand, kept only to make this request long. '.length*320}`});
 
@@ -110,7 +118,7 @@ export async function qualify(options:{bin:string;model:string;deviceId:string;d
  const profileOut:CapabilityProfile={version:1,createdAt:new Date().toISOString(),device:{id:options.deviceId,label:options.deviceLabel},os:`${platform()} ${release()}`,node:process.version,
   cli:{bin:options.bin,version},auth:{loggedIn:!!auth.loggedIn,method:auth.authMethod??'unknown',...(first?.init?.apiKeySource?{apiKeySource:first.init.apiKeySource}:{}),extraUsageOff:options.extraUsageOff?'confirmed':'not-confirmed'},
   model:{requested:options.model,...(text.init?.model?{actual:text.init.model}:{})},isolation:base,checks,
-  capabilities:{maxOutputTokens:capped?'translated':'unsupported',effort:'translated',multipleImages:imagesOk?'exact':'unsupported',systemBoundaries:'translated',streaming:partial.events.some(e=>e.type==='stream_event')?'exact':'unobservable',cancellation:cancelled.outcome==='cancelled'?'exact':'unsupported',hiddenCompaction:'unobservable',structuredOutput:cliSchema.structured!==undefined?'translated':'unsupported'},
+  capabilities:{maxTurns:turnLimit?'exact':'unsupported',promptCache:cached?'exact':'unobservable',maxOutputTokens:capped?'translated':'unsupported',effort:'translated',multipleImages:imagesOk?'exact':'unsupported',systemBoundaries:'translated',streaming:partial.events.some(e=>e.type==='stream_event')?'exact':'unobservable',cancellation:cancelled.outcome==='cancelled'?'exact':'unsupported',hiddenCompaction:'unobservable',structuredOutput:cliSchema.structured!==undefined?'translated':'unsupported'},
   verdict:{textRoles:failedAll.length?'blocked':'ready',visualRoles:failedAll.length||failedVisual.length?'blocked':'ready',reasons:[...failedAll,...failedVisual],limitations:checks.filter(c=>c.critical==='none'&&c.status!=='pass').map(c=>`${c.title}: ${c.evidence}`)}};
  if(options.out){await mkdir(join(options.out,'..'),{recursive:true});await writeFile(options.out,JSON.stringify(profileOut,null,2));}
  return profileOut;

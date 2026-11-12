@@ -1,0 +1,46 @@
+// Local mode usage (docs/plans/2026-11-11-local-chat-shaped-runs.md, LC0): what each Claude Code call used, read from
+// the step's usage._local record. Local runs spend the subscription quota, so the API-equivalent price is a relative
+// measure, never money spent. Browser-safe: no Node imports.
+
+export type LocalCallUsage={
+ role:string;stage?:string;model?:string;effort?:string;turns?:number;durationMs?:number;
+ input:number;cacheCreation:number;cacheRead:number;output:number;apiEquivalentUsd?:number;
+ /** LC3/LC4: how the request used a stored conversation (new, continued, branched, condensed, restarted). */
+ conversation?:string;
+ /** LC6: the effort stage of a shared run's request; LC5: the skills it carried. */
+ effortStage?:string;skills?:string[];
+};
+type Raw={input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number};
+type LocalRecord={executedModel?:string;effort?:string;numTurns?:number;durationMs?:number;usage?:Raw;apiEquivalentUsd?:number;conversation?:{kind:string};stage?:string;skills?:string[]};
+
+/** One call's usage from a step row; null for OpenRouter steps and Local refusals that never reached the CLI. */
+export function localCallUsage(row:{role:string;usage?:unknown;config_snapshot?:unknown}):LocalCallUsage|null{
+ const local=(row.usage as {_local?:LocalRecord}|null|undefined)?._local;if(!local)return null;
+ const u=local.usage??{},snapshot=(row.config_snapshot??{}) as {directorRole?:string;creativeStage?:string;localStage?:string};
+ return {role:snapshot.directorRole??row.role,...(snapshot.localStage??snapshot.creativeStage?{stage:snapshot.localStage??snapshot.creativeStage}:{}),
+  ...(local.executedModel?{model:local.executedModel}:{}),...(local.effort?{effort:local.effort}:{}),...(local.numTurns!==undefined?{turns:local.numTurns}:{}),...(local.durationMs!==undefined?{durationMs:local.durationMs}:{}),
+  input:u.input_tokens??0,cacheCreation:u.cache_creation_input_tokens??0,cacheRead:u.cache_read_input_tokens??0,output:u.output_tokens??0,
+  ...(typeof local.apiEquivalentUsd==='number'?{apiEquivalentUsd:local.apiEquivalentUsd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{}),...(local.stage?{effortStage:local.stage}:{}),...(local.skills?.length?{skills:local.skills}:{})};
+}
+
+const k=(n:number)=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1000?`${Math.round(n/1000)}k`:String(n);
+/** All input the model read: new input, cache writes and cache reads. */
+export const totalInput=(u:Pick<LocalCallUsage,'input'|'cacheCreation'|'cacheRead'>)=>u.input+u.cacheCreation+u.cacheRead;
+/** The compact line under a request: "in 12k · cached 140k · out 3k". New input includes cache writes. */
+export function usageLine(u:LocalCallUsage){return `in ${k(u.input+u.cacheCreation)} · cached ${k(u.cacheRead)} · out ${k(u.output)}`;}
+
+export type UsageTotals={calls:number;input:number;cacheCreation:number;cacheRead:number;output:number;apiEquivalentUsd:number;durationMs:number;cachedShare:number};
+export function usageTotals(calls:LocalCallUsage[]):UsageTotals{
+ const t={calls:calls.length,input:0,cacheCreation:0,cacheRead:0,output:0,apiEquivalentUsd:0,durationMs:0,cachedShare:0};
+ for(const c of calls){t.input+=c.input;t.cacheCreation+=c.cacheCreation;t.cacheRead+=c.cacheRead;t.output+=c.output;t.apiEquivalentUsd+=c.apiEquivalentUsd??0;t.durationMs+=c.durationMs??0;}
+ const all=totalInput(t);t.cachedShare=all?t.cacheRead/all:0;return t;
+}
+export function totalsLine(t:UsageTotals){return `${t.calls} request${t.calls===1?'':'s'} · in ${k(t.input+t.cacheCreation)} · cached ${k(t.cacheRead)} (${Math.round(t.cachedShare*100)}% of input) · out ${k(t.output)}`;}
+/** The API-equivalent price in plain words: a relative measure on the subscription. */
+export function apiEquivalentLabel(usd:number){return `≈ $${usd.toFixed(2)} at API prices (subscription quota, not money spent)`;}
+
+/** Per-role averages over recent calls, for Models & agents. */
+export function roleAverages(calls:LocalCallUsage[]){
+ const by=new Map<string,LocalCallUsage[]>();for(const c of calls)by.set(c.role,[...(by.get(c.role)??[]),c]);
+ return [...by.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([role,list])=>{const t=usageTotals(list);return {role,calls:t.calls,input:Math.round((t.input+t.cacheCreation)/t.calls),cacheRead:Math.round(t.cacheRead/t.calls),output:Math.round(t.output/t.calls),apiEquivalentUsd:t.apiEquivalentUsd/t.calls,cachedShare:t.cachedShare};});
+}

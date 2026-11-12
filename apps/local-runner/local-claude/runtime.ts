@@ -12,8 +12,15 @@ import {readDevice,toggleHome,type Device} from './device';
 import {profilePath,readProfile} from './qualify';
 import {cliTextTransport,localSetupFrom,type LocalCliSetup,type LocalTextReceipt} from './transport';
 import {recordPreparedRequest} from './record';
+import {loadRunContext} from './run-context';
+import {contextExtras} from './skills';
+import type {RunContext} from '../../../packages/agents/run-context';
+import type {StageId} from '../../../packages/agents/stage-effort';
+import {CHAIN_ROLES,conversationTokens,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
 
-export type TextExecution={mode:'openrouter'|'local_claude';device_id?:string|null;execution_model?:string|null;cli_version?:string|null;mapping_version?:string|null};
+export type TextExecution={mode:'openrouter'|'local_claude';device_id?:string|null;execution_model?:string|null;cli_version?:string|null;mapping_version?:string|null;
+ /** LC2: 'shared' runs start every request with the frozen run context; absent or 'fresh' keeps today's layout. */
+ context_mode?:'fresh'|'shared'|null};
 export type LocalRuntime={device?:Device;setup?:LocalCliSetup;reason?:string;schema:boolean};
 
 const version=(bin:string)=>new Promise<string>(done=>execFile(bin,['--version'],{env:childEnv(process.env),timeout:15000},(error,out)=>done(error?'':String(out).trim())));
@@ -27,25 +34,47 @@ export async function loadLocalRuntime(admin:SupabaseClient):Promise<LocalRuntim
  let setup:LocalCliSetup;try{setup=localSetupFrom(profile);}catch(error){return {schema,device,reason:(error as Error).message};}
  // A CLI updated since qualification needs a new check: its isolation and output can differ.
  const installed=await version(setup.bin);if(installed.split(/\s+/)[0]!==setup.cliVersion.split(/\s+/)[0])return {schema,device,reason:'LOCAL_CLI_CHANGED'};
- return {schema,device,setup};
+ // LC1: one fixed, empty working folder outside any repository for every call.
+ const workDir=join(toggleHome(),'local-claude','work');await mkdir(workDir,{recursive:true});
+ return {schema,device,setup:{...setup,workDir}};
 }
 
 /** The mode frozen on a scope; scopes from before the Local schema (no row, no table) are OpenRouter. */
 export async function textExecutionFor(admin:SupabaseClient,kind:'run'|'brand-analysis',scope:string):Promise<TextExecution>{
- const row=await admin.from('studio_text_executions').select('mode,device_id,execution_model,cli_version,mapping_version').eq('scope_kind',kind).eq('scope_id',scope).maybeSingle();
+ // All columns: a column added by a later migration must never make a Local run look like an OpenRouter one.
+ const row=await admin.from('studio_text_executions').select('*').eq('scope_kind',kind).eq('scope_id',scope).maybeSingle();
  if(row.error||!row.data)return {mode:'openrouter'};
  return row.data as TextExecution;
 }
 
 /** submitText for OpenRouter scopes; the CLI transport for this device's Local scopes; a named stop otherwise. */
-export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal}={}):typeof submitText{
+/** LC2: the run context loader of a 'shared' run; undefined for 'fresh' runs. */
+export function sharedContextFor(admin:SupabaseClient,execution:TextExecution,runId:string){
+ return execution.mode==='local_claude'&&execution.context_mode==='shared'?()=>loadRunContext(admin,runId,()=>contextExtras(admin,runId)):undefined;
+}
+/** LC3: the stored points a planning job can continue from: its parent jobs' succeeded Local requests. */
+export async function planningPoints(admin:SupabaseClient,jobId:string):Promise<StoredPoint[]>{
+ const deps=await admin.from('studio_workflow_dependencies').select('requires_id').eq('job_id',jobId);if(deps.error||!deps.data?.length)return [];
+ const attempts=await admin.from('studio_workflow_attempts').select('step_id').in('job_id',deps.data.map(d=>d.requires_id)).eq('state','succeeded');
+ const ids=(attempts.data??[]).map(a=>a.step_id).filter(Boolean);if(!ids.length)return [];
+ return pointsOf((await admin.from('studio_agent_steps').select('role,usage,created_at').in('id',ids)).data??[]);
+}
+/** LC3: the approved planning point of a run (the latest stored planning conversation), where directions branch from. */
+export async function latestPlanningPoint(admin:SupabaseClient,runId:string):Promise<StoredPoint|null>{
+ const rows=await admin.from('studio_agent_steps').select('role,usage,created_at').eq('run_id',runId).eq('status','succeeded').in('role',[...CHAIN_ROLES]).not('usage->_local->sessionId','is',null).order('created_at',{ascending:false}).limit(1);
+ return pointsOf(rows.data??[])[0]??null;
+}
+function pointsOf(rows:{role:string;usage:unknown;created_at:string}[]):StoredPoint[]{
+ return rows.flatMap(r=>{const l=(r.usage as {_local?:{sessionId?:string;usage?:Parameters<typeof conversationTokens>[0]}}|null)?._local;return l?.sessionId?[{role:r.role,sessionId:l.sessionId,tokens:conversationTokens(l.usage),at:r.created_at}]:[];});
+}
+export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>;session?:()=>Promise<Plan>;role?:string;stage?:StageId}={}):typeof submitText{
  if(execution.mode!=='local_claude')return submitText;
  if(!runtime.setup||!runtime.device)throw new Error(runtime.reason??'LOCAL_PROFILE_REQUIRED');
  if(execution.device_id!==runtime.device.id)throw new Error('LOCAL_DEVICE_MISMATCH');
  // A run keeps the model and CLI it started with; a change is an explicit stop, never a silent switch.
  if(execution.execution_model!==runtime.setup.sonnet)throw new Error('LOCAL_MODEL_CHANGED');
  if(execution.cli_version&&execution.cli_version.split(/\s+/)[0]!==runtime.setup.cliVersion.split(/\s+/)[0])throw new Error('LOCAL_CLI_CHANGED');
- return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p)});
+ return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p),...(options.shared?{shared:options.shared}:{}),...(options.shared&&options.session?{session:options.session}:{}),...(options.role?{role:options.role}:{}),...(options.stage?{stage:options.stage}:{})});
 }
 
 // ---- Subscription waiting (plan §10): durable on the device, bounded probes, no busy loop. ----

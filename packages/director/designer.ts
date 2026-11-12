@@ -112,6 +112,8 @@ export function designerTurnSummary(results:unknown[]):string[]{
 
 /** The designer's saved progress in the work state (point 4b/4e). */
 export type DesignerLoopState={
+ /** LC4 (shared Local runs): the direction's stored conversation after its last accepted turn, and the files it has seen. */
+ session?:{role:string;sessionId:string;tokens:number};filesSeen?:Record<string,string>;
  /** Point 4a: the designer's notes, sent at the top of every request (outside the 12-result window); a restart keeps them. */
  notes?:string;
  /** point 4b: the turn after this render was already refused once for a missing seen */

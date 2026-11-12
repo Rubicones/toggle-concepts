@@ -6,19 +6,28 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {cliArgs,childEnv,hasUnexpectedCliTools,runCli,streamUserMessage,type CliEvent,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
-import {prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCliRequest,type ImageInput,type PreparedTextRequest} from '../../../packages/agents/prepared-request';
+import {prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCliRequest,type ImageInput,type PreparedTextRequest,type CliTextRequest} from '../../../packages/agents/prepared-request';
 import {localModelFor,type LocalModelChoice} from '../../../packages/agents/local-models';
+import {sharedLayout,sharedLayoutDifferences,continuingLayout,type RunContext} from '../../../packages/agents/run-context';
+import type {Plan} from '../../../packages/agents/local-session';
+import {stageEffort,type StageId} from '../../../packages/agents/stage-effort';
 import {textRequestQuote} from '../../../packages/agents/text-quote';
 import type {TextReceipt,TextSnapshot} from '../../../packages/agents/text-provider';
 import type {CapabilityProfile} from './qualify';
 
 /** What a qualified device profile allows. Built once per runner start; a changed CLI needs a new qualification. */
-export type LocalCliSetup={bin:string;cliVersion:string;isolation:CliProfile['isolation'];sonnet:string;schemaMode:'cli'|'plain';visual:boolean;deviceId:string};
+export type LocalCliSetup={bin:string;cliVersion:string;isolation:CliProfile['isolation'];sonnet:string;schemaMode:'cli'|'plain';visual:boolean;deviceId:string;
+ /** LC1: the device's CLI accepts --max-turns (qualified). */
+ turnLimit?:boolean;
+ /** LC1: every call runs in this one empty folder outside git (stable for the prompt cache and for sessions). */
+ workDir?:string};
+/** LC1: one plain answer is one turn; CLI-enforced structured output may take a few StructuredOutput attempts. */
+export const TURN_LIMIT={plain:1,schema:4};
 export function localSetupFrom(profile:CapabilityProfile):LocalCliSetup{
  if(profile.verdict.textRoles!=='ready')throw new Error('LOCAL_PROFILE_BLOCKED');
  const sonnet=profile.model.actual;if(!sonnet||!/^claude-sonnet-/.test(sonnet))throw new Error('LOCAL_MODEL_NOT_PINNED');
  const schema=profile.checks.find(c=>c.id==='schema-cli')?.status==='pass'?'cli':'plain';
- return {bin:profile.cli.bin,cliVersion:profile.cli.version,isolation:profile.isolation,sonnet,schemaMode:schema,visual:profile.verdict.visualRoles==='ready',deviceId:profile.device.id};
+ return {bin:profile.cli.bin,cliVersion:profile.cli.version,isolation:profile.isolation,sonnet,schemaMode:schema,visual:profile.verdict.visualRoles==='ready',deviceId:profile.device.id,...(profile.capabilities?.maxTurns==='exact'?{turnLimit:true}:{})};
 }
 
 /** Everything the CLI call showed, kept apart from the receipt fields the ledger already stores. */
@@ -26,10 +35,20 @@ export type LocalTextDetails={
  transport:'claude-cli';mapping:LocalModelChoice;semanticInputHash:string;schemaMode:'cli'|'plain'|'none';unsupported:string[];
  cliVersion:string;executedModel?:string;sessionId?:string;apiKeySource?:string;
  internalAttempts:number;numTurns?:number;stopReason?:string|null;durationMs:number;exitCode:number|null;limitReached?:boolean;
+ /** LC0: the effort asked for and the CLI's API-equivalent price (subscription quota, not money). */
+ effort?:string;apiEquivalentUsd?:number;
  usage?:CliResult['usage'];events:CliEvent[];stderr:string;recordPath?:string;
  /** Hypothetical text cost on the target model (plan §9, quantity 3): Sonnet's tokens at the target's prices. A forecast
   * with an unmeasured error, never an actual cost or a receipt. */
  forecast?:{targetModel:string;microUsd:number;method:'cli-tokens-x-target-price@1';errorMeasured:false};
+ /** LC2: the shared run context this request started with ('shared' runs). */
+ sharedContext?:{sha256:string;tokens:number;holds:RunContext['holds'];images:number};
+ /** LC3/LC4: how this request used a stored conversation. */
+ conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted';resumedFrom?:string};
+ /** LC5: the skills this request carried (common and its role's own). */
+ skills?:string[];
+ /** LC6: the stage whose effort this request used. */
+ stage?:StageId;
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
 
@@ -41,7 +60,13 @@ function usageOf(r:CliResult,d:Omit<LocalTextDetails,'events'|'stderr'>){
  return r.usage?{prompt_tokens:(u.input_tokens??0)+cacheRead+cacheWrite,completion_tokens:u.output_tokens??0,prompt_tokens_details:{cached_tokens:cacheRead,cache_write_tokens:cacheWrite},_local:d}:{_local:d};
 }
 
-export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSignal;record?:(p:PreparedTextRequest)=>Promise<string>;onEvent?:(e:CliEvent)=>void}={}){
+export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSignal;record?:(p:PreparedTextRequest)=>Promise<string>;onEvent?:(e:CliEvent)=>void;
+ /** LC2: the frozen run context of a 'shared' run; null keeps the fresh layout (for example before the brand is accepted). */
+ shared?:()=>Promise<RunContext|null>;
+ /** LC3/LC4: continue (or branch from) a stored conversation; null starts a new, persisted one. Shared runs only. */
+ session?:()=>Promise<Plan>;
+ /** LC5: the requesting role's skill key, so its own skills follow its instructions. LC6: the stage of a request. */
+ role?:string;stage?:StageId}={}){
  return async function cliText(model:string,prompt:string,cfg:TextSnapshot,images:ImageInput[]=[],requestTag?:string):Promise<LocalTextReceipt>{
   const refuse=(failure:string):LocalTextReceipt=>({provider:'claude-cli',outcome:'failed',cost:0,text:null,generation:null,usage:null,failure});
   // The same refusals as submitText, before anything is sent.
@@ -50,26 +75,42 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   if(images.length&&!setup.visual)return refuse('LOCAL_VISUAL_NOT_QUALIFIED');
   let mapping:LocalModelChoice;try{mapping=localModelFor(model,{sonnet:setup.sonnet});}catch(error){return refuse((error as Error).message);}
   const prepared=prepareTextRequest(model,prompt,cfg,images,{requestTag});
-  let cli;try{cli=toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode});}catch(error){return refuse((error as Error).message);}
+  let cli:CliTextRequest;try{cli=toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode});}catch(error){return refuse((error as Error).message);}
   // The input check of plan §3.2 runs on every call, not only in tests.
   if(projectionDifferences(projectPrepared(prepared),projectCli(cli,prepared.output.schema?.schema)).length)return refuse('LOCAL_CONTEXT_MISMATCH');
+  // LC2: in a 'shared' run every request starts with the same run context; the role's instructions and input follow it.
+  const ctx=options.shared?await options.shared():null;
+  if(ctx){const original=cli;cli=sharedLayout(original,prepared,ctx,options.role);if(sharedLayoutDifferences(cli,original,prepared,ctx,options.role).length)return refuse('LOCAL_CONTEXT_MISMATCH');}
+  // LC6: in a shared run the effort follows the stage (frozen with the run context), after the layout checks above.
+  const stage=ctx&&options.stage&&!prepared.reasoning.disabled?options.stage:undefined;if(stage)cli={...cli,effort:stageEffort(stage,ctx!.stageEffort)};
+  const skillsUsed=ctx?[...ctx.holds.skills,...(options.role?ctx.roleSkills?.[options.role]??[]:[]).map(s=>s.id)]:[];
+  // LC3/LC4: a shared run's conversations are persisted; a continuation sends only what the history does not hold yet.
+  const plan=ctx&&options.session?await options.session():null,fullShared=cli;
+  let conversation:LocalTextDetails['conversation']|undefined=ctx&&options.session?{kind:plan?.condensed?'condensed':'new'}:undefined;
+  if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode}),prepared,ctx,plan,options.role);if(stage)cli={...cli,effort:stageEffort(stage,ctx.stageEffort)};conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
+  const persist=!!conversation;let resume=plan&&!plan.condensed&&plan.resume?{resume:plan.resume,fork:plan.fork}:null;
   const recordPath=options.record?await options.record(prepared):undefined;
-  const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=join(dir,'work');
+  const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=setup.workDir??join(dir,'work');
   try{
-   await mkdir(work);const systemFile=join(dir,'system.txt'),mcpFile=join(dir,'mcp.json');
+   await mkdir(work,{recursive:true});const systemFile=join(dir,'system.txt'),mcpFile=join(dir,'mcp.json');
    await writeFile(systemFile,cli.systemPrompt,{mode:0o600});await writeFile(mcpFile,'{"mcpServers":{}}');
-   const argv=cliArgs({bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:setup.isolation,...(cli.jsonSchema?{jsonSchema:cli.jsonSchema}:{}),...(cli.effort?{effort:cli.effort}:{})});
+   // A stored conversation is resumed (and branched); a missing one (another device, cleared history) starts again once.
+   let r:Awaited<ReturnType<typeof runCli>>,leak:string|undefined;const stop=new AbortController();
+   for(let attempt=0;;attempt++){
+   const argv=cliArgs({bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:persist?{...setup.isolation,noSessionPersistence:false}:setup.isolation,...(resume?{resume:resume.resume,forkSession:resume.fork}:{}),...(setup.turnLimit?{maxTurns:cli.jsonSchema?TURN_LIMIT.schema:TURN_LIMIT.plain}:{}),...(cli.jsonSchema?{jsonSchema:cli.jsonSchema}:{}),...(cli.effort?{effort:cli.effort}:{})});
    // Same time limits as the OpenRouter path for the same snapshot.
    const timeoutMs=cfg.stream?Math.max(1,Math.min(cfg.timeoutMs??600000,1800000)):Math.max(1,Math.min(cfg.timeoutMs??Math.max(100000,60000+cfg.maxOutputTokens*16),900000));
    // A leaked tool, MCP server or API key ends the call at once: the answer would not be comparable.
-   const stop=new AbortController();let leak:string|undefined;const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
-   const r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cli.maxOutputTokens)}),stdin:streamUserMessage(cli.parts),timeoutMs,signal:stop.signal,
+   const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
+   r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cli.maxOutputTokens)}),stdin:streamUserMessage(cli.parts),timeoutMs,signal:stop.signal,
     onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,cli.jsonSchema!==undefined))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
    options.signal?.removeEventListener('abort',relay);
+   if(attempt===0&&resume&&r.outcome==='failed'&&/no conversation found/i.test(`${r.text??''} ${r.stderr}`)){cli=fullShared;resume=null;conversation={kind:'restarted'};continue;}
+   break;}
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{})};
+    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};
