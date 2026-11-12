@@ -238,3 +238,20 @@ test('LC6: a shared request uses its stage effort from the frozen context; fresh
  assert.equal(effortIn((await argvOf('create',{shared:async()=>ctx,role:'designer',stage:'design-create'})).argv),'high');
  assert.equal(effortIn((await argvOf('fresh',{role:'designer',stage:'design-revise'})).argv),'high','no run context: the role effort stays');
 });
+
+import {abReport,abMarkdown,blindOrder,AB_TARGETS} from '../packages/agents/ab-report';
+test('LC7: blind A/B labels, per-role and total numbers, and the targets checked only when revealed', ()=>{
+ const call=(role:string,u:Record<string,number>,usd:number)=>localCallUsage({role,usage:local(u,{apiEquivalentUsd:usd})})!;
+ const fresh={runId:'11111111-1111-4111-8111-111111111111',contextMode:'fresh' as const,wallMs:30*60000,calls:[call('strategy',{input_tokens:40000,output_tokens:3000},0.4),call('designer',{input_tokens:90000,output_tokens:6000},0.9),call('designer',{input_tokens:95000,output_tokens:5000},0.9)]};
+ const shared={runId:'22222222-2222-4222-8222-222222222222',contextMode:'shared' as const,wallMs:18*60000,calls:[call('strategy',{input_tokens:2000,cache_creation_input_tokens:30000,output_tokens:3000},0.2),call('designer',{input_tokens:3000,cache_read_input_tokens:90000,output_tokens:5000},0.15),call('designer',{input_tokens:2000,cache_read_input_tokens:95000,output_tokens:4000},0.14)]};
+ assert.deepEqual(blindOrder(fresh.runId,shared.runId),blindOrder(shared.runId,fresh.runId),'A and B do not depend on the order chosen');
+ const blind=abReport(fresh,shared),again=abReport(shared,fresh);
+ assert.equal(blind.modes,undefined);assert.equal(blind.targets,undefined,'nothing tells which is which before reveal');
+ assert.deepEqual(blind.sides.map(s=>s.totals.calls),again.sides.map(s=>s.totals.calls));
+ const open=abReport(fresh,shared,true),sharedSide=open.sides.find(s=>open.modes![s.label]==='shared')!;
+ assert.equal(sharedSide.byRole.find(r=>r.role==='designer')!.totals.calls,2);
+ assert.ok(open.targets!.cachedShare>=AB_TARGETS.cachedShare&&open.targets!.cachedShareMet);
+ assert.ok(Math.abs(open.targets!.costRatio!-0.49/2.2)<1e-9);assert.ok(open.targets!.costRatioMet);
+ const md=abMarkdown(open);assert.match(md,/\| \*\*Total\*\* \| 3 \| 3 \| 18 min/);assert.match(md,/target ≥ 70%: met/);assert.match(md,/target ≤ 40%: met/);
+ assert.equal(abReport(fresh,{...fresh,runId:shared.runId},true).comparable,false,'two fresh runs are not an A/B of the context');
+});

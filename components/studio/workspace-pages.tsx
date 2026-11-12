@@ -6,6 +6,7 @@ import {ProviderReceipts} from "./provider-receipts";
 import {LocalModePanel} from "./local-mode-panel";
 import {LocalRoleAverages} from "./local-usage";
 import {SkillsPanel} from "./skills-panel";
+import {LocalCompare} from "./local-compare";
 import {useState} from "react";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
@@ -29,7 +30,7 @@ export function ModelsPage(){const {data,error,refresh}=useShared<{agents:AgentS
  const outdated=data?Object.entries(data.usage??{}).filter(([,u])=>u.instructionsOutdated).map(([role])=>role):[];
  return <><div className="page-heading"><div><p className="eyebrow">THE TEAM BEHIND THE WORK</p><h1>Models & agents</h1><p>The single source of models for every role, stored in Supabase.</p></div><Button disabled={applying||!outdated.length} onClick={async()=>{setApplying(true);try{const r=await studioRequest<{message:string;changed?:{role:string;before:string[];after:string[]}[]}>("/api/studio/agents/preset","POST");setMessage(r.message);setChanged(r.changed??[]);refresh();}catch(e){setMessage(e instanceof Error?e.message:"Could not update instructions.");}finally{setApplying(false);}}}>{applying?"Updating…":outdated.length?`Update instructions to ${data?.instructionVersion} (${outdated.length})`:"Instructions are current"}</Button></div>
  {error&&<p role="alert">{error}</p>}{data&&!data.providerConfigured&&<p className="notice">OpenRouter is not configured on the server.</p>}
- <LocalRoleAverages/><SkillsPanel/>
+ <LocalRoleAverages/><LocalCompare/><SkillsPanel/>
  {data&&<p className="notice">{data.modelsFollowTab?"The model saved here is used by every request that has not started yet, including campaigns already running. Requests already priced or running finish on the model they started with. Instructions, output limits and step caps apply to new runs. Updating instructions never changes models.":"Running campaigns still use the models frozen when they started. Apply migration 20261101000200 in Settings so that steps that have not started use the models saved here."}</p>}<p role="status">{message}</p>{changed.length>0&&<section className="agent-changes" aria-label="What changed"><h2>What changed</h2><p>Priorities changed for {changed.map(c=>c.role).join(', ')}.</p><ul>{changed.map(c=><li key={c.role}><strong>{c.role}</strong>: {c.after.length?`now leads with “${c.after[0]}”`:'no ordered priorities'}{c.before.length?'':' (before: none)'}</li>)}</ul></section>}
  <div className="shared-assets-grid">{data&&agentRoles.map(role=>{const agent=data.agents.find(a=>a.role===role),unavailable=['video','model3d'].includes(role),usage=data.usage?.[role];const models=data.models.filter(m=>role==='image'?m.outputModalities.includes('image'):m.outputModalities.length===1&&m.outputModalities[0]==='text').sort((a,b)=>a.name.localeCompare(b.name));return <section className="detail-panel" key={role}><h2>{role}</h2>{unavailable&&<Badge variant="outline">Generation not connected</Badge>}{usage?.instructionsOutdated&&<Badge variant="outline">Instructions differ from {data.instructionVersion}</Badge>}
  {usage&&<p>{usage.requirement}</p>}{usage?.problem&&!unavailable&&<p role="alert">This model cannot work in this role: {usage.problem}</p>}
