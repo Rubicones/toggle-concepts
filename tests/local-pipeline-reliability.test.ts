@@ -23,3 +23,24 @@ test('directions are worked on side by side on a Local device, one at a time oth
  process.env.STUDIO_DIRECTOR_PARALLEL='9';assert.equal(directorParallel({schema:false}),1,'out of range: the default');
  if(before===undefined)delete process.env.STUDIO_DIRECTOR_PARALLEL;else process.env.STUDIO_DIRECTOR_PARALLEL=before;
 });
+
+import {cliTimeoutMs} from '../apps/local-runner/local-claude/transport';
+test('a Local answer gets at least fifteen minutes: thinking and a large context are not in the answer length', ()=>{
+ assert.equal(cliTimeoutMs({maxOutputTokens:8000}),900000,'visual-direction stopped at 188 s before');
+ assert.equal(cliTimeoutMs({maxOutputTokens:64000}),1084000);
+ assert.equal(cliTimeoutMs({maxOutputTokens:8000,timeoutMs:120000}),120000,'an explicit limit still applies');
+ assert.equal(cliTimeoutMs({maxOutputTokens:8000,timeoutMs:9e9}),1800000);
+ assert.equal(cliTimeoutMs({maxOutputTokens:8000,stream:true}),600000);
+});
+
+import {runCli} from '../packages/agents/claude-cli.local';
+import {fakeBin} from './local-chat-shaped.test';
+test('a working answer is never cut for being long; a silent, stuck process is ended', async()=>{
+ const run=async(scenario:string,idleMs:number|undefined,timeoutMs:number)=>{const bin=await fakeBin(scenario);return runCli({bin,argv:[],cwd:process.cwd(),env:process.env,stdin:'{}\n',timeoutMs,...(idleMs?{idleMs}:{})});};
+ const slow=await run('slowstream',300,8000);
+ assert.equal(slow.outcome,'succeeded','pieces kept arriving: about a second of work with a 0.3 s silence limit');
+ const stuck=await run('stall',300,8000);
+ assert.equal(stuck.failure,'CLI_STALLED');assert.ok(stuck.durationMs<4000,'ended by the silence limit, long before the total limit');
+ const quiet=await run('hang',300,1500);
+ assert.equal(quiet.failure,'CLI_TIMEOUT','a CLI that never streamed is bounded by the total limit only');
+});

@@ -56,3 +56,19 @@
 - `tests/local-pipeline-reliability.test.ts`: 2/2.
 - Director, designer, Local, guided and workflow suites: 345 pass, 1 fail ("AD browser flow…", also on `main`).
 - All migrations apply on a temporary Postgres.
+
+## 7. Follow-up (same day): Local runs are bounded by tokens and requests, not by the clock
+
+- **Symptom:** the planning step visual-direction stopped with `CLI_TIMEOUT` ("Cost unresolved"). Earlier, draft roles stopped on "approved working time is used up".
+- **Cause:** the Local path reused OpenRouter's time limits. A plain request got 60 s + 16 ms per output token (188 s for visual-direction), although Claude Code also thinks and reads a large context. Draft roles had a working-time allowance (2–6 minutes).
+- **Change:**
+  - **What bounds a Local request:** its output-token limit, and the role's token and request allowances (enforced in the database). Unchanged.
+  - **Time is only a guard against a stuck process:**
+    - `packages/agents/claude-cli.local.ts`: `idleMs` — once the CLI has streamed its first piece, five minutes without any event ends it (`CLI_STALLED`). A working answer keeps streaming and is never cut for being long. A CLI that does not stream is bounded by the total limit only.
+    - `transport.ts`: requests ask for partial messages; `cliTimeoutMs` — total limit at least 15 minutes, at most 30; one more try after `CLI_TIMEOUT` or `CLI_STALLED` (recorded as `retriedAfterTimeout`).
+  - `director/worker.ts`: `withoutTimeLimits` — in a Local run a role's working-time allowance is not a limit. The saved quote is not modified; OpenRouter runs keep their time allowances.
+- **Verification:**
+  - typecheck and lint pass;
+  - `tests/local-pipeline-reliability.test.ts`: a long streaming answer succeeds past the silence limit; a silent stuck process ends as `CLI_STALLED`; a non-streaming CLI is bounded by the total limit;
+  - director, designer, Local, guided and workflow suites: 366 pass, 1 existing failure ("AD browser flow…").
+  - Not checked against the live CLI: that it streams pieces while thinking. If it does not, the silence limit never arms and only the total limit applies.

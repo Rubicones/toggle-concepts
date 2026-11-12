@@ -19,6 +19,10 @@ process.stdin.on('end',()=>{
  const tools=[...(schema||scenario==='unexpected-structured-tool'?['StructuredOutput']:[]),...(leak?['Bash']:[])];
  out({type:'system',subtype:'init',session_id:sessionId,model:process.env.FAKE_CLAUDE_MODEL??'claude-sonnet-test',tools,mcp_servers:leak||scenario==='mcp-only'?[{name:'canary',status:'connected'}]:[],apiKeySource:process.env.FAKE_CLAUDE_KEY_SOURCE??'none',claude_code_version:'9.9.9'});
  if(scenario==='hang'){setInterval(()=>{},1000);return;}
+ // Starts streaming, then goes silent for good (a stuck process).
+ if(scenario==='stall'){out({type:'stream_event',event:{type:'content_block_delta'}});setInterval(()=>{},1000);return;}
+ // Keeps streaming pieces for longer than the silence limit, then answers (a long but working answer).
+ if(scenario==='slowstream'){let n=0;const t=setInterval(()=>{out({type:'stream_event',event:{type:'content_block_delta'}});if(++n===8){clearInterval(t);out({type:'assistant',message:{content:[{type:'text',text:'done'}]}});out({type:'result',subtype:'success',is_error:false,result:'done',usage:{input_tokens:1,output_tokens:1},num_turns:1,session_id:sessionId});process.exit(0);}},120);return;}
  if(scenario==='noresult'){out({type:'assistant',message:{content:[{type:'text',text:'partial'}]}});process.exit(0);}
  const usage={input_tokens:120,output_tokens:30,cache_creation_input_tokens:0,cache_read_input_tokens:0};
  if(scenario==='limit'){out({type:'result',subtype:'success',is_error:true,result:"You've hit your usage limit · resets 5pm",usage,num_turns:1,session_id:'s1'});process.exit(1);}
