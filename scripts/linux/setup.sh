@@ -15,10 +15,13 @@ SUDO=$([ "$(id -u)" = 0 ] && echo "" || echo sudo)
 export DEBIAN_FRONTEND=noninteractive
 step "System packages"
 $SUDO apt-get update -qq
-$SUDO apt-get install -y -qq git curl ca-certificates xz-utils unzip bubblewrap \
+$SUDO apt-get install -y -qq git curl ca-certificates xz-utils unzip bubblewrap ffmpeg \
   libnss3 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
   libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 fonts-noto-core fonts-noto-color-emoji wslu >/dev/null || \
-  $SUDO apt-get install -y -qq git curl ca-certificates xz-utils unzip bubblewrap libnss3 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 fonts-noto-core fonts-noto-color-emoji >/dev/null
+  $SUDO apt-get install -y -qq git curl ca-certificates xz-utils unzip bubblewrap ffmpeg libnss3 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 fonts-noto-core fonts-noto-color-emoji >/dev/null
+
+# Pictures and uploads are checked with ffprobe/ffmpeg before use (packages/media/inspect.local.ts).
+ffprobe -version >/dev/null 2>&1 && ffmpeg -version >/dev/null 2>&1 && echo "media tools ok" || { echo "ffmpeg/ffprobe are missing: pictures cannot be checked." >&2; exit 1; }
 
 step "Agent sandbox check (bubblewrap)"
 bwrap --unshare-all --die-with-parent --ro-bind / / --dev /dev --proc /proc true && echo "sandbox ok"
