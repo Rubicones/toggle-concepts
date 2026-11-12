@@ -70,8 +70,10 @@ function plainStartError(error:unknown,index:number):Error{
  return new ApiError(409,error.message.split(':')[0].slice(0,60)||'DIRECTOR_INPUT_INVALID',messages[error.message]??`${n} could not be prepared (${error.message.slice(0,200)}). Nothing was charged.`);
 }
 /** directions: build only the first N ordered directions (e.g. one for a cheaper test), or directionIndices for specific 0-based directions; omitted = all ordered. */
-/** pipeline 'designer' (designer pipeline plan, point 4e): one designer per direction instead of director + coder. */
-export async function directorStart(campaignId:string,approval?:{quoteId:string;maxCostMicroUsd:number},rebuild=false,directionLimit?:number,directionIndices?:number[],pipeline:'director'|'designer'='director'){
+/** pipeline 'designer' (designer pipeline plan, point 4e): one designer per direction instead of director + coder.
+ * The default since 12 November 2026: the designer sees its own renders, settles a hero frame with the critic and
+ * revises what it sees; the director + coder pair designed and built without looking. 'director' stays selectable. */
+export async function directorStart(campaignId:string,approval?:{quoteId:string;maxCostMicroUsd:number},rebuild=false,directionLimit?:number,directionIndices?:number[],pipeline:'director'|'designer'='designer'){
  const saved=await draftContext(campaignId),protocol=await saved.admin.rpc('studio_director_protocol_version');schema(protocol.error);if(protocol.data!=='director@1')throw new ApiError(503,'M08_SCHEMA_REQUIRED','Enable the director workspace before starting a new draft.');
  const sizePolicy=await saved.admin.rpc('studio_draft_request_policy_version');if(sizePolicy.error||sizePolicy.data!=='draft-size@2')throw new ApiError(503,'DRAFT_SIZE_SCHEMA_REQUIRED','Apply migration 058 to align the worker and database request limits, then retry. No new allowance is needed for this update.');
  const designer=pipeline==='designer';if(designer&&!approval){const policy=await saved.admin.rpc('studio_designer_policy_version');if(policy.error||policy.data!=='designer@1')throw new ApiError(503,'DESIGNER_SCHEMA_REQUIRED','Apply the designer update (migration 20261103000300), then review the price again.');}

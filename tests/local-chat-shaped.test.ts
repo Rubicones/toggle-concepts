@@ -178,7 +178,9 @@ test('LC5: skills are short principles: no examples, styles or names, within the
  const skills=readSkills();assert.ok(skills.length>=1);
  for(const s of skills){
   assert.doesNotMatch(s.text,/for example|e\.g\.|such as|like this|in the style of|\binspired by\b/i,`${s.id}: principles only, no examples`);
-  assert.doesNotMatch(s.text,/https?:|®|™|\b(Helvetica|Arial|Inter|Roboto|Futura|Garamond|Material|Bootstrap|Tailwind)\b/i,`${s.id}: no font, brand or design-system names`);
+  assert.doesNotMatch(s.text,/https?:|®|™/i,`${s.id}: no links or marks`);
+  // Names are capitalised; the plain words 'material' and 'inter' are ordinary vocabulary.
+  assert.doesNotMatch(s.text,/\b(Helvetica|Arial|Inter|Roboto|Futura|Garamond|Material Design|Bootstrap|Tailwind)\b/,`${s.id}: no font, brand or design-system names`);
   assert.ok(s.tokens<=SKILL_TOKEN_LIMIT,`${s.id} within ${SKILL_TOKEN_LIMIT} tokens`);assert.ok(s.purpose&&s.title&&s.version);
  }
  assert.ok(skills.reduce((n,s)=>n+s.tokens,0)<=ROLE_SKILLS_TOKEN_LIMIT,'all skills together fit one role');
@@ -187,7 +189,8 @@ test('LC5: skills are short principles: no examples, styles or names, within the
 });
 
 test('LC5: common skills join the shared prefix; role skills follow the role instructions; the prefix stays identical', async()=>{
- const skills=readSkills(),[a,b]=skills;
+ // Two skills with no default roles, so only the owner's attachments decide.
+ const skills=readSkills().slice(0,2).map(x=>({...x,defaultRoles:[]})),[a,b]=skills;
  const attachments=[...SKILL_ROLES.map(role=>({skill_id:a.id,role})),{skill_id:b.id,role:'designer'}];
  const {common,byRole}=splitSkills(skills,attachments);
  assert.deepEqual(common.map(s=>s.id),[a.id]);assert.deepEqual(byRole.designer.map(s=>s.id),[b.id]);assert.equal(byRole.critic,undefined);
@@ -209,7 +212,7 @@ test('LC5: common skills join the shared prefix; role skills follow the role ins
 test('LC5: a frozen run keeps its skills when attachments change later', async()=>{
  process.env.TOGGLE_HOME=await mkdtemp(join(tmpdir(),'lc5-home-'));
  const {freezeRunContext}=await import('../apps/local-runner/local-claude/run-context');
- const skills=readSkills(),before=splitSkills(skills,SKILL_ROLES.map(role=>({skill_id:skills[0].id,role}))),after=splitSkills(skills,[]);
+ const skills=readSkills().slice(0,1).map(x=>({...x,defaultRoles:[]})),before=splitSkills(skills,SKILL_ROLES.map(role=>({skill_id:skills[0].id,role}))),after=splitSkills(skills,[]);
  const frozen=await freezeRunContext('run-5',buildRunContext({briefText:BRIEF,brandText:BRAND,commonSkills:before.common}));
  const kept=await freezeRunContext('run-5',buildRunContext({briefText:BRIEF,brandText:BRAND,commonSkills:after.common}));
  assert.deepEqual(kept.holds.skills,[skills[0].id]);assert.equal(kept.sha256,frozen.sha256);
@@ -255,4 +258,20 @@ test('LC7: blind A/B labels, per-role and total numbers, and the targets checked
  assert.ok(Math.abs(open.targets!.costRatio!-0.49/2.2)<1e-9);assert.ok(open.targets!.costRatioMet);
  const md=abMarkdown(open);assert.match(md,/\| \*\*Total\*\* \| 3 \| 3 \| 18 min/);assert.match(md,/target ≥ 70%: met/);assert.match(md,/target ≤ 40%: met/);
  assert.equal(abReport(fresh,{...fresh,runId:shared.runId},true).comparable,false,'two fresh runs are not an A/B of the context');
+});
+
+test('craft skills are attached by default; the owner\'s saved choice wins, including "no role"', ()=>{
+ const skills=readSkills(),byId=(id:string)=>skills.find(x=>x.id===id)!;
+ const untouched=splitSkills(skills,[]);
+ assert.ok(untouched.common.some(x=>x.id==='brand-character')&&untouched.common.some(x=>x.id==='ad-idea'),'brand reading and the ad idea reach every role');
+ for(const id of ['stopping-power','type-as-voice','frame-composition','default-look','final-check'])assert.ok(untouched.byRole.designer.some(x=>x.id===id)&&untouched.byRole.critic.some(x=>x.id===id),`${id} reaches the designer and the critic`);
+ assert.ok(!untouched.byRole.research?.some(x=>x.id==='stopping-power'),'design craft does not go to research');
+ assert.deepEqual(byId('brand-character').defaultRoles.length,SKILL_ROLES.length);
+ const detached=splitSkills(skills,[{skill_id:'brand-character',role:'none'}]);
+ assert.ok(!detached.common.some(x=>x.id==='brand-character')&&!Object.values(detached.byRole).flat().some(x=>x.id==='brand-character'),'detached by the owner: stays detached');
+ const narrowed=splitSkills(skills,[{skill_id:'ad-idea',role:'strategy'}]);
+ assert.deepEqual(Object.entries(narrowed.byRole).filter(([,l])=>l.some(x=>x.id==='ad-idea')).map(([r])=>r),['strategy']);
+ // Every role's own skills fit the per-role limit, and the common ones stay small enough for the shared prefix.
+ for(const [role,list] of Object.entries(untouched.byRole))assert.ok(list.reduce((n,x)=>n+byId(x.id).tokens,0)<=ROLE_SKILLS_TOKEN_LIMIT,role);
+ assert.ok(untouched.common.reduce((n,x)=>n+byId(x.id).tokens,0)<=3000,'common skills stay a small part of the shared context');
 });
