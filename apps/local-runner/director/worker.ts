@@ -76,6 +76,14 @@ import type {Resource} from '../../../packages/director/types';
 export {questionForFailure};
 export type DirectorClaim={block:{id:string;run_id:string;round_id:string;campaign_id:string;snapshot:BlockSnapshot;approved_resource_ids:string[]};work:{direction_id:string;iteration_id:string;lease_token:number;state:WorkState}};
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
+/** Local Claude runs: a role's approved working time is not a limit (a day stands for "none"). Token, request and cost
+ * allowances are unchanged, and they are what the database enforces. The saved quote is not modified. */
+export const LOCAL_WORKING_TIME_MS=24*3600*1000;
+export function withoutTimeLimits<T extends {roles:Record<string,{timeMs:number}|undefined>}>(estimate:T,local:boolean):T{
+ if(!local||!estimate)return estimate;const copy=structuredClone(estimate);
+ for(const role of Object.values(copy.roles))if(role)role.timeMs=LOCAL_WORKING_TIME_MS;
+ return copy;
+}
 export async function executeDirector(claim:DirectorClaim,device:string,local:LocalRuntime={schema:false}){
  const admin=adminClient(),{block,work}=claim,snapshot=block.snapshot,state=structuredClone(work.state),input=structuredClone(snapshot.inputs.find(i=>i.directionId===work.direction_id)!);if(!input)throw new Error('DIRECTOR_INPUT_MISSING');
  // Local mode: the run's frozen mode picks the transport; a Local request has its own identity (mode and executed model).
@@ -93,7 +101,8 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
  delete state.pausedAt;delete state.reviewStartedAt;
 
  let saveQueue=Promise.resolve();
- const estimate=snapshot.estimates[input.directionId],save=async(status='running',question:ADQuestion|null=null)=>{if(status==='review')state.reviewStartedAt=Date.now();const saved=structuredClone(state);saveQueue=saveQueue.catch(()=>{}).then(async()=>{checked(await admin.rpc('studio_checkpoint_director',{target:block.id,direction:input.directionId,device,token:work.lease_token,new_state:saved,next_status:status,question_data:question}));});await saveQueue;};
+ // Local runs are bounded by tokens and requests, never by the clock: waiting for the subscription costs nothing.
+ const estimate=withoutTimeLimits(snapshot.estimates[input.directionId],execution.mode==='local_claude'),save=async(status='running',question:ADQuestion|null=null)=>{if(status==='review')state.reviewStartedAt=Date.now();const saved=structuredClone(state);saveQueue=saveQueue.catch(()=>{}).then(async()=>{checked(await admin.rpc('studio_checkpoint_director',{target:block.id,direction:input.directionId,device,token:work.lease_token,new_state:saved,next_status:status,question_data:question}));});await saveQueue;};
  // A short activity log the AD (and support) can read: every request, its outcome, retries, wrap-up and stops.
  const note=(text:string)=>{state.events=[...(state.events??[]),{at:Date.now(),text:text.slice(0,300)}].slice(-30);};
  note(`Work started (phase: ${state.phase??'director'}${state.wrapUp?', wrap-up requested':''}).`);
@@ -244,7 +253,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      const backup=await staticSourceContext(folder,input.iterationId),loop={turn:0,startedAt:Date.now(),transcript:[] as {from:'agent'|'tool';text:string}[],complete:false},notes=[...(state.notes??[]),{recipient:'assembler' as const,text:note}];
      const tools=liveTools(folder,input,Date.now()+180000,preview),restore=async()=>{for(const file of backup.files)await writeFile(resolve(folder,file.path),file.source);await tools.execute({tool:'bundle'}).catch(()=>undefined);};
      try{
-      await assembleStatic({state:loop,maxTurns:Math.min(2,remaining),timeMs:180000,
+      await assembleStatic({state:loop,maxTurns:Math.min(2,remaining),timeMs:execution.mode==='local_claude'?LOCAL_WORKING_TIME_MS:180000,
        filesContext:async()=>staticSourceContext(folder,input.iterationId),
        call:async(l,mode,currentFiles,construction)=>{await controls();return (await call('assembler',JSON.stringify({toolResults:l.transcript,...(currentFiles?.length?{currentFiles}:{}),...(construction?{construction}:{})}),withCreativeHandoff(input,'coder',staticCoderInstructionsFor(input.brief))+(mode==='tools'?' Return calls using write, read, typecheck, bundle, listResources and finish. Image render tools are unavailable.':''),mode==='files'?staticFilesSchema:staticToolsSchema,assemblerContext(input,design,[...input.assets,...state.catalog!],notes),{turn:l.turn,mode,live:true,review:kind,round},images)).text;},
        tool:async action=>events.tool(900000+(round*10+(kind==='gate'?0:kind==='self'?3:5))*1000+loop.transcript.length,action,()=>tools.execute(action)),save:async()=>{}});

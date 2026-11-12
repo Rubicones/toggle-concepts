@@ -49,6 +49,8 @@ export type LocalTextDetails={
  skills?:string[];
  /** LC6: the stage whose effort this request used. */
  stage?:StageId;
+ /** The first try did not answer in time; this is the second. */
+ retriedAfterTimeout?:boolean;
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
 
@@ -60,6 +62,17 @@ function usageOf(r:CliResult,d:Omit<LocalTextDetails,'events'|'stderr'>){
  return r.usage?{prompt_tokens:(u.input_tokens??0)+cacheRead+cacheWrite,completion_tokens:u.output_tokens??0,prompt_tokens_details:{cached_tokens:cacheRead,cache_write_tokens:cacheWrite},_local:d}:{_local:d};
 }
 
+/** A Local request is bounded by what it may write (its output-token limit) and by the role's token and request
+ * allowances. Time is only a guard against a stuck process: five minutes of complete silence once the answer has
+ * started streaming, and a total limit as the last resort. */
+export const CLI_SILENCE_MS=300000;
+/** How long one Local answer may take. The OpenRouter limit for a plain request is sized by its answer length, but
+ * Claude Code also spends time thinking (not counted in the answer) and reading a large context, so a Local request
+ * gets at least fifteen minutes; an explicit limit on the request still applies, up to thirty minutes. */
+export function cliTimeoutMs(cfg:Pick<TextSnapshot,'stream'|'timeoutMs'|'maxOutputTokens'>){
+ if(cfg.stream)return Math.max(1,Math.min(cfg.timeoutMs??600000,1800000));
+ return Math.max(1,Math.min(cfg.timeoutMs??Math.max(900000,60000+cfg.maxOutputTokens*16),1800000));
+}
 export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSignal;record?:(p:PreparedTextRequest)=>Promise<string>;onEvent?:(e:CliEvent)=>void;
  /** LC2: the frozen run context of a 'shared' run; null keeps the fresh layout (for example before the brand is accepted). */
  shared?:()=>Promise<RunContext|null>;
@@ -95,22 +108,24 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    await mkdir(work,{recursive:true});const systemFile=join(dir,'system.txt'),mcpFile=join(dir,'mcp.json');
    await writeFile(systemFile,cli.systemPrompt,{mode:0o600});await writeFile(mcpFile,'{"mcpServers":{}}');
    // A stored conversation is resumed (and branched); a missing one (another device, cleared history) starts again once.
-   let r:Awaited<ReturnType<typeof runCli>>,leak:string|undefined;const stop=new AbortController();
+   let r:Awaited<ReturnType<typeof runCli>>,leak:string|undefined,timedOut=false;const stop=new AbortController();
    for(let attempt=0;;attempt++){
-   const argv=cliArgs({bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:persist?{...setup.isolation,noSessionPersistence:false}:setup.isolation,...(resume?{resume:resume.resume,forkSession:resume.fork}:{}),...(setup.turnLimit?{maxTurns:cli.jsonSchema?TURN_LIMIT.schema:TURN_LIMIT.plain}:{}),...(cli.jsonSchema?{jsonSchema:cli.jsonSchema}:{}),...(cli.effort?{effort:cli.effort}:{})});
-   // Same time limits as the OpenRouter path for the same snapshot.
-   const timeoutMs=cfg.stream?Math.max(1,Math.min(cfg.timeoutMs??600000,1800000)):Math.max(1,Math.min(cfg.timeoutMs??Math.max(100000,60000+cfg.maxOutputTokens*16),900000));
+   const argv=cliArgs({includePartialMessages:true,bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:persist?{...setup.isolation,noSessionPersistence:false}:setup.isolation,...(resume?{resume:resume.resume,forkSession:resume.fork}:{}),...(setup.turnLimit?{maxTurns:cli.jsonSchema?TURN_LIMIT.schema:TURN_LIMIT.plain}:{}),...(cli.jsonSchema?{jsonSchema:cli.jsonSchema}:{}),...(cli.effort?{effort:cli.effort}:{})});
+   // Streamed requests keep the OpenRouter limits; plain ones get the time Claude Code needs to think (cliTimeoutMs).
+   const timeoutMs=cliTimeoutMs(cfg);
    // A leaked tool, MCP server or API key ends the call at once: the answer would not be comparable.
    const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
-   r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cli.maxOutputTokens)}),stdin:streamUserMessage(cli.parts),timeoutMs,signal:stop.signal,
+   r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cli.maxOutputTokens)}),stdin:streamUserMessage(cli.parts),timeoutMs,idleMs:CLI_SILENCE_MS,signal:stop.signal,
     onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,cli.jsonSchema!==undefined))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
    options.signal?.removeEventListener('abort',relay);
    if(attempt===0&&resume&&r.outcome==='failed'&&/no conversation found/i.test(`${r.text??''} ${r.stderr}`)){cli=fullShared;resume=null;conversation={kind:'restarted'};continue;}
+   // An answer that did not arrive in time cost nothing on the subscription: ask once more before giving up.
+   if(attempt===0&&(r.failure==='CLI_TIMEOUT'||r.failure==='CLI_STALLED')&&!options.signal?.aborted){timedOut=true;continue;}
    break;}
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{})};
+    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};

@@ -84,19 +84,26 @@ export type CliResult={
 const LIMIT=/usage limit|rate limit|limit reached|out of (?:extra )?usage|5-hour limit|weekly limit/i;
 
 /** Runs one call: spawn without a shell, write the message to stdin, read events until the terminal result. */
-export async function runCli(args:{bin:string;argv:string[];cwd:string;env:NodeJS.ProcessEnv;stdin:string;timeoutMs:number;signal?:AbortSignal;onEvent?:(e:CliEvent)=>void}):Promise<CliResult>{
+export async function runCli(args:{bin:string;argv:string[];cwd:string;env:NodeJS.ProcessEnv;stdin:string;timeoutMs:number;/** Silence limit: once the CLI has started streaming, this long without any event means it is stuck. */idleMs?:number;signal?:AbortSignal;onEvent?:(e:CliEvent)=>void}):Promise<CliResult>{
  const started=Date.now(),events:CliEvent[]=[];let stderr='',internalAttempts=0,result:CliEvent|undefined,init:CliResult['init'],partialText='';
  const child=spawn(args.bin,args.argv,{cwd:args.cwd,env:args.env,stdio:['pipe','pipe','pipe'],detached:process.platform!=='win32'});
  // Cancellation and the time limit end the whole process group, so no descendant keeps working.
  const kill=()=>{try{if(child.pid&&process.platform!=='win32')process.kill(-child.pid,'SIGTERM');else child.kill('SIGTERM');}catch{/* already gone */}};
- let reason:'cancelled'|'timeout'|undefined;
+ let reason:'cancelled'|'timeout'|'stalled'|undefined;
  const timer=setTimeout(()=>{reason='timeout';kill();},args.timeoutMs);
+ // A working answer keeps sending events (thinking and text arrive in pieces), however long it takes; a stuck process
+ // goes silent. The silence limit starts only after the first streamed piece, so a CLI that does not stream is
+ // bounded by the total limit alone.
+ let idle:NodeJS.Timeout|undefined,streamed=0;
+ const heard=()=>{if(!args.idleMs||!streamed)return;clearTimeout(idle);idle=setTimeout(()=>{reason='stalled';kill();},args.idleMs);};
  const abort=()=>{reason='cancelled';kill();};args.signal?.addEventListener('abort',abort,{once:true});
  child.stderr.on('data',c=>{if(stderr.length<16000)stderr+=String(c);});
  const lines=createInterface({input:child.stdout});
  lines.on('line',line=>{
   if(!line.trim())return;let e:CliEvent;try{e=JSON.parse(line);}catch{e={type:'unparsed',line:line.slice(0,2000)};}
-  events.push(e);args.onEvent?.(e);
+  // Streamed pieces are counted, not all kept: thousands of them would only fill memory and the saved diagnostics.
+  if(e.type==='stream_event'){streamed++;if(streamed<=20)events.push(e);}else events.push(e);
+  heard();args.onEvent?.(e);
   if(e.type==='system'&&e.subtype==='init')init={model:e.model as string,tools:e.tools as unknown[],mcpServers:e.mcp_servers as unknown[],apiKeySource:e.apiKeySource as string,cliVersion:(e.claude_code_version??e.version) as string|undefined,sessionId:e.session_id as string};
   if(e.type==='assistant'){const content=((e.message as {content?:{type:string;name?:string;text?:string}[]})?.content)??[];for(const c of content){if(c.type==='tool_use'&&c.name==='StructuredOutput')internalAttempts++;if(c.type==='text'&&c.text)partialText+=c.text;}}
   if(e.type==='result')result=e;
@@ -104,11 +111,11 @@ export async function runCli(args:{bin:string;argv:string[];cwd:string;env:NodeJ
  // Backpressure: wait for the pipe to drain before closing stdin.
  await new Promise<void>((done,fail)=>{child.stdin.on('error',()=>done());if(child.stdin.write(args.stdin))child.stdin.end(done);else child.stdin.once('drain',()=>child.stdin.end(done));child.once('error',fail);}).catch(()=>undefined);
  const exitCode=await new Promise<number|null>(done=>{child.once('close',code=>done(code));child.once('error',()=>done(null));});
- clearTimeout(timer);args.signal?.removeEventListener('abort',abort);
+ clearTimeout(timer);clearTimeout(idle);args.signal?.removeEventListener('abort',abort);
  const durationMs=Date.now()-started,base={events,stderr,durationMs,exitCode,internalAttempts,init};
  if(reason==='cancelled')return {...base,outcome:'cancelled',text:null,failure:'CANCELLED'};
  // A terminal result event establishes completion; an exit code alone does not.
- if(!result){const limited=LIMIT.test(stderr);return {...base,outcome:'unknown',text:partialText||null,failure:reason==='timeout'?'CLI_TIMEOUT':limited?'SUBSCRIPTION_LIMIT':'CLI_NO_RESULT',...(limited?{limitReached:true}:{})};}
+ if(!result){const limited=LIMIT.test(stderr);return {...base,outcome:'unknown',text:partialText||null,failure:reason==='timeout'?'CLI_TIMEOUT':reason==='stalled'?'CLI_STALLED':limited?'SUBSCRIPTION_LIMIT':'CLI_NO_RESULT',...(limited?{limitReached:true}:{})};}
  const isError=result.is_error===true,text=typeof result.result==='string'?result.result:null,limited=isError&&LIMIT.test(`${text??''} ${stderr}`);
  return {...base,outcome:isError?'failed':'succeeded',text,...(result.structured_output!==undefined?{structured:result.structured_output}:{}),
   usage:result.usage as CliResult['usage'],numTurns:result.num_turns as number|undefined,...(typeof result.total_cost_usd==='number'?{apiEquivalentUsd:result.total_cost_usd}:{}),stopReason:(result.stop_reason as string|null|undefined)??null,resultSubtype:result.subtype as string|undefined,isError,
