@@ -9,6 +9,7 @@ import css from "./brief-workspace.module.css";
 import { useRouter } from "next/navigation";
 import type { CampaignFlow } from "@/packages/contracts/campaign-flow";
 import Link from "next/link";
+import { localeCode, localeName } from "@/packages/contracts/locale-names";
 import { Button } from "@/components/ui/button";
 import { CopyBriefButton } from "./copy-brief-button";
 import { Badge } from "@/components/ui/badge";
@@ -392,7 +393,7 @@ function BriefEditor({
           ))}
         </div>
         <div className="brief-field-grid">
-          <AxisField label="Languages" hint="Language codes, comma separated: en-GB, de-DE, ru-RU" values={draft.locales} onChange={(v) => set("locales", v)} />
+          <LanguagePicker values={draft.locales} onChange={(v) => set("locales", v)} />
           <AxisField label="Lengths, seconds" hint="e.g. 15, 6" values={draft.durationsSeconds} onChange={(v) => set("durationsSeconds", v.map(Number).filter((n) => n > 0))} />
           <label>
             Opening hooks per video
@@ -643,6 +644,54 @@ function Section({ n, title, detail, disabled, children }: { n: number; title: s
       </legend>
       <p className={css.detail}>{detail}</p>
       {children}
+    </fieldset>
+  );
+}
+/** Languages the studio is asked for most often. Any other language is added by its code. */
+const COMMON_LOCALES = ["en-GB", "en-US", "de-DE", "fr-FR", "es-ES", "it-IT", "pt-BR", "pt-PT", "nl-NL", "pl-PL", "sv-SE", "da-DK", "nb-NO", "fi-FI", "cs-CZ", "tr-TR", "uk-UA", "ru-RU", "ar-SA", "he-IL", "hi-IN", "ja-JP", "ko-KR", "zh-CN"];
+const MAX_LOCALES = 8;
+/** Languages by clicking: the common ones as toggles, a rare one by its code. The order of selection is kept. */
+function LanguagePicker({ values, onChange }: { values: readonly string[]; onChange: (values: string[]) => void }) {
+  const [other, setOther] = useState(""), [note, setNote] = useState("");
+  const full = values.length >= MAX_LOCALES;
+  const toggle = (code: string) => onChange(values.includes(code) ? values.filter((v) => v !== code) : full ? [...values] : [...values, code]);
+  const add = () => {
+    const code = localeCode(other);
+    if (!code) return setNote("Use a language code such as el-GR or vi-VN.");
+    if (values.includes(code)) return setNote(`${localeName(code)} is already selected.`);
+    if (full) return setNote(`Up to ${MAX_LOCALES} languages.`);
+    onChange([...values, code]);
+    setOther("");
+    setNote("");
+  };
+  const extra = values.filter((v) => !COMMON_LOCALES.includes(v));
+  return (
+    <fieldset className="language-picker">
+      <legend>Languages</legend>
+      <div className="language-options" role="group" aria-label="Languages">
+        {[...COMMON_LOCALES, ...extra].map((code) => {
+          const on = values.includes(code);
+          return (
+            <button type="button" key={code} className="language-option" aria-pressed={on} disabled={!on && full} title={code} onClick={() => toggle(code)}>
+              {localeName(code)}
+            </button>
+          );
+        })}
+      </div>
+      <p className="muted" role="status">
+        {values.length ? `Selected, in order: ${values.map(localeName).join(", ")}.` : "Choose at least one language."}
+        {full ? ` Up to ${MAX_LOCALES}.` : ""}
+      </p>
+      <div className="language-other">
+        <label>
+          Another language, by code
+          <input value={other} maxLength={16} placeholder="el-GR" onChange={(e) => setOther(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
+        </label>
+        <Button type="button" variant="outline" disabled={!other.trim()} onClick={add}>
+          Add
+        </Button>
+      </div>
+      {note && <small role="alert">{note}</small>}
     </fieldset>
   );
 }
