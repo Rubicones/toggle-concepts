@@ -38,6 +38,7 @@ import {modelCatalog} from "../../packages/agents/catalog";
 import type {TextSnapshot} from "../../packages/agents/text-provider";
 import {roleReasoning,usesRoleEffort} from "../../packages/agents/effort";
 import {planningPlan} from "../../packages/agents/local-session";
+import {LOCAL_TEXT_RESERVATION_MICRO_USD} from "../../packages/agents/local-usage";
 import {stageOf} from "../../packages/agents/stage-effort";
 import {loadLocalRuntime,textExecutionFor,transportFor,sharedContextFor,planningPoints,subscriptionWaitUntil,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime,type TextExecution} from "./local-claude/runtime";
 import type {LocalTextReceipt} from "./local-claude/transport";
@@ -194,6 +195,8 @@ async function execute(claim:Claim){
    if(allowance.error&&!['42P01','PGRST205'].includes(allowance.error.code??''))throw new Error(allowance.error.message);
    requireRequestAllowance(reservation,allowance.data?.reservation_micro_usd??null);
   }
+  // A new Local request reserves the minimum (see LOCAL_TEXT_RESERVATION_MICRO_USD); an admitted one keeps its own.
+  if(execution.mode==='local_claude'&&!initial)reservation=LOCAL_TEXT_RESERVATION_MICRO_USD;
   protocolSchema=snapshot.responseSchema?.name??null;
   const vision=creative?await loadCreativeVision(creative.stage,creative.input,job.campaign_id,upstream):[...await loadBrandVision(snapshot as unknown as Record<string,unknown>,job.campaign_id),...await loadBrandSheetVision(snapshot as unknown as Record<string,unknown>)];
   if(stopping)throw new Error("LOCAL_PROCESS_STOPPING");
@@ -217,7 +220,7 @@ async function execute(claim:Claim){
    if(result.failure==="SUBSCRIPTION_LIMIT")waitUntil={until:await markSubscriptionLimit(),usage:result.usage};
    // No answer arrived (timed out, stalled or ended without a result): on the subscription that cost nothing, so the
    // step goes back to the queue instead of stopping the run with an unresolved cost.
-   else if(result.outcome!=="succeeded"&&["CLI_TIMEOUT","CLI_STALLED","CLI_NO_RESULT"].includes(result.failure??""))requeue={failure:result.failure!,usage:result.usage};
+   else if(result.outcome!=="succeeded"&&["CLI_TIMEOUT","CLI_STALLED","CLI_NO_RESULT","CLI_ERROR"].includes(result.failure??""))requeue={failure:result.failure!,usage:result.usage};
   }
   if(result.outcome==="succeeded"&&result.text){
    try{

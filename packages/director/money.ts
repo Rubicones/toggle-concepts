@@ -1,4 +1,5 @@
 import {billedInputTokens} from '../agents/cache-usage';
+import {LOCAL_TEXT_RESERVATION_MICRO_USD} from '../agents/local-usage';
 import {createHash} from 'node:crypto';
 import {canonicalJson} from '../contracts/common';
 import {textRequestQuote} from '../agents/text-quote';
@@ -64,7 +65,9 @@ export async function paidText(args:{identity:unknown;role:Exclude<Role,'resourc
   throw providerFailure(open?'PROVIDER_RECONCILIATION_REQUIRED':saved.error==='OUTPUT_TOKEN_LIMIT'?'OUTPUT_TOKEN_LIMIT':'SAVED_REQUEST_FAILED',open?'unknown':'failed');};
  if(prior&&prior.status!=='reserved')return await reuse(prior);
  if(args.snapshot.requestInputCap&&textRequestQuote(args.prompt,args.snapshot,'',args.images?.length??0).inputTokenBound>args.snapshot.requestInputCap)throw new Error('DRAFT_REQUEST_SIZE_CAP');
- const reservation=textRequestQuote(args.prompt,args.snapshot,'',args.images?.length??0).reservationMicroUsd;
+ // A Local request settles at zero: it reserves the minimum, so its API-equivalent price never uses up the role's or
+ // the run's money allowance (tokens and requests still do).
+ const reservation=args.localText?LOCAL_TEXT_RESERVATION_MICRO_USD:textRequestQuote(args.prompt,args.snapshot,'',args.images?.length??0).reservationMicroUsd;
  if(reservation>args.allowanceMicroUsd)throw Object.assign(new Error('ROLE_ALLOWANCE_EXHAUSTED'),{detail:`${args.role}: this request may cost up to $${(reservation/1e6).toFixed(2)}; $${(args.allowanceMicroUsd/1e6).toFixed(2)} of its allowance is left`});
  const step=prior??await args.ledger.reserve(id,args.role,args.prompt,args.snapshot,reservation);
  if(!await args.ledger.claim(step.id))throw new Error('PROVIDER_RECONCILIATION_REQUIRED');

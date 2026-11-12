@@ -44,3 +44,12 @@ test('a working answer is never cut for being long; a silent, stuck process is e
  const quiet=await run('hang',300,1500);
  assert.equal(quiet.failure,'CLI_TIMEOUT','a CLI that never streamed is bounded by the total limit only');
 });
+
+import {localTemporaryStop,LOCAL_RECOVERY_LIMIT} from '../packages/director/execution-failures';
+import {LOCAL_TEXT_RESERVATION_MICRO_USD} from '../packages/agents/local-usage';
+test('Local drafts continue by themselves after a text request that cost nothing; paid image stops still ask', ()=>{
+ for(const code of ['LOCAL_RESULT_MISSING','LOCAL_REQUEST_INTERRUPTED','LOCAL_REQUEST_LIVE','PROVIDER_RECONCILIATION_REQUIRED','SAVED_REQUEST_FAILED','CLI_TIMEOUT','CLI_STALLED'])assert.equal(localTemporaryStop(code),true,code);
+ for(const code of ['CREATIVE_IMAGE_RECONCILIATION_REQUIRED:outcome unknown','CREATIVE_IMAGE_FAILED:PROVIDER_400','RESOURCE_PERMISSION_REQUIRED','PROMPT_TOO_LONG','DRAFT_REQUEST_SIZE_CAP','ESTIMATE_EXCEEDS_RUN_LIMIT'])assert.equal(localTemporaryStop(code),false,code);
+ assert.ok(LOCAL_RECOVERY_LIMIT>=5&&LOCAL_RECOVERY_LIMIT<=20,'bounded');
+ assert.equal(LOCAL_TEXT_RESERVATION_MICRO_USD,1,'a Local text request reserves the minimum against money caps');
+});

@@ -8,6 +8,7 @@ import {modelCatalog} from '../../packages/agents/catalog';
 import {roleReasoning,usesRoleEffort} from '../../packages/agents/effort';
 import type {TextReceipt} from '../../packages/agents/text-provider';
 
+import {LOCAL_TEXT_RESERVATION_MICRO_USD} from '../../packages/agents/local-usage';
 import {textExecutionFor,transportFor,sharedContextFor,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime} from './local-claude/runtime';
 import type {LocalTextReceipt} from './local-claude/transport';
 import {fieldExtractionRequest,parseFieldResponse,splitBrandText} from '../../packages/brand/field-extraction';
@@ -49,7 +50,7 @@ export async function processBrandFieldAnalysis(device?:string,local:LocalRuntim
   // The mode frozen on this analysis decides the transport (plan §4); a mismatch stops before anything is reserved.
   const execution=await textExecutionFor(admin,'brand-analysis',analysis.id),transport=transportFor(execution,local,{shared:sharedContextFor(admin,execution,analysis.run_id),role:'brand-kit',stage:'supporting'});
   const snapshot={instructions:agent.instructions,maxOutputTokens,pricing:model,campaignContext:context,outputFormat:'json_schema',responseSchema,...(usesRoleEffort(agent.instructions)?roleReasoning('brand-kit',model,execution.mode):{disableReasoning:agent.model_id==='google/gemini-2.5-flash'}),stepCapMicroUsd:agent.step_cap_micro_usd,modelId:agent.model_id,requestPriceCapMicroUsd:analysis.request_cap_micro_usd,budgetScopeId:checkpoint?`budget-step-${analysis.run_id}-brand-kit`:null,brandFieldAnalysis:{analysisId:analysis.id,partId:part.id,page:part.page_no,sourceSha:file.source_sha}};
-  const step=await rpc('studio_begin_brand_read',{target_part:part.id,token:part.lease_token,request_key:randomUUID(),snapshot,prompt_text:prompt,reservation});submitted=true;
+  const step=await rpc('studio_begin_brand_read',{target_part:part.id,token:part.lease_token,request_key:randomUUID(),snapshot,prompt_text:prompt,reservation:execution.mode==='local_claude'?LOCAL_TEXT_RESERVATION_MICRO_USD:reservation});submitted=true;
   const result:TextReceipt=await transport(agent.model_id,prompt,snapshot,images,step.id);
   if(execution.mode==='local_claude'){await keepLocalDiagnostics(step.id,result as LocalTextReceipt).catch(()=>{});if(result.failure==='SUBSCRIPTION_LIMIT')await markSubscriptionLimit();}
   const read=result.text?parseFieldResponse(result.text,result.finishReason):{findings:[],more:false,partial:false,invalid:0},usedRole=usedMaterialRole(fileRole),roleRead=usedRole?{...read,findings:findingsForRole(usedRole,read.findings)}:read,parsed=componentsReady?roleRead:{...roleRead,findings:roleRead.findings.filter(f=>f.field!=='components')};
