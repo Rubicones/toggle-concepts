@@ -12,7 +12,7 @@ process.stdin.on('end',()=>{
  const texts=content.filter(c=>c.type==='text').map(c=>c.text),images=content.filter(c=>c.type==='image');
  const out=e=>process.stdout.write(JSON.stringify(e)+'\n');
  const system=(()=>{const i=args.indexOf('--system-prompt-file');return i>=0?readFileSync(args[i+1],'utf8'):'';})();
- if(process.env.FAKE_CLAUDE_RECORD)writeFileSync(process.env.FAKE_CLAUDE_RECORD,JSON.stringify({args,system,content,env:Object.keys(process.env).sort(),maxOutput:process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS??null}));
+ if(process.env.FAKE_CLAUDE_RECORD)writeFileSync(process.env.FAKE_CLAUDE_RECORD,JSON.stringify({args,system,content,cwd:process.cwd(),env:Object.keys(process.env).sort(),maxOutput:process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS??null}));
  const leak=scenario==='leak',schema=args.includes('--json-schema');
  const tools=[...(schema||scenario==='unexpected-structured-tool'?['StructuredOutput']:[]),...(leak?['Bash']:[])];
  out({type:'system',subtype:'init',session_id:'s1',model:process.env.FAKE_CLAUDE_MODEL??'claude-sonnet-test',tools,mcp_servers:leak||scenario==='mcp-only'?[{name:'canary',status:'connected'}]:[],apiKeySource:process.env.FAKE_CLAUDE_KEY_SOURCE??'none',claude_code_version:'9.9.9'});

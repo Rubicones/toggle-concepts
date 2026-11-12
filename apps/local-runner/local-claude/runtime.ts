@@ -27,7 +27,9 @@ export async function loadLocalRuntime(admin:SupabaseClient):Promise<LocalRuntim
  let setup:LocalCliSetup;try{setup=localSetupFrom(profile);}catch(error){return {schema,device,reason:(error as Error).message};}
  // A CLI updated since qualification needs a new check: its isolation and output can differ.
  const installed=await version(setup.bin);if(installed.split(/\s+/)[0]!==setup.cliVersion.split(/\s+/)[0])return {schema,device,reason:'LOCAL_CLI_CHANGED'};
- return {schema,device,setup};
+ // LC1: one fixed, empty working folder outside any repository for every call.
+ const workDir=join(toggleHome(),'local-claude','work');await mkdir(workDir,{recursive:true});
+ return {schema,device,setup:{...setup,workDir}};
 }
 
 /** The mode frozen on a scope; scopes from before the Local schema (no row, no table) are OpenRouter. */

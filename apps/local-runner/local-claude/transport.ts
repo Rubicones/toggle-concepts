@@ -13,12 +13,18 @@ import type {TextReceipt,TextSnapshot} from '../../../packages/agents/text-provi
 import type {CapabilityProfile} from './qualify';
 
 /** What a qualified device profile allows. Built once per runner start; a changed CLI needs a new qualification. */
-export type LocalCliSetup={bin:string;cliVersion:string;isolation:CliProfile['isolation'];sonnet:string;schemaMode:'cli'|'plain';visual:boolean;deviceId:string};
+export type LocalCliSetup={bin:string;cliVersion:string;isolation:CliProfile['isolation'];sonnet:string;schemaMode:'cli'|'plain';visual:boolean;deviceId:string;
+ /** LC1: the device's CLI accepts --max-turns (qualified). */
+ turnLimit?:boolean;
+ /** LC1: every call runs in this one empty folder outside git (stable for the prompt cache and for sessions). */
+ workDir?:string};
+/** LC1: one plain answer is one turn; CLI-enforced structured output may take a few StructuredOutput attempts. */
+export const TURN_LIMIT={plain:1,schema:4};
 export function localSetupFrom(profile:CapabilityProfile):LocalCliSetup{
  if(profile.verdict.textRoles!=='ready')throw new Error('LOCAL_PROFILE_BLOCKED');
  const sonnet=profile.model.actual;if(!sonnet||!/^claude-sonnet-/.test(sonnet))throw new Error('LOCAL_MODEL_NOT_PINNED');
  const schema=profile.checks.find(c=>c.id==='schema-cli')?.status==='pass'?'cli':'plain';
- return {bin:profile.cli.bin,cliVersion:profile.cli.version,isolation:profile.isolation,sonnet,schemaMode:schema,visual:profile.verdict.visualRoles==='ready',deviceId:profile.device.id};
+ return {bin:profile.cli.bin,cliVersion:profile.cli.version,isolation:profile.isolation,sonnet,schemaMode:schema,visual:profile.verdict.visualRoles==='ready',deviceId:profile.device.id,...(profile.capabilities?.maxTurns==='exact'?{turnLimit:true}:{})};
 }
 
 /** Everything the CLI call showed, kept apart from the receipt fields the ledger already stores. */
@@ -56,11 +62,11 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   // The input check of plan §3.2 runs on every call, not only in tests.
   if(projectionDifferences(projectPrepared(prepared),projectCli(cli,prepared.output.schema?.schema)).length)return refuse('LOCAL_CONTEXT_MISMATCH');
   const recordPath=options.record?await options.record(prepared):undefined;
-  const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=join(dir,'work');
+  const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=setup.workDir??join(dir,'work');
   try{
-   await mkdir(work);const systemFile=join(dir,'system.txt'),mcpFile=join(dir,'mcp.json');
+   await mkdir(work,{recursive:true});const systemFile=join(dir,'system.txt'),mcpFile=join(dir,'mcp.json');
    await writeFile(systemFile,cli.systemPrompt,{mode:0o600});await writeFile(mcpFile,'{"mcpServers":{}}');
-   const argv=cliArgs({bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:setup.isolation,...(cli.jsonSchema?{jsonSchema:cli.jsonSchema}:{}),...(cli.effort?{effort:cli.effort}:{})});
+   const argv=cliArgs({bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:setup.isolation,...(setup.turnLimit?{maxTurns:cli.jsonSchema?TURN_LIMIT.schema:TURN_LIMIT.plain}:{}),...(cli.jsonSchema?{jsonSchema:cli.jsonSchema}:{}),...(cli.effort?{effort:cli.effort}:{})});
    // Same time limits as the OpenRouter path for the same snapshot.
    const timeoutMs=cfg.stream?Math.max(1,Math.min(cfg.timeoutMs??600000,1800000)):Math.max(1,Math.min(cfg.timeoutMs??Math.max(100000,60000+cfg.maxOutputTokens*16),900000));
    // A leaked tool, MCP server or API key ends the call at once: the answer would not be comparable.

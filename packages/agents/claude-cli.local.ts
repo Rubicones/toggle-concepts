@@ -13,6 +13,10 @@ export type CliProfile={
  /** Flags qualified for the installed version (S0); each is optional because versions differ. */
  isolation:{safeMode?:boolean;restricted?:boolean;noSessionPersistence?:boolean;settingSources?:string;disableSlashCommands?:boolean};
  jsonSchema?:unknown;includePartialMessages?:boolean;effort?:string;
+ /** LC1: the most turns one call may take (hidden but accepted CLI flag; used only when the device qualified it). */
+ maxTurns?:number;
+ /** LC3: continue a stored session (its history is the cached prefix); fork it to branch without changing it. */
+ resume?:string;forkSession?:boolean;
 };
 
 /** Arguments for one call. Never contains the request itself. */
@@ -24,6 +28,8 @@ export function cliArgs(profile:CliProfile):string[]{
   ...(i.safeMode?['--safe-mode']:[]),...(i.restricted?['--restricted']:[]),...(i.noSessionPersistence?['--no-session-persistence']:[]),
   ...(i.settingSources!==undefined?['--setting-sources',i.settingSources]:[]),...(i.disableSlashCommands?['--disable-slash-commands']:[]),
   ...(profile.effort?['--effort',profile.effort]:[]),
+  ...(profile.maxTurns?['--max-turns',String(profile.maxTurns)]:[]),
+  ...(profile.resume?['--resume',profile.resume,...(profile.forkSession?['--fork-session']:[])]:[]),
   ...(profile.includePartialMessages?['--include-partial-messages']:[]),
   ...(profile.jsonSchema!==undefined?['--json-schema',JSON.stringify(profile.jsonSchema)]:[])];
 }

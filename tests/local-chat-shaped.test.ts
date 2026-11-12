@@ -47,3 +47,19 @@ test('LC0: each CLI call records effort, turns, duration, tokens and the API-equ
  assert.equal(u.effort,'medium');assert.equal(u.turns,1);assert.equal(u.apiEquivalentUsd,0.0012);assert.equal(u.input,120);assert.ok((u.durationMs??-1)>=0);
  void readFile;
 });
+
+test('LC1: lean calls — replaced prompt, no tools, one fixed folder, a turn limit when qualified', async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'lc1-')),work=join(dir,'work'),r1=join(dir,'r1.json'),r2=join(dir,'r2.json'),f=fixture('critic-no-images-cached');
+ await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:r1},{workDir:work,turnLimit:true}))(f.model,f.prompt,f.cfg,f.images);
+ await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:r2},{workDir:work,turnLimit:true}))(f.model,f.prompt,f.cfg,f.images);
+ const a=JSON.parse(await readFile(r1,'utf8')),b=JSON.parse(await readFile(r2,'utf8'));
+ assert.equal(a.cwd,work);assert.equal(b.cwd,work,'the same folder for every call');
+ assert.deepEqual([a.system,a.content],[b.system,b.content],'identical calls send identical bytes (a cacheable prefix)');
+ assert.ok(a.args.includes('--system-prompt-file')&&!a.args.some((x:string)=>/append-system-prompt/.test(x)),'the default prompt is replaced, never appended to');
+ assert.equal(a.args[a.args.indexOf('--tools')+1],'');assert.ok(a.args.includes('--strict-mcp-config'));
+ assert.equal(a.args[a.args.indexOf('--max-turns')+1],'1');
+ const s=join(dir,'s.json');await cliTextTransport(await fakeSetup('schema',{FAKE_CLAUDE_RECORD:s},{workDir:work,turnLimit:true}))(fixture('director-cached-flash').model,fixture('director-cached-flash').prompt,fixture('director-cached-flash').cfg,fixture('director-cached-flash').images);
+ const sa=JSON.parse(await readFile(s,'utf8'));assert.equal(sa.args[sa.args.indexOf('--max-turns')+1],'4','structured output may take a few attempts');
+ const n=join(dir,'n.json');await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:n},{workDir:work}))(f.model,f.prompt,f.cfg,f.images);
+ assert.ok(!JSON.parse(await readFile(n,'utf8')).args.includes('--max-turns'),'no flag when the device did not qualify it');
+});
