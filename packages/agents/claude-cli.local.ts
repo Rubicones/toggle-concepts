@@ -84,6 +84,9 @@ export type CliResult={
 const LIMIT=/usage limit|rate limit|limit reached|out of (?:extra )?usage|5-hour limit|weekly limit/i;
 
 /** Runs one call: spawn without a shell, write the message to stdin, read events until the terminal result. */
+/** The failure code of a result the CLI marked as an error. A result can say subtype "success" and still be an error
+ * (the request itself failed: an API error, a prompt the model would not take); "CLI_SUCCESS" explained nothing. */
+export function cliFailureCode(subtype:unknown){const s=String(subtype??'error').toUpperCase().replace(/[^A-Z0-9_]/g,'_');return s==='SUCCESS'||s==='ERROR'?'CLI_ERROR':`CLI_${s}`;}
 export async function runCli(args:{bin:string;argv:string[];cwd:string;env:NodeJS.ProcessEnv;stdin:string;timeoutMs:number;/** Silence limit: once the CLI has started streaming, this long without any event means it is stuck. */idleMs?:number;signal?:AbortSignal;onEvent?:(e:CliEvent)=>void}):Promise<CliResult>{
  const started=Date.now(),events:CliEvent[]=[];let stderr='',internalAttempts=0,result:CliEvent|undefined,init:CliResult['init'],partialText='';
  const child=spawn(args.bin,args.argv,{cwd:args.cwd,env:args.env,stdio:['pipe','pipe','pipe'],detached:process.platform!=='win32'});
@@ -119,5 +122,5 @@ export async function runCli(args:{bin:string;argv:string[];cwd:string;env:NodeJ
  const isError=result.is_error===true,text=typeof result.result==='string'?result.result:null,limited=isError&&LIMIT.test(`${text??''} ${stderr}`);
  return {...base,outcome:isError?'failed':'succeeded',text,...(result.structured_output!==undefined?{structured:result.structured_output}:{}),
   usage:result.usage as CliResult['usage'],numTurns:result.num_turns as number|undefined,...(typeof result.total_cost_usd==='number'?{apiEquivalentUsd:result.total_cost_usd}:{}),stopReason:(result.stop_reason as string|null|undefined)??null,resultSubtype:result.subtype as string|undefined,isError,
-  ...(limited?{limitReached:true,failure:'SUBSCRIPTION_LIMIT'}:isError?{failure:`CLI_${String(result.subtype??'error').toUpperCase()}`}:{})};
+  ...(limited?{limitReached:true,failure:'SUBSCRIPTION_LIMIT'}:isError?{failure:cliFailureCode(result.subtype)}:{})};
 }

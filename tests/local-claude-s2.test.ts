@@ -2,6 +2,7 @@
 // ever called; each scenario runs through a small wrapper because the transport passes the CLI only allowlisted
 // variables.
 import test from 'node:test';
+import {cliOutputRoom} from '../apps/local-runner/local-claude/transport';
 import assert from 'node:assert/strict';
 import {readdirSync,readFileSync} from 'node:fs';
 import {mkdtemp,readFile,writeFile,chmod} from 'node:fs/promises';
@@ -50,7 +51,7 @@ test('the CLI receives exactly the prepared request: system, parts, images, sche
  assert.deepEqual(seen.images.map((i:{mediaType:string})=>i.mediaType),p.attachments.map(a=>a.mediaType));
  assert.ok(seen.texts.some((t:string)=>t.startsWith('TASK:\n')));
  const rec=JSON.parse(await readFile(record,'utf8'));
- assert.equal(rec.maxOutput,String(f.cfg.maxOutputTokens));
+ assert.equal(rec.maxOutput,String(cliOutputRoom(f.cfg.maxOutputTokens,f.cfg.reasoningEffort==='minimal'?'low':f.cfg.reasoningEffort)),'the answer limit plus room to think at this effort');
  assert.equal(rec.args[rec.args.indexOf('--model')+1],'claude-sonnet-4-5','a Claude target keeps its model');
  assert.deepEqual(JSON.parse(rec.args[rec.args.indexOf('--json-schema')+1]),f.cfg.responseSchema!.schema);
  assert.equal(rec.args[rec.args.indexOf('--effort')+1],'medium');
