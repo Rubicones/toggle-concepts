@@ -94,3 +94,10 @@ The chain is: draft (preview) direction → `apps/local-runner/director/worker.t
   - no browser access.
 - `npm test`: 778 tests, 765 pass, 13 fail. The same 13 fail on `origin/main`: 12 in `creative-skeleton` (missing local `artifacts/debug` files) and "AD browser flow…" (needs a browser).
 - `next build`: compiled successfully.
+
+## 6. Follow-up fix (same day): the runner passed the wrong computer id
+
+- **Bug:** the runner called the automatic continuation with its process lease id (`device=randomUUID()` in `apps/local-runner/workflow.ts`), not this computer's Local mode id. The "own device" check therefore always failed, and allowance stops kept asking.
+  - The SQL and unit tests used one id for both, so they did not catch it.
+- **Fix:** `apps/local-runner/director/worker.ts` passes `local.device.id`, the same id the run's text execution records. The app path already used it.
+- **Verification:** typecheck, lint and `tests/local-preview-budget.test.ts` pass.

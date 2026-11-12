@@ -382,7 +382,8 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    await save('review',questionForFailure(input,failure,failure.message==='RESOURCE_PERMISSION_REQUIRED'?estimate.perStillMicroUsd:estimate.maxCostMicroUsd));
    // A Local preview whose run has budget re-approval off continues through the same priced extension, once per stop.
    // Without the policy (or when the run limit is reached) the question stays for the AD, as before.
-   const auto=await continueWithoutReapproval(admin,{blockId:block.id,directionId:input.directionId,device}).catch((e:unknown)=>({continued:false as const,reason:e instanceof Error?e.message:'AUTO_CONTINUE_FAILED'}));
+   // The computer's Local mode id (the run's execution device), not this process's lease id.
+   const auto=local.device?await continueWithoutReapproval(admin,{blockId:block.id,directionId:input.directionId,device:local.device.id}).catch((e:unknown)=>({continued:false as const,reason:e instanceof Error?e.message:'AUTO_CONTINUE_FAILED'})):{continued:false as const,reason:'BUDGET_REAPPROVAL_REQUIRED'};
    if(auto.continued)await events.emit(`auto-continue:${input.iterationId}:${auto.role}:${Date.now()}`,{stepId:`auto-continue:${input.iterationId}:${auto.role}`,kind:'control',status:'done',costMicroUsd:0,message:autoContinuationMessage(auto.role,auto.costMicroUsd),detail:{code:'budget_auto_continue',role:auto.role,addedMicroUsd:auto.costMicroUsd}}).catch(()=>{});
    else if(auto.reason!=='BUDGET_REAPPROVAL_REQUIRED'&&auto.reason!=='NOT_AN_ALLOWANCE_STOP')console.error('[director] automatic continuation did not apply; the question stays',auto.reason);
   }catch(saveError){console.error('[director] could not save the stop reason; the lease will expire and the work is retried',failure.message,saveError instanceof Error?saveError.message:saveError);}
