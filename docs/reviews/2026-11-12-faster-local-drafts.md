@@ -32,3 +32,13 @@ Measured on the owner's run ("Per request"): the coder wrote 16–22k output tok
 - `tests/local-chat-shaped.test.ts` 19/19, `tests/local-preview-budget.test.ts` 5/5.
 - SQL on a temporary Postgres: 3 additions in one continuation, total logged once, replay unchanged, `times` bounded.
 - Director, designer and Local suites: only the existing "AD browser flow…" failure.
+
+## 5. Follow-up (same day): the input-allowance stop was not continued
+
+- **Symptom:** with budget re-approval off, a draft still stopped with `ROLE_ALLOWANCE_EXHAUSTED: The required request needs 35385 raw input units after compaction; 26263 fit the remaining allowance…`.
+- **Cause:** this stop comes from request compaction (`packages/director/request-size.ts`) and did not name its role, so neither the manual extension nor the automatic continuation could tell whose allowance to extend.
+- **Fix:**
+  - `apps/local-runner/director/worker.ts` prefixes the stop with the role (`assembler: …`).
+  - `packages/director/auto-continue.ts`: a stop already saved without a role is continued for the role that was working (active call, else phase).
+  - `autoContinuationTimes`: roles other than the coder now get two base allowances per continuation (the coder keeps three); a static draft's base allowances are small.
+- **Verification:** typecheck, lint; `local-preview-budget` + `director-hardening`: 21/21.

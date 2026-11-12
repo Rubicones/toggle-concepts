@@ -76,3 +76,19 @@ test('without the policy, on a remote run, another device or an old database, th
  const limit=fakeAdmin({...base,rpcError:'ESTIMATE_EXCEEDS_RUN_LIMIT'});
  assert.deepEqual(await continueWithoutReapproval(limit.admin,{blockId:'b',directionId:'d',device:'mac'}),{continued:false,reason:'ESTIMATE_EXCEEDS_RUN_LIMIT'},'the run limit keeps the question');
 });
+
+test('an input-allowance stop that names its role continues like any other allowance stop', ()=>{
+ const input={directionId:'d',iterationId:'i'} as DirectionInput;
+ const named=questionForFailure(input,Object.assign(new Error('ROLE_ALLOWANCE_EXHAUSTED'),{detail:'assembler: The required request needs 35385 raw input units after compaction; 26263 fit the remaining allowance including cache-write pricing. Nothing was sent.'}),1);
+ assert.equal(continuableRole(named),'assembler');
+ const unnamed=questionForFailure(input,Object.assign(new Error('ROLE_ALLOWANCE_EXHAUSTED'),{detail:'The required request needs 35385 raw input units after compaction.'}),1);
+ assert.equal(continuableRole(unnamed),null,'without a role the stop cannot be continued (the runner now always names it)');
+});
+
+test('a stop saved without its role continues for the role that was working', async()=>{
+ const q={...stopQuestion,technical:'ROLE_ALLOWANCE_EXHAUSTED: The required request needs 35385 raw input units after compaction.'};
+ const {admin,calls}=fakeAdmin({...base,work:{status:'review',question:q,state:{activeCall:{role:'assembler'}}}});
+ assert.equal((await continueWithoutReapproval(admin,{blockId:'b',directionId:'d',device:'mac'})).continued,true);assert.equal(calls[0].args.role_key,'assembler');
+ const none=fakeAdmin({...base,work:{status:'review',question:q,state:{phase:'resources'}}});
+ assert.equal((await continueWithoutReapproval(none.admin,{blockId:'b',directionId:'d',device:'mac'})).continued,false);
+});
