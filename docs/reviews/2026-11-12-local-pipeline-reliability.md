@@ -84,3 +84,10 @@
 - **`apps/local-runner/workflow.ts`:** uses both.
 - **Verification:** typecheck, lint; `supabase/tests/local-text-execution.sql` on a temporary Postgres: requeue (own device only, listed failures only), recover once, not twice.
 - **Not verified live:** that the run page leaves "stopped" by itself once the job succeeds.
+
+## 9. Follow-up (same day): the recovery looked for the wrong job state
+
+- **Symptom:** after 20261112000500 the stopped visual-direction step stayed stopped.
+- **Cause:** an unknown outcome leaves the job `blocked` (blocker `provider_status_unknown`), not `failed`; it also blocks the round, may close the run and blocks the guided run control. `studio_recover_local_workflow` looked for `failed` jobs only. The SQL test set up the wrong state.
+- **Migration `20261112000600_local_workflow_recover_blocked.sql`:** the function now takes `failed` and `blocked` jobs whose last attempt is an unanswered Local text request, closes the step at zero cost, requeues the job, clears the round's blocker when no other job in it is stopped, reopens a run closed only for this reason, and sets a blocked planning run control back to running.
+- **Verification:** `supabase/tests/local-text-execution.sql` now sets the job and round up as the unknown outcome leaves them; passes on a temporary Postgres.
