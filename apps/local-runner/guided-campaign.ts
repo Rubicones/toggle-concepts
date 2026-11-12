@@ -9,6 +9,9 @@ import {manualAttempt} from '../../packages/data/manual-attempt';
 import {recoverPlanningFailure} from './planning-recovery';
 import {ideaReviewGates} from './idea-review';
 class RunFailure extends Error{constructor(code:string,public detail?:string){super(code);}}
+/** Failures that pass by themselves: the database took too long, or the local studio page did not answer. */
+export const TEMPORARY_FAILURE_LIMIT=20;
+export function temporaryCoordinatorFailure(code:string,detail=''){return ['DATABASE_BUSY','LOCAL_API_UNAVAILABLE'].includes(code)||/canceling statement due to (?:statement|lock) timeout|fetch failed|ECONNRESET|ETIMEDOUT/i.test(`${code} ${detail}`);}
 async function local<T>(path:string,method='GET',body?:unknown):Promise<T>{
  const base=new URL(process.env.NEXT_PUBLIC_APP_URL??'http://127.0.0.1:3100');
  if(!['127.0.0.1','localhost','[::1]'].includes(base.hostname))throw new RunFailure('LOCAL_DEVICE_REQUIRED');
@@ -109,6 +112,14 @@ export async function processGuidedCampaign():Promise<boolean>{
   await finish(control.stage,'review');return true;
  }catch(error){
   let code=error instanceof RunFailure?error.message:'RUN_COORDINATOR_FAILED';
+  // A slow database or a studio page that is restarting is not a reason to stop a stage: the work itself continues.
+  // Wait and look again; only many failures in a row ask for attention.
+  const said=error instanceof RunFailure?error.detail??'':error instanceof Error?error.message:'';
+  // Failures count in a row: a quiet ten minutes starts the count again.
+  const earlier=(cursor.temporaryFailures??{}) as {count?:number;at?:number},count=earlier.at&&Date.now()-earlier.at<600000?earlier.count??0:0;
+  if(temporaryCoordinatorFailure(code,said)&&count<TEMPORARY_FAILURE_LIMIT){
+   cursor.temporaryFailures={count:count+1,at:Date.now()};await new Promise(done=>setTimeout(done,Math.min(30000,3000*(count+1))));
+   await finish(control.stage,control.status).catch(()=>{});return true;}
   // Missing product images use the existing upload-and-continue path.
   if(code==='PRODUCT_MEDIA_REQUIRED')code='ASSETS_REQUIRED';
   // Keep the exact reason so the run page can show it instead of a generic notice.

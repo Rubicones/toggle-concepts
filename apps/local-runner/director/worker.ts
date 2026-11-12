@@ -393,6 +393,27 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
  }
  finally{clearInterval(beat);}
 }
+// Directions side by side. One direction spends most of its time waiting for a model answer, so the directions of a
+// run can be worked on at the same time instead of one after another. Each has its own claim, lease, workspace folder
+// and saved state; the database decides who gets which direction (skip locked), exactly as with several runners.
+const directionsRunning=new Set<Promise<void>>();
+export const directorsRunning=()=>directionsRunning.size;
+export const directorsSettled=()=>Promise.allSettled([...directionsRunning]);
+/** How many directions this runner works on at once: STUDIO_DIRECTOR_PARALLEL (1–3), default 2 on a Local device. */
+export function directorParallel(local:LocalRuntime){const wanted=Number(process.env.STUDIO_DIRECTOR_PARALLEL);return Number.isInteger(wanted)&&wanted>=1&&wanted<=3?wanted:local.setup?2:1;}
+/** Claims and starts directions up to the limit without waiting for them; true when one was started. */
+export async function startDirectorWork(device:string,local:LocalRuntime,limit:number){
+ await flushDirectorReceipts(adminClient());if(await processDirectorDelivery(device))return true;
+ let started=false;
+ while(directionsRunning.size<limit){
+  const result=await adminClient().rpc('studio_claim_director',{target_tenant:sharedTenant,device});
+  if(result.error){if(['PGRST202','PGRST205','42883','42P01'].includes(result.error.code??''))return started;throw new Error(result.error.message);}
+  if(!result.data)break;
+  const task:Promise<void>=executeDirector(result.data as DirectorClaim,device,local).catch(error=>{console.error('[director] a direction stopped unexpectedly; its lease expires and it is retried:',error instanceof Error?error.message:error);}).finally(()=>{directionsRunning.delete(task);});
+  directionsRunning.add(task);started=true;
+ }
+ return started;
+}
 export async function processDirectorWork(device:string,local:LocalRuntime={schema:false}){await flushDirectorReceipts(adminClient());if(await processDirectorDelivery(device))return true;const result=await adminClient().rpc('studio_claim_director',{target_tenant:sharedTenant,device});if(result.error){if(['PGRST202','PGRST205','42883','42P01'].includes(result.error.code??''))return false;throw new Error(result.error.message);}if(!result.data)return false;await executeDirector(result.data as DirectorClaim,device,local);return true;}
 
 /** Brand sheet pages (blocks with brief.brandSheetVersion 1) read from the block's pinned files; the same bytes on every

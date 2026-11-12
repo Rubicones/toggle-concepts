@@ -1,6 +1,6 @@
 import {usesScenarioSelection,scenarioTransport,bindScenarioOutput,type ScenarioSelection} from '../../packages/contracts/scenario-selection';
 import {usesTreatmentSequence,runTreatmentSequence,treatmentSequenceReservation,sequenceRequestOutput} from '../../packages/contracts/treatment-sequence';
-import {processDirectorWork} from './director/worker';
+import {processDirectorWork,startDirectorWork,directorsRunning,directorsSettled,directorParallel} from './director/worker';
 import {CREATIVE_FOCUS_ROLES,creativeFocusBlock,normalizeCreativeFocus} from '../../packages/contracts/creative-focus';
 import {adShapeForContext,feelingBriefForContext} from '../../packages/contracts/brief-feel';
 import {processCreativeDelivery} from './creative-delivery';
@@ -264,11 +264,14 @@ async function main(){
   const runsWaiting=async()=>{const r=await admin.from('studio_campaign_run_controls').select('run_id').eq('tenant_id',sharedTenant).eq('status','running').gte('updated_at',new Date(Date.now()-6*3600000).toISOString()).limit(1);return !r.error&&!!r.data?.length;};
   while(!stopping&&(Date.now()-idle<60000||(await runsWaiting().catch(()=>false)&&(idle=Date.now()-50000,true)))){
    if(Date.now()-checked_at>5000){checked_at=Date.now();if(await codeFingerprint()!==startedWith){restartForNewCode=true;break;}}
-   await flushReceipts();await flushProviderAnchors();try{if(await processDirectorWork(device,localRuntime)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis(device,localRuntime)){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
+   await flushReceipts();await flushProviderAnchors();try{const side=directorParallel(localRuntime);if(side>1){if(await startDirectorWork(device,localRuntime,side)||directorsRunning())idle=Date.now();}else if(await processDirectorWork(device,localRuntime)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis(device,localRuntime)){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
    const claim=await rpc("studio_claim_workflow",{target_tenant:sharedTenant,device}) as Claim|null;
    if(claim){idle=Date.now();await execute(claim);}else await waitForWork(idleDelay(Date.now()-idle));
   }
- }finally{if(timer)clearInterval(timer);await rpc("studio_workflow_device",{device,target_tenant:sharedTenant,online:false}).catch(()=>{});await unlink(lock).catch(()=>{});
+ }finally{
+  // Directions still being worked on finish their current step before this runner hands over or exits.
+  if(!stopping)await directorsSettled();
+  if(timer)clearInterval(timer);await rpc("studio_workflow_device",{device,target_tenant:sharedTenant,online:false}).catch(()=>{});await unlink(lock).catch(()=>{});
   // Hand over to a worker that loads the current code; it takes the lock and continues the queue.
   if(restartForNewCode){const child=spawn(process.execPath,["--import","tsx",resolve("apps/local-runner/workflow.ts")],{cwd:process.cwd(),env:process.env,stdio:"ignore",detached:true});child.unref();}}
 }
