@@ -43,15 +43,27 @@ if (-not (Ready)) {
 
 Step 'Limits: Ubuntu never takes the whole computer'
 $wslconfig = Join-Path $env:USERPROFILE '.wslconfig'
+# A third of the memory, between 3 and 16 GB, and two thirds of the cores: the studio runs its pages, the runner, a
+# browser for layout checks and several Claude processes at once (two directions are built side by side).
+$ramGb = [math]::Floor((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
+$memGb = [math]::Max(3, [math]::Min(16, [math]::Floor($ramGb / 3)))
+$cpus = [math]::Max(2, [math]::Floor([Environment]::ProcessorCount * 2 / 3))
+$swapGb = if ($memGb -ge 8) { 4 } else { 2 }
 if (-not (Test-Path $wslconfig)) {
-  $ramGb = [math]::Floor((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
-  $memGb = [math]::Max(3, [math]::Min(6, [math]::Floor($ramGb / 3)))
-  $cpus = [math]::Max(2, [math]::Floor([Environment]::ProcessorCount / 2))
-  $lines = @('[wsl2]', "memory=${memGb}GB", "processors=$cpus", 'swap=2GB', 'vmIdleTimeout=60000')
+  $lines = @('[wsl2]', "memory=${memGb}GB", "processors=$cpus", "swap=${swapGb}GB", 'vmIdleTimeout=60000')
   if ([Environment]::OSVersion.Version.Build -ge 22621) { $lines += 'networkingMode=mirrored'; $lines += '[experimental]'; $lines += 'autoMemoryReclaim=dropcache' }
   ($lines -join "`n") + "`n" | Set-Content -Encoding ASCII $wslconfig; wsl.exe --shutdown
   Write-Host "Ubuntu gets at most ${memGb} GB of $ramGb GB memory and $cpus of $([Environment]::ProcessorCount) cores."
-} else { Write-Host "Keeping your existing $wslconfig." }
+} else {
+  # An earlier install wrote smaller limits (at most 6 GB and half the cores). Raise only what is lower than today's
+  # values; anything you set higher, and every other line, stays as it is.
+  $text = Get-Content -Raw $wslconfig; $raised = @()
+  if ($text -match '(?m)^memory=(\d+)GB[ \t\r]*$' -and [int]$Matches[1] -lt $memGb) { $text = $text -replace '(?m)^memory=\d+GB[ \t\r]*$', "memory=${memGb}GB"; $raised += "memory ${memGb} GB" }
+  if ($text -match '(?m)^processors=(\d+)[ \t\r]*$' -and [int]$Matches[1] -lt $cpus) { $text = $text -replace '(?m)^processors=\d+[ \t\r]*$', "processors=$cpus"; $raised += "$cpus cores" }
+  if ($text -match '(?m)^swap=(\d+)GB[ \t\r]*$' -and [int]$Matches[1] -lt $swapGb) { $text = $text -replace '(?m)^swap=\d+GB[ \t\r]*$', "swap=${swapGb}GB"; $raised += "swap ${swapGb} GB" }
+  if ($raised.Count) { Set-Content -Encoding ASCII -NoNewline -Path $wslconfig -Value $text; wsl.exe --shutdown; Write-Host "Raised Ubuntu's limits: $($raised -join ', ') (of $ramGb GB and $([Environment]::ProcessorCount) cores)." -ForegroundColor Green }
+  else { Write-Host "Keeping your existing $wslconfig." }
+}
 
 Step 'Git for Windows (only for the GitHub sign-in)'
 if (-not (Test-Path 'C:\Program Files\Git\mingw64\bin\git-credential-manager.exe')) { winget install --id Git.Git -e --source winget --silent --accept-package-agreements --accept-source-agreements }
