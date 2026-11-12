@@ -91,3 +91,10 @@
 - **Cause:** an unknown outcome leaves the job `blocked` (blocker `provider_status_unknown`), not `failed`; it also blocks the round, may close the run and blocks the guided run control. `studio_recover_local_workflow` looked for `failed` jobs only. The SQL test set up the wrong state.
 - **Migration `20261112000600_local_workflow_recover_blocked.sql`:** the function now takes `failed` and `blocked` jobs whose last attempt is an unanswered Local text request, closes the step at zero cost, requeues the job, clears the round's blocker when no other job in it is stopped, reopens a run closed only for this reason, and sets a blocked planning run control back to running.
 - **Verification:** `supabase/tests/local-text-execution.sql` now sets the job and round up as the unknown outcome leaves them; passes on a temporary Postgres.
+
+## 10. Follow-up (same day): nobody ran the recovery
+
+- **Symptom:** the stopped step stayed stopped after 20261112000600.
+- **Cause:** the recovery was called from the runner loop, but the runner exits while the run is blocked (it stays alive only for runs whose control is `running`). The owner's studio window showed page requests only.
+- **Fix:** `app/api/studio/campaigns/[id]/run/route.ts` (GET, the run page's own read) calls `studio_recover_local_workflow` and starts the runner when a step was requeued. A failure of the recovery is now printed in the studio window instead of being swallowed.
+- **Verification:** typecheck, lint. Not verified live.

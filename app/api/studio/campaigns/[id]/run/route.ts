@@ -34,6 +34,11 @@ import {startLocalWorkflow,startLocalWorkflowSoon,requireLocalDevice} from '@/li
 import {draftContext,draftDbError} from '@/lib/server/drafts';
 export async function GET(_:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/run'>){return api(async()=>{
  const {id}=await ctx.params;await campaignRecord(id);const {admin,tenant}=await studioContext();
+ // A Local planning step that ended without an answer (timed out, stalled, interrupted) goes back to the queue. The
+ // runner is not running while a run is stopped, so opening the run page does it and wakes the runner.
+ const recovered=await admin.rpc('studio_recover_local_workflow',{target_tenant:tenant});
+ if(recovered.error){if(!['PGRST202','42883'].includes(recovered.error.code??''))console.error('[studio api] Local planning recovery failed:',recovered.error.message);}
+ else if(Number(recovered.data)>0){console.log(`[studio api] ${recovered.data} Local planning step(s) that ended without an answer went back to the queue.`);await startLocalWorkflow().catch(()=>{});}
  const cp=checked(await admin.from('studio_c1_checkpoints').select('id,run_id,payload,brief_text').eq('campaign_id',id).eq('tenant_id',tenant).maybeSingle()),book=await submittedBrandbook(id);
  const run=cp?checked(await admin.from('studio_runs').select('*').eq('id',cp.run_id).eq('tenant_id',tenant).single()):null;
  const ready=await admin.from('studio_campaign_run_controls').select('run_id').limit(0);if(ready.error&&!schemaMissing(ready.error))guidedDbError(ready.error);
