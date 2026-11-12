@@ -1,3 +1,8 @@
 /** Infrastructure/control failures are never feedback asking the model to redesign source. */
 export function transientExecutionFailure(message:string){return /^(CREATIVE_IMAGE_PENDING|LOCAL_API_UNAVAILABLE|PREVIEW_SOURCE_CHANGING|CURRENT_SOURCE_CHECKS_REQUIRED)$/.test(message)||/Source changed during typecheck|fetch failed|failed to fetch|NetworkError|network (?:connection|request|failure|unavailable)|TimeoutError|timed out|canceling statement due to (?:statement|lock) timeout|ECONNRESET|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket hang up|upstream connect|502 Bad Gateway|503 Service/i.test(message);}
+/** Local Claude runs: stops of a text request that cost nothing and pass by themselves (no answer arrived, an earlier
+ * runner session left the request open, another session still holds it). The direction waits a little and continues,
+ * at most LOCAL_RECOVERY_LIMIT times; then it asks. Image requests (paid through OpenRouter) are not in this list. */
+export const LOCAL_RECOVERY_LIMIT=12;
+export function localTemporaryStop(message:string){return /^(LOCAL_RESULT_MISSING|LOCAL_REQUEST_INTERRUPTED|LOCAL_REQUEST_LIVE|PROVIDER_RECONCILIATION_REQUIRED|SAVED_REQUEST_FAILED|CLI_TIMEOUT|CLI_STALLED|CLI_NO_RESULT|CLI_ERROR)(:|$)/.test(message);}
 export function propagateExecutionFailure(error:unknown){return error instanceof Error&&(transientExecutionFailure(error.message)||/^(STALE_DIRECTOR_LEASE|DIRECTOR_LIVE_WRAP_UP|DIRECTOR_LIVE_REVISION|RUN_STOPPED|RESOURCE_PERMISSION_REQUIRED|ROLE_ALLOWANCE_EXHAUSTED|PROVIDER_RECONCILIATION_REQUIRED|DRAFT_SIZE_SCHEMA_REQUIRED)$/.test(error.message));}

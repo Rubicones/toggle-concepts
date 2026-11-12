@@ -23,6 +23,10 @@ export function localCallUsage(row:{role:string;usage?:unknown;config_snapshot?:
   ...(typeof local.apiEquivalentUsd==='number'?{apiEquivalentUsd:local.apiEquivalentUsd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{}),...(local.stage?{effortStage:local.stage}:{}),...(local.skills?.length?{skills:local.skills}:{})};
 }
 
+/** What a Local Claude text request reserves against money caps: the smallest amount the ledger accepts. It runs on
+ * the subscription and settles at zero, so its API-equivalent price (kept in its usage record) must not use up a run's
+ * or an agent's money allowance. */
+export const LOCAL_TEXT_RESERVATION_MICRO_USD=1;
 const k=(n:number)=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1000?`${Math.round(n/1000)}k`:String(n);
 /** All input the model read: new input, cache writes and cache reads. */
 export const totalInput=(u:Pick<LocalCallUsage,'input'|'cacheCreation'|'cacheRead'>)=>u.input+u.cacheCreation+u.cacheRead;

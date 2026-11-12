@@ -1,4 +1,4 @@
-import {transientExecutionFailure,propagateExecutionFailure} from '../../../packages/director/execution-failures';
+import {transientExecutionFailure,propagateExecutionFailure,localTemporaryStop,LOCAL_RECOVERY_LIMIT} from '../../../packages/director/execution-failures';
 import {recoverUnsubmittedClock} from '../../../packages/director/working-clock';
 import {withCreativeHandoff} from '../../../packages/director/creative-handoff';
 import {usesLiveDraft,livePipeline,ensureLivePreviewToolchain} from './live-pipeline';
@@ -391,6 +391,12 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    // Local mode: the subscription limit is a wait, not a failure. The clocks pause; the claim resumes after the probe time.
    if(failure.message==='SUBSCRIPTION_LIMIT'){const until=await markSubscriptionLimit();state.retryAt=until;state.pausedAt??=Date.now();await events.emit(`waiting-subscription:${until}`,{stepId:`waiting-subscription:${until}`,kind:'control',status:'queued',costMicroUsd:0,message:'Waiting for the Claude subscription limit on this device. Approved allowances and the active-time clock are paused; work resumes by itself.',detail:{code:'waiting_subscription',retryAt:until}});await save('queued');return;}
    if(transientExecutionFailure(failure.message)&&(state.transientRetries??0)<10){state.transientRetries=(state.transientRetries??0)+1;state.retryAt=Date.now()+Math.min(120000,3000*2**Math.min(state.transientRetries,6));state.pausedAt=Date.now();await events.emit(`local-retry:${state.transientRetries}`,{stepId:`local-retry:${state.transientRetries}`,kind:'control',status:'queued',costMicroUsd:0,message:'The local worker is recovering a temporary interruption. Saved source and approved limits are retained; no decision is needed.',detail:{code:failure.message,retryAt:state.retryAt}});await save('queued');return;}
+   // Local runs: a text request that got no answer, or was left open by an earlier session, cost nothing. The direction
+   // waits and continues by itself instead of asking, a bounded number of times.
+   if(execution.mode==='local_claude'&&localTemporaryStop(failure.message)&&(state.localRecoveries??0)<LOCAL_RECOVERY_LIMIT){
+    state.localRecoveries=(state.localRecoveries??0)+1;state.retryAt=Date.now()+Math.min(120000,10000*state.localRecoveries);state.pausedAt??=Date.now();
+    await events.emit(`local-recovery:${state.localRecoveries}`,{stepId:`local-recovery:${state.localRecoveries}`,kind:'control',status:'queued',costMicroUsd:0,message:'A Local Claude request did not finish. Nothing was charged; this direction continues by itself in a moment.',detail:{code:failure.message,retryAt:state.retryAt,recovery:state.localRecoveries}}).catch(()=>{});
+    await save('queued');return;}
    await save('review',questionForFailure(input,failure,failure.message==='RESOURCE_PERMISSION_REQUIRED'?estimate.perStillMicroUsd:estimate.maxCostMicroUsd));
    // A Local preview whose run has budget re-approval off continues through the same priced extension, once per stop.
    // Without the policy (or when the run limit is reached) the question stays for the AD, as before.

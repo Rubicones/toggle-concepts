@@ -7,7 +7,7 @@ do $$
 declare actor uuid:=gen_random_uuid();other uuid:=gen_random_uuid();tenant uuid:=gen_random_uuid();campaign uuid:=gen_random_uuid();campaign2 uuid:=gen_random_uuid();
  local_run uuid:=gen_random_uuid();remote_run uuid:=gen_random_uuid();cp uuid:=gen_random_uuid();cp2 uuid:=gen_random_uuid();round_id uuid:=gen_random_uuid();
  mac uuid:=gen_random_uuid();laptop uuid:=gen_random_uuid();lease_mac uuid:=gen_random_uuid();lease_other uuid:=gen_random_uuid();cfg jsonb:='[]'::jsonb;config_hash text;m public.studio_text_modes;e public.studio_text_executions;
- claim jsonb;job uuid;n int;ok boolean;profile jsonb:='{"executionModel":"claude-sonnet-4-5-20250929","cliVersion":"2.1.318","mappingVersion":"local-models@1","profileSha":"abc"}';
+ claim jsonb;job uuid;n int;ok boolean;kind text;profile jsonb:='{"executionModel":"claude-sonnet-4-5-20250929","cliVersion":"2.1.318","mappingVersion":"local-models@1","profileSha":"abc"}';
 begin
  insert into auth.users(id,email) values(actor,'local-fixture@example.test'),(other,'remote-fixture@example.test');insert into public.tenants(id,name) values(tenant,'Local fixture');
  insert into app_private.tenant_members values(tenant,actor,'producer'),(tenant,other,'producer');
@@ -82,6 +82,25 @@ begin
  update public.studio_workflow_jobs x set state='failed',blocker='STEP_CAP_REACHED' where x.id=job;
  n:=public.studio_recover_local_workflow(tenant);
  if n<>1 or (select x.state from public.studio_workflow_jobs x where x.id=job)<>'queued' then raise exception 'CAP_STOP_NOT_RECOVERED % % %',n,(select x.state||'/'||coalesce(x.blocker,'-')||'/'||x.attempt_count from public.studio_workflow_jobs x where x.id=job),(select count(*) from public.studio_workflow_jobs x where x.state in ('failed','blocked'));end if;
+ -- 20261112000800: every stop that needs no person is recovered; stops that need one, the owner's pause and the
+ -- bounds are respected.
+ for kind in select unnest(array['RUN_CAP_REACHED','LEASE_LOST','CLI_ERROR','INVALID_OUTPUT_SCHEMA','OUTPUT_TOKEN_LIMIT','LOCAL_REQUEST_INTERRUPTED']) loop
+  update public.studio_workflow_jobs x set state='failed',blocker=kind,attempt_count=2 where x.id=job;
+  if public.studio_recover_local_workflow(tenant)<>1 then raise exception 'NOT_SELF_HEALED %',kind;end if;
+  if (select x.state from public.studio_workflow_jobs x where x.id=job)<>'queued' then raise exception 'NOT_QUEUED_AFTER %',kind;end if;
+ end loop;
+ for kind in select unnest(array['AGENT_INPUT_BLOCKED','PROMPT_TOO_LONG','MODEL_UNAVAILABLE','AGENT_NOT_CONFIGURED','SCENARIO_SELECTION_REQUIRED','paused_by_user']) loop
+  update public.studio_workflow_jobs x set state='failed',blocker=kind,attempt_count=2 where x.id=job;
+  if public.studio_recover_local_workflow(tenant)<>0 then raise exception 'PERSON_STOP_RECOVERED %',kind;end if;
+ end loop;
+ update public.studio_workflow_jobs x set state='failed',blocker='INVALID_OUTPUT_SCHEMA',attempt_count=4 where x.id=job;
+ if public.studio_recover_local_workflow(tenant)<>0 then raise exception 'ANSWER_RETRIES_UNBOUNDED';end if;
+ update public.studio_workflow_jobs x set blocker='CLI_TIMEOUT',attempt_count=12 where x.id=job;
+ if public.studio_recover_local_workflow(tenant)<>0 then raise exception 'TECHNICAL_RETRIES_UNBOUNDED';end if;
+ update public.studio_workflow_jobs x set attempt_count=2 where x.id=job;update public.studio_workflow_rounds x set blocker='paused_by_user' where x.id=round_id;
+ if public.studio_recover_local_workflow(tenant)<>0 then raise exception 'OWNER_PAUSE_UNDONE';end if;
+ update public.studio_workflow_rounds x set blocker=null where x.id=round_id;
+ if public.studio_recover_local_workflow(tenant)<>1 then raise exception 'NOT_RECOVERED_AFTER_PAUSE_LIFTED';end if;
  update public.studio_workflow_jobs x set available_at=now()+interval '1 hour' where x.id=job;
 
  -- The edited functions carry their new rules.
