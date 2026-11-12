@@ -69,9 +69,12 @@ begin
  update public.studio_workflow_jobs x set available_at=now() where x.id=job;
  claim:=public.studio_claim_workflow(tenant,lease_mac);if claim is null then raise exception 'RECOVER_FIXTURE_NOT_CLAIMED';end if;
  update public.studio_workflow_attempts x set state='unknown',error_code='CLI_TIMEOUT',finished_at=now() where x.id=(claim->'attempt'->>'id')::uuid;
- update public.studio_workflow_jobs x set state='failed',lease_owner=null,lease_until=null,active_attempt=null where x.id=job;
+ -- As the unknown outcome really leaves it: the job blocked, its round blocked.
+ update public.studio_workflow_jobs x set state='blocked',blocker='provider_status_unknown',lease_owner=null,lease_until=null,active_attempt=null where x.id=job;
+ update public.studio_workflow_rounds x set blocker='provider_status_unknown' where x.id=round_id;
  if public.studio_recover_local_workflow(tenant)<>1 then raise exception 'NOT_RECOVERED';end if;
  if (select x.state from public.studio_workflow_jobs x where x.id=job)<>'queued' then raise exception 'RECOVER_STATE';end if;
+ if (select x.blocker from public.studio_workflow_rounds x where x.id=round_id) is not null then raise exception 'ROUND_STILL_BLOCKED';end if;
  if public.studio_recover_local_workflow(tenant)<>0 then raise exception 'RECOVERED_TWICE';end if;
  update public.studio_workflow_jobs x set available_at=now()+interval '1 hour' where x.id=job;
 
