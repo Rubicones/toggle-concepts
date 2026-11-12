@@ -4,6 +4,23 @@ import {validateNextUpload} from '../../packages/media/validate-upload.local';
 import type {StillProducer} from '../../packages/creative/media';
 import {stillPromptText} from '../../packages/creative/still-prompt';
 import type {CreativeInputs} from '../../packages/creative/protocol';
+/** Image step failures on this computer before the provider was asked: nothing was sent and nothing charged. */
+const LOCAL_PREFLIGHT=new Set(['MEDIA_TOOLS_UNAVAILABLE','PROVIDER_NOT_CONFIGURED','CATALOG_UNAVAILABLE','IMAGE_PREFLIGHT_FAILED']),MAX_LOCAL_PREFLIGHT=20;
+type StillStep={id:string;status:string;output:string|null;cost_micro_usd:number|null;error_code:string|null};
+/** Which request of a still to use: the first that is not a settled refusal. Three provider attempts per still; a
+ * failure on this computer before anything reached the provider (missing ffmpeg, no key, catalog down; nothing
+ * charged) does not use one of them, so a fixed computer can draw the still again. Deterministic: a restart finds the
+ * same chain. */
+export async function pickStillAttempt(lookup:(attempt:number)=>Promise<{requestId:string;step:StillStep|null}>){
+ let found={requestId:'',step:null as StillStep|null};
+ for(let attempt=0,localFailures=0;;attempt++){
+  found=await lookup(attempt);const step=found.step;
+  // A still whose cost was reconciled after an unknown outcome was delivered and paid for: use it, never buy it again.
+  if(step?.status!=='failed'||step.error_code==='RECONCILED_NO_ACTIVATION')return found;
+  if(LOCAL_PREFLIGHT.has(step.error_code??'')&&!step.cost_micro_usd&&localFailures<MAX_LOCAL_PREFLIGHT){localFailures++;continue;}
+  if(attempt>=2+localFailures)return found;
+ }
+}
 /** Use the existing image admission/receipt path. Never retry a failed or unknown submission. */
 export function creativeStillProducer(job:{id:string;run_id:string;round_id:string;campaign_id:string},input:CreativeInputs,options:{director?:{blockId:string;directionId:string;resourceId:string};onReceipt?:(receipt:{stepId:string;costMicroUsd:number|null;reused:boolean})=>Promise<void>}={}):StillProducer{
  return async request=>{
@@ -13,14 +30,12 @@ export function creativeStillProducer(job:{id:string;run_id:string;round_id:stri
   // One request ID per still and attempt. A request the provider refused (settled as failed) may be retried twice with a
   // new ID; a request whose outcome is unknown is never resubmitted (it may have been charged).
   let requestId='',step:{id:string;status:string;output:string|null;cost_micro_usd:number|null;error_code:string|null}|null=null;
-  for(let attempt=0;attempt<3;attempt++){
+  ({requestId,step}=await pickStillAttempt(async attempt=>{
    // The words sent to the model are part of the request identity: a better prompt gets fresh attempts.
    const digest=createHash('sha256').update(`${job.run_id}:${job.round_id}:${request.key}:${createHash('sha256').update(`still-request@2\n${text}`).digest('hex')}${attempt?`:retry${attempt}`:''}`).digest('hex');
-   requestId=`${digest.slice(0,8)}-${digest.slice(8,12)}-4${digest.slice(13,16)}-a${digest.slice(17,20)}-${digest.slice(20,32)}`;
-   step=checked(await admin.from('studio_agent_steps').select('id,status,output,cost_micro_usd,error_code').eq('tenant_id',sharedTenant).eq('request_id',requestId).maybeSingle());
-   // A still whose cost was reconciled after an unknown outcome was delivered and paid for: use it, never buy it again.
-   if(step?.status!=='failed'||step.error_code==='RECONCILED_NO_ACTIVATION'||attempt===2)break;
-  }
+   const id=`${digest.slice(0,8)}-${digest.slice(8,12)}-4${digest.slice(13,16)}-a${digest.slice(17,20)}-${digest.slice(20,32)}`;
+   return {requestId:id,step:checked(await admin.from('studio_agent_steps').select('id,status,output,cost_micro_usd,error_code').eq('tenant_id',sharedTenant).eq('request_id',id).maybeSingle())};
+  }));
   const reused=!!step;
   if(!step){
    let response:Response;try{response=await fetch(new URL(`/api/studio/runs/${job.run_id}/steps`,host),{method:'POST',headers:{'Content-Type':'application/json',Origin:host.origin},body:JSON.stringify({role:'image',requestId,prompt:text,image:{aspectRatio:request.aspectRatio,referenceAssetIds:request.references,referenceUseConfirmed:true,...(request.derived?.length?{derivedReferences:request.derived}:{})},...(options.director?{director:{...options.director,maxCostMicroUsd:request.maxCostMicroUsd}}:{creative:{compileJobId:job.id,roundId:job.round_id,direction:input.direction,packHash:request.key,repair:false,maxCostMicroUsd:request.maxCostMicroUsd}})}),signal:AbortSignal.timeout(30000)});}catch(error){throw Object.assign(new Error('LOCAL_API_UNAVAILABLE'),{detail:`The build could not reach the app at ${host.origin} to request a still (${error instanceof Error?error.message:'network error'}). Keep next dev running there, or start the worker from the app so it uses the same address. Nothing was charged.`});}
