@@ -53,3 +53,24 @@ test('Local drafts continue by themselves after a text request that cost nothing
  assert.ok(LOCAL_RECOVERY_LIMIT>=5&&LOCAL_RECOVERY_LIMIT<=20,'bounded');
  assert.equal(LOCAL_TEXT_RESERVATION_MICRO_USD,1,'a Local text request reserves the minimum against money caps');
 });
+
+import {cliOutputRoom,CLI_OUTPUT_CEILING} from '../apps/local-runner/local-claude/transport';
+import {cliFailureCode} from '../packages/agents/claude-cli.local';
+import {localCallUsage as usageOf} from '../packages/agents/local-usage';
+test('a model turn has room to think and still finish its answer; extra turns inside a request are reported', ()=>{
+ assert.equal(cliOutputRoom(32768,'high'),CLI_OUTPUT_CEILING,'a designer turn: 32,768 for the answer was cut off by thinking');
+ assert.equal(cliOutputRoom(16384,'medium'),28384);assert.equal(cliOutputRoom(16384),16384,'no thinking: the answer limit');
+ assert.equal(cliOutputRoom(100000,'high'),100000,'never below the answer limit');
+ assert.equal(cliFailureCode('success'),'CLI_ERROR','an error result with subtype success is an error, not CLI_SUCCESS');
+ assert.equal(cliFailureCode('error_max_turns'),'CLI_ERROR_MAX_TURNS');
+ const row=usageOf({role:'designer',usage:{_local:{numTurns:4,internalAttempts:3,stopReason:'max_tokens',usage:{input_tokens:532000,output_tokens:66000}}}})!;
+ assert.match(row.trouble!,/4 model turns/);assert.match(row.trouble!,/written 3 times/);assert.match(row.trouble!,/cut off/);
+ assert.equal(usageOf({role:'designer',usage:{_local:{numTurns:1,usage:{input_tokens:1,output_tokens:1}}}})!.trouble,undefined);
+});
+
+import {largestInputParts} from '../packages/agents/local-usage';
+test('the largest parts of a request input are named, two levels deep', ()=>{
+ const parts=largestInputParts({input:{brand:'x'.repeat(240000),storyboard:'y'.repeat(40000),tiny:'z'},notes:'n'.repeat(8000),small:'s'});
+ assert.deepEqual(parts.map(p=>p.part),['input.brand','input.storyboard','notes']);assert.equal(parts[0].tokens,60000);
+ assert.deepEqual(largestInputParts(null),[]);
+});
