@@ -33,3 +33,12 @@
 - `npm run lint`: pass.
 - `tests/creative-stills-attempts.test.ts`: 3/3.
 - The creative, director, designer and image suites: 339 pass, 13 fail. The same 13 fail on `main`: 12 in `creative-skeleton` (missing local debug files) and "AD browser flow…" (needs a browser).
+
+## 5. Follow-up fix (same day): the app did not issue the extra attempt
+
+- **Bug:** director stills are admitted only with a request identity the app issues (`lib/server/director-image.ts`), and it issued attempts 0–2 only. The runner's fourth attempt, after three local failures, was refused with `UNISSUED_REQUEST_ID`. Nothing was sent or charged.
+- **Fix:** `packages/creative/still-attempts.ts` holds the rule for both the runner and the app (`attemptIssuable`). The app issues attempt *n* ≥ 3 only when at least *n* − 2 earlier attempts of the same still failed locally at cost 0, bounded at 23 attempts. Provider refusals still stop after three.
+- **Verification:**
+  - typecheck and lint pass;
+  - `creative-stills-attempts`, `director-image-admission` and `designer-money`: 10/10;
+  - creative, director, designer and image suites: 340 pass, 13 fail. The same 13 fail on `main`.

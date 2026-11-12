@@ -30,3 +30,15 @@ test('a delivered, running or reconciled still is used as it is; local failures 
  assert.ok(Number(endless.requestId.slice(1))<=22,'stops after a bounded number of local failures');
  assert.equal((await pickStillAttempt(chain([failed('MEDIA_TOOLS_UNAVAILABLE',5)]).lookup)).requestId,'r1','a charged failure is never treated as local');
 });
+
+import {attemptIssuable} from '../packages/creative/still-attempts';
+test('the app issues a fourth attempt only after a local failure, one per failure, never after a provider refusal', ()=>{
+ const local={status:'failed',error_code:'MEDIA_TOOLS_UNAVAILABLE',cost_micro_usd:0},refused={status:'failed',error_code:'IMAGE_RESPONSE_INVALID',cost_micro_usd:10};
+ for(const n of [0,1,2])assert.equal(attemptIssuable(n,[]),true);
+ assert.equal(attemptIssuable(3,[refused,refused,refused]),false);
+ assert.equal(attemptIssuable(3,[local,refused,refused]),true);
+ assert.equal(attemptIssuable(3,[local,local,local]),true);assert.equal(attemptIssuable(5,[local,local,local,local,local]),true);
+ assert.equal(attemptIssuable(5,[local,local,refused,refused,refused]),false);
+ assert.equal(attemptIssuable(3,[{...local,cost_micro_usd:5},refused,refused]),false,'a charged failure is not local');
+ assert.equal(attemptIssuable(-1,[]),false);assert.equal(attemptIssuable(23,Array(23).fill(local)),false,'bounded');
+});

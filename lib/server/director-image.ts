@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {checked} from './studio';
 import {ApiError} from './api';
 import {resourceRequest} from '@/packages/director/resources';
+import {attemptIssuable,PROVIDER_ATTEMPTS,MAX_LOCAL_PREFLIGHT} from '@/packages/creative/still-attempts';
 import type {BlockSnapshot,WorkState} from '@/packages/director/state';
 export async function directorImageAdmission(admin:SupabaseClient,tenant:string,runId:string,meta:{blockId:string;directionId:string;resourceId:string;maxCostMicroUsd:number},prompt:string,requestId:string,image:{aspectRatio:string;referenceAssetIds:string[];derivedSha256?:string[]},reservation:number){
  const block=checked(await admin.from('studio_director_blocks').select('*').eq('id',meta.blockId).eq('tenant_id',tenant).eq('run_id',runId).single());
@@ -28,7 +29,10 @@ export async function directorImageAdmission(admin:SupabaseClient,tenant:string,
   if(used.size>=estimate.maxStills)throw new ApiError(409,'STILL_COUNT_EXHAUSTED','The approved number of pictures for this direction is used.');
  }
  if(meta.maxCostMicroUsd>estimate.perStillMicroUsd||reservation>meta.maxCostMicroUsd)throw new ApiError(409,'MEDIA_PRICE_CHANGED','Review the current still price.');
- const spec=resourceRequest(resource,input,estimate.perStillMicroUsd),ids=Array.from({length:3},(_,attempt)=>{const h=createHash('sha256').update(`${runId}:${input.roundId}:${spec.key}:${createHash('sha256').update(`still-request@2\n${prompt}`).digest('hex')}${attempt?`:retry${attempt}`:''}`).digest('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;});
- if(!ids.includes(requestId))throw new ApiError(409,'UNISSUED_REQUEST_ID','The application must issue the resource request identity.');
+ const spec=resourceRequest(resource,input,estimate.perStillMicroUsd),ids=Array.from({length:PROVIDER_ATTEMPTS+MAX_LOCAL_PREFLIGHT},(_,attempt)=>{const h=createHash('sha256').update(`${runId}:${input.roundId}:${spec.key}:${createHash('sha256').update(`still-request@2\n${prompt}`).digest('hex')}${attempt?`:retry${attempt}`:''}`).digest('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;});
+ // Attempts beyond the three provider attempts are issued only for stills whose earlier attempts failed on this
+ // computer before the provider was asked (nothing charged), one per such failure.
+ const n=ids.indexOf(requestId),earlier=n>=PROVIDER_ATTEMPTS?checked(await admin.from('studio_agent_steps').select('request_id,status,error_code,cost_micro_usd').eq('run_id',runId).in('request_id',ids.slice(0,n)))??[]:[];
+ if(!attemptIssuable(n,ids.slice(0,n).map(id=>(earlier as {request_id:string;status:string;error_code:string|null;cost_micro_usd:number|null}[]).find(s=>s.request_id===id)??null)))throw new ApiError(409,'UNISSUED_REQUEST_ID','The application must issue the resource request identity.');
  return {directorBlockId:block.id,directorDirectionId:meta.directionId,directorRole:'resources',directorIterationId:(work.state as WorkState).iterationId??input.iterationId,directorResourceId:resource.id};
 }
