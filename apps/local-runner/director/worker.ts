@@ -32,7 +32,7 @@ import {staticDesignResponseFor,hasAudio} from '../../../packages/director/contr
 import {assemblerInstructions,assemblerProviderSchema} from '../../../packages/agents/prompts/assembler-v1';
 import {readDesign} from '../../../packages/director/contract';
 import {localCallUsage,usageLine} from '../../../packages/agents/local-usage';
-import {textExecutionFor,transportFor,markSubscriptionLimit,type LocalRuntime} from '../local-claude/runtime';
+import {textExecutionFor,transportFor,sharedContextFor,markSubscriptionLimit,type LocalRuntime} from '../local-claude/runtime';
 import {paidText,requestId,roleNames,resumeBudgetClock,retryableProviderFailure,type Role} from '../../../packages/director/money';
 import type {BlockSnapshot,WorkState,ADQuestion} from '../../../packages/director/state';
 import {directorLedger,designerUsage,directorTextConfig,directorInputAllowance,flushDirectorReceipts} from './ledger';
@@ -145,7 +145,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    // The AD sees that an answer is being written and since when (a long answer streams for minutes).
    state.activeCall={role,startedAt:Date.now()};note(`${role}: request sent${JSON.stringify(identity).includes('"retry"')?' (retry)':''}.`);await save();
    // LC0: a Local answer's usage becomes a request line in the timeline ("in 12k · cached 140k · out 3k").
-   let lastUsage:unknown=null;const baseTransport=transportFor(execution,local),transport:typeof baseTransport=execution.mode==='local_claude'?async(...a:Parameters<typeof baseTransport>)=>{const r=await baseTransport(...a);lastUsage=r.usage;return r;}:baseTransport;
+   let lastUsage:unknown=null;const baseTransport=transportFor(execution,local,{shared:sharedContextFor(admin,execution,input.runId)}),transport:typeof baseTransport=execution.mode==='local_claude'?async(...a:Parameters<typeof baseTransport>)=>{const r=await baseTransport(...a);lastUsage=r.usage;return r;}:baseTransport;
    try{const answer=await paidText({identity:localIdentity?{call:id,...localIdentity}:id,transport,localText:execution.mode==='local_claude',role:modelRole,model:prior?.model_id??config.modelId,prompt:prior?.prompt??prompt,snapshot:cfg,allowanceMicroUsd:admitted.remainingMicroUsd,images,ledger:directorLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,device,token:work.lease_token})});note(`${role}: answer received (${answer.text.length.toLocaleString('en-US')} characters, $${(answer.costMicroUsd/1e6).toFixed(3)}${answer.reused?', saved earlier':''}).`);
     const used=lastUsage?localCallUsage({role,usage:lastUsage}):null;if(used)await events.emit(`local-usage:${id}`,{stepId:`local-usage:${id}`,kind:'request',status:'done',model:used.model,costMicroUsd:0,message:`${role} (Claude subscription): ${usageLine(used)}`,detail:{localUsage:used}}).catch(()=>{});
     return answer;}

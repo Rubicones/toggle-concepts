@@ -63,3 +63,52 @@ test('LC1: lean calls — replaced prompt, no tools, one fixed folder, a turn li
  const n=join(dir,'n.json');await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:n},{workDir:work}))(f.model,f.prompt,f.cfg,f.images);
  assert.ok(!JSON.parse(await readFile(n,'utf8')).args.includes('--max-turns'),'no flag when the device did not qualify it');
 });
+
+import {buildRunContext,stableContextJson,sharedLayout,sharedLayoutDifferences,roleHeading} from '../packages/agents/run-context';
+import {prepareTextRequest,toCliRequest} from '../packages/agents/prepared-request';
+const BRIEF=JSON.stringify({schemaVersion:'1.0',revisionId:'7d1e3f0a-1111-4222-8333-944455556666',campaignId:'8d1e3f0a-1111-4222-8333-944455556666',submittedAt:'2026-11-11T10:00:00Z',campaignName:'Spring',questionnaire:{goal:'Sign-ups',audience:'Runners'},sources:[{id:'x',sha256:'ab',filename:'deck.pdf'}]});
+const BRAND=JSON.stringify({kit:{palette:['#112233'],voice:'Calm'},originC1Id:'9d1e3f0a-1111-4222-8333-944455556666',createdAt:'2026-11-11T11:00:00Z'});
+
+test('LC2: the run context is deterministic and carries no ids, timestamps, hashes or paths', ()=>{
+ const a=buildRunContext({briefText:BRIEF,brandText:BRAND}),b=buildRunContext({briefText:BRIEF,brandText:BRAND});
+ assert.equal(a.sha256,b.sha256);assert.equal(a.system+a.brief,b.system+b.brief);
+ const all=a.system+a.brief;
+ assert.ok(!/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(all),'no ids');
+ assert.ok(!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(all),'no timestamps');
+ assert.ok(!/sha256|"ab"|\/home\/|\/Users\//.test(all),'no hashes or paths');
+ assert.match(all,/"goal": "Sign-ups"/);assert.match(all,/"voice": "Calm"/);assert.match(all,/deck\.pdf/);
+ assert.deepEqual(a.holds,{brief:true,brand:true,skills:[]});
+ assert.equal(stableContextJson({b:1,a:{z:2,y:'2026-01-01T00:00:00Z'}}),'{\n "a": {\n  "z": 2\n },\n "b": 1\n}');
+});
+
+test('LC2: in a shared run every role starts with byte-identical bytes; role instructions and input follow', async()=>{
+ const ctx=buildRunContext({briefText:BRIEF,brandText:BRAND}),dir=await mkdtemp(join(tmpdir(),'lc2-'));
+ const designer=fixture('designer-cached-claude'),critic=fixture('critic-no-images-cached');
+ const prefixImages=designer.images.filter(i=>i.prefix);
+ const r1=join(dir,'designer.json'),r2=join(dir,'critic.json');
+ await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:r1}),{shared:async()=>ctx})(designer.model,designer.prompt,designer.cfg,designer.images);
+ await cliTextTransport(await fakeSetup('ok',{FAKE_CLAUDE_RECORD:r2}),{shared:async()=>ctx})(critic.model,critic.prompt,critic.cfg,prefixImages);
+ const a=JSON.parse(await readFile(r1,'utf8')),b=JSON.parse(await readFile(r2,'utf8'));
+ assert.equal(a.system,ctx.system);assert.equal(b.system,ctx.system,'one system prompt for every role');
+ const upToRole=(content:{type:string;text?:string}[])=>content.slice(0,content.findIndex(c=>c.type==='text'&&c.text!.startsWith('YOUR ROLE\n')));
+ assert.deepEqual(upToRole(a.content),upToRole(b.content),'images and brief identical across roles');
+ assert.equal(upToRole(a.content).length,prefixImages.length*2+1);
+ assert.equal(a.content[prefixImages.length*2+1].text,roleHeading(`${designer.cfg.instructions}\n\n${designer.cfg.protocolInstructions}`),'the role instructions come right after the shared part');
+});
+
+test('LC2: the shared layout loses, adds or moves nothing; fresh runs keep their layout', ()=>{
+ const ctx=buildRunContext({briefText:BRIEF,brandText:BRAND}),f=fixture('designer-cached-claude'),p=prepareTextRequest(f.model,f.prompt,f.cfg,f.images);
+ const cli=toCliRequest(p,{executionModel:'m',schemaMode:'cli'}),shared=sharedLayout(cli,p,ctx);
+ assert.deepEqual(sharedLayoutDifferences(shared,cli,p,ctx),[]);
+ assert.equal(shared.parts.length,cli.parts.length+2);
+ assert.ok(sharedLayoutDifferences({...shared,parts:shared.parts.slice(0,-1)},cli,p,ctx).length>0);
+ assert.ok(sharedLayoutDifferences({...shared,systemPrompt:cli.systemPrompt},cli,p,ctx).length>0);
+});
+
+test('LC2: a run context is frozen once; later builds never replace it', async()=>{
+ process.env.TOGGLE_HOME=await mkdtemp(join(tmpdir(),'lc2-home-'));
+ const {freezeRunContext,readRunContext}=await import('../apps/local-runner/local-claude/run-context');
+ const first=buildRunContext({briefText:BRIEF,brandText:BRAND}),second=buildRunContext({briefText:BRIEF,brandText:null});
+ await freezeRunContext('run-1',first);const kept=await freezeRunContext('run-1',second);
+ assert.equal(kept.sha256,first.sha256);assert.equal((await readRunContext('run-1'))!.sha256,first.sha256);
+});

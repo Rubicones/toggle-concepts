@@ -8,6 +8,7 @@ import {join} from 'node:path';
 import {cliArgs,childEnv,hasUnexpectedCliTools,runCli,streamUserMessage,type CliEvent,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
 import {prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCliRequest,type ImageInput,type PreparedTextRequest} from '../../../packages/agents/prepared-request';
 import {localModelFor,type LocalModelChoice} from '../../../packages/agents/local-models';
+import {sharedLayout,sharedLayoutDifferences,type RunContext} from '../../../packages/agents/run-context';
 import {textRequestQuote} from '../../../packages/agents/text-quote';
 import type {TextReceipt,TextSnapshot} from '../../../packages/agents/text-provider';
 import type {CapabilityProfile} from './qualify';
@@ -38,6 +39,8 @@ export type LocalTextDetails={
  /** Hypothetical text cost on the target model (plan §9, quantity 3): Sonnet's tokens at the target's prices. A forecast
   * with an unmeasured error, never an actual cost or a receipt. */
  forecast?:{targetModel:string;microUsd:number;method:'cli-tokens-x-target-price@1';errorMeasured:false};
+ /** LC2: the shared run context this request started with ('shared' runs). */
+ sharedContext?:{sha256:string;tokens:number;holds:RunContext['holds'];images:number};
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
 
@@ -49,7 +52,9 @@ function usageOf(r:CliResult,d:Omit<LocalTextDetails,'events'|'stderr'>){
  return r.usage?{prompt_tokens:(u.input_tokens??0)+cacheRead+cacheWrite,completion_tokens:u.output_tokens??0,prompt_tokens_details:{cached_tokens:cacheRead,cache_write_tokens:cacheWrite},_local:d}:{_local:d};
 }
 
-export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSignal;record?:(p:PreparedTextRequest)=>Promise<string>;onEvent?:(e:CliEvent)=>void}={}){
+export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSignal;record?:(p:PreparedTextRequest)=>Promise<string>;onEvent?:(e:CliEvent)=>void;
+ /** LC2: the frozen run context of a 'shared' run; null keeps the fresh layout (for example before the brand is accepted). */
+ shared?:()=>Promise<RunContext|null>}={}){
  return async function cliText(model:string,prompt:string,cfg:TextSnapshot,images:ImageInput[]=[],requestTag?:string):Promise<LocalTextReceipt>{
   const refuse=(failure:string):LocalTextReceipt=>({provider:'claude-cli',outcome:'failed',cost:0,text:null,generation:null,usage:null,failure});
   // The same refusals as submitText, before anything is sent.
@@ -61,6 +66,9 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   let cli;try{cli=toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode});}catch(error){return refuse((error as Error).message);}
   // The input check of plan §3.2 runs on every call, not only in tests.
   if(projectionDifferences(projectPrepared(prepared),projectCli(cli,prepared.output.schema?.schema)).length)return refuse('LOCAL_CONTEXT_MISMATCH');
+  // LC2: in a 'shared' run every request starts with the same run context; the role's instructions and input follow it.
+  const ctx=options.shared?await options.shared():null;
+  if(ctx){const original=cli;cli=sharedLayout(original,prepared,ctx);if(sharedLayoutDifferences(cli,original,prepared,ctx).length)return refuse('LOCAL_CONTEXT_MISMATCH');}
   const recordPath=options.record?await options.record(prepared):undefined;
   const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=setup.workDir??join(dir,'work');
   try{
@@ -77,7 +85,7 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{})};
+    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};

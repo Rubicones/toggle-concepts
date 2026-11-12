@@ -12,8 +12,13 @@ import {readDevice,toggleHome,type Device} from './device';
 import {profilePath,readProfile} from './qualify';
 import {cliTextTransport,localSetupFrom,type LocalCliSetup,type LocalTextReceipt} from './transport';
 import {recordPreparedRequest} from './record';
+import {loadRunContext} from './run-context';
+import {commonSkills} from './skills';
+import type {RunContext} from '../../../packages/agents/run-context';
 
-export type TextExecution={mode:'openrouter'|'local_claude';device_id?:string|null;execution_model?:string|null;cli_version?:string|null;mapping_version?:string|null};
+export type TextExecution={mode:'openrouter'|'local_claude';device_id?:string|null;execution_model?:string|null;cli_version?:string|null;mapping_version?:string|null;
+ /** LC2: 'shared' runs start every request with the frozen run context; absent or 'fresh' keeps today's layout. */
+ context_mode?:'fresh'|'shared'|null};
 export type LocalRuntime={device?:Device;setup?:LocalCliSetup;reason?:string;schema:boolean};
 
 const version=(bin:string)=>new Promise<string>(done=>execFile(bin,['--version'],{env:childEnv(process.env),timeout:15000},(error,out)=>done(error?'':String(out).trim())));
@@ -34,20 +39,25 @@ export async function loadLocalRuntime(admin:SupabaseClient):Promise<LocalRuntim
 
 /** The mode frozen on a scope; scopes from before the Local schema (no row, no table) are OpenRouter. */
 export async function textExecutionFor(admin:SupabaseClient,kind:'run'|'brand-analysis',scope:string):Promise<TextExecution>{
- const row=await admin.from('studio_text_executions').select('mode,device_id,execution_model,cli_version,mapping_version').eq('scope_kind',kind).eq('scope_id',scope).maybeSingle();
+ // All columns: a column added by a later migration must never make a Local run look like an OpenRouter one.
+ const row=await admin.from('studio_text_executions').select('*').eq('scope_kind',kind).eq('scope_id',scope).maybeSingle();
  if(row.error||!row.data)return {mode:'openrouter'};
  return row.data as TextExecution;
 }
 
 /** submitText for OpenRouter scopes; the CLI transport for this device's Local scopes; a named stop otherwise. */
-export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal}={}):typeof submitText{
+/** LC2: the run context loader of a 'shared' run; undefined for 'fresh' runs. */
+export function sharedContextFor(admin:SupabaseClient,execution:TextExecution,runId:string){
+ return execution.mode==='local_claude'&&execution.context_mode==='shared'?()=>loadRunContext(admin,runId,()=>commonSkills(admin,runId)):undefined;
+}
+export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>}={}):typeof submitText{
  if(execution.mode!=='local_claude')return submitText;
  if(!runtime.setup||!runtime.device)throw new Error(runtime.reason??'LOCAL_PROFILE_REQUIRED');
  if(execution.device_id!==runtime.device.id)throw new Error('LOCAL_DEVICE_MISMATCH');
  // A run keeps the model and CLI it started with; a change is an explicit stop, never a silent switch.
  if(execution.execution_model!==runtime.setup.sonnet)throw new Error('LOCAL_MODEL_CHANGED');
  if(execution.cli_version&&execution.cli_version.split(/\s+/)[0]!==runtime.setup.cliVersion.split(/\s+/)[0])throw new Error('LOCAL_CLI_CHANGED');
- return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p)});
+ return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p),...(options.shared?{shared:options.shared}:{})});
 }
 
 // ---- Subscription waiting (plan §10): durable on the device, bounded probes, no busy loop. ----
