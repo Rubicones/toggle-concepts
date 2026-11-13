@@ -5,6 +5,7 @@ import {z} from 'zod';
 import {imageMethodSchemas} from './contract';
 import type {DirectionInput,Resource} from './types';
 import type {Finding} from './layout-inspection';
+import {resolveAssetReferences} from './asset-names';
 
 /** Blocks quoted with the designer (brief.designerVersion 1). Earlier blocks keep the director and the coder. */
 export const usesDesigner=(input:Pick<DirectionInput,'brief'|'stage'>)=>input.stage==='draft'&&Number(input.brief.designerVersion)>=1;
@@ -72,6 +73,8 @@ export function readDesignerTurn(value:unknown,input:Pick<DirectionInput,'storyb
  if(!scenes.has(turn.focus.sceneId))throw new Error(`DESIGNER_UNKNOWN_SCENE: focus.sceneId must be one of ${[...scenes].join(', ')}.`);
  for(const p of turn.pictures){
   if(!scenes.has(p.scene))throw new Error(`DESIGNER_UNKNOWN_SCENE: a picture's scene must be one of ${[...scenes].join(', ')}.`);
+  // C4: a digest names supplied files by name; the app maps names back to ids.
+  if(input.brief&&Number(input.brief.digestVersion)===1&&'brief' in input)p.referenceAssetIds=resolveAssetReferences(p.referenceAssetIds,input as Pick<DirectionInput,'assets'|'brief'>);
   const unknown=p.referenceAssetIds.find(a=>!assets.has(a));if(unknown)throw new Error(`DESIGNER_UNKNOWN_REFERENCE: ${unknown} is not a supplied file.`);
   if(p.becomes&&!p.proxyFor)delete p.becomes;
  }
