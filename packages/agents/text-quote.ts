@@ -2,7 +2,7 @@ import {cacheWriteRate} from './cache-usage';
 import type {TextSnapshot} from './text-provider';
 /** Same conservative byte-to-token bound used for admission; this is not a bill. */
 export function textRequestQuote(prompt:string,cfg:TextSnapshot,transportTask='',visionCount=0){
- const inputTokenBound=Buffer.byteLength(cfg.instructions+(cfg.protocolInstructions??'')+prompt+transportTask+(cfg.contextText??'')+(cfg.upstreamText??'')+JSON.stringify(cfg.campaignContext??null)+JSON.stringify(cfg.upstream??[])+JSON.stringify(cfg.responseSchema??null),'utf8')+2048+visionCount*4224;
+ const inputTokenBound=Buffer.byteLength((cfg.roleInstructions??cfg.instructions)+(cfg.protocolInstructions??'')+prompt+transportTask+(cfg.contextText??'')+(cfg.upstreamText??'')+JSON.stringify(cfg.campaignContext??null)+JSON.stringify(cfg.upstream??[])+JSON.stringify(cfg.responseSchema??null),'utf8')+2048+visionCount*4224;
  const reservationMicroUsd=Math.max(1,Math.ceil((inputTokenBound*cacheWriteRate(cfg.pricing,cfg.cachePrompt)+cfg.maxOutputTokens*cfg.pricing.outputPrice)*1000000*1.1));
  if(!Number.isSafeInteger(reservationMicroUsd)||cfg.pricing.inputPrice<0||cfg.pricing.outputPrice<0)throw new Error('MODEL_PRICE_UNAVAILABLE');
  return {inputTokenBound,reservationMicroUsd};

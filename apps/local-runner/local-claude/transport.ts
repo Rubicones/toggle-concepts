@@ -137,6 +137,9 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
  /** C9: more materials this request may ask for by name (visual direction: the full brand sheet's pages). */
  materials?:MaterialEntry[]}={}){
  return async function cliText(model:string,prompt:string,cfg:TextSnapshot,images:ImageInput[]=[],requestTag?:string):Promise<LocalTextReceipt>{
+  // The version 4/5 designer's own role line travels beside the frozen instructions (which the database admits the
+  // request against) and is what the request sends.
+  if(cfg.roleInstructions!==undefined){const {roleInstructions,...rest}=cfg;cfg={...rest,instructions:roleInstructions};}
   const refuse=(failure:string):LocalTextReceipt=>({provider:'claude-cli',outcome:'failed',cost:0,text:null,generation:null,usage:null,failure});
   // The same refusals as submitText, before anything is sent.
   if(cfg.outputFormat==='json_schema'&&!cfg.responseSchema)return refuse('RESPONSE_SCHEMA_REQUIRED');
