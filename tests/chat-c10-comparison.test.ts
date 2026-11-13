@@ -74,5 +74,5 @@ test('C10: the chat picture is checked by its bytes; the table is closed to the 
  assert.ok(readFileSync('supabase/tests/chat-comparisons.sql','utf8').includes('COMPARISON_PAIR_FROZEN'));
  const page=readFileSync('components/studio/chat-comparison.tsx','utf8'),server=readFileSync('lib/server/chat-comparison.ts','utf8');
  assert.match(page,/Update needed: apply migration <code>20261113000400_chat_comparisons\.sql<\/code>/);assert.match(server,/schemaReady:false/);
- for(const words of ['сдержанный','продуктовый','цифровой интерфейс','первую попытку','Shared Local','версии 4','A и B'])assert.ok(page.includes(words),words);
+ for(const words of ['сдержанный','продуктовый','цифровой интерфейс','первую попытку','Shared Local','версии по умолчанию (5)','A и B'])assert.ok(page.includes(words),words);
 });
