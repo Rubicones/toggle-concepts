@@ -129,12 +129,14 @@ export function designerTurnSummary(results:unknown[]):string[]{
 /** The designer's saved progress in the work state (point 4b/4e). */
 export type DesignerLoopState={
  /** LC4 (shared Local runs): the direction's stored conversation after its last accepted turn, and the files it has seen. */
- session?:{role:string;sessionId:string;tokens:number};filesSeen?:Record<string,string>;
+ session?:{role:string;sessionId:string;tokens:number;/** C6: the size of this conversation's first request (its seed), for the relative cap */seed?:number};filesSeen?:Record<string,string>;
  /** C3: materials fetched for the next turn (names), and those already in the current conversation. */
  materialsDue?:string[];materialsSeen?:string[];
  /** C5 (designerVersion 4, stage H): the app's next message (the render note, corrections, the reviewer's notes); stage E
   * has opened in the conversation (its mechanics were sent once). */
  heroNote?:string;stageEOpened?:boolean;
+ /** C6: the phase of stage E (other scenes, formats, variations), so the timeline marks each change once. */
+ extensionPhase?:'scenes'|'formats'|'variations';
  /** Point 4a: the designer's notes, sent at the top of every request (outside the 12-result window); a restart keeps them. */
  notes?:string;
  /** point 4b: the turn after this render was already refused once for a missing seen */

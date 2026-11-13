@@ -6,7 +6,8 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createCanvas} from '@napi-rs/canvas';
 import recovery from '../fixtures/director/static/coder-recovery.json';
-import {parseHeroAnswer,actionsCorrection,stageHFindings,renderNote,heroTask,heroChat,heroReviewContext,stageEOpening,STAGE_H_INSTRUCTIONS,HERO_CRITIC_INSTRUCTIONS} from '../packages/director/hero-chat';
+import {parseHeroAnswer,actionsCorrection,stageHFindings,renderNote,heroTask,heroChat,heroReviewContext,STAGE_H_INSTRUCTIONS,HERO_CRITIC_INSTRUCTIONS} from '../packages/director/hero-chat';
+import {stageEMechanics} from '../packages/director/extension-chat';
 import {designerDigestText,assetNames} from '../packages/director/designer-digest';
 import {designerInstructionsFor} from '../packages/agents/prompts/designer-v1';
 import {designerTurnResponseFor} from '../packages/director/designer';
@@ -47,7 +48,7 @@ test('C5: designerVersion 4 only; stage H text is short, aesthetic-first and fre
  assert.match(STAGE_H_INSTRUCTIONS,/stops the scroll/);assert.match(STAGE_H_INSTRUCTIONS,/Invent your own visual language/);assert.match(STAGE_H_INSTRUCTIONS,/rendered 3D object/);
  const i=input(),task=heroTask(i),digest=designerDigestText(i,{sceneIds:false});
  assert.ok(!UUID.test(task)&&!UUID.test(digest),'stage H names scenes only');assert.match(task,/^THE HERO FRAME\nMake Scene 1 of 5 as one finished frame in 1080×1920/);assert.match(task,/"LOST TRACK OF YOUR BEST TAKE\?"/);
- assert.match(stageEOpening(i,'MECHANICS'),new RegExp(`Scene 1 = ${i.storyboard[0].id}`),'stage E gives the ids its code uses');
+ assert.match(stageEMechanics(i),new RegExp(`Scene 1 = ${i.storyboard[0].id}`),'stage E gives the ids its code uses');
  assert.equal(stageOf('designer',{hero:true}),'design-hero');assert.equal(stageEffort('design-hero'),'high');
  const ctx=heroReviewContext(digest,[{severity:'hard',detail:'The logo is missing.'},{severity:'soft',detail:'Text overlaps.'}]);
  assert.match(ctx,/must fix: The logo is missing\./);assert.match(ctx,/1 other observation/);assert.ok(!/I tried|seen/.test(ctx),'no designer history');

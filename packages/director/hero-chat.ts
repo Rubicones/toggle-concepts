@@ -11,14 +11,16 @@ import {heroScene,usesEngineKit} from './designer';
 export const heroChat=(input:Pick<DirectionInput,'brief'>)=>usesEngineKit(input)&&Number(input.brief.designerVersion)>=4;
 
 const PATH=/^(?!\/)(?!.*\.\.)[\w-]+(?:\/[\w.-]+)*\.(?:tsx|ts|jsx|js|css|json|svg)$/;
-const pictureSchema=z.strictObject({purpose:z.string().min(1).max(600),prompt:z.string().min(1).max(4000),aspect:z.string().regex(/^\d{1,3}:\d{1,3}$/),
+export const pictureSchema=z.strictObject({purpose:z.string().min(1).max(600),prompt:z.string().min(1).max(4000),aspect:z.string().regex(/^\d{1,3}:\d{1,3}$/),
  references:z.array(z.string().min(1).max(120)).max(3).optional(),mustNotContain:z.array(z.string().min(1).max(300)).max(20).optional(),cutout:z.boolean().optional(),proxyFor:z.enum(['3d','video']).optional(),becomes:z.string().max(160).optional()});
 export const heroActionsSchema=z.strictObject({render:z.boolean().optional(),review:z.boolean().optional(),pictures:z.array(pictureSchema).max(4).optional(),materials:z.array(z.strictObject({name:z.string().min(1).max(80),why:z.string().min(1).max(200)})).max(4).optional()});
 export type HeroActions=z.infer<typeof heroActionsSchema>;
-export type HeroAnswer={prose:string;files:{path:string;source:string}[];actions:HeroActions|null;actionsError?:string;raw:{actions?:string}};
+export type ChatAnswer<A>={prose:string;files:{path:string;source:string}[];actions:A|null;actionsError?:string;raw:{actions?:string}};
+export type HeroAnswer=ChatAnswer<HeroActions>;
+export const parseHeroAnswer=(text:string):HeroAnswer=>parseChatAnswer(text,heroActionsSchema);
 
 /** Reads a chat answer. Files without a readable path and a malformed actions block are reported, never fatal. */
-export function parseHeroAnswer(text:string):HeroAnswer{
+export function parseChatAnswer<A>(text:string,schema:z.ZodType<A>):ChatAnswer<A>{
  const fence=/```([^\n`]*)\n([\s\S]*?)```/g,files:{path:string;source:string}[]=[],prose:string[]=[];let last=0,actionsText:string|undefined,m:RegExpExecArray|null;
  while((m=fence.exec(text))){
   const before=text.slice(last,m.index);last=m.index+m[0].length;
@@ -33,8 +35,8 @@ export function parseHeroAnswer(text:string):HeroAnswer{
   if(path)files.push({path,source:body.replace(/\s+$/,'')+'\n'});else prose.push(m[0]);
  }
  prose.push(text.slice(last));
- let actions:HeroActions|null=null,actionsError:string|undefined;
- if(actionsText!==undefined){try{actions=heroActionsSchema.parse(JSON.parse(actionsText));}catch(error){actionsError=error instanceof SyntaxError?'it is not valid JSON':error instanceof z.ZodError?error.issues.slice(0,3).map(i=>`${i.path.join('.')||'block'}: ${i.message}`).join('; '):'it could not be read';}}
+ let actions:A|null=null,actionsError:string|undefined;
+ if(actionsText!==undefined){try{actions=schema.parse(JSON.parse(actionsText));}catch(error){actionsError=error instanceof SyntaxError?'it is not valid JSON':error instanceof z.ZodError?error.issues.slice(0,3).map(i=>`${i.path.join('.')||'block'}: ${i.message}`).join('; '):'it could not be read';}}
  return {prose:prose.join('').replace(/\n{3,}/g,'\n\n').trim(),files,actions,...(actionsError?{actionsError}:{}),raw:actionsText!==undefined?{actions:actionsText}:{}};
 }
 /** The one-line correction for a malformed actions block: the files of that answer were applied. */
@@ -90,8 +92,4 @@ export const HERO_CRITIC_INSTRUCTIONS=`You review one hero frame of an advertisi
 export function heroReviewContext(digest:string,findings:{severity:string;detail:string}[]){
  const hard=findings.filter(f=>f.severity==='hard');
  return `${digest}\n\nMEASURED IN THE RENDER\n${hard.length?hard.slice(0,10).map(f=>`- must fix: ${f.detail}`).join('\n'):'- nothing that must be fixed'}${findings.length>hard.length?`\n- ${findings.length-hard.length} other observation${findings.length-hard.length===1?'':'s'} for the designer to weigh`:''}`;
-}
-/** The message that opens stage E once the hero is accepted: the scenes by name with the ids the code uses. */
-export function stageEOpening(input:DirectionInput,mechanics:string){
- return `THE HERO FRAME IS ACCEPTED. NOW THE OTHER SCENES AND FORMATS.\nCarry the hero's decisions into every scene: its type, hierarchy, the product's presence and the brand's system.\nScene names and the ids your code and answers use:\n${input.storyboard.map((s,i)=>`Scene ${i+1} = ${s.id}`).join('\n')}\n\n${mechanics}`;
 }

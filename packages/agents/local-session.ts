@@ -10,7 +10,12 @@ export const INDEPENDENT_ROLES:ReadonlySet<string>=new Set(['critic','research',
 export const CONVERSATION_CAP=120000;
 
 /** A stored point of a conversation: the session after a succeeded request, and how large the conversation was then. */
-export type StoredPoint={role:string;sessionId:string;tokens:number;at?:string};
+export type StoredPoint={role:string;sessionId:string;tokens:number;at?:string;/** C6: the size of the conversation's first request */seed?:number};
+/** C6 (chat-shaped plan): how much a designer conversation may grow beyond its seed before it is condensed. */
+export const WORKING_ROOM=100000;
+/** C6: the cap of a conversation is relative: its seed (one full request) plus a working room, never below the seed,
+ * so a condensed conversation is never condensed again at once (B2). Without a known seed, the fixed cap. */
+export const relativeCap=(seed:number|undefined,room=WORKING_ROOM)=>seed===undefined?CONVERSATION_CAP:Math.max(seed,0)+room;
 export type Plan=(SessionPlan&{condensed?:false;/** C1: the request carries only what the stored conversation lacks (designer turns): a missing conversation must not be restarted with it */shortPayload?:boolean})|{condensed:true;resume?:undefined;fork?:undefined;sameRole?:undefined}|null;
 
 /**

@@ -21,7 +21,8 @@ import {publishDirectorReference,processDirectorDelivery,restoreIteration,type S
 import {materialize,visionImages,referenceEntries,sheetEntries} from './assets';
 import {fetchMaterials,loadMaterials,materialsUsed} from '../local-claude/materials';
 import {designerDigestEntries,designerDigestText,usesDigest} from '../../../packages/director/designer-digest';
-import {heroChat,HERO_CRITIC_INSTRUCTIONS,heroReviewContext,STAGE_H_INSTRUCTIONS,stageEOpening} from '../../../packages/director/hero-chat';
+import {heroChat,HERO_CRITIC_INSTRUCTIONS,heroReviewContext,STAGE_H_INSTRUCTIONS} from '../../../packages/director/hero-chat';
+import {runExtensionChat} from './extension-chat-loop';
 import {runHeroChat,HERO_TURN_SHARE} from './hero-chat-loop';
 import {plainText} from '../../../packages/director/digest';
 import {budgetLeft,materialBudgetFor} from '../../../packages/agents/materials';
@@ -40,7 +41,7 @@ import {readDesign} from '../../../packages/director/contract';
 import {localCallUsage,usageLine} from '../../../packages/agents/local-usage';
 import {skillRoleOf} from '../../../packages/agents/skill-files';
 import {stageOf} from '../../../packages/agents/stage-effort';
-import {designerPlan,conversationTokens,conversationLabel,storedSize,continuesOwnConversation,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
+import {designerPlan,conversationTokens,conversationLabel,storedSize,continuesOwnConversation,relativeCap,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
 import {textExecutionFor,transportFor,sharedContextFor,latestPlanningPoint,markSubscriptionLimit,type LocalRuntime} from '../local-claude/runtime';
 import {paidText,requestId,roleNames,resumeBudgetClock,retryableProviderFailure,type Role} from '../../../packages/director/money';
 import type {BlockSnapshot,WorkState,ADQuestion} from '../../../packages/director/state';
@@ -185,10 +186,11 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
   // C1 (chat-shaped plan): the turn's conversation plan is decided BEFORE its request is built, so the loop sends the
   // short payload only on a real continuation of the designer's own conversation, and the transport uses that same plan.
   const designerConversation=(()=>{let pending:StoredPoint|null=null,decided:Plan|undefined;const loopState=()=>(state.designer??{}) as DesignerLoopState;
-   const compute=async():Promise<Plan>=>designerPlan({session:loopState().session},loopState().session?null:await latestPlanningPoint(admin,input.runId));
+   // C6 (designerVersion 4): the cap is relative to the conversation's seed (its first request) plus a working room.
+   const compute=async():Promise<Plan>=>designerPlan({session:loopState().session},loopState().session?null:await latestPlanningPoint(admin,input.runId),heroChat(input)?relativeCap(loopState().session?.seed):undefined);
    return {plan:async():Promise<Plan>=>decided!==undefined?decided:compute(),
     decide:async()=>{decided=await compute();return continuesOwnConversation(decided);},
-    answered:(usage:unknown)=>{const l=(usage as {_local?:{sessionId?:string;conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0];conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted'}}}|null)?._local;decided=undefined;pending=l?.sessionId&&l.conversation?{role:'designer',sessionId:l.sessionId,tokens:storedSize(l)}:null;if(pending&&l?.conversation&&['condensed','restarted'].includes(l.conversation.kind))void events.emit(`conversation:${l.sessionId}`,{stepId:`conversation:${l.sessionId}`,kind:'compaction',status:'done',costMicroUsd:0,message:conversationLabel(l.conversation.kind,'designer')}).catch(()=>{});},
+    answered:(usage:unknown)=>{const l=(usage as {_local?:{sessionId?:string;conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0];conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted'}}}|null)?._local;decided=undefined;pending=l?.sessionId&&l.conversation?{role:'designer',sessionId:l.sessionId,tokens:storedSize(l),...(heroChat(input)?{seed:l.conversation.kind==='continued'?loopState().session?.seed??storedSize(l):storedSize(l)}:{})}:null;if(pending&&l?.conversation&&['condensed','restarted'].includes(l.conversation.kind))void events.emit(`conversation:${l.sessionId}`,{stepId:`conversation:${l.sessionId}`,kind:'compaction',status:'done',costMicroUsd:0,message:heroChat(input)&&l.conversation.kind==='condensed'&&loopState().hero?.state==='accepted'?'Conversation condensed: kept the draft, notes and the approved hero':conversationLabel(l.conversation.kind,'designer')}).catch(()=>{});},
     accept: async()=>{if(!pending)return;const s=loopState();s.session=pending;pending=null;},
     // The stored conversation is not on this computer: the next attempt starts over with the full payload.
     lost:()=>{const s=loopState();delete s.session;delete s.filesSeen;decided=undefined;},
@@ -359,12 +361,19 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
       call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{sceneIds:false})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'H'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
       onTurn:async e=>{await events.emit(`designer:${state.iteration??1}:${e.turn}`,{stepId:`designer:${state.iteration??1}:${e.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:e.idea||'The designer answered without words; its files were applied.',detail:{chat:true,summary:e.results,prose:e.prose,files:e.files,...(e.actions?{actions:e.actions}:{})}},e.looked);}});
     }
-    await runDesigner({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,
+    // C6 (designerVersion 4, stage E): the same conversation continues with the other scenes, the formats and the
+    // variations, in the chat format; the mechanics arrive once as a message. Versions 1–3 keep runDesigner below.
+    if(heroChat(input))await runExtensionChat({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,
+     save:async next=>{state.designer=next;await save();},...(conversation?{conversation}:{}),
+     onPhase:async(phase,label)=>{await events.emit(`designer:${state.iteration??1}:phase:${phase}`,{stepId:`designer:${state.iteration??1}:phase:${phase}`,kind:'designer',status:'done',costMicroUsd:0,message:`${label}.`,detail:{phase}});},
+     call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input)+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'E'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
+     onTurn:async e=>{await events.emit(`designer:${state.iteration??1}:${e.turn}`,{stepId:`designer:${state.iteration??1}:${e.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:e.idea||'The designer answered without words; its files were applied.',detail:{chat:true,summary:e.results,prose:e.prose,files:e.files,...(e.actions?{actions:e.actions}:{})}},e.looked);}});
+    else await runDesigner({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,
      save:async next=>{state.designer=next;await save();},heroReviews:heroCritic,
      // Point 3d: the hero frame's milestones in the timeline.
      onHero:async event=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);},
      ...(execution.mode==='local_claude'&&execution.context_mode==='shared'?{conversation:{continuing:designerConversation.continuing,decide:designerConversation.decide,lost:designerConversation.lost,accept:designerConversation.accept}}:{}),
-     call:async(request,images)=>{const opening=heroChat(input)&&!loop.stageEOpened;const answer=(await call('designer',(opening?stageEOpening(input,designerInstructionsFor(input))+'\n\n':'')+JSON.stringify(request),withCreativeHandoff(input,'director',designerInstructionsFor(input)),designerTurnResponseFor(input),digestOn?{contextText:designerDigestText(input)+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')}:{input:designerContext(input),notes:agentReviewNotes(state.notes??[])},{designer:request.turn},[...prefix,...images.map(i=>({...i,required:true}))])).text;if(opening){loop.stageEOpened=true;await save();}return answer;},
+     call:async(request,images)=>{const answer=(await call('designer',JSON.stringify(request),withCreativeHandoff(input,'director',designerInstructionsFor(input)),designerTurnResponseFor(input),digestOn?{contextText:designerDigestText(input)+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')}:{input:designerContext(input),notes:agentReviewNotes(state.notes??[])},{designer:request.turn},[...prefix,...images.map(i=>({...i,required:true}))])).text;return answer;},
      onTurn:async(turn,results,looked)=>{await events.emit(`designer:${state.iteration??1}:${loop.turn}`,{stepId:`designer:${state.iteration??1}:${loop.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:designerActivityLine(turn,sceneNumber),detail:{sceneId:turn.focus.sceneId,activity:turn.focus.activity,summary:designerTurnSummary(results),...(turn.seen?{seen:seenLines(turn.seen)}:{})}},looked);}});
     if(loop.finish)finishDesign(design,loop.finish);
     await writeFile(resolve(folder,'draft.json'),JSON.stringify(design));await save();
