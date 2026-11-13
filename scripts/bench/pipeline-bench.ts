@@ -40,7 +40,10 @@ async function main(){
   while(!file&&Date.now()<until){for(const ext of ['png','jpg'])if(await readFile(join(pictures,`${resource.id}.${ext}`)).then(()=>true,()=>false))file=`${resource.id}.${ext}`;if(!file)await new Promise(r=>setTimeout(r,3000));}
   if(!file)return undefined;
   const bytes=await readFile(join(pictures,file)),image=await loadImage(bytes);await writeFile(join(pub,file),bytes);
-  const entry={id:resource.id,url:file,thumbnail:file,width:image.width,height:image.height,sha256:'',mime:file.endsWith('png')?'image/png':'image/jpeg',revisionId:'bench',...(resource.cutout?{cutoutFailed:'not available on the bench'}:{})} as CatalogEntry;
+  // A cutout made by hand sits next to the picture as <id>.cutout.png.
+  const cut=resource.cutout?await readFile(join(pictures,`${resource.id}.cutout.png`)).catch(()=>undefined):undefined,cutImage=cut?await loadImage(cut):undefined;
+  if(cut)await writeFile(join(pub,`${resource.id}.cutout.png`),cut);
+  const entry={id:resource.id,url:file,thumbnail:file,width:image.width,height:image.height,sha256:'',mime:file.endsWith('png')?'image/png':'image/jpeg',revisionId:'bench',...(cutImage?{cutout:{url:`${resource.id}.cutout.png`,sha256:'',width:cutImage.width,height:cutImage.height,box:[0,0,1,1]}}:resource.cutout?{cutoutFailed:'not available on the bench'}:{})} as CatalogEntry;
   catalog.push(entry);await writeResources(folder,input,catalog);return entry;
  };
  const design=provisionalDesign(input),tools=designerTools({folder,input,design,deadline:()=>Date.now()+600000,preview:async()=>{},facts:()=>({}),save:async()=>{},buy});
