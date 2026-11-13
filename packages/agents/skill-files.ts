@@ -6,7 +6,10 @@ import {readdirSync,readFileSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import type {Skill} from './run-context';
 
-export type SkillFile=Skill&{title:string;purpose:string;tokens:number;/** Roles the skill is attached to until the owner chooses otherwise (frontmatter `roles: all` or a comma list). */defaultRoles:string[]};
+export type SkillFile=Skill&{title:string;purpose:string;tokens:number;/** Roles the skill is attached to until the owner chooses otherwise (frontmatter `roles: all` or a comma list). */defaultRoles:string[];
+ /** D1: the stages it serves (frontmatter `stages`), and its three parts: Principles for the creator, Checks and Signs for
+  * the reviewer. `text` stays the text earlier layouts used (the principles, or for a signs-only skill its signs). */
+ stages:string[];principles:string;checks:string[];signs:string};
 /** Saved when the owner detaches a skill from every role, so its defaults do not return. */
 export const NO_ROLE='none';
 /** Size limits, in estimated tokens (4 bytes each). */
@@ -21,9 +24,12 @@ export function parseSkill(source:string):SkillFile{
  const m=/^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(source.replace(/\r\n/g,'\n'));if(!m)throw new Error('SKILL_FRONTMATTER_REQUIRED');
  const meta=Object.fromEntries(m[1].split('\n').map(l=>{const i=l.indexOf(':');return [l.slice(0,i).trim(),l.slice(i+1).trim()];}));
  if(!/^[a-z0-9-]{2,60}$/.test(meta.id??''))throw new Error('SKILL_ID_INVALID');
- const text=m[2].trim();
+ const body=m[2].trim(),part=(name:string)=>{const r=new RegExp(`^## ${name}\\s*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`,'m').exec(body);return r?r[1].trim():undefined;};
+ const principles=part('Principles')??body,checks=(part('Checks')??'').split('\n').map(l=>l.replace(/^\s*-\s*/,'').trim()).filter(Boolean),signs=part('Signs for the reviewer')??'';
+ const text=principles||signs;
+ const stages=(meta.stages??'').split(',').map(x=>x.trim()).filter(Boolean);
  const wanted=(meta.roles??'').split(',').map(r=>r.trim()).filter(Boolean),defaultRoles=wanted.includes('all')?[...SKILL_ROLES]:wanted.filter(r=>(SKILL_ROLES as readonly string[]).includes(r));
- return {id:meta.id,title:meta.title??meta.id,purpose:meta.purpose??'',version:String(meta.version??'1'),text,tokens:estimateTokens(text),defaultRoles};
+ return {id:meta.id,title:meta.title??meta.id,purpose:meta.purpose??'',version:String(meta.version??'1'),text,tokens:estimateTokens(text),defaultRoles,stages,principles,checks,signs};
 }
 /** The runner and the app both start in the repository root. */
 export const SKILLS_DIR=resolve(process.cwd(),'packages/agents/skills');

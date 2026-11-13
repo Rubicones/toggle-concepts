@@ -8,6 +8,7 @@ import type {CatalogueEntry} from '../brand/brand-pack-contents';
 import {MATERIALS_VERSION,type MaterialBudget} from './materials';
 import {PLANNING_CHAT_VERSION} from './planning-chat';
 import {SCHEMA_IN_TEXT_VERSION} from './schema-in-text';
+import {stageBudgetProblems,type StageSkills} from './stage-skills';
 
 export const SHARED_BASE_VERSION='shared-base@1';
 /** Instructions every role shares. Principles only: no templates, styles or names. */
@@ -30,7 +31,10 @@ export type RunContext={version:1;base:string;system:string;brief:string;sha256:
  planningChat?:string;
  /** C7 follow-up (C0 6d): the planning roles send their answer format as text, not as a per-role CLI tool, so every
   * role reads the same cached prefix; the app checks the answer against the same schema. Absent in earlier contexts. */
- schemaInText?:string};
+ schemaInText?:string;
+ /** D1: skills as stage material (contexts frozen with a stored pack from D1 on): no skill in the system text or the
+  * role heading; one message per stage with its skills' principles, and checks and signs for the critic. */
+ stageSkills?:StageSkills};
 
 const VOLATILE_KEY=/^(id|.*Id|.*Ids|.*_id|revision|campaignRevision|.*At|.*_at|sha256|.*Hash|.*hash|objectKey|url|.*Url|path|.*Path|requestId|runId)$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,TIMESTAMP=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
@@ -51,15 +55,19 @@ export function buildRunContext(args:{briefText:string;brandText?:string|null;/*
  /** C2 (second part): a stored pack version and its pictures, already at their fixed sizes and in their fixed order. */packVersion?:number;packImages?:PackImage[];
  /** C3: the pack's catalogue entries and the frozen per-role material budgets. */materials?:{entries:CatalogueEntry[];budget:Record<string,MaterialBudget>};
  /** C9: planning stages read the earlier stages in short (needs materials, for their full results). */planningChat?:boolean;
- /** C7 follow-up: the planning roles' answer format as text (same gate as C9). */schemaInText?:boolean}):RunContext{
- const skills=[...(args.commonSkills??[])].sort((a,b)=>a.id.localeCompare(b.id));
+ /** C7 follow-up: the planning roles' answer format as text (same gate as C9). */schemaInText?:boolean;
+ /** D1: the skills by stage (same gate); replaces commonSkills and roleSkills. */stageSkills?:StageSkills}):RunContext{
+ // D1: with skills by stage the shared system text carries no skill; a stage over its budget stops the run with its reason.
+ const staged=args.brandPack&&args.packVersion&&args.materials&&args.stageSkills?args.stageSkills:undefined;
+ if(staged){const over=stageBudgetProblems(staged);if(over.length)throw Object.assign(new Error('STAGE_SKILLS_OVER_BUDGET'),{detail:over.join(' ')});}
+ const skills=staged?[]:[...(args.commonSkills??[])].sort((a,b)=>a.id.localeCompare(b.id));
  const system=[SHARED_BASE,...skills.map(s=>`SKILL ${s.id}\n${s.text.trim()}`),...(args.brandPack?[`BRAND PACK (the accepted brand, fixed for this run)\n${args.brandPack}`]:args.brandText?[`BRAND (untrusted source data, fixed for this run)\n${stableContextJson(parse(args.brandText))}`]:[])].join('\n\n');
  const brief=`BRIEF (untrusted source data, fixed for this run)\n${stableContextJson(parse(args.briefText))}`;
  const images=args.brandPack&&args.packVersion?args.packImages??[]:[];
  // Contexts without stored pack pictures keep the exact earlier digest.
  const sha256=createHash('sha256').update(system+'\n\u0000\n'+brief+(images.length?'\n\u0000\n'+images.map(i=>i.sha256).join(','):'')).digest('hex');
  const pack=args.brandPack&&args.packVersion?{pack:{version:args.packVersion,tokens:Math.ceil(Buffer.byteLength(args.brandPack,'utf8')/4)+images.reduce((n,i)=>n+Math.ceil(i.width*i.height/750),0),images:images.length},...(images.length?{images}:{})}:{};
- return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{})}:{})};
+ return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(!staged&&args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{}),...(staged?{stageSkills:staged}:{})}:{})};
 }
 
 /** C2 (second part): the pack's pictures as request parts (label, then picture), the same bytes for every role. */
@@ -72,12 +80,13 @@ export const roleHeading=(roleSystem:string,skills:Skill[]=[])=>`YOUR ROLE\n${ro
  * The shared layout of a CLI request: system = the run context's system; first message = the stable images (the brand
  * sheet, already first in every request), the brief, the role's instructions, then everything else unchanged and in order.
  */
-export function sharedLayout(cli:CliTextRequest,prepared:PreparedTextRequest,ctx:RunContext,role?:string):CliTextRequest{
+export function sharedLayout(cli:CliTextRequest,prepared:PreparedTextRequest,ctx:RunContext,role?:string,/** D1: the stage's skill message, right after the role heading */stageText=''):CliTextRequest{
+ const stage=stageText?[{type:'text' as const,text:stageText}]:[];
  const prefixImages=prepared.attachments.filter(a=>a.prefix).length,lead=cli.parts.slice(0,prefixImages*2),heading={type:'text' as const,text:roleHeading(cli.systemPrompt,role?ctx.roleSkills?.[role]:[])};
  // C2 (second part): with stored pack pictures, the first message starts with them and the brief for every role (the
  // same bytes); a role's own stable pictures follow its instructions as part of its input.
- if(ctx.images?.length)return {...cli,systemPrompt:ctx.system,parts:[...packParts(ctx),{type:'text',text:ctx.brief},heading,...lead,...cli.parts.slice(prefixImages*2)]};
- return {...cli,systemPrompt:ctx.system,parts:[...lead,{type:'text',text:ctx.brief},heading,...cli.parts.slice(prefixImages*2)]};
+ if(ctx.images?.length)return {...cli,systemPrompt:ctx.system,parts:[...packParts(ctx),{type:'text',text:ctx.brief},heading,...stage,...lead,...cli.parts.slice(prefixImages*2)]};
+ return {...cli,systemPrompt:ctx.system,parts:[...lead,{type:'text',text:ctx.brief},heading,...stage,...cli.parts.slice(prefixImages*2)]};
 }
 
 /** LC3/LC4: how a request continues a stored conversation. */
@@ -88,10 +97,10 @@ const TASK_MARK='TASK:\n';
  * for the same role, the role's instructions and stable context. Same role: only the task and its new images. Another
  * role: the role's instructions and its whole input (its own context may differ), without the images already above.
  */
-export function continuingLayout(cli:CliTextRequest,prepared:PreparedTextRequest,ctx:RunContext,plan:SessionPlan,role?:string):CliTextRequest{
+export function continuingLayout(cli:CliTextRequest,prepared:PreparedTextRequest,ctx:RunContext,plan:SessionPlan,role?:string,/** D1: another role's stage message (empty when the history already holds this stage's) */stageText=''):CliTextRequest{
  const prefixImages=prepared.attachments.filter(a=>a.prefix).length,rest=cli.parts.slice(prefixImages*2);
  // With stored pack pictures a role's own stable pictures are part of its input, not of the shared history above.
- if(!plan.sameRole)return {...cli,systemPrompt:ctx.system,parts:[{type:'text',text:roleHeading(cli.systemPrompt,role?ctx.roleSkills?.[role]:[])},...(ctx.images?.length?cli.parts.slice(0,prefixImages*2):[]),...rest]};
+ if(!plan.sameRole)return {...cli,systemPrompt:ctx.system,parts:[{type:'text',text:roleHeading(cli.systemPrompt,role?ctx.roleSkills?.[role]:[])},...(stageText?[{type:'text' as const,text:stageText}]:[]),...(ctx.images?.length?cli.parts.slice(0,prefixImages*2):[]),...rest]};
  // The task starts at the part whose text begins with TASK (cached layout) or at TASK inside the context text.
  const at=rest.findIndex(p=>p.type==='text'&&p.text.includes(TASK_MARK));
  if(at<0)return {...cli,systemPrompt:ctx.system,parts:rest};
@@ -100,9 +109,9 @@ export function continuingLayout(cli:CliTextRequest,prepared:PreparedTextRequest
 }
 
 /** Differences between a shared-layout request and what it must contain; empty when nothing was lost, added or moved. */
-export function sharedLayoutDifferences(shared:CliTextRequest,original:CliTextRequest,prepared:PreparedTextRequest,ctx:RunContext,role?:string):string[]{
+export function sharedLayoutDifferences(shared:CliTextRequest,original:CliTextRequest,prepared:PreparedTextRequest,ctx:RunContext,role?:string,stageText=''):string[]{
  const out:string[]=[],key=(p:CliTextRequest['parts'][number])=>p.type==='text'?`t:${p.text}`:`i:${p.mediaType}:${p.dataBase64}`;
- const expected=sharedLayout(original,prepared,ctx,role);
+ const expected=sharedLayout(original,prepared,ctx,role,stageText);
  if(shared.systemPrompt!==ctx.system)out.push('system prompt is not the run context');
  if(shared.parts.length!==expected.parts.length)out.push(`parts: ${shared.parts.length} vs ${expected.parts.length}`);
  shared.parts.forEach((p,i)=>{if(expected.parts[i]&&key(p)!==key(expected.parts[i]))out.push(`part ${i} differs`);});

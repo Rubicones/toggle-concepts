@@ -15,6 +15,7 @@ import {localModelFor,type LocalModelChoice} from '../../../packages/agents/loca
 import {sharedLayout,sharedLayoutDifferences,continuingLayout,type RunContext} from '../../../packages/agents/run-context';
 import type {Plan} from '../../../packages/agents/local-session';
 import {lastCallSize} from '../../../packages/agents/local-session';
+import {stageMessage,stageSkillIds,requestStage} from '../../../packages/agents/stage-skills';
 import {usesSchemaInText,schemaIssues,readJsonAnswer,answerFormatText,repairText,MATERIALS_ANSWER_FORMAT} from '../../../packages/agents/schema-in-text';
 import {usesPlanningChat,planningContextText,planningUpstreamText,planningMaterials} from '../../../packages/agents/planning-chat';
 import {withoutBrandDuplicates} from '../../../packages/brand/brand-pack';
@@ -156,14 +157,17 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   if(projectionDifferences(projectPrepared(prepared),projectCli(cli,prepared.output.schema?.schema)).length)return refuse('LOCAL_CONTEXT_MISMATCH');
   // LC2: in a 'shared' run every request starts with the same run context; the role's instructions and input follow it.
   const ctx=packed;
-  if(ctx){const original=cli;cli=sharedLayout(original,prepared,ctx,options.role);if(sharedLayoutDifferences(cli,original,prepared,ctx,options.role).length)return refuse('LOCAL_CONTEXT_MISMATCH');}
+  // D1: in contexts with skills by stage, the stage's skill message follows the role heading (principles for creators,
+  // checks and signs for the critic).
+  const stageText=ctx?.stageSkills?stageMessage(ctx.stageSkills,options.role,options.stage):'';
+  if(ctx){const original=cli;cli=sharedLayout(original,prepared,ctx,options.role,stageText);if(sharedLayoutDifferences(cli,original,prepared,ctx,options.role,stageText).length)return refuse('LOCAL_CONTEXT_MISMATCH');}
   // LC6: in a shared run the effort follows the stage (frozen with the run context), after the layout checks above.
   const stage=ctx&&options.stage&&!prepared.reasoning.disabled?options.stage:undefined;if(stage)cli={...cli,effort:stageEffort(stage,ctx!.stageEffort)};
-  const skillsUsed=ctx?[...ctx.holds.skills,...(options.role?ctx.roleSkills?.[options.role]??[]:[]).map(s=>s.id)]:[];
+  const skillsUsed=ctx?.stageSkills?stageSkillIds(ctx.stageSkills,options.role,options.stage):ctx?[...ctx.holds.skills,...(options.role?ctx.roleSkills?.[options.role]??[]:[]).map(s=>s.id)]:[];
   // LC3/LC4: a shared run's conversations are persisted; a continuation sends only what the history does not hold yet.
   const plan=ctx&&options.session?await options.session():null;let fullShared=cli;
   let conversation:LocalTextDetails['conversation']|undefined=ctx&&options.session?{kind:plan?.condensed?'condensed':'new'}:undefined;
-  if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode}),prepared,ctx,plan,options.role);if(stage)cli={...cli,effort:stageEffort(stage,ctx.stageEffort)};conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
+  if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode}),prepared,ctx,plan,options.role,requestStage(options.role,options.stage)==='ideas'?'':stageText);if(stage)cli={...cli,effort:stageEffort(stage,ctx.stageEffort)};conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
   // C3: a single-answer role in a run with materials may first ask for up to four catalogue entries (one round); its
   // schema then has two branches, and the app answers in the same conversation with the role's own schema.
   const original=textSchema?prepared.output.schema!.schema:cli.jsonSchema,budget=ctx?.materials&&options.role?materialBudgetFor(options.role,ctx.materials.budget):null;

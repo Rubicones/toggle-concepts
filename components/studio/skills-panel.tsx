@@ -6,8 +6,8 @@ import {Select} from "@/components/ui/select";
 import {Disclosure} from "@/components/ui/disclosure";
 import {studioRequest,useShared} from "@/lib/shared-http";
 
-type Skill={id:string;title:string;purpose:string;version:string;tokens:number;roles:string[]};
-type Data={ready:boolean;roles:string[];limits:{skill:number;role:number};skills:Skill[];common:string[];commonTokens:number;byRole:Record<string,{skills:string[];tokens:number}>;stages:{id:string;label:string;default:string;effort:string}[];materials?:{ready:boolean;roles:{role:string;count:number;tokens:number;default:{count:number;tokens:number}}[]}};
+type Skill={id:string;title:string;purpose:string;version:string;tokens:number;roles:string[];/** D1 */checks?:number;signs?:boolean;stages?:string[]};
+type Data={/** D1: each stage's principles against its budget */stageSums?:{stage:string;label:string;tokens:number;budget:number}[];ready:boolean;roles:string[];limits:{skill:number;role:number};skills:Skill[];common:string[];commonTokens:number;byRole:Record<string,{skills:string[];tokens:number}>;stages:{id:string;label:string;default:string;effort:string}[];materials?:{ready:boolean;roles:{role:string;count:number;tokens:number;default:{count:number;tokens:number}}[]}};
 const k=(n:number)=>n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
 
 export function SkillsPanel(){
@@ -18,8 +18,9 @@ export function SkillsPanel(){
   <h2>Skills</h2>
   <p>Short craft principles an agent reads with its instructions. A skill attached to every role is common: it is part of the shared context, prepared once per run. Changes apply to new runs.</p>
   {!data.ready&&<p className="notice">Apply migration 20261111000400_skills_and_stage_effort.sql in Supabase to attach skills and set effort per stage.</p>}
+  {data.stageSums&&<p className="muted">Skills by stage (new runs): {data.stageSums.filter(x=>x.tokens).map(x=>`${x.label} ${k(x.tokens)} of ${k(x.budget)}`).join(" · ")}.</p>}
   <p className="muted">Common skills: {data.common.length?`${data.common.length} · ${k(data.commonTokens)} tokens`:"none"}. Each skill up to {k(data.limits.skill)} tokens; each role&apos;s own skills up to {k(data.limits.role)}.</p>
-  {data.skills.map(s=><Disclosure key={s.id}><summary><strong>{s.title}</strong> · {k(s.tokens)} tokens · {s.roles.length===data.roles.length?"common":s.roles.length?`used by ${s.roles.length} role${s.roles.length===1?"":"s"}`:"not attached"}</summary>
+  {data.skills.map(s=><Disclosure key={s.id}><summary><strong>{s.title}</strong> · {k(s.tokens)} tokens{s.checks===0&&!s.signs?" · no checks yet":s.checks===0?" · signs only, no checks yet":` · ${s.checks} checks`} · {s.roles.length===data.roles.length?"common":s.roles.length?`used by ${s.roles.length} role${s.roles.length===1?"":"s"}`:"not attached"}</summary>
    <p>{s.purpose}</p>
    <form className="studio-form" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);void save({skillId:s.id,roles:data.roles.filter(r=>f.get(r)==="on")});}}>
     <fieldset disabled={!data.ready}><legend>Attached to</legend>{data.roles.map(r=><label className="checkbox-field" key={r}><input type="checkbox" name={r} defaultChecked={s.roles.includes(r)}/><span>{r}</span></label>)}</fieldset>

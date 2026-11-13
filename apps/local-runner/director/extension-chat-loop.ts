@@ -25,7 +25,8 @@ export function extensionViews(input:DirectionInput,sceneIds:string[],formats:st
 }
 
 export async function runExtensionChat(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;tools:DesignerTools;call:HeroCall;save:(s:DesignerLoopState)=>Promise<void>;
- conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;onPhase?:(phase:ExtensionPhase,label:string)=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
+ conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;onPhase?:(phase:ExtensionPhase,label:string)=>Promise<void>;now?:()=>number;
+ /** D1: this stage's skill message (principles), sent once with the mechanics when stage E opens. */skills?:string}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,mechanics=stageEMechanics(input);
  const pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];let missingRetried=false;
  let phase=extensionPhase(input,state.renders);if(state.extensionPhase!==phase){state.extensionPhase=phase;await args.save(state);await args.onPhase?.(phase,phaseLabels[phase]);}
@@ -38,7 +39,7 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
   // The mechanics arrive once, when stage E opens; a condensed or restarted conversation is seeded with everything.
   const done=Object.entries(state.renders).filter(([,n])=>n>0).map(([k,n])=>{const [id,f]=k.split('@');return `${sceneLabel(id,input)} in ${f}: rendered ${n} time${n===1?'':'s'}`;});
   const seed=!continued?compactionSeed({mechanics,notes:state.notes,files,done,lastNote:state.heroNote}):'';
-  const opening=continued&&!state.stageEOpened?`THE HERO FRAME IS ACCEPTED. ${phaseLabels.scenes.toUpperCase()}.\n\n${mechanics}`:'';
+  const opening=continued&&!state.stageEOpened?`THE HERO FRAME IS ACCEPTED. ${phaseLabels.scenes.toUpperCase()}.\n\n${mechanics}${args.skills?`\n\n${args.skills}`:''}`:'';
   const heroShot=!continued&&state.hero?.shots?.[0]?[{url:await screenshotForDesigner(state.hero.shots[0].file,RENDER_LONG_SIDE),label:'The accepted hero frame'}]:[];
   const message=[seed||opening,!seed?state.heroNote??'':'',...pictures,due?.text??''].filter(Boolean).join('\n\n');
   let text:string;

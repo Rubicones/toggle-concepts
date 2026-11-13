@@ -29,7 +29,7 @@ export async function freezeRunContext(runId:string,ctx:RunContext):Promise<RunC
 }
 
 /** The frozen context, or one built now from the approved brief and the accepted brand; null before A1. */
-export type ContextExtras={commonSkills:Skill[];roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>;/** C3: per-role material budgets from Models & agents */materialBudget?:Record<string,MaterialBudget>};
+export type ContextExtras={commonSkills:Skill[];/** D1 */stageSkills?:import('../../../packages/agents/stage-skills').StageSkills;roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>;/** C3: per-role material budgets from Models & agents */materialBudget?:Record<string,MaterialBudget>};
 export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()=>Promise<ContextExtras>=async()=>({commonSkills:[]}),deps:{read?:PictureReader;compact?:(pack:StoredBrandPack)=>Promise<CompactPage[]|null>}={}):Promise<RunContext|null>{
  const frozen=await readRunContext(runId);if(frozen)return frozen;
  const c1=await admin.from('studio_c1_checkpoints').select('brief_text').eq('run_id',runId).maybeSingle();
@@ -50,10 +50,10 @@ export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()
   // C9: contexts frozen from now on let the planning chain read the earlier stages in short; C7 follow-up: their
   // planning roles send the answer format as text, so every role reads the same cached prefix.
   const {materialBudget,...rest}=await extras();
-  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...rest,materials:{entries:stored.catalogue,budget:{...DEFAULT_MATERIAL_BUDGET,...materialBudget}},planningChat:true,schemaInText:true}));
+  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...rest,materials:{entries:stored.catalogue,budget:{...DEFAULT_MATERIAL_BUDGET,...materialBudget}},planningChat:true,schemaInText:true,...(rest.stageSkills?{stageSkills:rest.stageSkills}:{})}));
  }
  // C2: contexts frozen from now on carry the brand pack instead of the raw revision; frozen ones keep theirs.
  const brandPack=brandPackText(brand.data.canonical_text);
- const {materialBudget:_unused,...rest}=await extras();void _unused;
+ const {materialBudget:_unused,stageSkills:_staged,...rest}=await extras();void _unused;void _staged;
  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,...(brandPack?{brandPack}:{brandText:brand.data.canonical_text}),...rest}));
 }

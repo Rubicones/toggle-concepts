@@ -4,7 +4,13 @@ title: Refuse the default look
 purpose: Recognise and replace the generic frame a model produces when it stops deciding.
 version: 1
 roles: visual-direction,designer,creative-code,critic
+stages: critic
 ---
+## Principles
+
+## Checks
+
+## Signs for the reviewer
 When nothing in a frame was decided from the brand and the idea, the result drifts to a recognisable default. Treat each of these as a sign the decision was skipped, and replace it with a choice made from the brand's character and the promise.
 
 - A dark or grey empty space with a soft spotlight, standing in for a subject.

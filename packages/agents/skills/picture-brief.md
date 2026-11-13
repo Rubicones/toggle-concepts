@@ -4,7 +4,9 @@ title: Brief a picture that proves the idea
 purpose: Ask for pictures that show this product and this moment, staged for the layout.
 version: 1
 roles: visual-direction,designer
+stages: visual-direction,hero,extension
 ---
+## Principles
 A generated picture is worth its cost only when it shows something the frame needs and code cannot draw: the product in use, a person in the named moment, a real material or place.
 
 Start from what the picture must prove, in one sentence. If the sentence could be illustrated by a generic object or an empty space, the picture is not needed or the idea is not ready.
@@ -16,3 +18,8 @@ Stage for the layout. Decide before the brief where the headline and the mark wi
 Keep the brand's things real. The product, the interface and the marks come from the supplied files, as they are or as references; never ask a picture to invent them, and never ask for words, numbers or logos inside a picture.
 
 Ask for few pictures and use each fully. One strong picture, large, does more than several small ones. A stand-in is acceptable only when it already shows the real subject at draft quality; a shadow or an empty shape where the subject will be is not a draft of the idea.
+
+## Checks
+
+## Signs for the reviewer
+

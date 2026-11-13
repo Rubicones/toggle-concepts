@@ -26,6 +26,8 @@ import {runExtensionChat} from './extension-chat-loop';
 import {tripoSettings,MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import {makeModel,directorModelLedger,modelRequestId,taskMemory} from './tripo-model';
 import {reviewRepairMessage} from '../../../packages/director/extension-chat';
+import {creatorStageText,stageSkillTitles} from '../../../packages/agents/stage-skills';
+import {DESIGNER_ROLE_V4} from '../../../packages/director/roles';
 import {code3dNotes,THREE_D_MECHANICS} from '../../../packages/director/three-d';
 import {runHeroChat,HERO_TURN_SHARE} from './hero-chat-loop';
 import {plainText} from '../../../packages/director/digest';
@@ -145,7 +147,9 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    // chosen in Models & agents, checked by the same rules as the quote. The role's brief and allowance are unchanged.
    const id=requestId({blockId:block.id,iterationId:input.iterationId,role,identity}),prior=checked(await admin.from('studio_agent_steps').select('prompt,model_id,config_snapshot').eq('run_id',input.runId).eq('config_snapshot->>directorCallId',id).maybeSingle());
    const run=checked(await admin.from('studio_runs').select('id,config_snapshot').eq('id',input.runId).single()),agent=(await effectiveRunAgents(admin,run!)).find(a=>a.role===roleNames[modelRole]);if(!agent)throw new Error('FROZEN_MODEL_REQUIRED');
-   let config=snapshot.models[modelRole];const wanted=prior?.model_id??agent.model_id;
+   let config=snapshot.models[modelRole];
+   // D1: in runs with skills by stage, the version 4 designer reads its own role line, not the static director's.
+   if(role==='designer'&&heroChat(input)&&!prior&&execution.mode==='local_claude'&&execution.context_mode==='shared'&&(await sharedContextFor(admin,execution,input.runId)?.())?.stageSkills)config={...config,instructions:DESIGNER_ROLE_V4};const wanted=prior?.model_id??agent.model_id;
    if(wanted&&wanted!==config.modelId){const model=(await modelCatalog()).find(m=>m.id===wanted),problem=draftModelProblem(modelRole,model,wanted);
     if(problem)throw Object.assign(new Error('AGENT_MODEL_UNSUITABLE'),{detail:`${problem.message} Choose another model for this role in Models & agents; no request was sent.`});
     config=draftModelConfig(modelRole,model!,config.instructions,{liveReview:config.liveReview,thinking:Number(input.brief.effortVersion)>=DRAFT_EFFORT_VERSION});
@@ -380,7 +384,10 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     const onHero=async(event:Parameters<NonNullable<Parameters<typeof runDesigner>[0]['onHero']>>[0])=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='turns-used'?' when its turns were used, without a review':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);};
     // C5 (designerVersion 4, stage H): the hero frame as a chat, before the other scenes. The designer writes prose and
     // whole files; the app renders and answers in plain words. Stage E continues in the same conversation below.
+    // D1: with skills by stage, the timeline names the skills the designer works with at the start of each stage.
+    const staged=runContext?.stageSkills,workingWith=async(stage:'hero'|'extension')=>{if(!staged)return;const titles=stageSkillTitles(staged,stage);if(titles.length)await events.emit(`skills:${state.iteration??1}:${stage}`,{stepId:`skills:${state.iteration??1}:${stage}`,kind:'designer',status:'done',costMicroUsd:0,message:`The designer is working with: ${titles.join(', ')}.`});};
     if(heroChat(input)&&loop.hero?.state!=='accepted'){
+     await workingWith('hero');
      await runHeroChat({input,state:loop,maxTurns:Math.ceil(Math.min(maxTurns,allowance.requests)*HERO_TURN_SHARE),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,heroReviews:heroCritic,onHero,
       save:async next=>{state.designer=next;await save();},...(conversation?{conversation}:{}),
       call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{sceneIds:false})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'H'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
@@ -388,7 +395,8 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     }
     // C6 (designerVersion 4, stage E): the same conversation continues with the other scenes, the formats and the
     // variations, in the chat format; the mechanics arrive once as a message. Versions 1–3 keep runDesigner below.
-    if(heroChat(input))await runExtensionChat({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,
+    if(heroChat(input)&&!loop.stageEOpened)await workingWith('extension');
+    if(heroChat(input))await runExtensionChat({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,...(staged?{skills:creatorStageText(staged,'extension')}:{}),
      save:async next=>{state.designer=next;await save();},...(conversation?{conversation}:{}),
      onPhase:async(phase,label)=>{await events.emit(`designer:${state.iteration??1}:phase:${phase}`,{stepId:`designer:${state.iteration??1}:phase:${phase}`,kind:'designer',status:'done',costMicroUsd:0,message:`${label}.`,detail:{phase}});},
      call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input)+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'E'},[...prefix,...images.map(i=>({...i,required:true}))])).text,

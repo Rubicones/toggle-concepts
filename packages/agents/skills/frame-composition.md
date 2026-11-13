@@ -4,7 +4,9 @@ title: Compose for the format
 purpose: Build each format around its own shape and a single structure.
 version: 1
 roles: visual-direction,designer,creative-code,critic
+stages: visual-direction,hero,extension,critic
 ---
+## Principles
 A composition is a decision about where the weight sits and how the eye travels; decide it per format.
 
 One structure per frame: a dominant subject with the headline against it, or a headline as the subject with the picture supporting, or a split where each half answers the other. State which one you are making and remove whatever belongs to a different structure.
@@ -18,3 +20,8 @@ Depth and light come from the picture's own content: scale differences, overlap,
 Brand placement is part of the composition. The mark gets a fixed, quiet, legible home with its clear space, on a ground that suits it; the brand's colour and type do the recognising, the mark confirms it.
 
 Before you finish, squint: you should see two or three large shapes with clear value differences. If you see many small similar pieces, merge, enlarge or remove.
+
+## Checks
+
+## Signs for the reviewer
+

@@ -4,7 +4,9 @@ title: Build an engine, not a picture
 purpose: Structure a frame so every ordered variation is data, and the layout holds for all of them.
 version: 1
 roles: designer,creative-code
+stages: extension
 ---
+## Principles
 What you build is an engine that renders many ads from one design: every ordered locale, hook, call to action, length and format. Build it so a variation is a change of data, never a change of code.
 
 Separate three things. Content is data: every word comes from the supplied copy through the props (locale, hook, cta, length, sceneId), never typed into the layout. Design is rules: sizes, positions and colours are computed from the frame's width and height and from the content's measured size, never fixed numbers that fit one headline. Assets are bindings: pictures, marks and fonts come from the supplied resources by id.
@@ -16,3 +18,8 @@ Let text decide its own size inside limits. Give each text level a range (larges
 Declare every axis the design supports in the preview options (all ordered locales, hooks, calls to action and lengths), so each can be switched and checked. An axis left out is a variation nobody can see.
 
 One component, one set of rules, per scene a small description of what differs. Shared pieces (the mark, the call to action, the headline block) are written once and reused. Keep the file small enough to change safely: clarity of structure is part of the craft.
+
+## Checks
+
+## Signs for the reviewer
+

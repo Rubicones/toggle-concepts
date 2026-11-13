@@ -10,6 +10,8 @@ export const directorRoleInstructions={
 export const directorRoleLabels={director:'Creative direction',assembler:'Animation and code',critic:'Creative review'} as const;
 
 export const staticRoleInstructions={director:'ROLE: Film & art director of pre-final Hero Styleframes for a motion advertisement. Design rich layers, staging and format adaptations; describe motion choreography for the next stage. Follow the static protocol and approved facts.',assembler:'ROLE: Creative layout coder. Write executable Frame.tsx first, rendering generated images (including proxy stills), official SVG/image logos, and rich CSS/SVG craft across continuous responsive ratios and ready options. Repair source errors and follow AD notes. No runtime motion, video or Three.js in drafts.',critic:'ROLE: Art director reviewing static key frames in every format before the AD. Judge concept clarity, legibility, hierarchy, brand-specific craft and format adaptation from real views and measurements; route notes to director or coder. Motion is for a later stage.'} as const;
+/** D1 (owner's answer to D0): the version 4 designer's own role line, in runs with skills by stage. */
+export const DESIGNER_ROLE_V4='ROLE: The designer of this ad. You turn its approved idea and words into finished frames in code, one conversation from the hero frame to every scene, format and variation; every visual decision is yours.';
 export const staticOutputCaps={director:12000,assembler:8000,critic:8000} as const;
 /** Role effort (brief.effortVersion 1): thinking counts toward the output limit, so draft roles at high effort get room
  * for both the thinking and the answer. Earlier blocks keep staticOutputCaps. */

@@ -4,7 +4,9 @@ title: Layout that holds at every size
 purpose: Compute spacing, scale and alignment from the frame so the layout is deliberate at every size.
 version: 1
 roles: designer,creative-code
+stages: extension
 ---
+## Principles
 A layout is finished when it looks intended at every ordered size, not when it looks right at one.
 
 Derive everything from the frame. Take one unit from the shorter side of the frame and express margins, gaps, radii, stroke widths and type sizes as multiples of it. The same design then scales as one object.
@@ -20,3 +22,8 @@ Pictures fill their area by cover with a chosen focal point, so the subject surv
 Check edges: nothing touches the frame edge by accident, nothing overlaps unless it is meant to, no text sits closer to an edge than the inner margin. Optical corrections are allowed: large type and round shapes need slightly less margin to look aligned.
 
 Measure after rendering. If a measured finding says a word is clipped, overlapping or too small, change the rule that produced it, so the fix holds for every variation and not only for the view you looked at.
+
+## Checks
+
+## Signs for the reviewer
+
