@@ -10,6 +10,10 @@ exit /b
 # nothing needs to be typed. The studio runs in a light background Ubuntu (WSL), capped so it never slows the computer.
 # Safe to run again: it only does what is missing, and doubles as the updater.
 $Branch = 'main'; $Distro = 'Ubuntu-24.04'; $Launchers = 'C:\toggle'
+# Which code to run: main, unless C:\toggle\branch.txt names another branch (one line, e.g. a working branch
+# whose fixes are tested before they are merged). Delete the file to go back to main.
+$BranchFile = Join-Path $Launchers 'branch.txt'
+if (Test-Path $BranchFile) { $Named = (Get-Content -LiteralPath $BranchFile -TotalCount 1).Trim(); if ($Named -match '^[A-Za-z0-9._/-]+$') { $Branch = $Named } }
 # Continue: Windows PowerShell treats any message a program writes to its error stream as a failure; each step
 # checks the program's exit code instead.
 $ErrorActionPreference = 'Continue'
