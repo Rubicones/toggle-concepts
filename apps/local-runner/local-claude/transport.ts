@@ -58,6 +58,8 @@ export type LocalTextDetails={
  stage?:StageId;
  /** The first try did not answer in time; this is the second. */
  retriedAfterTimeout?:boolean;
+ /** C7: the prompt-cache lifetime the CLI wrote in this request, read from its usage ('1h' when any one-hour write). */
+ cacheTtl?:'1h'|'5m';
  /** C3: the one round of materials a single-answer role asked for (names attached and refused with the reason). */
  materials?:{asked:string[];attached:string[];refused:string[]};
 };
@@ -67,6 +69,12 @@ export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalText
 export function withoutPackPictures(images:ImageInput[],ctx:RunContext|null){
  const sources=new Set((ctx?.images??[]).map(i=>i.source));if(!sources.size)return images;
  return images.filter(i=>{const d=parseDataUrl(i.url);return !d||!sources.has(createHash('sha256').update(Buffer.from(d.dataBase64,'base64')).digest('hex'));});
+}
+
+/** C7: which cache lifetime a call wrote, from the API usage the CLI passes on (cache_creation.ephemeral_1h/5m). */
+export function cacheLifetime(usage:unknown):'1h'|'5m'|undefined{
+ const c=(usage as {cache_creation?:{ephemeral_1h_input_tokens?:number;ephemeral_5m_input_tokens?:number}}|undefined)?.cache_creation;
+ return c?.ephemeral_1h_input_tokens?'1h':c?.ephemeral_5m_input_tokens?'5m':undefined;
 }
 
 /** C3: two calls of one request (the material round and the answer) as one result: the answer, the summed usage. */
@@ -114,7 +122,10 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
  /** LC5: the requesting role's skill key, so its own skills follow its instructions. LC6: the stage of a request. */
  role?:string;stage?:StageId;
  /** C3: the run whose material budget a single-answer role spends (its context must hold materials). */
- runId?:string;readPicture?:PictureReader}={}){
+ runId?:string;readPicture?:PictureReader;
+ /** C7: ask the CLI for its one-hour prompt cache (CLAUDE_CODE_PROMPT_CACHE_TTL, found in the installed CLI 2.1.x); the
+  * usage then shows which lifetime was written. Long conversations whose turns wait for renders and pictures. */
+ longCache?:boolean}={}){
  return async function cliText(model:string,prompt:string,cfg:TextSnapshot,images:ImageInput[]=[],requestTag?:string):Promise<LocalTextReceipt>{
   const refuse=(failure:string):LocalTextReceipt=>({provider:'claude-cli',outcome:'failed',cost:0,text:null,generation:null,usage:null,failure});
   // The same refusals as submitText, before anything is sent.
@@ -161,7 +172,7 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    const timeoutMs=cliTimeoutMs(cfg);
    // A leaked tool, MCP server or API key ends the call at once: the answer would not be comparable.
    const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
-   r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cliOutputRoom(cli.maxOutputTokens,cli.effort))}),stdin:streamUserMessage(cli.parts),timeoutMs,idleMs:CLI_SILENCE_MS,signal:stop.signal,
+   r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cliOutputRoom(cli.maxOutputTokens,cli.effort)),...(options.longCache?{CLAUDE_CODE_PROMPT_CACHE_TTL:'1h'}:{})}),stdin:streamUserMessage(cli.parts),timeoutMs,idleMs:CLI_SILENCE_MS,signal:stop.signal,
     onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,cli.jsonSchema!==undefined))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
    options.signal?.removeEventListener('abort',relay);
    if(attempt===0&&resume&&r.outcome==='failed'&&/no conversation found/i.test(`${r.text??''} ${r.stderr}`)){
@@ -183,14 +194,15 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
      const parts:CliTextRequest['parts']=[{type:'text',text:`${fetched.text}\nNow answer: requestMaterials is closed.`},...fetched.images.flatMap(i=>[{type:'text' as const,text:i.label},{type:'image' as const,mediaType:'image/jpeg',dataBase64:i.url.split(',')[1]}])];
      const argv=cliArgs({includePartialMessages:true,bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:{...setup.isolation,noSessionPersistence:false},resume:r.init.sessionId,forkSession:false,...(setup.turnLimit?{maxTurns:TURN_LIMIT.schema}:{}),jsonSchema:original!,...(cli.effort?{effort:cli.effort}:{})});
      const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
-     const second=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cliOutputRoom(cli.maxOutputTokens,cli.effort))}),stdin:streamUserMessage(parts),timeoutMs:cliTimeoutMs(cfg),idleMs:CLI_SILENCE_MS,signal:stop.signal,
+     const second=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cliOutputRoom(cli.maxOutputTokens,cli.effort)),...(options.longCache?{CLAUDE_CODE_PROMPT_CACHE_TTL:'1h'}:{})}),stdin:streamUserMessage(parts),timeoutMs:cliTimeoutMs(cfg),idleMs:CLI_SILENCE_MS,signal:stop.signal,
       onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,true))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
      options.signal?.removeEventListener('abort',relay);
      r=mergeCalls(r,second);
     }else if(r.structured!==undefined)r={...r,structured:undefined,text:''};
    }
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
-   const details:Omit<LocalTextDetails,'events'|'stderr'>={...(materials?{materials}:{}),transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
+   const ttl=cacheLifetime(r.usage);
+   const details:Omit<LocalTextDetails,'events'|'stderr'>={...(materials?{materials}:{}),...(ttl?{cacheTtl:ttl}:{}),transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
     internalAttempts:r.internalAttempts,...(()=>{const size=lastCallSize(r.events);return size!==undefined?{conversationSize:size}:{};})(),...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:ctx.images?.length??prepared.attachments.filter(a=>a.prefix).length,...(ctx.pack?{pack:ctx.pack}:{})}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};

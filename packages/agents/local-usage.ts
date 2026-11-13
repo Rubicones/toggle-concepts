@@ -76,3 +76,37 @@ export function roleAverages(calls:LocalCallUsage[]){
  const by=new Map<string,LocalCallUsage[]>();for(const c of calls)by.set(c.role,[...(by.get(c.role)??[]),c]);
  return [...by.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([role,list])=>{const t=usageTotals(list);return {role,calls:t.calls,input:Math.round((t.input+t.cacheCreation)/t.calls),cacheRead:Math.round(t.cacheRead/t.calls),output:Math.round(t.output/t.calls),apiEquivalentUsd:t.apiEquivalentUsd/t.calls,cachedShare:t.cachedShare};});
 }
+
+// ---- C7: cache discipline, per run ----
+type ReportRow={role:string;created_at?:string;config_snapshot?:unknown;usage?:unknown};
+type ReportLocal={stage?:string;effort?:string;durationMs?:number;sessionId?:string;cacheTtl?:'1h'|'5m';conversation?:{kind:string;resumedFrom?:string};usage?:Raw};
+export const CACHE_WAIT_MS=5*60*1000;
+/**
+ * The run's cache in plain numbers: the share of input read from the cache per stage; continued conversations that
+ * read little from the cache after a wait of more than five minutes (the cache had expired) or right after an effort
+ * change (thinking settings drop the cached messages); and the cache lifetime the CLI wrote.
+ */
+export function cacheReport(rows:ReportRow[]){
+ const calls=rows.map(r=>({row:r,l:(r.usage as {_local?:ReportLocal}|null|undefined)?._local})).filter((c):c is {row:ReportRow;l:ReportLocal}=>!!c.l).sort((a,b)=>String(a.row.created_at??'').localeCompare(String(b.row.created_at??'')));
+ const byStage=new Map<string,{read:number;all:number;calls:number}>(),ends=new Map<string,{at:number;effort?:string}>();let afterWait=0,afterEffort=0,oneHour=0,fiveMinutes=0;
+ for(const {row,l} of calls){
+  const u=l.usage??{},read=u.cache_read_input_tokens??0,all=(u.input_tokens??0)+(u.cache_creation_input_tokens??0)+read,stage=l.stage??(row.config_snapshot as {localStage?:string}|undefined)?.localStage??'other';
+  const s=byStage.get(stage)??{read:0,all:0,calls:0};s.read+=read;s.all+=all;s.calls++;byStage.set(stage,s);
+  if(l.cacheTtl==='1h')oneHour++;else if(l.cacheTtl==='5m')fiveMinutes++;
+  const start=Date.parse(String(row.created_at??'')),parent=l.conversation?.resumedFrom?ends.get(l.conversation.resumedFrom):undefined;
+  // A continued conversation should read most of its history from the cache; little means it was rewritten.
+  if(parent&&Number.isFinite(start)&&all>0&&read/all<0.5){if(start-parent.at>CACHE_WAIT_MS)afterWait++;else if(parent.effort&&l.effort&&parent.effort!==l.effort)afterEffort++;}
+  if(l.sessionId&&Number.isFinite(start))ends.set(l.sessionId,{at:start+(l.durationMs??0),effort:l.effort});
+ }
+ const stages=[...byStage.entries()].map(([stage,s])=>({stage,calls:s.calls,cachedShare:s.all?s.read/s.all:0})).sort((a,b)=>b.calls-a.calls);
+ return {stages,missesAfterWait:afterWait,missesAfterEffortChange:afterEffort,oneHour,fiveMinutes};
+}
+/** The report as one line for the usage panel. */
+export function cacheLine(r:ReturnType<typeof cacheReport>,label:(stage:string)=>string=s=>s){
+ if(!r.stages.length)return null;
+ const parts=[`Read from the cache: ${r.stages.map(s=>`${label(s.stage)} ${Math.round(s.cachedShare*100)}%`).join(' · ')}`];
+ if(r.missesAfterWait)parts.push(`${r.missesAfterWait} request${r.missesAfterWait===1?'':'s'} re-read the conversation after a wait of more than five minutes`);
+ if(r.missesAfterEffortChange)parts.push(`${r.missesAfterEffortChange} after an effort change`);
+ if(r.oneHour||r.fiveMinutes)parts.push(r.fiveMinutes?`cache kept 5 minutes on ${r.fiveMinutes} request${r.fiveMinutes===1?'':'s'}`:'cache kept one hour');
+ return parts.join('; ')+'.';
+}

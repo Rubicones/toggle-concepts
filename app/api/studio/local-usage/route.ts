@@ -3,7 +3,7 @@ import { api, json } from "@/lib/server/api";
 import { studioContext, checked } from "@/lib/server/studio";
 import { conversationLabel } from "@/packages/agents/local-session";
 import { STAGES } from "@/packages/agents/stage-effort";
-import { localCallUsage, usageLine, usageTotals, totalsLine, roleAverages, apiEquivalentLabel, type LocalCallUsage } from "@/packages/agents/local-usage";
+import { localCallUsage, usageLine, usageTotals, totalsLine, roleAverages, apiEquivalentLabel, cacheReport, cacheLine, type LocalCallUsage } from "@/packages/agents/local-usage";
 
 // Local mode usage (LC0): per request of a run, its totals, and per-role averages over recent Local requests.
 export async function GET(request:Request){return api(async()=>{
@@ -16,7 +16,9 @@ export async function GET(request:Request){return api(async()=>{
   const totals=usageTotals(calls.map(c=>c.usage));
   // C2: the latest request's shared context, with the brand pack version it froze (when the run has a stored pack).
   const shared=[...rows].reverse().map(r=>(r.usage as {_local?:{sharedContext?:{tokens:number;images:number;holds:{brief:boolean;brand:boolean;skills:string[];brandPack?:boolean};pack?:{version:number;tokens:number;images:number}}}}|null)?._local?.sharedContext).find(Boolean)??null;
-  return json({sharedContext:shared,calls:calls.map(c=>({stepId:c.row.id,at:c.row.created_at,status:c.row.status,...c.usage,line:usageLine(c.usage),...(c.usage.effortStage?{effortStageLabel:STAGES.find(s=>s.id===c.usage.effortStage)?.label??c.usage.effortStage}:{}),...(c.usage.conversation?{conversationLine:conversationLabel(c.usage.conversation as Parameters<typeof conversationLabel>[0],c.usage.role)}:{})})),totals,totalsLine:totals.calls?totalsLine(totals):null,apiEquivalent:totals.calls?apiEquivalentLabel(totals.apiEquivalentUsd):null,byRole:roleAverages(calls.map(c=>c.usage))});
+  // C7: the cache per stage, and requests that re-read their conversation after a long wait or an effort change.
+  const cache=cacheLine(cacheReport(rows),stage=>STAGES.find(s=>s.id===stage)?.label??stage);
+  return json({cacheLine:cache,sharedContext:shared,calls:calls.map(c=>({stepId:c.row.id,at:c.row.created_at,status:c.row.status,...c.usage,line:usageLine(c.usage),...(c.usage.effortStage?{effortStageLabel:STAGES.find(s=>s.id===c.usage.effortStage)?.label??c.usage.effortStage}:{}),...(c.usage.conversation?{conversationLine:conversationLabel(c.usage.conversation as Parameters<typeof conversationLabel>[0],c.usage.role)}:{})})),totals,totalsLine:totals.calls?totalsLine(totals):null,apiEquivalent:totals.calls?apiEquivalentLabel(totals.apiEquivalentUsd):null,byRole:roleAverages(calls.map(c=>c.usage))});
  }
  const rows=checked(await base().order("created_at",{ascending:false}).limit(400))??[];
  return json({byRole:roleAverages(rows.map(localCallUsage).filter((u):u is LocalCallUsage=>!!u))});

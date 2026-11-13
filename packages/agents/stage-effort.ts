@@ -19,10 +19,13 @@ export const DEFAULT_STAGE_EFFORT=Object.fromEntries(STAGES.map(s=>[s.id,s.defau
 
 const PLANNING=new Set(['strategy','script','asset-plan','visual-direction','layout']);
 /** The stage of a request from its role and what the turn does. */
-export function stageOf(role:string,detail:{revising?:boolean;repair?:boolean;hero?:boolean}={}):StageId{
+export function stageOf(role:string,detail:{revising?:boolean;repair?:boolean;hero?:boolean;extension?:boolean}={}):StageId{
  if(role==='critic')return 'critic';
  // C5: stage H (designerVersion 4) runs at its own effort, high by default, every turn of the hero conversation.
  if(role==='designer'&&detail.hero)return 'design-hero';
+ // C7: stage E of a version 4 designer keeps one effort for the whole conversation: a change of thinking settings drops
+ // the cached messages (Anthropic's documented behaviour), so revise turns do not flip it.
+ if(role==='designer'&&detail.extension)return 'design-create';
  if(role==='designer')return detail.revising?'design-revise':'design-create';
  // The coder implements the director's design; it does not invent it, so its turns are not the inventing stage.
  if(role==='assembler'||role==='coder'||role==='creative-code')return detail.repair?'code-repair':'code-build';
