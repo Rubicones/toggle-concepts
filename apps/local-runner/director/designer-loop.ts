@@ -4,7 +4,7 @@
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {createCanvas,loadImage} from '@napi-rs/canvas';
-import {readDesignerTurn,heroFirst,heroScene,type DesignerPicture,type DesignerTurn} from '../../../packages/director/designer';
+import {usesEngineKit,readDesignerTurn,heroFirst,heroScene,type DesignerPicture,type DesignerTurn} from '../../../packages/director/designer';
 import {applySourceEdits} from '../../../packages/director/source-edits';
 import {liveFormat} from '../../../packages/director/live-preview';
 import {propagateExecutionFailure} from '../../../packages/director/execution-failures';
@@ -139,10 +139,13 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
    // 3. Render: only a building source; the first render designs the scene, later ones are revisions.
    if(turn.render&&built.ok){
     // Revisions count per scene AND format (point 5): recomposing a new format is a first design, not a revision.
-    const sceneId=turn.render.sceneId,formats=turn.render.formats.length?turn.render.formats:[referenceFormat],spent=formats.filter(f=>(state.renders[renderKey(sceneId,f)]??0)>DESIGNER_REVISIONS_PER_SCENE);
+    const sceneId=turn.render.sceneId,formats=turn.render.formats.length?[...turn.render.formats]:[referenceFormat],spent=formats.filter(f=>(state.renders[renderKey(sceneId,f)]??0)>DESIGNER_REVISIONS_PER_SCENE);
     if(heroOpen()&&(sceneId!==state.hero!.sceneId||formats.some(f=>f!==state.hero!.format)))results.push({render:'refused',detail:heroAsk()});
-    else if(spent.length)results.push({render:'refused',detail:`Three revisions of this scene in ${spent.join(', ')} are used. Move on and say in the finish what remains.`});
+    // Version 3: formats whose revisions are used are left out; the others still render (a scene revised in the
+    // reference format can still be recomposed in the rest).
+    else if(spent.length&&(!usesEngineKit(input)||spent.length===formats.length))results.push({render:'refused',detail:`Three revisions of this scene in ${spent.join(', ')} are used. Move on and say in the finish what remains.`});
     else{
+     if(spent.length){formats.splice(0,formats.length,...formats.filter(f=>!spent.includes(f)));results.push({render:'partly refused',detail:`Three revisions in ${spent.join(', ')} are used; the other formats were rendered.`});}
      // Version 3: up to three more scenes in the same formats, so several scenes are judged in one turn. While the hero is
      // open only the hero is rendered.
      const more=heroOpen()?[]:[...new Set(turn.render.more??[])].filter(id=>id!==sceneId&&formats.every(f=>(state.renders[renderKey(id,f)]??0)<=DESIGNER_REVISIONS_PER_SCENE));

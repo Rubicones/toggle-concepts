@@ -7,7 +7,7 @@ import {mkdir,writeFile,readFile,copyFile,rm,mkdtemp} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {brands,benchInput} from './brands';
-import {createWorkspace} from '../../apps/local-runner/director/workspace';
+import {createWorkspace,writeResources} from '../../apps/local-runner/director/workspace';
 import {designerTools,provisionalDesign} from '../../apps/local-runner/director/designer-run';
 import {designerViews,screenshotForDesigner,runDesigner,newDesignerState} from '../../apps/local-runner/director/designer-loop';
 import {cliArgs,runCli,childEnv,streamUserMessage} from '../../packages/agents/claude-cli.local';
@@ -15,7 +15,8 @@ import {readSkills} from '../../packages/agents/skill-files';
 import {designerInstructionsFor} from '../../packages/agents/prompts/designer-v1';
 import {designerTurnResponseFor} from '../../packages/director/designer';
 import {designerContext} from '../../packages/director/designer-context';
-import type {DirectionInput} from '../../packages/director/types';
+import {loadImage} from '@napi-rs/canvas';
+import type {DirectionInput,CatalogEntry,Resource} from '../../packages/director/types';
 
 type Part={type:'text';text:string}|{type:'image';mediaType:string;dataBase64:string};
 type Usage={input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number};
@@ -30,7 +31,19 @@ async function main(){
  const folder=await createWorkspace(resolve(out,'workspace'),input),pub=join(folder,'public');
  for(const f of brand.fonts)await copyFile(f.source,join(pub,f.file));
  await writeFile(join(pub,'logo.svg'),brand.logoSvg);
- const design=provisionalDesign(input),tools=designerTools({folder,input,design,deadline:()=>Date.now()+600000,preview:async()=>{},facts:()=>({}),save:async()=>{},buy:async()=>undefined});
+ // Pictures: the request is written to <out>/pictures/<id>.request.json and the bench waits for <id>.png or <id>.jpg to
+ // be put next to it (made by hand through the owner's image account), then hands it to the designer as the pipeline would.
+ const pictures=resolve(out,'pictures'),catalog:CatalogEntry[]=[],maxPictures=Number(arg('pictures','0')),waitMs=Number(arg('wait','900'))*1000;await mkdir(pictures,{recursive:true});
+ const buy=async(resource:Resource)=>{
+  await writeFile(join(pictures,`${resource.id}.request.json`),JSON.stringify({id:resource.id,scene:resource.scene,purpose:resource.purpose,prompt:resource.prompt,aspect:resource.aspect,cutout:!!resource.cutout,mustNotContain:resource.mustNotContain},null,1));
+  const until=Date.now()+waitMs;let file:string|undefined;
+  while(!file&&Date.now()<until){for(const ext of ['png','jpg'])if(await readFile(join(pictures,`${resource.id}.${ext}`)).then(()=>true,()=>false))file=`${resource.id}.${ext}`;if(!file)await new Promise(r=>setTimeout(r,3000));}
+  if(!file)return undefined;
+  const bytes=await readFile(join(pictures,file)),image=await loadImage(bytes);await writeFile(join(pub,file),bytes);
+  const entry={id:resource.id,url:file,thumbnail:file,width:image.width,height:image.height,sha256:'',mime:file.endsWith('png')?'image/png':'image/jpeg',revisionId:'bench',...(resource.cutout?{cutoutFailed:'not available on the bench'}:{})} as CatalogEntry;
+  catalog.push(entry);await writeResources(folder,input,catalog);return entry;
+ };
+ const design=provisionalDesign(input),tools=designerTools({folder,input,design,deadline:()=>Date.now()+600000,preview:async()=>{},facts:()=>({}),save:async()=>{},buy});
  const skills=readSkills().filter(s=>s.defaultRoles.includes('designer'));
  const dir=await mkdtemp(join(tmpdir(),'bench-cli-')),systemFile=join(dir,'system.txt'),mcpFile=join(dir,'mcp.json'),work=resolve(out,'cli');
  await mkdir(work,{recursive:true});await writeFile(mcpFile,'{"mcpServers":{}}');
@@ -39,7 +52,7 @@ async function main(){
  // The CLI's validator has no meta-schema to resolve.
  const {$schema:_meta,...schema}=designerTurnResponseFor(input).schema;void _meta;
  const state=newDesignerState();
- await runDesigner({input,state,maxTurns,maxPictures:0,timeMs:3600000,tools,save:async()=>{},
+ await runDesigner({input,state,maxTurns,maxPictures,timeMs:3600000,tools,save:async()=>{},
   conversation:{continuing:()=>!!session,accept:async()=>{}},
   onTurn:async(turn,results)=>{await writeFile(join(out,`turn-${state.turn}.json`),JSON.stringify({focus:turn.focus,seen:turn.seen,notes:turn.notes,render:turn.render,settleHero:turn.settleHero,finish:turn.finish,files:turn.files.map(f=>`${f.path} ${f.source.length}`),edits:turn.edits.length,results},null,1));},
   call:async(request,images)=>{
