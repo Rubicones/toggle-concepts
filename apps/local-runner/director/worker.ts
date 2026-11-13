@@ -26,8 +26,10 @@ import {runExtensionChat} from './extension-chat-loop';
 import {tripoSettings,MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import {makeModel,directorModelLedger,modelRequestId,taskMemory} from './tripo-model';
 import {reviewRepairMessage} from '../../../packages/director/extension-chat';
-import {creatorStageText,stageSkillTitles} from '../../../packages/agents/stage-skills';
+import {creatorStageText,stageSkillTitles,stageChecksText} from '../../../packages/agents/stage-skills';
+import {usesImageIdeas,IDEAS_TASK,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext} from '../../../packages/director/image-ideas';
 import {DESIGNER_ROLE_V4} from '../../../packages/director/roles';
+import {screenshotForDesigner,RENDER_LONG_SIDE} from './designer-loop';
 import {code3dNotes,THREE_D_MECHANICS} from '../../../packages/director/three-d';
 import {runHeroChat,HERO_TURN_SHARE} from './hero-chat-loop';
 import {plainText} from '../../../packages/director/digest';
@@ -197,7 +199,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
   // short payload only on a real continuation of the designer's own conversation, and the transport uses that same plan.
   const designerConversation=(()=>{let pending:StoredPoint|null=null,decided:Plan|undefined;const loopState=()=>(state.designer??{}) as DesignerLoopState;
    // C6 (designerVersion 4): the cap is relative to the conversation's seed (its first request) plus a working room.
-   const compute=async():Promise<Plan>=>designerPlan({session:loopState().session},loopState().session?null:await latestPlanningPoint(admin,input.runId),heroChat(input)?relativeCap(loopState().session?.seed):undefined);
+   const compute=async():Promise<Plan>=>designerPlan({session:loopState().session},loopState().session||usesImageIdeas(input)?null:await latestPlanningPoint(admin,input.runId),heroChat(input)?relativeCap(loopState().session?.seed):undefined);
    return {plan:async():Promise<Plan>=>decided!==undefined?decided:compute(),
     decide:async()=>{decided=await compute();return continuesOwnConversation(decided);},
     answered:(usage:unknown)=>{const l=(usage as {_local?:{sessionId?:string;conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0];conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted'}}}|null)?._local;decided=undefined;pending=l?.sessionId&&l.conversation?{role:'designer',sessionId:l.sessionId,tokens:storedSize(l),...(heroChat(input)?{seed:l.conversation.kind==='continued'?loopState().session?.seed??storedSize(l):storedSize(l)}:{})}:null;if(pending&&l?.conversation&&['condensed','restarted'].includes(l.conversation.kind))void events.emit(`conversation:${l.sessionId}`,{stepId:`conversation:${l.sessionId}`,kind:'compaction',status:'done',costMicroUsd:0,message:heroChat(input)&&l.conversation.kind==='condensed'&&loopState().hero?.state==='accepted'?'Conversation condensed: kept the draft, notes and the approved hero':conversationLabel(l.conversation.kind,'designer')}).catch(()=>{});},
@@ -316,7 +318,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     };
     const designerBlocked=async()=>{const a=designerAllowance();return a.requests-(state.designer?.turn??0)<1?'No designer turns remain in the approved allowance.':undefined;};
     const criticConfig=snapshot.models.critic,canReview=estimate.roles.critic.requests>0&&!!criticConfig?.vision;
-    return runLiveReview({...(usesDesigner(input)?{owner:'designer' as const}:{}),inspect,repair:usesDesigner(input)?designerRepair:repair,repairBlocked:usesDesigner(input)?designerBlocked:repairBlocked,criticRounds:canReview?Math.max(0,Math.min(2,estimate.roles.critic.requests-(state.designer?.hero?.reviews??0))):0,state:reviewState,
+    return runLiveReview({...(usesDesigner(input)?{owner:'designer' as const}:{}),inspect,repair:usesDesigner(input)?designerRepair:repair,repairBlocked:usesDesigner(input)?designerBlocked:repairBlocked,criticRounds:canReview?Math.max(0,Math.min(2,estimate.roles.critic.requests-(state.designer?.hero?.reviews??0)-(usesImageIdeas(input)?state.designer?.ideas?.rounds??0:0))):0,state:reviewState,
      critic:canReview?async(round,context,views)=>{await controls();return (await call('critic','Review these rendered views of the live draft and the measurements.',liveCriticInstructionsFor(input.brief),liveCriticSchema,context,{review:'live',round},[...await brandSheetImages(folder,input),...await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:criticCrops(6)})])).text;}:undefined,selfReview:usesDesigner(input)?false:coderSees,
      context:()=>({concept:design.designDocument.slice(0,2500),...(input.creativeHandoff?.intent.feeling?{feeling:input.creativeHandoff.intent.feeling}:{}),keyFrames:design.keyFrames,resources:design.resources.map(r=>({id:r.id,scene:r.scene,purpose:r.purpose,proxy:r.proxy,...(input.brief.pictureRulesVersion===1?{...(r.proxyFor?{proxyFor:r.proxyFor}:{}),...(r.cutout?{cutout:true}:{})}:{})})),formats:input.formats.map(f=>({id:f.id,width:f.width,height:f.height})),brandTokens:input.brand.tokens}),
      save:async next=>{state.liveReview=next;await save();},
@@ -372,7 +374,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     tools.reviewHero=heroCritic&&heroChat(input)?async(round,shots,measured)=>{await controls();
      // C5: the hero review of stage H judges stopping power, idea and craft first, with the brand pack (prefix) and the
      // digest; a separate request with no designer history.
-     const text=(await call('critic','Review this hero frame.',HERO_CRITIC_INSTRUCTIONS,liveCriticSchema,{contextText:heroReviewContext(designerDigestText(input,{sceneIds:false}),measured)},{review:'hero',round,stage:'H'},[...(sheetOnRequest?[]:await brandSheetImages(folder,input)),...await reviewImages(folder,shots.map(s=>({...s,sceneId:loop.hero?.sceneId,group:'reference' as const})),[],{maxCrops:criticCrops(2)})])).text;
+     const text=(await call('critic','Review this hero frame.',HERO_CRITIC_INSTRUCTIONS,liveCriticSchema,{contextText:heroReviewContext(designerDigestText(input,{sceneIds:false}),measured)},{review:'hero',round,stage:'H'},[...(usesImageIdeas(input)&&shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame at full size'}]:[]),...(sheetOnRequest?[]:await brandSheetImages(folder,input)),...await reviewImages(folder,shots.map(s=>({...s,sceneId:loop.hero?.sceneId,group:'reference' as const})),[],{maxCrops:criticCrops(2)})])).text;
      return readLiveCritique(text);}:heroCritic?async(round,shots,measured)=>{await controls();const hero=input.storyboard.find(s=>s.id===loop.hero?.sceneId);
      const text=(await call('critic','Review the hero frame: the scene that proves the promise, in the reference format. Judge it as the frame every other scene will follow.',liveCriticInstructionsFor(input.brief),liveCriticSchema,{hero:{scene:sceneNumber(hero?.id??''),copy:hero?.copy,proof:hero?.proof},...(input.creativeHandoff?.intent.feeling?{feeling:input.creativeHandoff.intent.feeling}:{}),brandTokens:input.brand.tokens,measured:{findings:measured.slice(0,20)},views:shots.map(s=>s.label)},{review:'hero',round},[...await brandSheetImages(folder,input),...await reviewImages(folder,shots.map(s=>({...s,sceneId:hero?.id,group:'reference' as const})),[],{maxCrops:criticCrops(2)})])).text;
      return readLiveCritique(text);}:undefined;
@@ -388,7 +390,13 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     const staged=runContext?.stageSkills,workingWith=async(stage:'hero'|'extension')=>{if(!staged)return;const titles=stageSkillTitles(staged,stage);if(titles.length)await events.emit(`skills:${state.iteration??1}:${stage}`,{stepId:`skills:${state.iteration??1}:${stage}`,kind:'designer',status:'done',costMicroUsd:0,message:`The designer is working with: ${titles.join(', ')}.`});};
     if(heroChat(input)&&loop.hero?.state!=='accepted'){
      await workingWith('hero');
-     await runHeroChat({input,state:loop,maxTurns:Math.ceil(Math.min(maxTurns,allowance.requests)*HERO_TURN_SHARE),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,heroReviews:heroCritic,onHero,
+     // D4 (version 5): three image ideas, an independent selection (the critic role), then the build, in this conversation.
+     const ideasArgs=usesImageIdeas(input)?{ideas:{task:IDEAS_TASK+(staged?`\n\n${creatorStageText(staged,'ideas')}`:''),
+      select:async(text:string,round:number)=>{if(!snapshot.models.critic?.vision||estimate.roles.critic.requests-(loop.hero?.reviews??0)-(round-1)<1)return null;
+       return readSelection((await call('critic','Choose one of the three ideas.',SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,stageChecksText(staged,'ideas'))},{review:'ideas',round},[])).text);},
+      onIdeas:async(cards:string[],_text:string,round:number)=>{const step=`ideas:${state.iteration??1}:${round}`;await events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:'Three ideas for the key frame.',detail:{ideas:cards}});},
+      onChosen:async(pick:number,reason:string)=>{const step=`ideas:${state.iteration??1}:chosen`;await events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:`Chosen: idea ${pick} — ${reason}`,detail:{pick}});await events.emit(`${step}:building`,{stepId:`${step}:building`,kind:'designer',status:'running',costMicroUsd:0,message:'Building the chosen idea.'});}}}:{};
+     await runHeroChat({...ideasArgs,input,state:loop,maxTurns:Math.ceil(Math.min(maxTurns,allowance.requests)*HERO_TURN_SHARE),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,heroReviews:heroCritic,onHero,
       save:async next=>{state.designer=next;await save();},...(conversation?{conversation}:{}),
       call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{sceneIds:false})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'H'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
       onTurn:async e=>{await events.emit(`designer:${state.iteration??1}:${e.turn}`,{stepId:`designer:${state.iteration??1}:${e.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:e.idea||'The designer answered without words; its files were applied.',detail:{chat:true,summary:e.results,prose:e.prose,files:e.files,...(e.actions?{actions:e.actions}:{})}},e.looked);}});

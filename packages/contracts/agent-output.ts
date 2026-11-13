@@ -84,7 +84,7 @@ export function scriptProofFor(instructions?:string){
  const found=instructionVersion(instructions);if(!found)return false;const [date,n]=SCRIPT_PROOF_VERSION.split('.');
  return found[1]>date||found[1]===date&&Number(found[2])>=Number(n);
 }
-export function agentResponseSchema(role:string,manifest?:{entries:Record<string,unknown>[]},options:{scriptProof?:boolean;scenarioSelection?:boolean;scenarioId?:string;treatmentSequence?:boolean;/** C9: visual direction writes its concept in prose first */concept?:boolean}={}){
+export function agentResponseSchema(role:string,manifest?:{entries:Record<string,unknown>[]},options:{scriptProof?:boolean;scenarioSelection?:boolean;scenarioId?:string;treatmentSequence?:boolean;/** C9: visual direction writes its concept in prose first */concept?:boolean;/** D4 (designer version 5): the territory, not the frames */territory?:boolean}={}){
  const string={type:'string'},strings={type:'array',items:string},list={type:'array',items:{type:'object',additionalProperties:true}};
  const narrative=options.scenarioSelection===true,sequence=narrative&&role==='visual-direction'&&options.treatmentSequence===true,proof=role==='script'&&(options.scriptProof===true||narrative),dataKey=proof?'world':'productData';
  const hooks=[...new Set(['primary',...(manifest?.entries??[]).map(e=>typeof e.hook==='string'&&e.hook.trim()?e.hook.trim():'primary')])];
@@ -97,7 +97,12 @@ export function agentResponseSchema(role:string,manifest?:{entries:Record<string
   localization:{type:'object',additionalProperties:false,properties:{localizedCopy:localized,terminologyNotes:strings,expansionRisks:strings},required:['localizedCopy','terminologyNotes','expansionRisks']},
   'visual-direction':{type:'object',additionalProperties:false,properties:{treatments:{type:'array',...(sequence?{minItems:1,maxItems:1}:narrative?{minItems:3,maxItems:3}:{}),items:{type:'object',additionalProperties:false,properties:{conceptId:{type:'string',enum:['concept-1','concept-2','concept-3']},...(narrative?{scenarioId:{type:'string',enum:options.scenarioId?[options.scenarioId]:['concept-1','concept-2','concept-3']}}:{}),name:string,visualIdea:string,makingTechnique:string,composition:string,visualHierarchy:string,paletteAndLighting:string,lensAndCamera:string,productScale:string,typographyTreatment:string,motionLanguage:string,formatAdaptation:string,assetPromptBriefs:strings,proxyContracts:strings},required:['conceptId',...(narrative?['scenarioId']:[]),'name','visualIdea','makingTechnique','composition','visualHierarchy','paletteAndLighting','lensAndCamera','productScale','typographyTreatment','motionLanguage','formatAdaptation','assetPromptBriefs','proxyContracts']}},productionConstraints:strings},required:['treatments','productionConstraints']},
  };
- const base=deliverables[role]??{type:'object',properties:{},additionalProperties:true};
+ let base=deliverables[role]??{type:'object',properties:{},additionalProperties:true};
+ // D4: for designer version 5 each treatment is a territory: the visual idea and why it fits, what reads in two seconds,
+ // the product's role, one to three ways of making and why, and what success looks like. No per-frame composition.
+ if(role==='visual-direction'&&options.territory){const items=(base.properties.treatments as {items:{properties:Record<string,unknown>;required:string[]}}).items,keep=['conceptId','scenarioId','name'].filter(k=>k in items.properties);
+  const fields={visualIdea:string,twoSeconds:string,productRole:string,makingTechnique:string,success:string};
+  base={...base,properties:{...base.properties,treatments:{...(base.properties.treatments as object),items:{type:'object',additionalProperties:false,properties:{...Object.fromEntries(keep.map(k=>[k,items.properties[k]])),...fields},required:[...keep,...Object.keys(fields)]}}}};}
  // C9 (chat-shaped plan): visual direction thinks in prose before its structured answer. One free field, written first:
  // the visual idea and why it is right for this brand and this line. The structured result follows as before.
  const deliverable=role==='visual-direction'&&options.concept?{...base,properties:{concept:string,...base.properties},required:['concept',...(base.required??[])]}:base;

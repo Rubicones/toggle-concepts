@@ -69,3 +69,8 @@ export function stageSkillIds(st:StageSkills,role:string|undefined,effortStage?:
  return stage==='critic'?[...new Set(REVIEWED_STAGES.flatMap(x=>st.stages[x]??[]).filter(s=>s.checks.length||s.signs).map(s=>s.id))]:(st.stages[stage]??[]).filter(s=>s.principles).map(s=>s.id);
 }
 export const stageSkillTitles=(st:StageSkills,stage:SkillStage)=>(st.stages[stage]??[]).filter(s=>s.principles).map(s=>s.title);
+/** D4: the checks of one stage's skills (the selection of image ideas reads the `ideas` checks); '' when none. */
+export function stageChecksText(st:StageSkills|undefined,stage:SkillStage){
+ const list=(st?.stages[stage]??[]).filter(s=>s.checks.length);
+ return list.length?`THE ${STAGE_LABELS[stage].toUpperCase()} CHECKS\n${list.flatMap(s=>s.checks.map(c=>`- ${c}`)).join('\n')}`:'';
+}

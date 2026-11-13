@@ -10,6 +10,7 @@ import {resolveAssetReferences} from '../../../packages/director/asset-names';
 import {propagateExecutionFailure} from '../../../packages/director/execution-failures';
 import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
+import {MAX_IDEA_ROUNDS,chosenMessage,ideaCards,ideasAgain,type Selection} from '../../../packages/director/image-ideas';
 import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
 
 export type HeroCall=(message:string,images:{url:string;label:string}[])=>Promise<string>;
@@ -18,11 +19,28 @@ export type HeroTurnEvent={turn:number;idea:string;prose:string;files:string[];a
 export const HERO_TURN_SHARE=0.5;
 
 export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;tools:DesignerTools;call:HeroCall;save:(s:DesignerLoopState)=>Promise<void>;heroReviews?:number;
- conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
+ conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;
+ /** D4 (version 5): three image ideas before any code; an independent selection picks one (at most one extra round). */
+ ideas?:{task:string;select:(ideas:string,round:number)=>Promise<Selection|null>;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  if(!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
  const hero=state.hero,pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];
  const accept=async(by:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed')=>{hero.state='accepted';hero.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:hero.sceneId,format:hero.format,by});};
+ // D4: the ideas turns open stage H (the first carries the task); the choice is the next message, then the build.
+ if(args.ideas&&!state.ideas?.picked){
+  const ideas=state.ideas??={rounds:0};
+  while(!ideas.picked&&ideas.rounds<MAX_IDEA_ROUNDS&&state.turn<args.maxTurns){
+   const text=await args.call(ideas.rounds===0?`${heroTask(input)}\n\n${args.ideas.task}`:ideasAgain(ideas.notes??[]),[]);
+   state.turn++;ideas.rounds++;ideas.texts=[...(ideas.texts??[]),text.slice(0,8000)];await args.save(state);
+   await args.ideas.onIdeas?.(ideaCards(text),text,ideas.rounds);
+   const chosen=await args.ideas.select(text,ideas.rounds).catch(error=>{if(propagateExecutionFailure(error))throw error;return null;});
+   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=chosen.reason;state.heroNote=chosenMessage(chosen.pick,chosen.reason,'reviewer');}
+   else if(!chosen||ideas.rounds>=MAX_IDEA_ROUNDS){ideas.picked=1;ideas.reason=!chosen?'The selection could not run, so the first idea is built.':'No idea passed after the extra round, so the first idea is built.';state.heroNote=chosenMessage(1,ideas.reason,'fallback');}
+   else ideas.notes=chosen.notes;
+   await args.save(state);
+   if(ideas.picked)await args.ideas.onChosen?.(ideas.picked,ideas.reason??'');
+  }
+ }
  let missingRetried=false;
  while(hero.state!=='accepted'&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   // What arrived since the last answer; a continued conversation holds everything earlier.

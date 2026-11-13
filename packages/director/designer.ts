@@ -142,6 +142,8 @@ export type DesignerLoopState={
  /** point 4b: the turn after this render was already refused once for a missing seen */
  seenRefused?:boolean;
  /** Design quality plan, point 3 (designerVersion 2): the hero frame and whether it is settled. Saved, so a restart keeps it. */
+ /** D4 (version 5): the image ideas of stage H: rounds used, the pick and why, the notes of a round where none passed. */
+ ideas?:{rounds:number;picked?:number;reason?:string;notes?:string[];texts?:string[]};
  hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;acceptedBy?:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed';shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
 
 /** Point 4d: the designer's look at a render, as timeline lines. */
