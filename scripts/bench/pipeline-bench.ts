@@ -29,6 +29,20 @@ async function main(){
  const maxTurns=Number(arg('turns','12')),model=arg('model','claude-sonnet-5-5'),effort=arg('effort','high'),version=Number(arg('version','3'));
  const out=resolve(arg('out','artifacts/bench'),`${brand.id}-pipeline-v${version}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);
  await mkdir(out,{recursive:true});
+ // Mode "propose": the client gave no words. One request writes the hooks and each scene's line together with its
+ // visual event, from the planning skills; the designer then builds that proposal.
+ if(arg('propose','0')==='1'){
+  const pdir=await mkdtemp(join(tmpdir(),'bench-propose-')),pfile=join(pdir,'system.txt'),pmcp=join(pdir,'mcp.json');await writeFile(pmcp,'{"mcpServers":{}}');
+  await writeFile(pfile,'You are the creative team for one brand: you write the advertising idea, the lines and what each frame shows, together. Three static scenes: the tension the audience knows, the product as proof, the offer with the call to action. Two hooks: two different ways into the same idea. The line and the picture complete each other: either alone says less. Lines are short (two lines per scene, a few words each), in the brand\'s voice, and say only what the brief supports. Write each line natively in every language, never as a literal translation. The last scene carries the offer exactly as given. Answer with JSON only: {"idea":"one sentence","hooks":{"primary":"what it is about","hook-1":"what it is about"},"cta":{"en-GB":"","de-DE":"","tr-TR":""},"scenes":[{"shows":{"primary":"what the frame shows for this hook, as one precise visual event","hook-1":""},"copy":{"primary":{"en-GB":["",""],"de-DE":["",""],"tr-TR":["",""]},"hook-1":{"en-GB":["",""],"de-DE":["",""],"tr-TR":["",""]}}}]} with exactly three scenes.\n\nSKILLS\n'+readSkills().filter(x=>x.defaultRoles.includes('strategy')||x.defaultRoles.includes('script')).map(x=>`## ${x.title}\n${x.text.trim()}`).join('\n\n'));
+  const argv=cliArgs({bin:'claude',model,systemPromptFile:pfile,emptyMcpConfigFile:pmcp,cwd:out,effort:'high',isolation:{safeMode:true,restricted:true,noSessionPersistence:true,disableSlashCommands:true}});
+  const r=await runCli({bin:'claude',argv,cwd:out,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:'32000'}),stdin:streamUserMessage([{type:'text',text:JSON.stringify({brand:brand.name,category:brand.category,character:brand.character,voice:brand.tokens['voice.tone'],product:brand.product,offer:brand.offer,audience:brand.audience,languages:['en-GB','de-DE','tr-TR']})}]),timeoutMs:900000,idleMs:300000});
+  if(r.outcome!=='succeeded'||!r.text)throw new Error(`propose: ${r.failure??r.outcome}`);
+  const p=JSON.parse(r.text.slice(r.text.indexOf('{'),r.text.lastIndexOf('}')+1)) as {idea:string;hooks:Record<string,string>;cta:Record<string,string>;scenes:{shows:Record<string,string>;copy:Record<string,Record<string,string[]>>}[]};
+  await writeFile(join(out,'proposal.json'),JSON.stringify({...p,usd:r.apiEquivalentUsd,seconds:Math.round(r.durationMs/1000)},null,1));
+  brand.hooks=p.hooks;brand.cta=Object.fromEntries(Object.entries(p.cta).map(([l,v])=>[l,[v]]));
+  brand.scenes=p.scenes.slice(0,3).map((x,i)=>({id:`scene-${i+1}`,notes:`Idea: ${p.idea} This frame shows: ${x.shows.primary}${x.shows['hook-1']&&x.shows['hook-1']!==x.shows.primary?` With the second hook it shows: ${x.shows['hook-1']}`:''}`,copy:x.copy}));
+  await rm(pdir,{recursive:true,force:true});
+ }
  const base=benchInput(brand),input={...base,brief:{...base.brief,designerVersion:version},brand:{...base.brand,tokens:{...base.brand.tokens,'brand.character':brand.character}}} as DirectionInput;
  const folder=await createWorkspace(resolve(out,'workspace'),input),pub=join(folder,'public');
  for(const f of brand.fonts)await copyFile(f.source,join(pub,f.file));

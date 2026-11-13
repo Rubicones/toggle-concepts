@@ -116,7 +116,8 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
   if(heroOn&&turn.notes){state.notes=turn.notes;await args.save(state);}
   // Refused once per render: a second turn without seen is applied, so a model that keeps omitting it cannot burn
   // the allowance on refusals.
-  if(heroOn&&last&&!turn.seen&&!state.seenRefused){state.seenRefused=true;await log({error:'Look before you change: write seen (what a viewer reads first, second and third in the render, and its weakest points, the measured findings included). Nothing was applied.'});await args.onTurn?.(turn,[{refused:'seen'}],looked);
+  // Version 3: a turn that changes no code (it only renders, settles or finishes) is not refused for a missing seen.
+  if(heroOn&&last&&!turn.seen&&!state.seenRefused&&!(usesEngineKit(input)&&!turn.files.length&&!turn.edits.length)){state.seenRefused=true;await log({error:'Look before you change: write seen (what a viewer reads first, second and third in the render, and its weakest points, the measured findings included). Nothing was applied.'});await args.onTurn?.(turn,[{refused:'seen'}],looked);
    // The render stays attached for the retry.
    state.lastRender=last;await args.save(state);continue;}
   if(state.seenRefused){delete state.seenRefused;await args.save(state);}
@@ -134,12 +135,14 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
     if(state.pictures>=args.maxPictures){results.push({picture:'refused',detail:'The approved number of pictures is used. Build the rest in code or with the pictures you have.'});continue;}
     state.pictures++;await args.save(state);const key=`${state.turn}:${state.pictures}`;
     track(key,tools.requestImage(picture));
-    results.push({picture:'requested',scene:picture.scene,purpose:picture.purpose.slice(0,120)});
+    // Version 3: the result names the resource id the picture will have, so the frame binds it without guessing.
+    const issued=usesEngineKit(input)?input.resourceIds[state.pictures-1]:undefined;
+    results.push({picture:'requested',...(issued?{id:issued,read:`resources['${issued}']`}:{}),scene:picture.scene,purpose:picture.purpose.slice(0,120)});
    }
    // 3. Render: only a building source; the first render designs the scene, later ones are revisions.
    if(turn.render&&built.ok){
     // Revisions count per scene AND format (point 5): recomposing a new format is a first design, not a revision.
-    const sceneId=turn.render.sceneId,formats=turn.render.formats.length?[...turn.render.formats]:[referenceFormat],spent=formats.filter(f=>(state.renders[renderKey(sceneId,f)]??0)>DESIGNER_REVISIONS_PER_SCENE);
+    const sceneId=turn.render.sceneId,formats=turn.render.formats.length?[...turn.render.formats]:[referenceFormat],limit=usesEngineKit(input)&&heroOpen()&&sceneId===state.hero!.sceneId?DESIGNER_REVISIONS_PER_SCENE*2:DESIGNER_REVISIONS_PER_SCENE,spent=formats.filter(f=>(state.renders[renderKey(sceneId,f)]??0)>limit);
     if(heroOpen()&&(sceneId!==state.hero!.sceneId||formats.some(f=>f!==state.hero!.format)))results.push({render:'refused',detail:heroAsk()});
     // Version 3: formats whose revisions are used are left out; the others still render (a scene revised in the
     // reference format can still be recomposed in the rest).
