@@ -73,7 +73,8 @@ async function main(){
   }catch(error){console.error('hero review failed:',error instanceof Error?error.message:error);return undefined;}
  };
  const state=newDesignerState();
- await runDesigner({input,state,maxTurns,maxPictures,heroReviews,timeMs:3600000,tools,save:async()=>{},
+ let turnLimit=maxTurns;
+ const loop=()=>runDesigner({input,state,maxTurns:turnLimit,maxPictures,heroReviews,timeMs:3600000,tools,save:async()=>{},
   conversation:{continuing:()=>!!session,accept:async()=>{}},
   onTurn:async(turn,results)=>{await writeFile(join(out,`turn-${state.turn}.json`),JSON.stringify({focus:turn.focus,seen:turn.seen,notes:turn.notes,render:turn.render,settleHero:turn.settleHero,finish:turn.finish,files:turn.files.map(f=>`${f.path} ${f.source.length}`),edits:turn.edits.length,results},null,1));},
   call:async(request,images)=>{
@@ -87,6 +88,29 @@ async function main(){
    log.push({turn:request.turn,seconds:Math.round(r.durationMs/1000),usage:(r.usage??{}) as Usage,usd:r.apiEquivalentUsd});
    return r.structured!==undefined?JSON.stringify(r.structured):r.text??'';
   }});
+ await loop();
+ // The end review, as in a run: the reviewer sees every scene in every ordered format and its notes go back to the
+ // designer for one repair round.
+ const endReview=Number(arg('endreview','1'));
+ if(endReview&&state.complete){
+  try{
+   const parts:Part[]=[],measured:unknown[]=[];
+   for(const scene of input.storyboard){const views=designerViews(input,scene.id,input.formats.map(f=>f.id)),r=await tools.render(views);measured.push(...r.summary.reports.flatMap(x=>x.findings).slice(0,10));
+    for(const shot of r.shots){const url=await screenshotForDesigner(shot.file,640),[head,data]=url.split(',');parts.push({type:'text',text:`scene ${input.storyboard.indexOf(scene)+1} · ${views.find(v=>v.key===shot.key)?.label}`},{type:'image',mediaType:head.slice(5,head.indexOf(';')),dataBase64:data});}}
+   parts.unshift({type:'text',text:JSON.stringify({task:'Review the finished draft: every scene in every ordered format.',scenes:input.storyboard.map((x,i)=>({scene:i+1,copy:x.copy,notes:x.visualNotes})),product:input.brief.product,offer:input.brief.offer,audience:input.brief.audience,brandTokens:input.brand.tokens,measured:{findings:measured}})});
+   const argv=cliArgs({bin:'claude',model,systemPromptFile:criticFile,emptyMcpConfigFile:mcpFile,cwd:work,includePartialMessages:true,effort:'medium',jsonSchema:criticSchema,isolation:{safeMode:true,restricted:true,noSessionPersistence:true,disableSlashCommands:true}});
+   const r=await runCli({bin:'claude',argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:'32000'}),stdin:streamUserMessage(parts),timeoutMs:900000,idleMs:300000});
+   if(r.outcome!=='succeeded')throw new Error(r.failure??r.outcome);
+   criticUsd+=r.apiEquivalentUsd??0;criticSeconds+=Math.round(r.durationMs/1000);
+   const review=readLiveCritique(r.structured!==undefined?JSON.stringify(r.structured):r.text??'');
+   await writeFile(join(out,'end-review.json'),JSON.stringify(review,null,1));
+   if(!review.accepted&&review.notes.length){
+    state.complete=false;delete state.finish;state.renders={};turnLimit=state.turn+Number(arg('repair','6'));
+    state.transcript.push({from:'tool',text:JSON.stringify({review:{notes:review.notes.map(n=>`[${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`)},ask:'The reviewer looked at every scene in every format. Apply these notes, render what you changed, look, then finish again.'})});
+    await loop();
+   }
+  }catch(error){console.error('end review failed:',error instanceof Error?error.message:error);}
+ }
  // The sweep a person looks at: every scene in every format, in each language and hook.
  const sweep=resolve(out,'sweep');await mkdir(sweep,{recursive:true});let hard=0,soft=0;
  try{for(const scene of input.storyboard){const formats=input.formats.map(f=>f.id),views=[...new Set(input.variants.map(v=>`${v.locale}|${v.hook}`))].flatMap(k=>{const [locale,hook]=k.split('|');return designerViews({...input,variants:input.variants.filter(v=>v.locale===locale&&v.hook===hook)},scene.id,formats).filter(v=>v.shot);});
