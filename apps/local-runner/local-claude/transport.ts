@@ -16,6 +16,7 @@ import {sharedLayout,sharedLayoutDifferences,continuingLayout,type RunContext} f
 import type {Plan} from '../../../packages/agents/local-session';
 import {lastCallSize} from '../../../packages/agents/local-session';
 import {stageMessage,stageSkillIds,requestStage} from '../../../packages/agents/stage-skills';
+import {positiveText,POSITIVE_VERSION} from '../../../packages/agents/positive-instructions';
 import {usesSchemaInText,schemaIssues,readJsonAnswer,answerFormatText,repairText,MATERIALS_ANSWER_FORMAT} from '../../../packages/agents/schema-in-text';
 import {usesPlanningChat,planningContextText,planningUpstreamText,planningMaterials} from '../../../packages/agents/planning-chat';
 import {withoutBrandDuplicates} from '../../../packages/brand/brand-pack';
@@ -148,7 +149,9 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   // stages in short; their full results are materials it may ask for. The frozen snapshot is unchanged.
   const planningChat=usesPlanningChat(packed,options.role),sent=planningChat?{...unpacked,contextText:planningContextText(unpacked.campaignContext),upstreamText:planningUpstreamText(cfg.upstream as Parameters<typeof planningUpstreamText>[0])}:unpacked;
   // C2 (second part): the pack's pictures open every request; a request's own copy of one of them is not sent again.
-  const prepared=prepareTextRequest(model,prompt,sent,withoutPackPictures(images,packed),{requestTag});
+  // D3: in contexts frozen with positive instructions, the instruction sentences are sent as targets (only what is sent).
+  const positive=packed?.instructionsVersion===POSITIVE_VERSION,said=positive?positiveText(prompt):prompt,told=positive?{...sent,instructions:positiveText(sent.instructions),...(sent.protocolInstructions?{protocolInstructions:positiveText(sent.protocolInstructions)}:{})}:sent;
+  const prepared=prepareTextRequest(model,said,told,withoutPackPictures(images,packed),{requestTag});
   // C7 follow-up (C0 6d): in contexts frozen with it, a planning role's answer format travels as text, not as a
   // per-role tool before the system prompt, so every role reads the same cached prefix; the app checks the answer below.
   const textSchema=usesSchemaInText(packed,options.role)&&!!prepared.output.schema,schemaMode=textSchema?'plain' as const:setup.schemaMode;
@@ -242,7 +245,7 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    const ttl=cacheLifetime(r.usage);
    const details:Omit<LocalTextDetails,'events'|'stderr'>={...(materials?{materials}:{}),...(schemaCheck?{schemaCheck}:{}),...(textSchema?{answerFormat:'text' as const}:{}),...(ttl?{cacheTtl:ttl}:{}),transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(()=>{const size=lastCallSize(r.events);return size!==undefined?{conversationSize:size}:{};})(),...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:ctx.images?.length??prepared.attachments.filter(a=>a.prefix).length,...(ctx.pack?{pack:ctx.pack}:{})}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
+    internalAttempts:r.internalAttempts,...(()=>{const size=lastCallSize(r.events);return size!==undefined?{conversationSize:size}:{};})(),...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{...(ctx.instructionsVersion?{instructions:ctx.instructionsVersion}:{}),sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:ctx.images?.length??prepared.attachments.filter(a=>a.prefix).length,...(ctx.pack?{pack:ctx.pack}:{})}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};

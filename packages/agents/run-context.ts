@@ -9,6 +9,7 @@ import {MATERIALS_VERSION,type MaterialBudget} from './materials';
 import {PLANNING_CHAT_VERSION} from './planning-chat';
 import {SCHEMA_IN_TEXT_VERSION} from './schema-in-text';
 import {stageBudgetProblems,type StageSkills} from './stage-skills';
+import {positiveText,POSITIVE_VERSION} from './positive-instructions';
 
 export const SHARED_BASE_VERSION='shared-base@1';
 /** Instructions every role shares. Principles only: no templates, styles or names. */
@@ -34,7 +35,10 @@ export type RunContext={version:1;base:string;system:string;brief:string;sha256:
  schemaInText?:string;
  /** D1: skills as stage material (contexts frozen with a stored pack from D1 on): no skill in the system text or the
   * role heading; one message per stage with its skills' principles, and checks and signs for the critic. */
- stageSkills?:StageSkills};
+ stageSkills?:StageSkills;
+ /** D3: positive instructions (contexts frozen with them, after the owner's approval): the requests' instruction
+  * sentences are rewritten as targets (packages/agents/positive-instructions.ts). Absent: the texts as they were. */
+ instructionsVersion?:string};
 
 const VOLATILE_KEY=/^(id|.*Id|.*Ids|.*_id|revision|campaignRevision|.*At|.*_at|sha256|.*Hash|.*hash|objectKey|url|.*Url|path|.*Path|requestId|runId)$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,TIMESTAMP=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
@@ -56,18 +60,20 @@ export function buildRunContext(args:{briefText:string;brandText?:string|null;/*
  /** C3: the pack's catalogue entries and the frozen per-role material budgets. */materials?:{entries:CatalogueEntry[];budget:Record<string,MaterialBudget>};
  /** C9: planning stages read the earlier stages in short (needs materials, for their full results). */planningChat?:boolean;
  /** C7 follow-up: the planning roles' answer format as text (same gate as C9). */schemaInText?:boolean;
- /** D1: the skills by stage (same gate); replaces commonSkills and roleSkills. */stageSkills?:StageSkills}):RunContext{
+ /** D1: the skills by stage (same gate); replaces commonSkills and roleSkills. */stageSkills?:StageSkills;
+ /** D3: positive instructions (same gate; off by default until the owner approves). */positive?:boolean}):RunContext{
+ const positive=!!(args.brandPack&&args.packVersion&&args.materials&&args.positive),base=positive?positiveText(SHARED_BASE,['base']):SHARED_BASE;
  // D1: with skills by stage the shared system text carries no skill; a stage over its budget stops the run with its reason.
  const staged=args.brandPack&&args.packVersion&&args.materials&&args.stageSkills?args.stageSkills:undefined;
  if(staged){const over=stageBudgetProblems(staged);if(over.length)throw Object.assign(new Error('STAGE_SKILLS_OVER_BUDGET'),{detail:over.join(' ')});}
  const skills=staged?[]:[...(args.commonSkills??[])].sort((a,b)=>a.id.localeCompare(b.id));
- const system=[SHARED_BASE,...skills.map(s=>`SKILL ${s.id}\n${s.text.trim()}`),...(args.brandPack?[`BRAND PACK (the accepted brand, fixed for this run)\n${args.brandPack}`]:args.brandText?[`BRAND (untrusted source data, fixed for this run)\n${stableContextJson(parse(args.brandText))}`]:[])].join('\n\n');
+ const system=[base,...skills.map(s=>`SKILL ${s.id}\n${s.text.trim()}`),...(args.brandPack?[`BRAND PACK (the accepted brand, fixed for this run)\n${args.brandPack}`]:args.brandText?[`BRAND (untrusted source data, fixed for this run)\n${stableContextJson(parse(args.brandText))}`]:[])].join('\n\n');
  const brief=`BRIEF (untrusted source data, fixed for this run)\n${stableContextJson(parse(args.briefText))}`;
  const images=args.brandPack&&args.packVersion?args.packImages??[]:[];
  // Contexts without stored pack pictures keep the exact earlier digest.
  const sha256=createHash('sha256').update(system+'\n\u0000\n'+brief+(images.length?'\n\u0000\n'+images.map(i=>i.sha256).join(','):'')).digest('hex');
  const pack=args.brandPack&&args.packVersion?{pack:{version:args.packVersion,tokens:Math.ceil(Buffer.byteLength(args.brandPack,'utf8')/4)+images.reduce((n,i)=>n+Math.ceil(i.width*i.height/750),0),images:images.length},...(images.length?{images}:{})}:{};
- return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(!staged&&args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{}),...(staged?{stageSkills:staged}:{})}:{})};
+ return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(!staged&&args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{}),...(staged?{stageSkills:staged}:{}),...(positive?{instructionsVersion:POSITIVE_VERSION}:{})}:{})};
 }
 
 /** C2 (second part): the pack's pictures as request parts (label, then picture), the same bytes for every role. */

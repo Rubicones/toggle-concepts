@@ -13,6 +13,7 @@ import {encodeCompactImages,encodePackImages,storedPicture,type PictureReader} f
 import {compactSheetFor,type CompactPage} from '../compact-sheet';
 import type {StoredBrandPack} from '../../../packages/brand/brand-pack-contents';
 import {DEFAULT_MATERIAL_BUDGET,type MaterialBudget} from '../../../packages/agents/materials';
+import {POSITIVE_DEFAULT} from '../../../packages/agents/positive-instructions';
 
 const dir=()=>join(toggleHome(),'local-claude','run-context');
 export const runContextPath=(runId:string)=>join(dir(),`${runId}.json`);
@@ -50,7 +51,7 @@ export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()
   // C9: contexts frozen from now on let the planning chain read the earlier stages in short; C7 follow-up: their
   // planning roles send the answer format as text, so every role reads the same cached prefix.
   const {materialBudget,...rest}=await extras();
-  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...rest,materials:{entries:stored.catalogue,budget:{...DEFAULT_MATERIAL_BUDGET,...materialBudget}},planningChat:true,schemaInText:true,...(rest.stageSkills?{stageSkills:rest.stageSkills}:{})}));
+  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...rest,materials:{entries:stored.catalogue,budget:{...DEFAULT_MATERIAL_BUDGET,...materialBudget}},planningChat:true,schemaInText:true,...(rest.stageSkills?{stageSkills:rest.stageSkills}:{}),positive:POSITIVE_DEFAULT}));
  }
  // C2: contexts frozen from now on carry the brand pack instead of the raw revision; frozen ones keep theirs.
  const brandPack=brandPackText(brand.data.canonical_text);
