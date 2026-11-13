@@ -9,9 +9,9 @@ import {brandPackPicture,brandPackView,editBrandPack,rewriteBrandCharacter} from
 export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/brand-pack'>){return api(async()=>{
  const campaign=await campaignRecord((await ctx.params).id),url=new URL(request.url),picture=url.searchParams.get('picture');
  if(picture){
-  const key=await brandPackPicture(campaign.id,z.string().regex(/^[a-f0-9]{64}$/).parse(picture));
-  if(!key)throw new ApiError(404,'PICTURE_NOT_FOUND','This picture is not part of this brand pack.');
-  return new Response(new Uint8Array((await objectStore().get(key)).body),{headers:{'Content-Type':'image/jpeg','Cache-Control':'private, max-age=86400, immutable','X-Content-Type-Options':'nosniff'}});
+  const found=await brandPackPicture(campaign.id,z.string().regex(/^[a-f0-9]{64}$/).parse(picture));
+  if(!found)throw new ApiError(404,'PICTURE_NOT_FOUND','This picture is not part of this brand pack.');
+  return new Response(new Uint8Array((await objectStore().get(found.key)).body),{headers:{'Content-Type':found.type,'Cache-Control':'private, max-age=86400, immutable','X-Content-Type-Options':'nosniff'}});
  }
  return json(await brandPackView(campaign.id));
 });}

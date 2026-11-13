@@ -25,6 +25,7 @@ import {studioChangeDirectory} from "../../packages/data/studio-changes";
 import type {ProviderErrorDetail} from "../../packages/contracts/provider-error";
 import {diagnoseIntakeOutput} from "../../packages/contracts/brand-intake";
 import {processBrandSheet} from "./brand-sheet";
+import {compactSheetFor,processCompactSheets} from "./compact-sheet";
 import {loadBrandVision,loadBrandSheetVision,loadBrandCharacterVision} from "../../packages/brand/vision.local";
 import {parseBrandCharacter,type CatalogueEntry} from "../../packages/brand/brand-pack-contents";
 import {ingestBrandCharacter} from "../../packages/brand/brand-pack-store";
@@ -243,8 +244,8 @@ async function execute(claim:Claim){
      if(prepared.blocked)result={...result,outcome:'blocked',failure:'AGENT_INPUT_BLOCKED'};
     }
     // C2 (second part): an unreadable character answer is a failed answer (asked again like any other), never a pack.
-    const character=(snapshot as unknown as {brandCharacter?:{catalogue:CatalogueEntry[]}}).brandCharacter;
-    if(character&&result.outcome==="succeeded"){try{parseBrandCharacter(text,character.catalogue);}catch{result={...result,outcome:"failed",failure:"INVALID_OUTPUT_SCHEMA",validation:{code:"INVALID_OUTPUT_SCHEMA",message:"The brand character answer was unreadable or too short.",issues:[]}};}}
+    const character=(snapshot as unknown as {brandCharacter?:{catalogue:CatalogueEntry[];pictures?:string[]}}).brandCharacter;
+    if(character&&result.outcome==="succeeded"){try{parseBrandCharacter(text,character.catalogue,character.pictures);}catch{result={...result,outcome:"failed",failure:"INVALID_OUTPUT_SCHEMA",validation:{code:"INVALID_OUTPUT_SCHEMA",message:"The brand character answer was unreadable or too short.",issues:[]}};}}
     if(!creative&&result.outcome==="succeeded"&&(claim.round.kind==="draft"||snapshot.outputFormat==="json_object"||snapshot.outputFormat==="json_schema")){
      const validation=prepareAgentOutput(result.text!,job.role,claim.round.kind==="draft",snapshot.campaignContext?.variantManifest);
      const bound=bindScenarioOutput(validation.text,job.role,snapshot.scenarioSelection,scenarioSelection);
@@ -260,10 +261,10 @@ async function execute(claim:Claim){
  const receipt={target_job:job.id,token:job.lease_token,device,expected_input:job.input_hash,expected_config:job.config_hash,outcome:result.outcome,actual_cost:result.cost,result_text:result.text,provider_generation:result.generation,token_usage:(result.usage||result.providerError||result.finishReason)?{...(result.usage as Record<string,unknown>),_studio:{finishReason:result.finishReason??null,maxOutputTokens:outputLimit,validation:result.validation??null,providerError:result.providerError??null,normalizations:result.normalizations??[],...(result.originalOutput?{originalOutput:result.originalOutput}:{}),responseSchema:protocolSchema}}:null,failure:result.failure};
  const file=resolve(directory,"receipts",`${attempt.id}.json`),tmp=file+'.tmp';await writeFile(tmp,JSON.stringify(receipt),{mode:0o600});await rename(tmp,file);
  await rpc("studio_complete_workflow",receipt);await unlink(file);await unlink(resolve(directory,'provider-ids',`${attempt.id}.json`)).catch(()=>{});
- // C2 (second part): a written brand character becomes the next version of the brand pack before the next request is
- // claimed, so a run whose planning waits behind it freezes the new pack. A failure here is repaired when the brand
+ // C2 (second part): a written brand character becomes the next version of the brand pack, with its compact brand
+ // sheet, before the next request is claimed, so a run whose planning waits behind it freezes the new pack. A failure here is repaired when the brand
  // page is opened (ingestPendingCharacters); it never stops the queue.
- if(result.outcome==="succeeded"&&characterStep)await ingestBrandCharacter(admin,characterStep).catch(error=>console.error('[brand-pack] the brand character could not be stored:',error instanceof Error?error.message:error));
+ if(result.outcome==="succeeded"&&characterStep)await ingestBrandCharacter(admin,characterStep).then(pack=>pack?compactSheetFor(admin,pack):null).catch(error=>console.error('[brand-pack] the brand character could not be stored:',error instanceof Error?error.message:error));
 }
 async function main(){
  const host=new URL(process.env.NEXT_PUBLIC_APP_URL??"https://invalid").hostname;
@@ -285,7 +286,7 @@ async function main(){
   while(!stopping&&(Date.now()-idle<60000||(await runsWaiting().catch(()=>false)&&(idle=Date.now()-50000,true)))){
    if(localRuntime.setup&&Date.now()-recovered_at>30000){recovered_at=Date.now();await admin.rpc('studio_recover_local_workflow',{target_tenant:sharedTenant}).then(r=>{if(!r.error&&Number(r.data)>0){idle=Date.now();console.log(`[local] ${r.data} planning step(s) that ended without an answer went back to the queue.`);}},()=>{});}
    if(Date.now()-checked_at>5000){checked_at=Date.now();if(await codeFingerprint()!==startedWith){restartForNewCode=true;break;}}
-   await flushReceipts();await flushProviderAnchors();try{const side=directorParallel(localRuntime);if(side>1){if(await startDirectorWork(device,localRuntime,side)||directorsRunning())idle=Date.now();}else if(await processDirectorWork(device,localRuntime)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis(device,localRuntime)){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
+   await flushReceipts();await flushProviderAnchors();try{const side=directorParallel(localRuntime);if(side>1){if(await startDirectorWork(device,localRuntime,side)||directorsRunning())idle=Date.now();}else if(await processDirectorWork(device,localRuntime)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis(device,localRuntime)){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()||await processCompactSheets(admin)){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
    const claim=await rpc("studio_claim_workflow",{target_tenant:sharedTenant,device}) as Claim|null;
    if(claim){idle=Date.now();await execute(claim);}else await waitForWork(idleDelay(Date.now()-idle));
   }

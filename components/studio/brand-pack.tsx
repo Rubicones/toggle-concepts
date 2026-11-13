@@ -42,8 +42,9 @@ export function BrandPackPanel({ campaignId }: { campaignId: string }) {
         <div>
           <h3 id="brand-pack-title">What every agent sees about this brand</h3>
           <p className={styles.source}>
-            Every agent of a run starts from the same short brand pack: the brand character below, the brand sheet, a few signature pictures and a list of
-            the other materials it can ask for. Only what you marked “Use this” is in it. A run keeps the version it started with.
+            Every agent of a run starts from the same short brand pack: the brand character below, a compact brand sheet (logo, colours, type,
+            signature pictures and interface on a few pages) and a list of the other materials it can ask for. What you marked “Use this” comes
+            first; without marks, the most telling materials are chosen automatically. A run keeps the version it started with.
           </p>
         </div>
         {pack && <Badge variant="blue">Version {pack.version}</Badge>}
@@ -59,16 +60,27 @@ export function BrandPackPanel({ campaignId }: { campaignId: string }) {
       {pack && (
         <>
           <CharacterEditor key={pack.version} pack={pack} busy={busy} save={(character) => run({ action: "edit", expectedVersion: pack.version, character }, `Saved as version ${pack.version + 1}.`)} />
+          <h4>Compact brand sheet</h4>
+          {pack.compact.length ? (
+            <ol className={styles.sheetStrip}>
+              {pack.compact.map((s) => (
+                <li key={s.url}><span className={styles.sheetThumb}>{/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={s.url} alt="" loading="lazy" /><span>{s.label}</span></span></li>
+              ))}
+            </ol>
+          ) : (
+            <p className={styles.source}>Being prepared on the studio computer. Until it is ready, agents see the signature pictures instead.</p>
+          )}
           {pack.sheet.length > 0 && (
-            <>
-              <h4>The brand sheet</h4>
+            <Disclosure>
+              <summary>Full brand sheet ({pack.sheet.length} pages, only for the agents that design or review pictures)</summary>
               <ol className={styles.sheetStrip}>
                 {pack.sheet.map((s) => (
                   <li key={s.url}><span className={styles.sheetThumb}>{/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={s.url} alt="" loading="lazy" /><span>{s.label}</span></span></li>
                 ))}
               </ol>
-            </>
+            </Disclosure>
           )}
           <h4>Signature pictures</h4>
           {pack.signatures.length ? (
@@ -79,7 +91,7 @@ export function BrandPackPanel({ campaignId }: { campaignId: string }) {
               ))}
             </ol>
           ) : (
-            <p className={styles.source}>No signature pictures. {data.pictures.length ? "Choose some below." : "Mark pictures with “Use this” to make them available."}</p>
+            <p className={styles.source}>No signature pictures. {data.pictures.length ? "Choose some below." : "The brand has no pictures; agents invent the imagery in its spirit."}</p>
           )}
           {data.pictures.length > 0 && (choosing ? (
             <fieldset disabled={busy}>

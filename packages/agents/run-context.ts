@@ -11,7 +11,7 @@ export const SHARED_BASE=`You are one of several specialist agents working on a 
 
 export type Skill={id:string;version:string;text:string};
 /** C2 (second part): a picture of the stored brand pack, encoded once at the pack's fixed size when the context is frozen. */
-export type PackImage={kind:'sheet'|'signature';label:string;mediaType:'image/jpeg';dataBase64:string;sha256:string;width:number;height:number;
+export type PackImage={kind:'compact'|'signature'|'sheet';label:string;mediaType:'image/jpeg';dataBase64:string;sha256:string;width:number;height:number;
  /** sha256 of the stored picture it was made from: a request's own copy of that picture is not sent again */source:string};
 export type RunContext={version:1;base:string;system:string;brief:string;sha256:string;tokens:number;holds:{brief:boolean;brand:boolean;skills:string[];/** C2: the brand is the compact brand pack, not the raw revision */brandPack?:boolean};
  /** LC5: each role's own skills (after its instructions); LC6: effort per stage. Both frozen with the context. */
