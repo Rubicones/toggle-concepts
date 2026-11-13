@@ -7,6 +7,7 @@ import {parseChatAnswer,actionsCorrection} from '../../../packages/director/hero
 import {extensionActionsSchema,extensionNote,extensionPhase,nextRender,phaseLabels,sceneIdOf,sceneLabel,stageEMechanics,compactionSeed,variationVariants,type ExtensionPhase} from '../../../packages/director/extension-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
 import {propagateExecutionFailure} from '../../../packages/director/execution-failures';
+import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
 import type {InspectionView} from '../../../packages/director/layout-inspection';
 import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,DESIGNER_REVISIONS_PER_SCENE,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
@@ -63,6 +64,12 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
     const picture={purpose:p.purpose,scene:input.storyboard[0].id,prompt:p.prompt,aspect:p.aspect,referenceAssetIds:resolveAssetReferences(p.references??[],input),mustNotContain:p.mustNotContain??[],...(p.cutout?{cutout:true}:{}),...(p.proxyFor?{proxyFor:p.proxyFor}:{}),...(p.becomes&&p.proxyFor?{becomes:p.becomes}:{})};
     pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const};arrived.push(r);pending.delete(key);return r;}));
     notes.push(`Asked for a picture (${p.purpose.slice(0,80)}): it will be resources['${id}'] and arrives in a later message.`);
+   }
+   // C8 follow-up: a 3D model of a picture it already has, when code cannot build that object; the picture stays the fallback.
+   for(const m of actions.models??[]){
+    if(!tools.requestModel){notes.push(`No 3D model for ${m.picture}: ${MODELS_NOT_SET_UP}`);results.push('No 3D model.');continue;}
+    const made=await tools.requestModel(m);results.push(made.status==='model'?'Made a 3D model.':'No 3D model.');
+    notes.push(made.status==='model'?`The 3D model of ${made.id} is ready: draw it with <Scene3D model={resources['${made.id}']} …/>; its picture stays the fallback.`:`No 3D model for ${made.id}: ${made.detail??'it could not be made'}. Keep the picture, or build the object in code.`);
    }
    // The render: what the designer names, else what the phase needs next; never past the revisions of a scene and format.
    if(built.ok&&(actions.render||answer.files.length)){

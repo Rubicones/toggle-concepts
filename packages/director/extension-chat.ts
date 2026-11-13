@@ -15,6 +15,8 @@ export const extensionActionsSchema=z.strictObject({
  render:z.union([z.boolean(),z.strictObject({scenes:z.array(z.string().min(1).max(100)).max(4).optional(),formats:z.array(z.string().min(1).max(100)).max(8).optional(),languages:z.array(z.string().min(1).max(20)).max(6).optional()})]).optional(),
  pictures:z.array(pictureSchema).max(4).optional(),
  materials:z.array(z.strictObject({name:z.string().min(1).max(80),why:z.string().min(1).max(200)})).max(4).optional(),
+ /** C8 follow-up: a 3D model of a picture it already has. */
+ models:z.array(z.strictObject({picture:z.string().min(1).max(80),why:z.string().min(1).max(200)})).max(2).optional(),
  /** The designer's own record of the draft (decisions, what was tried, what remains); it seeds a condensed conversation. */
  notes:z.string().min(1).max(1500).optional(),
  finish:z.strictObject({intent:z.string().min(80).max(4000),scenes:z.array(z.strictObject({scene:z.string().min(1).max(100),moment:z.string().min(1).max(200),motion:z.string().max(240).optional(),sound:z.string().max(200).optional()})).min(1).max(40)}).optional(),
@@ -89,4 +91,16 @@ ${copy||'(only the reference words)'}`;
 /** The seed of a condensed conversation: everything the work needs, so the new conversation continues it. */
 export function compactionSeed(args:{mechanics:string;notes?:string;files:{path:string;source:string}[];done:string[];lastNote?:string}){
  return [`THIS CONVERSATION CONTINUES A DRAFT IN PROGRESS. The hero frame is accepted (its render is attached first).`,args.mechanics,args.notes?`YOUR NOTES\n${args.notes}`:'',`DONE SO FAR\n${args.done.length?args.done.join('\n'):'Only the hero frame.'}`,`YOUR FILES\n${args.files.map(f=>`\`\`\`tsx ${f.path}\n${f.source}\n\`\`\``).join('\n')}`,args.lastNote??''].filter(Boolean).join('\n\n');
+}
+
+/**
+ * Version 4: a review round after the draft (measured findings or the art-direction review) as the next message of the
+ * designer's conversation. The note keeps each critic note's priority and view; the failing combinations of the checks
+ * are listed one per line. The rendered views travel as the message's pictures.
+ */
+export function reviewRepairMessage(args:{kind:string;round:number;note:string;failing?:string[]}){
+ const finish='Render to check, then send your finish action again.';
+ if(args.failing?.length)return `THE CHECKS FOUND PROBLEMS AFTER THE DRAFT (round ${args.round}). Fix only these combinations, each in its own format branch; leave every other format, scene and option as it is.\n${args.failing.map(f=>`- ${f}`).join('\n')}\n${finish}`;
+ const head=args.kind==='critic'?'THE REVIEW OF THE FINISHED DRAFT':args.kind==='gate'?'THE CHECKS FOUND PROBLEMS AFTER THE DRAFT':'A LOOK AT THE FINISHED DRAFT';
+ return `${head} (round ${args.round}).\n${args.note.trim().slice(0,3000)}\nFix this in the views it names. ${finish}`;
 }

@@ -13,7 +13,9 @@ export const heroChat=(input:Pick<DirectionInput,'brief'>)=>usesEngineKit(input)
 const PATH=/^(?!\/)(?!.*\.\.)[\w-]+(?:\/[\w.-]+)*\.(?:tsx|ts|jsx|js|css|json|svg)$/;
 export const pictureSchema=z.strictObject({purpose:z.string().min(1).max(600),prompt:z.string().min(1).max(4000),aspect:z.string().regex(/^\d{1,3}:\d{1,3}$/),
  references:z.array(z.string().min(1).max(120)).max(3).optional(),mustNotContain:z.array(z.string().min(1).max(300)).max(20).optional(),cutout:z.boolean().optional(),proxyFor:z.enum(['3d','video']).optional(),becomes:z.string().max(160).optional()});
-export const heroActionsSchema=z.strictObject({render:z.boolean().optional(),review:z.boolean().optional(),pictures:z.array(pictureSchema).max(4).optional(),materials:z.array(z.strictObject({name:z.string().min(1).max(80),why:z.string().min(1).max(200)})).max(4).optional()});
+export const heroActionsSchema=z.strictObject({render:z.boolean().optional(),review:z.boolean().optional(),pictures:z.array(pictureSchema).max(4).optional(),materials:z.array(z.strictObject({name:z.string().min(1).max(80),why:z.string().min(1).max(200)})).max(4).optional(),
+ /** C8 follow-up: a 3D model of a picture it already has, when code cannot build that object (see the 3D mechanics). */
+ models:z.array(z.strictObject({picture:z.string().min(1).max(80),why:z.string().min(1).max(200)})).max(2).optional()});
 export type HeroActions=z.infer<typeof heroActionsSchema>;
 export type ChatAnswer<A>={prose:string;files:{path:string;source:string}[];actions:A|null;actionsError?:string;raw:{actions?:string}};
 export type HeroAnswer=ChatAnswer<HeroActions>;

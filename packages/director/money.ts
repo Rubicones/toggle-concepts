@@ -10,7 +10,9 @@ export const roleNames={director:'visual-direction',assembler:'creative-code',cr
 export type AllowanceRole=Exclude<Role,'resources'>|'designer';
 export type Role=keyof typeof roleNames;
 export type RoleAllowance={maxCostMicroUsd:number;inputTokens:number;outputTokens:number;timeMs:number;requests:number};
-export type Estimate={quoteId:string;maxCostMicroUsd:number;roles:Record<Role,RoleAllowance>&{designer?:RoleAllowance};perStillMicroUsd:number;maxStills:number;maxCriticRounds:2;
+export type Estimate={quoteId:string;maxCostMicroUsd:number;roles:Record<Role,RoleAllowance>&{designer?:RoleAllowance;/** C8 follow-up: image-to-3D models (Tripo) */model3d?:RoleAllowance};perStillMicroUsd:number;maxStills:number;maxCriticRounds:2;
+ /** C8 follow-up (designer version 4, a Tripo model set for the run): the approved count and price of 3D models. Absent in earlier quotes. */
+ maxModels?:number;perModelMicroUsd?:number;
  /** Designer blocks: the largest request the database admits for the designer role (migration 20261103000300). */
  designerRequestInputCap?:number;
  /** Design quality plan, point 3: critic requests reserved for the hero frame (designerVersion 2), on top of the end review. */
@@ -130,7 +132,7 @@ export function estimateLiveDirection(pricing:Parameters<typeof estimateStaticDi
  * generated pictures), and the same bounded live critic as other live drafts. Earlier quotes are unchanged.
  */
 export const DESIGNER_TURNS={requests:24,inputTokens:960000,outputTokens:144000,timeMs:3600000};
-export function estimateDesignerDirection(pricing:{designer:TextSnapshot['pricing'];critic:TextSnapshot['pricing']},perStillMicroUsd:number,maxStills:number,identity:unknown,options:{criticRequests?:number;brandSheetImages?:number;requestInputCap?:number;turns?:Partial<typeof DESIGNER_TURNS>;heroReviews?:number}={}):Estimate{
+export function estimateDesignerDirection(pricing:{designer:TextSnapshot['pricing'];critic:TextSnapshot['pricing']},perStillMicroUsd:number,maxStills:number,identity:unknown,options:{criticRequests?:number;brandSheetImages?:number;requestInputCap?:number;turns?:Partial<typeof DESIGNER_TURNS>;heroReviews?:number;/** C8 follow-up: 3D models, a count and a price like pictures */models?:{count:number;perModelMicroUsd:number}}={}):Estimate{
  if(!Number.isSafeInteger(perStillMicroUsd)||perStillMicroUsd<0||!Number.isInteger(maxStills)||maxStills<0||maxStills>4)throw new Error('INVALID_RESOURCE_ESTIMATE');
  for(const p of [pricing.designer,pricing.critic])if(!Number.isFinite(p.inputPrice)||!Number.isFinite(p.outputPrice)||p.inputPrice<0||p.outputPrice<0)throw new Error('MODEL_PRICE_UNAVAILABLE');
  const price=(p:{inputPrice:number;outputPrice:number},inputTokens:number,outputTokens:number)=>Math.max(1,Math.ceil((p.inputPrice*inputTokens+p.outputPrice*outputTokens)*1e6*1.1));
@@ -138,9 +140,10 @@ export function estimateDesignerDirection(pricing:{designer:TextSnapshot['pricin
  const designer={...turns,maxCostMicroUsd:price(pricing.designer,turns.inputTokens,turns.outputTokens)};
  const hero=Math.max(0,Math.min(2,Math.floor(options.heroReviews??0))),n=Math.max(0,Math.min(2,Math.floor(options.criticRequests??0)))+(Math.min(2,Math.floor(options.criticRequests??0))>0?hero:0),sheet=Math.max(0,Math.min(6,Math.floor(options.brandSheetImages??0)));
  const criticSpec={inputTokens:(LIVE_CRITIC_REQUEST.inputTokens+sheet*IMAGE_INPUT_TOKENS)*n,outputTokens:LIVE_CRITIC_REQUEST.outputTokens*n,timeMs:n?180000:0,requests:n};
- const roles:Estimate['roles']={director:none,assembler:none,critic:n?{...criticSpec,maxCostMicroUsd:price(pricing.critic,criticSpec.inputTokens,criticSpec.outputTokens)}:none,resources:{maxCostMicroUsd:perStillMicroUsd*maxStills,inputTokens:0,outputTokens:0,timeMs:1200000,requests:maxStills},designer};
+ const models=options.models&&options.models.count>0?{count:Math.min(4,Math.floor(options.models.count)),per:options.models.perModelMicroUsd}:null;if(models&&(!Number.isSafeInteger(models.per)||models.per<1))throw new Error('INVALID_RESOURCE_ESTIMATE');
+ const roles:Estimate['roles']={director:none,assembler:none,critic:n?{...criticSpec,maxCostMicroUsd:price(pricing.critic,criticSpec.inputTokens,criticSpec.outputTokens)}:none,resources:{maxCostMicroUsd:perStillMicroUsd*maxStills,inputTokens:0,outputTokens:0,timeMs:1200000,requests:maxStills},designer,...(models?{model3d:{maxCostMicroUsd:models.per*models.count,inputTokens:0,outputTokens:0,timeMs:600000,requests:models.count}}:{})};
  const cap=Math.max(32768,Math.min(1048576,Math.floor(options.requestInputCap??65536)));
- const quote={roles,maxCostMicroUsd:Object.values(roles).reduce((sum,r)=>sum+(r?.maxCostMicroUsd??0),0),perStillMicroUsd,maxStills,maxCriticRounds:2 as const,designerRequestInputCap:cap,...(n>2?{heroReviews:n-2}:{})};
+ const quote={roles,maxCostMicroUsd:Object.values(roles).reduce((sum,r)=>sum+(r?.maxCostMicroUsd??0),0),perStillMicroUsd,maxStills,maxCriticRounds:2 as const,designerRequestInputCap:cap,...(n>2?{heroReviews:n-2}:{}),...(models?{maxModels:models.count,perModelMicroUsd:models.per}:{})};
  if(!Number.isSafeInteger(quote.maxCostMicroUsd)||quote.maxCostMicroUsd>1e8)throw new Error('ESTIMATE_EXCEEDS_RUN_LIMIT');
  return {quoteId:digest({identity,quote,presentation:'designer'}),...quote};
 }

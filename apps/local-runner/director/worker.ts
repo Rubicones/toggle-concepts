@@ -23,6 +23,9 @@ import {fetchMaterials,loadMaterials,materialsUsed} from '../local-claude/materi
 import {designerDigestEntries,designerDigestText,usesDigest} from '../../../packages/director/designer-digest';
 import {heroChat,HERO_CRITIC_INSTRUCTIONS,heroReviewContext,STAGE_H_INSTRUCTIONS} from '../../../packages/director/hero-chat';
 import {runExtensionChat} from './extension-chat-loop';
+import {tripoSettings,MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
+import {makeModel,directorModelLedger,modelRequestId,taskMemory} from './tripo-model';
+import {reviewRepairMessage} from '../../../packages/director/extension-chat';
 import {code3dNotes,THREE_D_MECHANICS} from '../../../packages/director/three-d';
 import {runHeroChat,HERO_TURN_SHARE} from './hero-chat-loop';
 import {plainText} from '../../../packages/director/digest';
@@ -33,6 +36,8 @@ import {directorCriticInstructions,directorCriticSchema,staticCriticInstructions
 import {resourceRequest} from '../../../packages/director/resources';
 import {mkdir,readFile,writeFile,cp} from 'node:fs/promises';
 import {resolve} from 'node:path';
+import {createHash} from 'node:crypto';
+import {toggleHome} from '../local-claude/device';
 import {adminClient,checked,sharedTenant} from '../../../packages/data/shared-runtime';
 import {effectiveRunAgents} from '../../../packages/data/run-limits';
 import {directorPrompt,staticDirectorPrompt,imageMethodInstructions,staticDirectorInstructionsFor} from '../../../packages/agents/prompts/director-v1';
@@ -290,13 +295,17 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
       const options=(await latest())?.options,picked=options?inspectionViews(input,options,design).filter(v=>failing.some(f=>f.view===v.key)).slice(0,6).map(v=>({...v,shot:true})):[];
       const out=picked.length?JSON.parse((await sandboxTool(folder,'inspect',{views:picked},180000)).trim().split('\n').at(-1)!):null,raw=out?JSON.parse(await readFile(out.file,'utf8')) as {views:{key:string;shot?:string}[]}:{views:[]};
       loop.transcript.push({from:'tool',text:JSON.stringify({review:'failing combinations',round,ask:'Fix only these combinations, in their own format branch; leave every other format, scene and option exactly as it is. Render to check, then finish again.',failing:failing.slice(0,12).map(f=>`${f.label}: ${f.detail}`)})});
+      // Version 4 reads its next message from heroNote, not from the transcript (D0 review): the round reaches it there.
+      if(heroChat(input))loop.heroNote=reviewRepairMessage({kind,round,note,failing:failing.slice(0,12).map(f=>`${f.label}: ${f.detail}`)});
       loop.lastRender={sceneId:picked[0]?.props.sceneId??input.storyboard[0].id,findings:findings(views!.summary).filter(f=>f.severity==='hard'),views:picked.flatMap(v=>{const shot=raw.views.find(r=>r.key===v.key)?.shot;return shot?[{label:v.label,file:shot,width:v.props.width,height:v.props.height}]:[];})};
      }else{
       loop.transcript.push({from:'tool',text:JSON.stringify({review:kind,round,note:note.slice(0,3000),ask:'Fix this in the views it names, render to check, then finish again.'})});
+      if(heroChat(input))loop.heroNote=reviewRepairMessage({kind,round,note});
       if(views?.shots.length)loop.lastRender={sceneId:views.shots[0].sceneId??input.storyboard[0].id,findings:findings(views.summary),views:views.shots.slice(0,4).map(v=>({label:v.label,file:v.file,width:v.width??0,height:v.height??0}))};
      }
      // Version 3: a repair round may render again (the revision counts start over) and has room to look after fixing.
-     if(usesEngineKit(input))loop.renders={};
+     // Version 4 keeps its render counts: its stage E phase follows them, and a review round must not send it back to the scenes.
+     if(usesEngineKit(input)&&!heroChat(input))loop.renders={};
      try{await designerRun(loop.turn+Math.min(usesEngineKit(input)?5:3,left));}catch(error){await restore();const message=error instanceof Error?error.message:'REPAIR_FAILED';if(CONTROL_FAILURE.test(message)||transientExecutionFailure(message))throw error;return {applied:false,reason:message.slice(0,200)};}
      if(!state.designer?.complete){await restore();return {applied:false,reason:'The designer did not finish the repair within its bounded turns.'};}
      return {applied:true};
@@ -325,6 +334,19 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      if(await prepareImageMethods(folder,input,{...design,resources:[resource]},state.catalog as PricedResource[],async message=>{await events.emit(`picture:method:${resource.id}`,{stepId:`picture:method:${resource.id}`,kind:'picture',status:'done',costMicroUsd:0,message});}))await save();
      const made=await buildResourceCatalog({folder,input,design:{...design,resources:[resource]},...pictureArgs(controls)});await writeResources(folder,input,state.catalog??[]);await save();return made[0];};
     const tools=designerTools({folder,input,design,preview,deadline:()=>Math.max(Date.now()+60000,started()+allowance.timeMs),facts:()=>Object.fromEntries((state.catalog??[]).filter(c=>c.image).map(c=>[c.url,c.image])),save:()=>save(),buy});
+    // C8 follow-up (version 4): a 3D model of a picture it already has, through Tripo, inside the approved count and price.
+    if(heroChat(input))tools.requestModel=async m=>{
+     const settings=tripoSettings(process.env),entry=(state.catalog??[]).find(c=>c.id===m.picture&&!!c.url);
+     if(!entry)return {id:m.picture,status:'picture',detail:`there is no ready picture named ${m.picture}`};
+     if(!settings.apiKey){await events.emit('models:not-set-up',{stepId:'models:not-set-up',kind:'picture',status:'done',costMicroUsd:0,message:MODELS_NOT_SET_UP});return {id:entry.id,status:'picture',detail:MODELS_NOT_SET_UP};}
+     const pictureSha=createHash('sha256').update(await readFile(resolve(folder,'public',entry.url))).digest('hex'),step=`model:${entry.id}`;
+     await events.emit(`${step}:running`,{stepId:step,kind:'picture',status:'running',costMicroUsd:0,message:`Making a 3D model of the picture ${entry.id} (${m.why.slice(0,120)}).`});
+     const ledger=directorModelLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,iterationId:input.iterationId,resourceId:entry.id,requestId:modelRequestId(input.runId,block.id,entry.id,pictureSha,settings.model),maxModels:estimate.maxModels??0,perModelMicroUsd:estimate.perModelMicroUsd??0,settings});
+     const made=await makeModel({entry,folder,settings,ledger,seed:parseInt(pictureSha.slice(0,8),16)%2147483647,memory:taskMemory(toggleHome())});
+     if(made.status==='model'){await writeResources(folder,input,state.catalog??[]);await save();}
+     await events.emit(`${step}:done`,{stepId:step,kind:'picture',status:made.status==='model'?'done':'failed',costMicroUsd:0,message:made.status==='model'?`The 3D model of ${entry.id} is ready; its picture stays the fallback.`:`No 3D model of ${entry.id}: ${made.detail??'it could not be made'}. The picture is used.`});
+     return made;
+    };
     // C3 (materialsVersion 1, shared Local runs with a stored pack): materials on request. With a compact brand sheet in
     // the run context, the designer's own brand references and logos leave its prefix and become entries it asks for.
     const runContext=usesMaterials(input)&&execution.mode==='local_claude'&&execution.context_mode==='shared'?await sharedContextFor(admin,execution,input.runId)?.()??null:null;
@@ -355,7 +377,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     if(tools.reviewHero){const review=tools.reviewHero;tools.reviewHero=async(...args)=>{try{return await review(...args);}catch(error){if(propagateExecutionFailure(error))throw error;console.error('[designer] hero review failed:',error instanceof Error?error.message:error);return undefined;}};}
     const heroStep=(kind:string)=>`designer:${state.iteration??1}:hero:${kind}:${loop.hero?.reviews??0}`,formatLabel=(id:string)=>{const f=input.formats.find(x=>x.id===id);if(!f)return id;const g=(a:number,b:number):number=>b?g(b,a%b):a,d=g(f.width,f.height);return `${f.width/d}:${f.height/d}`;};
     const conversation=execution.mode==='local_claude'&&execution.context_mode==='shared'?{continuing:designerConversation.continuing,decide:designerConversation.decide,lost:designerConversation.lost,accept:designerConversation.accept}:undefined;
-    const onHero=async(event:Parameters<NonNullable<Parameters<typeof runDesigner>[0]['onHero']>>[0])=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);};
+    const onHero=async(event:Parameters<NonNullable<Parameters<typeof runDesigner>[0]['onHero']>>[0])=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='turns-used'?' when its turns were used, without a review':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);};
     // C5 (designerVersion 4, stage H): the hero frame as a chat, before the other scenes. The designer writes prose and
     // whole files; the app renders and answers in plain words. Stage E continues in the same conversation below.
     if(heroChat(input)&&loop.hero?.state!=='accepted'){
@@ -376,7 +398,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     if(!heroChat(input))await runDesigner({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,
      save:async next=>{state.designer=next;await save();},heroReviews:heroCritic,
      // Point 3d: the hero frame's milestones in the timeline.
-     onHero:async event=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);},
+     onHero:async event=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='turns-used'?' when its turns were used, without a review':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);},
      ...(execution.mode==='local_claude'&&execution.context_mode==='shared'?{conversation:{continuing:designerConversation.continuing,decide:designerConversation.decide,lost:designerConversation.lost,accept:designerConversation.accept}}:{}),
      call:async(request,images)=>{const answer=(await call('designer',JSON.stringify(request),withCreativeHandoff(input,'director',designerInstructionsFor(input)),designerTurnResponseFor(input),digestOn?{contextText:designerDigestText(input)+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')}:{input:designerContext(input),notes:agentReviewNotes(state.notes??[])},{designer:request.turn},[...prefix,...images.map(i=>({...i,required:true}))])).text;return answer;},
      onTurn:async(turn,results,looked)=>{await events.emit(`designer:${state.iteration??1}:${loop.turn}`,{stepId:`designer:${state.iteration??1}:${loop.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:designerActivityLine(turn,sceneNumber),detail:{sceneId:turn.focus.sceneId,activity:turn.focus.activity,summary:designerTurnSummary(results),...(turn.seen?{seen:seenLines(turn.seen)}:{})}},looked);}});

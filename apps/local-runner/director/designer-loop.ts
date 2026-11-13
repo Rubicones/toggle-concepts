@@ -29,6 +29,8 @@ export type DesignerTools={
  render:(views:InspectionView[])=>Promise<{summary:InspectionSummary;shots:{key:string;file:string}[]}>;
  /** Records the picture in the work state, then buys it inside the approved count (admission decides). */
  requestImage:(picture:DesignerPicture)=>Promise<PictureResult>;
+ /** C8 follow-up (version 4): a 3D model of a picture it already has (Tripo), inside the approved count; the picture stays the fallback. */
+ requestModel?:(model:{picture:string;why:string})=>Promise<{id:string;status:'model'|'picture';detail?:string}>;
  /** After a restart: recorded pictures whose result never reached the designer. `settle` returns the saved entry or
   * finishes the purchase under the same identity, so a paid picture is reused, never bought twice. */
  resumePictures?:(reported:string[])=>Promise<{id:string;settle:()=>Promise<PictureResult>}[]>;
@@ -42,7 +44,7 @@ export type DesignerTools={
  reviewHero?:(round:number,shots:{label:string;file:string}[],findings:{view:string;severity:string;detail:string}[])=>Promise<{accepted:boolean;notes:{recipient:string;priority:string;view:string;problem:string;fix:string}[]}|undefined>;
 };
 /** Point 3d: hero frame milestones for the timeline. */
-export type HeroEvent={kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'no-critic'|'review-failed';looked?:string};
+export type HeroEvent={kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed';looked?:string};
 export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number;/** C3 */materialsLeft?:number};/** C3: the designer's own references, by catalogue name. */references?:string[];/** C3: the text of the materials asked for last turn. */materials?:string;scenes:{sceneId:string;formats:{format:string;renders:number;revisionsLeft:number}[]}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];/** Point 4a: the designer's own notes, always sent. */notes?:string;/** Point 4b: set when the attached images are a render the designer must look at first. */lookFirst?:boolean;/** Point 3: the hero frame to settle first (designerVersion 2). */hero?:{sceneId:string;format:string;settled:boolean;reviewsLeft:number};lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
 
 /** The views the designer asked for: the reference copy in each requested format (default: the reference format),
@@ -97,7 +99,7 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
  if(heroOn&&!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
  const heroOpen=()=>heroOn&&state.hero?.state!=='accepted';
  const heroAsk=()=>`Finish the hero frame first: scene ${scenes.indexOf(state.hero!.sceneId)+1} in ${ratio(state.hero!.format)}. Render it, then set settleHero for its review.`;
- const accept=async(by:'critic'|'reviews-used'|'no-critic'|'review-failed')=>{state.hero!.state='accepted';state.hero!.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:state.hero!.sceneId,format:state.hero!.format,by});};
+ const accept=async(by:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed')=>{state.hero!.state='accepted';state.hero!.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:state.hero!.sceneId,format:state.hero!.format,by});};
  let missingRetried=false;
  while(!state.complete&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   await collect();stopIfFatal();

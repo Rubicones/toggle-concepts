@@ -8,6 +8,7 @@ import {heroScene} from '../../../packages/director/designer';
 import {actionsCorrection,heroTask,parseHeroAnswer,renderNote,stageHFindings,type HeroAnswer} from '../../../packages/director/hero-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
 import {propagateExecutionFailure} from '../../../packages/director/execution-failures';
+import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
 import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
 
@@ -17,11 +18,11 @@ export type HeroTurnEvent={turn:number;idea:string;prose:string;files:string[];a
 export const HERO_TURN_SHARE=0.5;
 
 export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;tools:DesignerTools;call:HeroCall;save:(s:DesignerLoopState)=>Promise<void>;heroReviews?:number;
- conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
+ conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  if(!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
  const hero=state.hero,pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];
- const accept=async(by:'critic'|'reviews-used'|'no-critic'|'review-failed')=>{hero.state='accepted';hero.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:hero.sceneId,format:hero.format,by});};
+ const accept=async(by:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed')=>{hero.state='accepted';hero.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:hero.sceneId,format:hero.format,by});};
  let missingRetried=false;
  while(hero.state!=='accepted'&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   // What arrived since the last answer; a continued conversation holds everything earlier.
@@ -59,6 +60,12 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
     pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const,detail:(error instanceof Error?error.message:'').slice(0,200)};arrived.push(r);pending.delete(key);return r;}));
     notes.push(`Asked for a picture (${p.purpose.slice(0,80)}): it will be resources['${id}'] and arrives in a later message.`);results.push('Asked for a picture.');
    }
+   // C8 follow-up: a 3D model of a picture it already has, when code cannot build that object; the picture stays the fallback.
+   for(const m of actions.models??[]){
+    if(!tools.requestModel){notes.push(`No 3D model for ${m.picture}: ${MODELS_NOT_SET_UP}`);results.push('No 3D model.');continue;}
+    const made=await tools.requestModel(m);results.push(made.status==='model'?'Made a 3D model.':'No 3D model.');
+    notes.push(made.status==='model'?`The 3D model of ${made.id} is ready: draw it with <Scene3D model={resources['${made.id}']} …/>; its picture stays the fallback.`:`No 3D model for ${made.id}: ${made.detail??'it could not be made'}. Keep the picture, or build the object in code.`);
+   }
    // 3. The render: after every building change, or when asked.
    if(built.ok&&(answer.files.length||actions.render)){
     const views=designerViews(input,hero.sceneId,[hero.format]),out=await tools.render(views);state.renders[renderKey(hero.sceneId,hero.format)]=(state.renders[renderKey(hero.sceneId,hero.format)]??0)+1;
@@ -78,7 +85,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
      if(!review){await accept('review-failed');results.push('The review could not run; the hero frame is accepted.');}
      else{await args.onHero?.({kind:'reviewed',sceneId:hero.sceneId,format:hero.format,notes:review.notes.length,looked:hero.shots[0]?.file});
       if(review.accepted||!review.notes.length){await accept('critic');results.push('The review accepted the hero frame.');}
-      else{notes.push(`The reviewer's notes on your hero frame:\n${review.notes.map(n=>`- ${n.problem} Wanted: ${n.fix}`).join('\n')}\n${hero.reviews>=(args.heroReviews??0)?'Apply what you agree with; the next review request accepts the frame.':'Apply what you agree with, then ask for the review again.'}`);results.push(`Review: ${review.notes.length} note${review.notes.length===1?'':'s'}.`);}}
+      else{notes.push(`The reviewer's notes on your hero frame:\n${review.notes.map(n=>`- [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}\n${hero.reviews>=(args.heroReviews??0)?'Apply what you agree with; the next review request accepts the frame.':'Apply what you agree with, then ask for the review again.'}`);results.push(`Review: ${review.notes.length} note${review.notes.length===1?'':'s'}.`);}}
     }
    }
   }catch(error){if(propagateExecutionFailure(error))throw error;notes.push(`This step needs another attempt: ${(error instanceof Error?error.message:'').slice(0,300)}`);}
@@ -87,7 +94,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
   await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:answer.files.map(f=>f.path),...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
  }
  // Stage H's share of turns used without an accepted review: the frame as it stands leads the other scenes.
- if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&hero.shots?.length)await accept('reviews-used');
+ if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&hero.shots?.length)await accept(hero.reviews>0?'reviews-used':'turns-used');
  // Pictures still being made are reported to the extension stage by the usual restart path.
  await Promise.allSettled(pending.values());
  if(arrived.length)state.reported=[...(state.reported??[]),...arrived.map(a=>a.id).filter(Boolean)];

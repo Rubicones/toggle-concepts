@@ -76,7 +76,7 @@ test('C5: the hero conversation: render after every change, plain notes, a corre
  assert.match(sent[1].message,/Measured, for you to weigh[\s\S]*The headline overlaps the picture\./,'an overlap is an observation in stage H');assert.equal(sent[1].images,1,'the render is attached');
  assert.match(sent[1].message,/Asked for a picture \(the archive\): it will be resources\['/);assert.equal(pictures[0].scene,i.storyboard[0].id);assert.deepEqual(pictures[0].referenceAssetIds,[i.assets[1].id],'files by name, mapped to ids');
  assert.match(sent[2].message,/Your actions block could not be read \(it is not valid JSON\); your files were applied\./,'a malformed block costs no turn of work');assert.deepEqual(turns[1].results.slice(0,1),['Saved Frame.tsx.']);
- assert.match(sent[3].message,/The reviewer's notes on your hero frame:\n- The archive idea is told, not shown\. Wanted: One object that is the archive\./);
+ assert.match(sent[3].message,/The reviewer's notes on your hero frame:\n- \[P1\] v: The archive idea is told, not shown\. Wanted: One object that is the archive\./);
  assert.deepEqual(reviews,[1,2]);assert.equal(state.hero?.state,'accepted');assert.equal(state.hero?.acceptedBy,'critic');assert.equal(sent.length,4);
  assert.deepEqual(heroes,['started','reviewed','reviewed','accepted']);assert.equal(turns[0].idea,'The idea: the session as an archive you can walk through.');
 });
