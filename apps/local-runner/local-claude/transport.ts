@@ -11,6 +11,7 @@ import {localModelFor,type LocalModelChoice} from '../../../packages/agents/loca
 import {sharedLayout,sharedLayoutDifferences,continuingLayout,type RunContext} from '../../../packages/agents/run-context';
 import type {Plan} from '../../../packages/agents/local-session';
 import {lastCallSize} from '../../../packages/agents/local-session';
+import {withoutBrandDuplicates} from '../../../packages/brand/brand-pack';
 import {largestInputParts} from '../../../packages/agents/local-usage';
 import {stageEffort,type StageId} from '../../../packages/agents/stage-effort';
 import {textRequestQuote} from '../../../packages/agents/text-quote';
@@ -99,7 +100,9 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   if(cfg.requestInputCap&&textRequestQuote(prompt,cfg,'',images.length).inputTokenBound>cfg.requestInputCap)return refuse('DRAFT_REQUEST_SIZE_CAP');
   if(images.length&&!setup.visual)return refuse('LOCAL_VISUAL_NOT_QUALIFIED');
   let mapping:LocalModelChoice;try{mapping=localModelFor(model,{sonnet:setup.sonnet});}catch(error){return refuse((error as Error).message);}
-  const prepared=prepareTextRequest(model,prompt,cfg,images,{requestTag});
+  // C2: with a brand pack in the run context, the request does not repeat the brand (the frozen snapshot is unchanged).
+  const packed=options.shared?await options.shared():null,sent=packed?.holds.brandPack&&cfg.campaignContext!==undefined?{...cfg,campaignContext:withoutBrandDuplicates(cfg.campaignContext)}:cfg;
+  const prepared=prepareTextRequest(model,prompt,sent,images,{requestTag});
   let cli:CliTextRequest;try{cli=toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode});}catch(error){return refuse((error as Error).message);}
   // The input check of plan §3.2 runs on every call, not only in tests.
   if(projectionDifferences(projectPrepared(prepared),projectCli(cli,prepared.output.schema?.schema)).length)return refuse('LOCAL_CONTEXT_MISMATCH');
@@ -114,7 +117,7 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   let conversation:LocalTextDetails['conversation']|undefined=ctx&&options.session?{kind:plan?.condensed?'condensed':'new'}:undefined;
   if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode}),prepared,ctx,plan,options.role);if(stage)cli={...cli,effort:stageEffort(stage,ctx.stageEffort)};conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
   const persist=!!conversation;let resume=plan&&!plan.condensed&&plan.resume?{resume:plan.resume,fork:plan.fork}:null;
-  const inputParts=largestInputParts((cfg as {campaignContext?:unknown}).campaignContext);
+  const inputParts=largestInputParts((sent as {campaignContext?:unknown}).campaignContext);
   const recordPath=options.record?await options.record(prepared):undefined;
   const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=setup.workDir??join(dir,'work');
   try{

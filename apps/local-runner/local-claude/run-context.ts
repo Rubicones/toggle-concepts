@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {buildRunContext,type RunContext,type Skill} from '../../../packages/agents/run-context';
 import {toggleHome} from './device';
+import {brandPackText} from '../../../packages/brand/brand-pack';
 
 const dir=()=>join(toggleHome(),'local-claude','run-context');
 export const runContextPath=(runId:string)=>join(dir(),`${runId}.json`);
@@ -31,5 +32,7 @@ export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()
  if(a1.error||!a1.data?.brand_revision_id)return null;
  const brand=await admin.from('studio_brand_revisions').select('canonical_text').eq('id',a1.data.brand_revision_id).maybeSingle();
  if(brand.error||!brand.data?.canonical_text)return null;
- return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandText:brand.data.canonical_text,...await extras()}));
+ // C2: contexts frozen from now on carry the brand pack instead of the raw revision; frozen ones keep theirs.
+ const brandPack=brandPackText(brand.data.canonical_text);
+ return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,...(brandPack?{brandPack}:{brandText:brand.data.canonical_text}),...await extras()}));
 }
