@@ -8,7 +8,7 @@ import {lintWorkspace,confinedPath} from '../../../packages/director/policy.loca
 import {readLiveOptions} from '../../../packages/director/live-options.local';
 import {digest} from '../../../packages/director/money';
 import type {DirectionInput} from '../../../packages/director/types';
-const generated=new Set(['brand.ts','resources.ts','entry.tsx','runtime.ts','input.json','draft.json','catalog.json','toolchain.json','tsconfig.json']);
+const generated=new Set(['brand.ts','resources.ts','entry.tsx','runtime.ts','kit.ts','input.json','draft.json','catalog.json','toolchain.json','tsconfig.json']);
 export async function liveSource(folder:string){
  await requireRuntimeVersion(folder);
  const input:DirectionInput=JSON.parse(await readFile(resolve(folder,'input.json'),'utf8'));if(input.stage!=='draft')throw new Error('LIVE_STATIC_DRAFT_REQUIRED');

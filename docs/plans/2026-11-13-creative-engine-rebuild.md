@@ -72,3 +72,15 @@ Each phase ends with a measured run: time, tokens, API-equivalent, and the owner
 
 ## Not decided here
 - Reference work. The owner prefers agents that understand a brand on their own; references stay out. The owner's own engine (`concepts.toggle.studio`) could not be opened from the development environment (blocked by its network policy); what it does well should be described or shown before R3.
+
+
+## Next (recorded 2026-11-13, after designer version 3)
+
+1. **Real 3D in drafts, so the final can animate it.** Today a rendered object is a still picture with `proxyFor: '3d'`. Two ways, both needed:
+   - built in code: geometric objects (a device, a sphere, tubes, extruded numerals) as a real scene with materials and light; the draft shows its frame, the motion stage moves the same scene;
+   - generated model: an image-to-3D model stored as a resource next to the picture and placed in the same scene; the picture stays as the fallback.
+   Needs: 3D allowed in static drafts (lint and bundle import list), preview and inspection able to render it, a model as a resource type, measured findings for it.
+2. **A visual event in restrained brands.** "Calm" must not become "empty": designer and reviewer rules for corporate, restrained characters; re-run the enterprise finance test brand to the end.
+3. **Re-measure turn count** after the three fixes (picture ids, no refusal of code-free turns, hero renders) on the brand that needed 18 turns.
+4. **First studio run on version 3:** check "Per request" (input size with a real brand kit, extra turns), pictures bought through the ledger, the hero critic.
+5. Earlier items still open: download PNG/JPG from a draft; live progress line; why no pictures were bought in the owner's runs before.
