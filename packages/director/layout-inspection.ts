@@ -14,7 +14,10 @@ export type Box={x:number;y:number;width:number;height:number};
 export type InspectionView={key:string;label:string;variantId:string;props:LiveFrameProps;ordered:boolean;shot:boolean;group?:'reference'|'longest'};
 export type RawText={text:string;box:Box;fontSize:number;color:string;element:number;clipped:boolean;lines:number;background:string|null;complexBackground:boolean;overImage:string|null;brokenWords?:string[];/** Design quality plan, point 2a: the font family that really rendered this text (the first family of its font-family that is loaded and covers its letters), and whether the requested weight exists in that family's files. */font?:{family:string;weight:string;fallback?:boolean;weightMissing?:boolean;/** a loaded family earlier in the stack that lacks these letters */uncovered?:string};/** Words whose letters come from two fonts (the first font lacks some of them). */mixedFontWords?:string[]};
 export type RawImage={src:string;box:Box;naturalWidth:number;naturalHeight:number;objectFit:string;objectPosition:string;logo:boolean};
-export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[]};
+/** C8: a code-built 3D scene's canvas: where it is, the part that drew pixels (fractions of the canvas) and a 4×4 grid of
+ * the drawn pixels' luminance (-1 where nothing is drawn). */
+export type RawObject3D={box:Box;drawn:[number,number,number,number]|null;luma:number[];error?:string};
+export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];objects3d?:RawObject3D[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[]};
 /** ink: alpha-weighted relative luminance of the logo's own pixels; background/overImage: what it sits on. */
 export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null};
 export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED';
@@ -129,7 +132,15 @@ export function collectLayout(size:{width:number;height:number}):RawView{
   const cx=r.left+r.width/2,cy=r.top+r.height/2,under=images.filter(i=>!i.logo&&i.box.x<=cx&&i.box.x+i.box.width>=cx&&i.box.y<=cy&&i.box.y+i.box.height>=cy).at(-1);
   return {id:e.getAttribute('data-brand-logo')??'',box:box(r),ink:ink(e),background,overImage:under?under.src:null};});
  const fontsFailed=[...new Set(faces.filter(f=>f.status==='error').map(f=>norm(f.family)))];
- return {width:size.width,height:size.height,texts,images,logos,...(fontsFailed.length?{fontsFailed}:{})};
+ // C8: code-built 3D scenes (./kit3d): read the one rendered frame back (the canvas keeps its drawing buffer).
+ const objects3d=Array.from(document.querySelectorAll('canvas[data-scene3d]')).filter(c=>visible(c)>=0.5).map(c=>{const canvas=c as HTMLCanvasElement,b=box(canvas.getBoundingClientRect());
+  if(canvas.hasAttribute('data-scene3d-error'))return {box:b,drawn:null,luma:[],error:canvas.getAttribute('data-scene3d-error')??'webgl'};
+  try{const n=32,g=document.createElement('canvas');g.width=n;g.height=n;const x=g.getContext('2d');if(!x)return {box:b,drawn:null,luma:[]};x.drawImage(canvas,0,0,n,n);const d=x.getImageData(0,0,n,n).data;
+   let x0=n,y0=n,x1=-1,y1=-1;const sum=new Array(16).fill(0),count=new Array(16).fill(0);
+   for(let y=0;y<n;y++)for(let xx=0;xx<n;xx++){const i=(y*n+xx)*4,a=d[i+3]/255;if(a<0.1)continue;x0=Math.min(x0,xx);y0=Math.min(y0,y);x1=Math.max(x1,xx);y1=Math.max(y1,y);const cell=Math.floor(y/8)*4+Math.floor(xx/8);sum[cell]+=0.2126*linear(d[i])+0.7152*linear(d[i+1])+0.0722*linear(d[i+2]);count[cell]++;}
+   return {box:b,drawn:x1<0?null:[x0/n,y0/n,(x1+1)/n,(y1+1)/n] as [number,number,number,number],luma:sum.map((v,i)=>count[i]?v/count[i]:-1)};}
+  catch{return {box:b,drawn:null,luma:[],error:'unreadable'};}});
+ return {width:size.width,height:size.height,texts,images,logos,...(fontsFailed.length?{fontsFailed}:{}),...(objects3d.length?{objects3d}:{})};
 }
 
 /** Approved copy line by line: a headline and its supporting line (after a line break) are checked separately. */
@@ -209,6 +220,16 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
   const rect=visibleSourceRect(image);if(!rect)continue;const scale=image.box.width/((rect[2]-rect[0])*image.naturalWidth);
   if(scale>1.6)add('PICTURE_UPSCALED','soft',`A picture is enlarged ${scale.toFixed(1)}× beyond its pixels and will look soft.`,image.box);
   const f=ctx.facts[image.src];if(f){const [sx0,sy0,sx1,sy1]=f.subject,inside=Math.max(0,Math.min(sx1,rect[2])-Math.max(sx0,rect[0]))*Math.max(0,Math.min(sy1,rect[3])-Math.max(sy0,rect[1])),area=(sx1-sx0)*(sy1-sy0);if(area>0&&inside/area<0.6)add('SUBJECT_CROPPED','soft','The measured subject of a picture is mostly cropped out in this view.',image.box);}
+ }
+ // C8: a code-built 3D object: it must draw, stay inside its canvas and the frame, and the words over it must read.
+ for(const o of raw.objects3d??[]){
+  if(o.error||!o.drawn){add('RENDER_ERROR','hard',o.error==='webgl'?'The 3D scene could not be drawn in this browser.':'The 3D object drew nothing: check its camera, lights and size.',o.box);continue;}
+  const [x0,y0,x1,y1]=o.drawn,page=[o.box.x+x0*o.box.width,o.box.y+y0*o.box.height,o.box.x+x1*o.box.width,o.box.y+y1*o.box.height];
+  if(x0<=0.01||y0<=0.01||x1>=0.99||y1>=0.99)add('SUBJECT_CROPPED','soft','The 3D object is cut by the edge of its canvas; give it room or frame it on purpose.',o.box);
+  else if(page[0]<-1||page[1]<-1||page[2]>raw.width+1||page[3]>raw.height+1)add('SUBJECT_CROPPED','soft','The 3D object is cut by the edge of the frame.',o.box);
+  for(const t of raw.texts){const cx=t.box.x+t.box.width/2,cy=t.box.y+t.box.height/2,fg=rgb(t.color);if(!fg||t.background||cx<page[0]||cx>page[2]||cy<page[1]||cy>page[3])continue;
+   const cell=Math.min(3,Math.max(0,Math.floor((cy-o.box.y)/o.box.height*4)))*4+Math.min(3,Math.max(0,Math.floor((cx-o.box.x)/o.box.width*4))),l=o.luma[cell];if(l===undefined||l<0)continue;
+   const ratio=contrastRatio(luminance(fg),l);if(ratio<3)add('CONTRAST_OVER_PICTURE','soft',`Text sits on the 3D object (estimated ${ratio.toFixed(1)}:1); check it reads: ${quote(t.text)}`,t.box);}
  }
  return out;
 }

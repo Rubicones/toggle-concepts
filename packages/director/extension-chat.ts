@@ -7,6 +7,7 @@ import {z} from 'zod';
 import {pictureSchema} from './hero-chat';
 import {designerInstructionsV3} from '../agents/prompts/designer-v1';
 import {copyTable} from './designer-context';
+import {THREE_D_MECHANICS} from './three-d';
 import type {Finding} from './layout-inspection';
 import type {DirectionInput,Variant} from './types';
 
@@ -77,6 +78,8 @@ ${section('WORDS ARE DATA').replace('copyByScene lists every ordered line per sc
 ${section('CODE.')}
 
 ${section('FORMATS.')}
+
+${THREE_D_MECHANICS}
 
 THE ORDER. First the other scenes, carrying the hero's system (its type, hierarchy, the product's presence and the brand's system); then each ordered format as its own composition; then the languages, hooks, calls to action and lengths, which are data the code reads. Render with {"render":{"scenes":["Scene 2","Scene 3"],"formats":["…"]}} (up to four scenes at a time; formats default to the reference one; {"render":{"languages":["…"]}} shows the variations). From now on every hard problem is measured per format and language: fix the rule that causes it, not each case. Keep notes in the actions block ({"notes":"…"}): the decisions that hold, what you tried and what remains. When every scene, format and option works, finish with {"finish":{"intent":"…","scenes":[{"scene":"Scene 1","moment":"…"}]}}.
 

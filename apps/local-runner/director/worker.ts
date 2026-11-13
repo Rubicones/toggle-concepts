@@ -23,6 +23,7 @@ import {fetchMaterials,loadMaterials,materialsUsed} from '../local-claude/materi
 import {designerDigestEntries,designerDigestText,usesDigest} from '../../../packages/director/designer-digest';
 import {heroChat,HERO_CRITIC_INSTRUCTIONS,heroReviewContext,STAGE_H_INSTRUCTIONS} from '../../../packages/director/hero-chat';
 import {runExtensionChat} from './extension-chat-loop';
+import {code3dNotes,THREE_D_MECHANICS} from '../../../packages/director/three-d';
 import {runHeroChat,HERO_TURN_SHARE} from './hero-chat-loop';
 import {plainText} from '../../../packages/director/digest';
 import {budgetLeft,materialBudgetFor} from '../../../packages/agents/materials';
@@ -330,6 +331,8 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     const compactSheet=!!runContext?.images?.some(i=>i.kind==='compact'),digestOn=usesDigest(input)&&!!runContext?.materials,references=[...(compactSheet?referenceEntries(folder,input):[]),...(digestOn?designerDigestEntries(input):[])];
     // C5 (designerVersion 4): with a compact sheet, the full brand sheet pages are entries it asks for by name too.
     const sheetOnRequest=heroChat(input)&&compactSheet;if(sheetOnRequest)references.push(...sheetEntries(folder,input));
+    // C8: the 3D mechanics as a catalogue entry the designer asks for by name in stage H (stage E sends them once).
+    if(heroChat(input))references.push({name:'kit-3d',kind:'mechanics',line:'how to build a 3D object or scene in code',size:`~${Math.ceil(THREE_D_MECHANICS.length/4)} tokens`,detail:THREE_D_MECHANICS});
     const prefix=await designerPrefixImages(folder,input,sheetOnRequest?async()=>[]:brandSheetImages,(f,i)=>visionImages(f,i,{brandReferences:!compactSheet}));
     if(runContext?.materials){const ctx=runContext,budget=materialBudgetFor('designer',ctx.materials!.budget);tools.materials={references:references.map(e=>`- ${e.name} · ${e.kind} · ${e.line}`),
      fetch:async(requests,seen)=>{const f=await fetchMaterials(ctx,{runId:input.runId,role:'designer',requests,extra:references,seen});const attached=f.plan.filter(p=>p.status==='attached').map(p=>p.name);
@@ -368,7 +371,9 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      onPhase:async(phase,label)=>{await events.emit(`designer:${state.iteration??1}:phase:${phase}`,{stepId:`designer:${state.iteration??1}:phase:${phase}`,kind:'designer',status:'done',costMicroUsd:0,message:`${label}.`,detail:{phase}});},
      call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input)+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'E'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
      onTurn:async e=>{await events.emit(`designer:${state.iteration??1}:${e.turn}`,{stepId:`designer:${state.iteration??1}:${e.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:e.idea||'The designer answered without words; its files were applied.',detail:{chat:true,summary:e.results,prose:e.prose,files:e.files,...(e.actions?{actions:e.actions}:{})}},e.looked);}});
-    else await runDesigner({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,
+    // C8: what the final adds to the draft's code-built 3D scenes, read from the designer's files.
+    if(heroChat(input)){const adds=code3dNotes(await tools.files());if(adds.length)design.finalAdds=adds;else delete design.finalAdds;}
+    if(!heroChat(input))await runDesigner({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,
      save:async next=>{state.designer=next;await save();},heroReviews:heroCritic,
      // Point 3d: the hero frame's milestones in the timeline.
      onHero:async event=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);},

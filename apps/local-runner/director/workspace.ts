@@ -12,6 +12,8 @@ export async function createWorkspace(root:string,input:DirectionInput){
  if(input.stage!=='draft')await writeFile(resolve(folder,'runtime.ts'),await readFile(resolve('remotion/director/useGsapTimeline.ts'),'utf8'));
  // Engine rebuild (designerVersion 3): the neutral engine kit, next to ./brand.
  if(input.stage==='draft'&&Number(input.brief.designerVersion)>=3)await writeFile(resolve(folder,'kit.ts'),await readFile(resolve('remotion/director/kit.ts'),'utf8'));
+ // C8 (designerVersion 4): code-built 3D scenes in static drafts, rendered once.
+ if(input.stage==='draft'&&Number(input.brief.designerVersion)>=4)await writeFile(resolve(folder,'kit3d.ts'),await readFile(resolve('remotion/director/kit3d.ts'),'utf8'));
  await writeFile(resolve(folder,'toolchain.json'),JSON.stringify(await runtimeVersions()));
  await writeFile(resolve(folder,'brand.ts'),`import {delayRender,continueRender,staticFile} from 'remotion';\nexport const brand = ${JSON.stringify(input.brand)} as const;\nexport const copy=brand.copy;\nexport const variantFacts${input.stage==='draft'?':Record<string,{sceneCopy:Record<string,string[]>;required:string[];storyboard?:{id:string;sourceSceneId?:string;start:number;end:number;copy:string[];visualNotes:string;motionNotes:string;maxStaticSeconds:number}[]}>':''}=${JSON.stringify(input.variantFacts??{})} as const;\nexport const scenes=${JSON.stringify(issuedScenes(input))} as const;\nexport const variants=${JSON.stringify(input.variants)} as const;\n${input.stage==='draft'?"export {resources} from './resources';\n":''}const handle=delayRender('brand fonts');\nPromise.all(brand.fonts.map(async f=>{const face=new FontFace(f.family,'url('+staticFile(f.url)+')',{weight:'weight' in f?String(f.weight):'400',style:'style' in f?String(f.style):'normal'});await face.load();return face;})).then(faces=>{for(const face of faces)document.fonts.add(face);continueRender(handle);});\n`);
  if(input.stage==='draft')await writeResources(folder,input,[]);
@@ -37,10 +39,20 @@ registerRoot(()=> <>{formats.map(f=><Composition key={f.id} id={f.id} component=
 export const sourceDigest=async(folder:string)=>createHash('sha256').update(await readFile(resolve(folder,JSON.parse(await readFile(resolve(folder,'input.json'),'utf8')).stage==='draft'?'Frame.tsx':'Composition.tsx'))).digest('hex');
 
 /** The coder references issued resource IDs while images arrive independently. */
-export async function writeResources(folder:string,input:DirectionInput,catalog:{id:string;url:string;proxy?:boolean;proxyFor?:string;width?:number;height?:number;image?:import('../../../packages/director/image-facts').ImageFacts;cutout?:{url:string;width:number;height:number};cutoutFailed?:string}[]){
- const resources=Object.fromEntries(input.resourceIds.map(id=>{const ready=catalog.find(r=>r.id===id);return [id,{id,url:ready?.url??'',ready:!!ready,proxy:ready?.proxy??false,proxyFor:ready?.proxyFor,...(ready?.width&&ready.height?{width:ready.width,height:ready.height}:{}),...(ready?.image?{image:ready.image}:{}),...(ready?.cutout?{cutoutUrl:ready.cutout.url,cutoutWidth:ready.cutout.width,cutoutHeight:ready.cutout.height}:{}),...(ready?.cutoutFailed?{cutoutFailed:true}:{})}];}));
+export async function writeResources(folder:string,input:DirectionInput,catalog:{id:string;url:string;proxy?:boolean;proxyFor?:string;width?:number;height?:number;image?:import('../../../packages/director/image-facts').ImageFacts;cutout?:{url:string;width:number;height:number};cutoutFailed?:string;model?:{url:string}}[]){
+ const resources=Object.fromEntries(input.resourceIds.map(id=>{const ready=catalog.find(r=>r.id===id);return [id,{id,url:ready?.url??'',ready:!!ready,proxy:ready?.proxy??false,proxyFor:ready?.proxyFor,...(ready?.width&&ready.height?{width:ready.width,height:ready.height}:{}),...(ready?.image?{image:ready.image}:{}),...(ready?.cutout?{cutoutUrl:ready.cutout.url,cutoutWidth:ready.cutout.width,cutoutHeight:ready.cutout.height}:{}),...(ready?.cutoutFailed?{cutoutFailed:true}:{}),...(ready?.model?{modelUrl:ready.model.url}:{})}];}));
  // Blocks with the picture rules always declare the cutout fields, so frame code can test for them before pictures arrive.
  const cutouts=input.brief.pictureRulesVersion===1;
- await atomicFile(resolve(folder,'resources.ts'),`export type ImageFacts={v:1;subject:[number,number,number,number];focus:[number,number];luma:number[];busy:number[];calm:number[]};\nexport const resources:Record<string,{id:string;url:string;ready:boolean;proxy?:boolean;proxyFor?:string;width?:number;height?:number;image?:ImageFacts${cutouts?';cutoutUrl?:string;cutoutWidth?:number;cutoutHeight?:number;cutoutFailed?:boolean':''}}>=${JSON.stringify(resources)};\n`);
+ await atomicFile(resolve(folder,'resources.ts'),`export type ImageFacts={v:1;subject:[number,number,number,number];focus:[number,number];luma:number[];busy:number[];calm:number[]};\nexport const resources:Record<string,{id:string;url:string;ready:boolean;proxy?:boolean;proxyFor?:string;width?:number;height?:number;image?:ImageFacts${cutouts?';cutoutUrl?:string;cutoutWidth?:number;cutoutHeight?:number;cutoutFailed?:boolean':''}${Number(input.brief.designerVersion)>=4?';modelUrl?:string':''}}>=${JSON.stringify(resources)};\n`);
  await atomicFile(resolve(folder,'catalog.json'),JSON.stringify([...input.assets,...catalog]));
+}
+
+/** C8: a generated 3D model (binary glTF) stored next to its picture in the draft, content-addressed. The picture stays
+ * the fallback. No image provider in this studio returns a model yet: this is the path a model takes when one does. */
+export const MODEL_LIMIT_BYTES=20*1024*1024;
+export async function storeModel(folder:string,entry:{id:string;url:string;model?:{url:string;sha256:string;bytes:number}},bytes:Buffer){
+ if(bytes.length<20||bytes.length>MODEL_LIMIT_BYTES||bytes.subarray(0,4).toString('latin1')!=='glTF')throw new Error('MODEL_NOT_GLB');
+ const sha256=createHash('sha256').update(bytes).digest('hex'),url=`${sha256}.glb`;
+ await mkdir(resolve(folder,'public'),{recursive:true});await writeFile(resolve(folder,'public',url),bytes);
+ entry.model={url,sha256,bytes:bytes.length};return entry;
 }

@@ -9,7 +9,9 @@ import {collectLayout,type InspectionView,type RawView} from '../../../packages/
 import {previewMaterialAllowed} from '../../../packages/director/material-memory';
 import type {DirectionInput} from '../../../packages/director/types';
 
-const mimes:Record<string,string>={'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf'};
+const mimes:Record<string,string>={'.glb':'model/gltf-binary','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf'};
+/** C8: software WebGL in the headless inspection browser (deterministic pixels for code-built 3D scenes). */
+export const INSPECTION_GL_ARGS=['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist'];
 export type InspectedView={key:string;raw?:RawView;error?:string;shot?:string};
 
 export async function inspectLivePreview(folder:string,views:InspectionView[]){
@@ -18,13 +20,15 @@ export async function inspectLivePreview(folder:string,views:InspectionView[]){
  const script=await readFile(resolve(cache,'preview.js'),'utf8'),css=await readFile(resolve(cache,'preview.css'),'utf8').catch(()=>'');
  const resourcesSource=await readFile(resolve(folder,'resources.ts'),'utf8'),resources=JSON.parse(resourcesSource.slice(resourcesSource.indexOf('>=')+2).trim().replace(/;\s*$/,''));
  const names=new Set<string>([...input.brand.fonts.map(f=>f.url),...input.brand.logos.flatMap(l=>[l.url,...(l.variants?[l.variants.onDark,l.variants.onLight]:[])]),...input.assets.map(a=>a.url),// A cutout is its own file next to the picture: without it the designer and the reviewer saw a broken image.
-  ...Object.values(resources as Record<string,{url:string;cutoutUrl?:string}>).flatMap(r=>[r.url,r.cutoutUrl])].filter((n):n is string=>!!n&&previewMaterialAllowed(input.materialMemory,n)));
+  ...Object.values(resources as Record<string,{url:string;cutoutUrl?:string;modelUrl?:string}>).flatMap(r=>[r.url,r.cutoutUrl,r.modelUrl])].filter((n):n is string=>!!n&&previewMaterialAllowed(input.materialMemory,n)));
  const assets:Record<string,string>={};
  for(const name of names){const bytes=await readFile(resolve(folder,'public',name)).catch(()=>undefined);if(bytes)assets[name]=`data:${mimes[extname(name).toLowerCase()]??'application/octet-stream'};base64,${bytes.toString('base64')}`;}
  const out=resolve(folder,'.reports','inspect',revision);await mkdir(out,{recursive:true});
  const first=views[0];if(!first)return {revision,views:[] as InspectedView[]};
  const token='inspect'+revision.slice(0,12);
- const browser=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true,chromiumSandbox:false});
+ // C8 (designerVersion 4): WebGL through the software renderer, so a code-built 3D scene draws the same pixels on
+ // every run. Earlier drafts keep the browser exactly as it was.
+ const browser=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true,chromiumSandbox:false,...(Number(input.brief.designerVersion)>=4?{args:INSPECTION_GL_ARGS}:{})});
  const results:InspectedView[]=[];
  try{
   const page=await browser.newPage({viewport:{width:first.props.width,height:first.props.height}});
@@ -43,7 +47,10 @@ export async function inspectLivePreview(folder:string,views:InspectionView[]){
     await page.evaluate(([props,seq,tok])=>{window.postMessage({type:'preview-view',token:tok,props,sequence:seq,reviewKey:''},'*');},[view.props,sequence,token] as const);
     const outcome=await page.waitForFunction(seq=>{const m=(window as unknown as {__inspect:{type:string;sequence:number;message?:string}[]}).__inspect.find(x=>x.sequence===seq&&(x.type==='preview-view-ready'||x.type==='preview-error'));return m?{type:m.type,message:m.message??''}:false;},sequence,{timeout:8000}).then(h=>h.jsonValue() as Promise<{type:string;message:string}>);
     // Let React commit, fonts settle and pictures decode before reading geometry.
-    await page.evaluate(async()=>{await document.fonts.ready;await Promise.all(Array.from(document.images).map(i=>i.decode().catch(()=>undefined)));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
+    await page.evaluate(async()=>{await document.fonts.ready;await Promise.all(Array.from(document.images).map(i=>i.decode().catch(()=>undefined)));
+     // C8: a generated 3D model loads before its frame is drawn (at most five seconds; its picture is the fallback).
+     for(let t=0;t<50&&document.querySelector('[data-scene3d-pending]');t++)await new Promise(r=>setTimeout(r,100));
+     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
     if(outcome.type==='preview-error'){results.push({key:view.key,error:outcome.message||'This view could not be built.'});continue;}
     const raw=await page.evaluate(collectLayout,{width:view.props.width,height:view.props.height});
     let shot:string|undefined;if(view.shot){shot=resolve(out,`view-${results.length}.jpg`);await page.screenshot({path:shot,type:'jpeg',quality:82});}

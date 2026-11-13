@@ -7,6 +7,8 @@ export type LiveAsset={name:string;mime:string;sha256:string};
 export type LivePreview={squareOnly?:boolean;status:'waiting'|'ready'|'updating';revision?:string;assetRevision?:string;message?:string;review?:import('./review').PreviewReview;options?:LiveOptions;construction?:DraftConstruction;legacy?:boolean;variants?:Variant[];scenes?:{sceneId:string;moments:{id:string;description:string}[]}[];assets?:LiveAsset[];resources?:Record<string,{id:string;url:string;proxy?:boolean;proxyFor?:string;sceneId?:string;ready:boolean;cutoutUrl?:string;cutoutWidth?:number;cutoutHeight?:number;cutoutFailed?:string;requestHash?:string;revisionId?:string;width?:number;height?:number;image?:import('./image-facts').ImageFacts}>;defaultProps?:LiveFrameProps;
  /** "In the final version" per scene (designer pipeline plan, point 3); absent for earlier blocks. */
  finalNotes?:import('./final-notes').FinalVersionNote[];
+ /** C8: what the final adds to the draft's code-built 3D scenes ("This object turns in 3D."). */
+ finalAdds?:string[];
  /** A designer block (point 4): one owner receives every note. */
  designer?:boolean;
  /** Designer drafts (point 5c): the ordered formats and whether each is designed, being designed or has open findings. */
