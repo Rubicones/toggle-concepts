@@ -26,9 +26,9 @@ Production:
 - `apps/local-runner/director/live-inspect.ts`: **bug fix for every version**: a picture's cutout file was not given to the inspection page, so the designer and the reviewer saw a broken image wherever a cutout was used.
 - `lib/server/director-start.ts`: new designer blocks carry `designerVersion: 3`.
 
-Bench (manual, live, never part of `npm test`): `scripts/bench/` — `pipeline-bench.ts` (the production loop against the real CLI, no database, hero critic, end review with one repair round, pictures supplied by hand, `--propose=1`), `sweep.ts`, `brands.ts` (ten invented brands), `sheet.py`, `requests.py`, `README.md`; `draft-bench.ts` and `protocol.ts` are the first, tagged-text experiment kept for comparison.
+Bench (manual, live, never part of `npm test`): `scripts/bench/` — `pipeline-bench.ts` (the production loop against the real CLI, no database, hero critic, end review with one repair round, pictures supplied by hand, `--propose=1`), `sweep.ts`, `brands.ts` (ten invented brands), `sheet.py`, `requests.py`, `README.md`. The first tagged-text experiment (`draft-bench.ts`, `protocol.ts` and its test) was removed after the merge: the pipeline bench replaced it.
 
-Tests: `tests/engine-kit.test.ts`, `tests/designer-engine.test.ts`, `tests/bench-protocol.test.ts`; `tests/designer-pipeline.test.ts` (version number); `tests/local-claude-s0.test.ts` (the bench may import the CLI adapter).
+Tests: `tests/engine-kit.test.ts`, `tests/designer-engine.test.ts`; `tests/designer-pipeline.test.ts` (version number); `tests/local-claude-s0.test.ts` (the bench may import the CLI adapter).
 
 ## 3. Self-Review & Risk Audit ("Can It Produce Another Bug or Blocking Error?")
 
