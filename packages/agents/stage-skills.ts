@@ -28,7 +28,7 @@ export function buildStageSkills(skills:SkillFile[],attachments:{skill_id:string
  const stages:StageSkills['stages']={};
  for(const s of [...skills].sort((a,b)=>a.id.localeCompare(b.id))){
   const saved=attachments.filter(a=>a.skill_id===s.id);
-  const list=saved.length?stagesFromRoles(s.id,saved.map(a=>a.role).filter(r=>r!==NO_ROLE)):(s.stages.length?s.stages.filter((x):x is SkillStage=>(SKILL_STAGES as readonly string[]).includes(x)):stagesFromRoles(s.id,s.defaultRoles));
+  const list=s.stagesChosen?s.stages.filter((x):x is SkillStage=>(SKILL_STAGES as readonly string[]).includes(x)):saved.length?stagesFromRoles(s.id,saved.map(a=>a.role).filter(r=>r!==NO_ROLE)):(s.stages.length?s.stages.filter((x):x is SkillStage=>(SKILL_STAGES as readonly string[]).includes(x)):stagesFromRoles(s.id,s.defaultRoles));
   for(const st of list)(stages[st]??=[]).push({id:s.id,title:s.title,version:s.version,principles:s.principles,checks:s.checks,signs:s.signs});
  }
  return {version:STAGE_SKILLS_VERSION,stages};

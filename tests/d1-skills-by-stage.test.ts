@@ -2,7 +2,6 @@
 // answers only; no model is called.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {mkdtemp} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -20,13 +19,15 @@ import {DESIGNER_ROLE_V4} from '../packages/director/roles';
 import {fakeSetup,fixture} from './local-chat-shaped.test';
 import type {DirectionInput} from '../packages/director/types';
 
+/** The skill texts before D1, kept as a fixture (not read from git history). */
+const preD1=JSON.parse(readFileSync('tests/fixtures/skills/pre-d1.json','utf8')) as {texts:Record<string,string>};
 const skills=readSkills(),staged=buildStageSkills(skills,[]),signs=skills.find(s=>s.id==='default-look')!.signs;
 const ctx=(stageSkills?:StageSkills)=>{const {common,byRole}=splitSkills(skills,[]);return buildRunContext({briefText:'{"product":"lamp"}',brandPack:'BRAND CHARACTER\nCalm.',packVersion:1,commonSkills:common,roleSkills:byRole,materials:{entries:[],budget:DEFAULT_MATERIAL_BUDGET},...(stageSkills?{stageSkills}:{})});};
 
 test('D1: the 14 skills are converted mechanically: their text is the principles, nothing is lost, no checks yet', ()=>{
  assert.equal(skills.length,14);
  for(const s of skills){
-  const before=execFileSync('git',['show',`d0b8cb1:packages/agents/skills/${s.id}.md`],{encoding:'utf8'}).replace(/^---\n[\s\S]*?\n---\n/,'').trim();
+  const before=preD1.texts[s.id];assert.ok(before,`${s.id}: a pre-D1 text`);
   assert.equal(s.text,before,`${s.id}: the text earlier layouts read is unchanged`);assert.deepEqual(s.checks,[],`${s.id}: no checks yet`);
   assert.equal(s.id==='default-look'?s.signs:s.principles,before);
  }

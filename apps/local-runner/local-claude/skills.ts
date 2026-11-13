@@ -4,6 +4,7 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {readSkills,splitSkills} from '../../../packages/agents/skill-files';
 import {buildStageSkills} from '../../../packages/agents/stage-skills';
+import {withSavedTexts,type SavedSkillText} from '../../../packages/agents/skill-editor';
 import type {ContextExtras} from './run-context';
 
 export async function contextExtras(admin:SupabaseClient,runId:string):Promise<ContextExtras>{
@@ -11,6 +12,9 @@ export async function contextExtras(admin:SupabaseClient,runId:string):Promise<C
  if(!tenant)return {commonSkills:[]};
  const [att,eff,mat]=await Promise.all([admin.from('studio_skill_attachments').select('skill_id,role').eq('tenant_id',tenant),admin.from('studio_stage_effort').select('stage,effort').eq('tenant_id',tenant),admin.from('studio_material_budgets').select('role,count,tokens').eq('tenant_id',tenant)]);
  let files:ReturnType<typeof readSkills>=[];try{files=readSkills();}catch{files=[];}
+ // D2: the owner's saved texts (migration 20261113000600) replace the files' for runs frozen from now on.
+ const texts=await admin.from('studio_skill_texts').select('skill_id,version,title,purpose,stages,principles,checks,signs').eq('tenant_id',tenant);
+ if(!texts.error)files=withSavedTexts(files,(texts.data??[]) as SavedSkillText[]);
  const {common,byRole}=splitSkills(files,att.error?[]:att.data??[]);
  const stageEffort=Object.fromEntries((eff.error?[]:eff.data??[]).map(r=>[r.stage,r.effort]));
  // C3: per-role material budgets (migration 20261113000300); without it, the defaults.

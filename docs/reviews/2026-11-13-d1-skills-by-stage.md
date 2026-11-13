@@ -19,7 +19,7 @@
 - Frontmatter gains `stages`.
 - The body has three sections: `## Principles`, `## Checks` (one "- " line each) and `## Signs for the reviewer`.
 - A file without sections still reads as principles.
-- `text`, the text earlier layouts read, is unchanged byte for byte for all 14 skills (tested against `d0b8cb1`).
+- `text`, the text earlier layouts read, is unchanged byte for byte for all 14 skills (tested against the pre-D1 texts kept in `tests/fixtures/skills/pre-d1.json`).
 
 **Mechanical conversion, following the owner's D0 answers:**
 - Each skill's current text becomes its Principles; Checks and Signs are empty.

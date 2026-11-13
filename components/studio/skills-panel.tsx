@@ -5,9 +5,10 @@ import {Button} from "@/components/ui/button";
 import {Select} from "@/components/ui/select";
 import {Disclosure} from "@/components/ui/disclosure";
 import {studioRequest,useShared} from "@/lib/shared-http";
+import {SkillEditor} from "./skill-editor";
 
-type Skill={id:string;title:string;purpose:string;version:string;tokens:number;roles:string[];/** D1 */checks?:number;signs?:boolean;stages?:string[]};
-type Data={/** D1: each stage's principles against its budget */stageSums?:{stage:string;label:string;tokens:number;budget:number}[];ready:boolean;roles:string[];limits:{skill:number;role:number};skills:Skill[];common:string[];commonTokens:number;byRole:Record<string,{skills:string[];tokens:number}>;stages:{id:string;label:string;default:string;effort:string}[];materials?:{ready:boolean;roles:{role:string;count:number;tokens:number;default:{count:number;tokens:number}}[]}};
+type Skill={id:string;title:string;purpose:string;version:string;tokens:number;roles:string[];/** D1 */checks?:number;signs?:boolean;stages?:string[];/** D2 */principles?:string;checkList?:string[];signsText?:string};
+type Data={/** D2: the saved-texts table exists */textsReady?:boolean;/** D1: each stage's principles against its budget */stageSums?:{stage:string;label:string;tokens:number;budget:number}[];ready:boolean;roles:string[];limits:{skill:number;role:number};skills:Skill[];common:string[];commonTokens:number;byRole:Record<string,{skills:string[];tokens:number}>;stages:{id:string;label:string;default:string;effort:string}[];materials?:{ready:boolean;roles:{role:string;count:number;tokens:number;default:{count:number;tokens:number}}[]}};
 const k=(n:number)=>n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
 
 export function SkillsPanel(){
@@ -22,6 +23,7 @@ export function SkillsPanel(){
   <p className="muted">Common skills: {data.common.length?`${data.common.length} · ${k(data.commonTokens)} tokens`:"none"}. Each skill up to {k(data.limits.skill)} tokens; each role&apos;s own skills up to {k(data.limits.role)}.</p>
   {data.skills.map(s=><Disclosure key={s.id}><summary><strong>{s.title}</strong> · {k(s.tokens)} tokens{s.checks===0&&!s.signs?" · no checks yet":s.checks===0?" · signs only, no checks yet":` · ${s.checks} checks`} · {s.roles.length===data.roles.length?"common":s.roles.length?`used by ${s.roles.length} role${s.roles.length===1?"":"s"}`:"not attached"}</summary>
    <p>{s.purpose}</p>
+   <Disclosure><summary>Edit the text</summary><SkillEditor skill={s} ready={!!data.textsReady} saved={refresh}/></Disclosure>
    <form className="studio-form" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);void save({skillId:s.id,roles:data.roles.filter(r=>f.get(r)==="on")});}}>
     <fieldset disabled={!data.ready}><legend>Attached to</legend>{data.roles.map(r=><label className="checkbox-field" key={r}><input type="checkbox" name={r} defaultChecked={s.roles.includes(r)}/><span>{r}</span></label>)}</fieldset>
     <Button type="submit" disabled={!data.ready}>Save skill</Button>

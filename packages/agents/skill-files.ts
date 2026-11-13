@@ -9,7 +9,8 @@ import type {Skill} from './run-context';
 export type SkillFile=Skill&{title:string;purpose:string;tokens:number;/** Roles the skill is attached to until the owner chooses otherwise (frontmatter `roles: all` or a comma list). */defaultRoles:string[];
  /** D1: the stages it serves (frontmatter `stages`), and its three parts: Principles for the creator, Checks and Signs for
   * the reviewer. `text` stays the text earlier layouts used (the principles, or for a signs-only skill its signs). */
- stages:string[];principles:string;checks:string[];signs:string};
+ stages:string[];principles:string;checks:string[];signs:string;
+ /** D2: the stages were chosen in the skill editor; they win over role attachments. */stagesChosen?:boolean};
 /** Saved when the owner detaches a skill from every role, so its defaults do not return. */
 export const NO_ROLE='none';
 /** Size limits, in estimated tokens (4 bytes each). */
