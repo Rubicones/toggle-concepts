@@ -10,6 +10,7 @@ import {prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCl
 import {localModelFor,type LocalModelChoice} from '../../../packages/agents/local-models';
 import {sharedLayout,sharedLayoutDifferences,continuingLayout,type RunContext} from '../../../packages/agents/run-context';
 import type {Plan} from '../../../packages/agents/local-session';
+import {lastCallSize} from '../../../packages/agents/local-session';
 import {largestInputParts} from '../../../packages/agents/local-usage';
 import {stageEffort,type StageId} from '../../../packages/agents/stage-effort';
 import {textRequestQuote} from '../../../packages/agents/text-quote';
@@ -35,7 +36,7 @@ export function localSetupFrom(profile:CapabilityProfile):LocalCliSetup{
 export type LocalTextDetails={
  transport:'claude-cli';mapping:LocalModelChoice;semanticInputHash:string;schemaMode:'cli'|'plain'|'none';unsupported:string[];
  cliVersion:string;executedModel?:string;sessionId?:string;apiKeySource?:string;
- internalAttempts:number;numTurns?:number;stopReason?:string|null;durationMs:number;exitCode:number|null;limitReached?:boolean;
+ internalAttempts:number;/** C1: the conversation's size after the last model call (summed usage over-counts) */conversationSize?:number;numTurns?:number;stopReason?:string|null;durationMs:number;exitCode:number|null;limitReached?:boolean;
  /** LC0: the effort asked for and the CLI's API-equivalent price (subscription quota, not money). */
  effort?:string;apiEquivalentUsd?:number;
  usage?:CliResult['usage'];events:CliEvent[];stderr:string;recordPath?:string;
@@ -130,14 +131,18 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    r=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cliOutputRoom(cli.maxOutputTokens,cli.effort))}),stdin:streamUserMessage(cli.parts),timeoutMs,idleMs:CLI_SILENCE_MS,signal:stop.signal,
     onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,cli.jsonSchema!==undefined))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
    options.signal?.removeEventListener('abort',relay);
-   if(attempt===0&&resume&&r.outcome==='failed'&&/no conversation found/i.test(`${r.text??''} ${r.stderr}`)){cli=fullShared;resume=null;conversation={kind:'restarted'};continue;}
+   if(attempt===0&&resume&&r.outcome==='failed'&&/no conversation found/i.test(`${r.text??''} ${r.stderr}`)){
+    // C1: a request that carries only what the stored conversation lacked would start over without the work: the
+    // caller rebuilds the full request instead (CONVERSATION_MISSING, nothing charged).
+    if(plan&&!plan.condensed&&plan.shortPayload)return {provider:'claude-cli',outcome:'failed',cost:0,text:null,generation:null,usage:null,failure:'CONVERSATION_MISSING'};
+    cli=fullShared;resume=null;conversation={kind:'restarted'};continue;}
    // An answer that did not arrive in time cost nothing on the subscription: ask once more before giving up.
    if(attempt===0&&(r.failure==='CLI_TIMEOUT'||r.failure==='CLI_STALLED')&&!options.signal?.aborted){timedOut=true;continue;}
    break;}
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
+    internalAttempts:r.internalAttempts,...(()=>{const size=lastCallSize(r.events);return size!==undefined?{conversationSize:size}:{};})(),...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};

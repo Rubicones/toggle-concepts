@@ -11,7 +11,19 @@ export const CONVERSATION_CAP=120000;
 
 /** A stored point of a conversation: the session after a succeeded request, and how large the conversation was then. */
 export type StoredPoint={role:string;sessionId:string;tokens:number;at?:string};
-export type Plan=(SessionPlan&{condensed?:false})|{condensed:true;resume?:undefined;fork?:undefined;sameRole?:undefined}|null;
+export type Plan=(SessionPlan&{condensed?:false;/** C1: the request carries only what the stored conversation lacks (designer turns): a missing conversation must not be restarted with it */shortPayload?:boolean})|{condensed:true;resume?:undefined;fork?:undefined;sameRole?:undefined}|null;
+
+/**
+ * Size of the conversation after a request, from its LAST model call (chat-shaped plan C1): what that call read (new,
+ * cache read, cache write) plus what it wrote. A request with several internal calls reports its usage summed over
+ * all of them, so the summed usage over-counts the history; it stays for billing only.
+ */
+export function lastCallSize(events:readonly unknown[]|undefined):number|undefined{
+ for(let i=(events?.length??0)-1;i>=0;i--){const e=events![i] as {type?:string;message?:{usage?:Parameters<typeof conversationTokens>[0]}};if(e?.type==='assistant'&&e.message?.usage)return conversationTokens(e.message.usage);}
+ return undefined;
+}
+/** The stored size of a request's conversation: the last call's size when the events had it, else the summed usage. */
+export const storedSize=(l:{conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0]}|undefined)=>l?.conversationSize??conversationTokens(l?.usage);
 
 /** Size of the conversation after a request: everything it read plus what it wrote. */
 export function conversationTokens(u:{input_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number;output_tokens?:number}|undefined){
@@ -35,12 +47,18 @@ export function planningPlan(role:string,parents:StoredPoint[],cap=CONVERSATION_
  * A designer turn: continue the direction's own conversation from its last accepted turn (a branch, so a refused or
  * unreadable answer never stays in the history); the first turn branches from the approved planning point.
  */
+/** C1: whether a designer turn may send only what its conversation lacks: a real continuation of its own conversation.
+ * A condensed, new, branched-from-planning or restarted turn sends the full payload (all files, results, notes, render). */
+export const continuesOwnConversation=(plan:Plan)=>!!plan&&!plan.condensed&&!!plan.resume&&plan.sameRole===true;
+
 export function designerPlan(state:{session?:StoredPoint},planningPoint:StoredPoint|null,cap=CONVERSATION_CAP):Plan{
- if(state.session)return state.session.tokens>cap?{condensed:true}:{resume:state.session.sessionId,fork:true,sameRole:true};
+ if(state.session)return state.session.tokens>cap?{condensed:true}:{resume:state.session.sessionId,fork:true,sameRole:true,shortPayload:true};
  return planningPoint&&planningPoint.tokens<=cap?{resume:planningPoint.sessionId,fork:true,sameRole:false}:null;
 }
 
 /** Plain words for the timeline. */
 export function conversationLabel(kind:'new'|'continued'|'branched'|'condensed'|'restarted',role:string){
+ // C1: the designer's turns say whether it kept its conversation or started over with the full draft, and why.
+ if(role==='designer'&&kind!=='new')return ({continued:'Continued the conversation',branched:'Continued the conversation',condensed:'Started over with the full draft: the conversation was too long',restarted:'Started over with the full draft: the conversation was not found on this computer'} as const)[kind];
  return ({new:'Started a new conversation',continued:'Continuing the conversation',branched:role==='designer'?'Continuing the direction’s conversation from its last accepted turn':CHAIN_ROLES.has(role)?'Continuing the planning conversation':'Branched from the approved planning point',condensed:'Conversation condensed: earlier stages kept as their results',restarted:'The stored conversation was not found on this computer; started again with the shared context'} as const)[kind];
 }

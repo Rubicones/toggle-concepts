@@ -73,7 +73,7 @@ export const fileHashes=(files:{path:string;source:string}[])=>Object.fromEntrie
 export function changedFiles(files:{path:string;source:string}[],seen?:Record<string,string>){return seen?files.filter(f=>seen[f.path]!==hash(f.source)):files;}
 const short=(value:unknown,max=4096)=>JSON.stringify(value).slice(0,max);
 
-export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;/** LC4: a continued conversation (shared Local runs): send only what it does not hold, and accept readable turns into it. */conversation?:{continuing:()=>boolean;accept:()=>Promise<void>};save:(state:DesignerLoopState)=>Promise<void>;/** For the timeline: the turn, its results and the screenshot the designer looked at when it wrote the turn. *//** Point 3: at most this many critic reviews of the hero frame (from the quote). */heroReviews?:number;onHero?:(event:HeroEvent)=>Promise<void>;onTurn?:(turn:DesignerTurn,results:unknown[],looked?:string)=>Promise<void>;now?:()=>number}){
+export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;/** LC4: a continued conversation (shared Local runs): send only what it does not hold, and accept readable turns into it. */conversation?:{continuing:()=>boolean;accept:()=>Promise<void>;/** C1: decides this turn's conversation before the request is built; true only on a real continuation of the designer's own conversation. */decide?:()=>Promise<boolean>;/** C1: the stored conversation is missing on this computer. */lost?:()=>void};save:(state:DesignerLoopState)=>Promise<void>;/** For the timeline: the turn, its results and the screenshot the designer looked at when it wrote the turn. *//** Point 3: at most this many critic reviews of the hero frame (from the quote). */heroReviews?:number;onHero?:(event:HeroEvent)=>Promise<void>;onTurn?:(turn:DesignerTurn,results:unknown[],looked?:string)=>Promise<void>;now?:()=>number}){
  const {input,state,tools}=args,now=args.now??Date.now,scenes=input.storyboard.map(s=>s.id),referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  const pending=new Map<string,Promise<PictureResult>>(),arrived=new Map<string,PictureResult>();
  // A control or lease failure inside a background purchase stops the loop at the next step instead of escaping unseen.
@@ -94,24 +94,36 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
  const heroOpen=()=>heroOn&&state.hero?.state!=='accepted';
  const heroAsk=()=>`Finish the hero frame first: scene ${scenes.indexOf(state.hero!.sceneId)+1} in ${ratio(state.hero!.format)}. Render it, then set settleHero for its review.`;
  const accept=async(by:'critic'|'reviews-used'|'no-critic'|'review-failed')=>{state.hero!.state='accepted';state.hero!.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:state.hero!.sceneId,format:state.hero!.format,by});};
+ let missingRetried=false;
  while(!state.complete&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   await collect();stopIfFatal();
   const files=await tools.files(),last=state.lastRender;
   const images=last?await Promise.all(last.views.map(async v=>({url:await screenshotForDesigner(v.file,args.conversation?RENDER_LONG_SIDE:1080),label:`${v.label} (rendered, scene ${scenes.indexOf(last.sceneId)+1})`}))):[];
   let text:string;
+  // C1: the short payload only when this turn really continues the designer's own conversation; a condensed, new or
+  // restarted turn gets the full payload (every file, recent results, notes and the latest render).
+  const short=args.conversation?(args.conversation.decide?await args.conversation.decide():args.conversation.continuing()):false;
   try{text=await args.call({...(heroOn?{notes:state.notes??'',...(last?{lookFirst:true}:{})}:{}),turn:state.turn,budget:{turnsLeft:args.maxTurns-state.turn,picturesLeft:Math.max(0,args.maxPictures-state.pictures)},
    scenes:scenes.map(sceneId=>({sceneId,formats:input.formats.map(f=>({format:f.id,renders:state.renders[renderKey(sceneId,f.id)]??0,revisionsLeft:Math.max(0,DESIGNER_REVISIONS_PER_SCENE+1-(state.renders[renderKey(sceneId,f.id)]??0))})).filter(f=>f.renders>0||f.format===referenceFormat)})),
    // LC4: in a continued conversation the history holds everything earlier: only new results and changed files go.
-   ...(args.conversation?.continuing()?{toolResults:sinceLastTurn(state.transcript),currentFiles:changedFiles(files,state.filesSeen)}:{toolResults:state.transcript.slice(-12),currentFiles:files}),
+   ...(short?{toolResults:sinceLastTurn(state.transcript),currentFiles:changedFiles(files,state.filesSeen)}:{toolResults:state.transcript.slice(-12),currentFiles:files}),
    ...(state.hero?{hero:{sceneId:state.hero.sceneId,format:state.hero.format,settled:state.hero.state==='accepted',reviewsLeft:Math.max(0,(args.heroReviews??0)-state.hero.reviews)}}:{}),
    ...(last?{lastRender:{sceneId:last.sceneId,views:last.views.map(v=>v.label),findings:last.findings.slice(0,30).map(f=>({view:f.view,severity:f.severity,detail:f.detail}))}}:{})},images);}
-  catch(error){if(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'){state.turn++;await log({error:'Your answer was cut off. Return a smaller turn: fewer files, exact edits.'});continue;}throw error;}
-  if(args.conversation)state.filesSeen=fileHashes(files);
+  catch(error){if(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'){state.turn++;await log({error:'Your answer was cut off. Return a smaller turn: fewer files, exact edits.'});continue;}
+   // C1: the stored conversation is not on this computer: start over once with the full payload (same turn).
+   if(error instanceof Error&&error.message==='CONVERSATION_MISSING'&&args.conversation?.lost&&!missingRetried){missingRetried=true;args.conversation.lost();continue;}
+   throw error;}
+  missingRetried=false;
   const looked=last?.views[0]?.file;state.turn++;state.transcript.push({from:'agent',text:text.slice(0,2000)});delete state.lastRender;await args.save(state);
   let turn:DesignerTurn;
-  try{turn=readDesignerTurn(JSON.parse(text),input);}catch(error){await log({error:(error instanceof Error?error.message:'Unreadable answer').slice(0,600)});continue;}
+  try{turn=readDesignerTurn(JSON.parse(text),input);}catch(error){
+   // C1: an unreadable answer is not accepted into the conversation: it is not the last agent turn there, so the results
+   // it was answering stay due for the next short payload, and its files are not marked as seen.
+   if(args.conversation)state.transcript.pop();
+   await log({error:(error instanceof Error?error.message:'Unreadable answer').slice(0,600)});continue;}
   // LC4: a readable turn becomes part of the direction's conversation; an unreadable one is left out of it.
   await args.conversation?.accept();
+  if(args.conversation)state.filesSeen=fileHashes(files);
   // Point 4: notes are working memory; a turn after a render must first say what it saw (look, name, then fix).
   if(heroOn&&turn.notes){state.notes=turn.notes;await args.save(state);}
   // Refused once per render: a second turn without seen is applied, so a model that keeps omitting it cannot burn

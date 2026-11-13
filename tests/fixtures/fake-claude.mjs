@@ -26,6 +26,11 @@ process.stdin.on('end',()=>{
  if(scenario==='noresult'){out({type:'assistant',message:{content:[{type:'text',text:'partial'}]}});process.exit(0);}
  const usage={input_tokens:120,output_tokens:30,cache_creation_input_tokens:0,cache_read_input_tokens:0};
  if(scenario==='limit'){out({type:'result',subtype:'success',is_error:true,result:"You've hit your usage limit · resets 5pm",usage,num_turns:1,session_id:'s1'});process.exit(1);}
+ // Two model calls in one request: the result's usage is summed over both; each assistant event has its own call's usage.
+ if(scenario==='twocalls'){
+  out({type:'assistant',message:{content:[{type:'text',text:'thinking'}],usage:{input_tokens:10,cache_read_input_tokens:90000,cache_creation_input_tokens:0,output_tokens:500}}});
+  out({type:'assistant',message:{content:[{type:'text',text:'OK'}],usage:{input_tokens:10,cache_read_input_tokens:90500,cache_creation_input_tokens:0,output_tokens:300}}});
+  out({type:'result',subtype:'success',is_error:false,result:'OK',usage:{input_tokens:20,cache_read_input_tokens:180500,cache_creation_input_tokens:0,output_tokens:800},num_turns:2,session_id:'s1',stop_reason:'end_turn'});return;}
  if(scenario==='schema'||scenario==='schema-no-payload'){
   out({type:'assistant',message:{content:[{type:'tool_use',name:'StructuredOutput',input:{bad:true}}]}});
   out({type:'user',message:{content:[{type:'tool_result',is_error:true,content:'schema validation failed'}]}});

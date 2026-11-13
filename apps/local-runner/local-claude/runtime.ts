@@ -16,7 +16,7 @@ import {loadRunContext} from './run-context';
 import {contextExtras} from './skills';
 import type {RunContext} from '../../../packages/agents/run-context';
 import type {StageId} from '../../../packages/agents/stage-effort';
-import {CHAIN_ROLES,conversationTokens,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
+import {CHAIN_ROLES,conversationTokens,storedSize,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
 
 export type TextExecution={mode:'openrouter'|'local_claude';device_id?:string|null;execution_model?:string|null;cli_version?:string|null;mapping_version?:string|null;
  /** LC2: 'shared' runs start every request with the frozen run context; absent or 'fresh' keeps today's layout. */
@@ -65,7 +65,7 @@ export async function latestPlanningPoint(admin:SupabaseClient,runId:string):Pro
  return pointsOf(rows.data??[])[0]??null;
 }
 function pointsOf(rows:{role:string;usage:unknown;created_at:string}[]):StoredPoint[]{
- return rows.flatMap(r=>{const l=(r.usage as {_local?:{sessionId?:string;usage?:Parameters<typeof conversationTokens>[0]}}|null)?._local;return l?.sessionId?[{role:r.role,sessionId:l.sessionId,tokens:conversationTokens(l.usage),at:r.created_at}]:[];});
+ return rows.flatMap(r=>{const l=(r.usage as {_local?:{sessionId?:string;conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0]}}|null)?._local;return l?.sessionId?[{role:r.role,sessionId:l.sessionId,tokens:storedSize(l),at:r.created_at}]:[];});
 }
 export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>;session?:()=>Promise<Plan>;role?:string;stage?:StageId}={}):typeof submitText{
  if(execution.mode!=='local_claude')return submitText;

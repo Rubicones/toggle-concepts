@@ -34,7 +34,7 @@ import {readDesign} from '../../../packages/director/contract';
 import {localCallUsage,usageLine} from '../../../packages/agents/local-usage';
 import {skillRoleOf} from '../../../packages/agents/skill-files';
 import {stageOf} from '../../../packages/agents/stage-effort';
-import {designerPlan,conversationTokens,conversationLabel,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
+import {designerPlan,conversationTokens,conversationLabel,storedSize,continuesOwnConversation,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
 import {textExecutionFor,transportFor,sharedContextFor,latestPlanningPoint,markSubscriptionLimit,type LocalRuntime} from '../local-claude/runtime';
 import {paidText,requestId,roleNames,resumeBudgetClock,retryableProviderFailure,type Role} from '../../../packages/director/money';
 import type {BlockSnapshot,WorkState,ADQuestion} from '../../../packages/director/state';
@@ -176,10 +176,16 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
   // three times per call, inside the approved allowance. Open (unknown) receipts are never resubmitted.
   // LC4: the designer's own conversation (shared runs): each turn continues from the last accepted turn; a refused or
   // unreadable answer is never accepted, so it never becomes part of the history.
-  const designerConversation=(()=>{let pending:StoredPoint|null=null;const loopState=()=>(state.designer??{}) as DesignerLoopState;
-   return {plan:async():Promise<Plan>=>designerPlan({session:loopState().session},loopState().session?null:await latestPlanningPoint(admin,input.runId)),
-    answered:(usage:unknown)=>{const l=(usage as {_local?:{sessionId?:string;usage?:Parameters<typeof conversationTokens>[0];conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted'}}}|null)?._local;pending=l?.sessionId&&l.conversation?{role:'designer',sessionId:l.sessionId,tokens:conversationTokens(l.usage)}:null;if(pending&&l?.conversation&&['condensed','restarted'].includes(l.conversation.kind))void events.emit(`conversation:${l.sessionId}`,{stepId:`conversation:${l.sessionId}`,kind:'compaction',status:'done',costMicroUsd:0,message:conversationLabel(l.conversation.kind,'designer')}).catch(()=>{});},
-    accept:async()=>{if(!pending)return;const s=loopState();s.session=pending;pending=null;},
+  // C1 (chat-shaped plan): the turn's conversation plan is decided BEFORE its request is built, so the loop sends the
+  // short payload only on a real continuation of the designer's own conversation, and the transport uses that same plan.
+  const designerConversation=(()=>{let pending:StoredPoint|null=null,decided:Plan|undefined;const loopState=()=>(state.designer??{}) as DesignerLoopState;
+   const compute=async():Promise<Plan>=>designerPlan({session:loopState().session},loopState().session?null:await latestPlanningPoint(admin,input.runId));
+   return {plan:async():Promise<Plan>=>decided!==undefined?decided:compute(),
+    decide:async()=>{decided=await compute();return continuesOwnConversation(decided);},
+    answered:(usage:unknown)=>{const l=(usage as {_local?:{sessionId?:string;conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0];conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted'}}}|null)?._local;decided=undefined;pending=l?.sessionId&&l.conversation?{role:'designer',sessionId:l.sessionId,tokens:storedSize(l)}:null;if(pending&&l?.conversation&&['condensed','restarted'].includes(l.conversation.kind))void events.emit(`conversation:${l.sessionId}`,{stepId:`conversation:${l.sessionId}`,kind:'compaction',status:'done',costMicroUsd:0,message:conversationLabel(l.conversation.kind,'designer')}).catch(()=>{});},
+    accept: async()=>{if(!pending)return;const s=loopState();s.session=pending;pending=null;},
+    // The stored conversation is not on this computer: the next attempt starts over with the full payload.
+    lost:()=>{const s=loopState();delete s.session;delete s.filesSeen;decided=undefined;},
     continuing:()=>!!loopState().session};})();
   const call=async(role:Exclude<Role,'resources'>|'designer',prompt:string,protocolInstructions:string,responseSchema:{name:string;schema:Record<string,unknown>},context:unknown,identity:unknown,images:{url:string;label:string}[]=[])=>{
    // Identities only move forward, so an earlier failed request is never replayed; each execution may submit at most
@@ -324,7 +330,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      save:async next=>{state.designer=next;await save();},heroReviews:heroCritic,
      // Point 3d: the hero frame's milestones in the timeline.
      onHero:async event=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);},
-     ...(execution.mode==='local_claude'&&execution.context_mode==='shared'?{conversation:{continuing:designerConversation.continuing,accept:designerConversation.accept}}:{}),
+     ...(execution.mode==='local_claude'&&execution.context_mode==='shared'?{conversation:{continuing:designerConversation.continuing,decide:designerConversation.decide,lost:designerConversation.lost,accept:designerConversation.accept}}:{}),
      call:async(request,images)=>(await call('designer',JSON.stringify(request),withCreativeHandoff(input,'director',designerInstructionsFor(input)),designerTurnResponseFor(input),{input:designerContext(input),notes:agentReviewNotes(state.notes??[])},{designer:request.turn},[...prefix,...images.map(i=>({...i,required:true}))])).text,
      onTurn:async(turn,results,looked)=>{await events.emit(`designer:${state.iteration??1}:${loop.turn}`,{stepId:`designer:${state.iteration??1}:${loop.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:designerActivityLine(turn,sceneNumber),detail:{sceneId:turn.focus.sceneId,activity:turn.focus.activity,summary:designerTurnSummary(results),...(turn.seen?{seen:seenLines(turn.seen)}:{})}},looked);}});
     if(loop.finish)finishDesign(design,loop.finish);
