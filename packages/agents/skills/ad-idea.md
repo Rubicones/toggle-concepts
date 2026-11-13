@@ -20,6 +20,13 @@ The turn. Something in the frame the viewer did not expect: an exaggeration of t
 Boldness is a commitment to one of these moves at full strength, with everything else removed. A careful average of safe choices is the most common failure, and it is invisible in a feed. Choose the version a cautious committee would soften, as long as it stays true to the facts and to the brand's character.
 
 ## Checks
+- [ideas] Does the idea state one benefit in the viewer's own situation?
+- [ideas] Does the idea name the viewer's moment: who, where, doing what?
+- [ideas] Does the idea show the product or its result doing what the promise says?
+- [ideas] Does the idea have one turn the viewer would not expect?
+- Can a stranger tell what is sold from the picture and the headline together?
 
 ## Signs for the reviewer
-
+The headline describes the company, not a benefit to the viewer.
+An abstract object stands where the product or its result should be.
+Nothing in the frame is unexpected; every choice is the safe average.

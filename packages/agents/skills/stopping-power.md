@@ -20,6 +20,12 @@ Fill the frame. The subject and the headline together should own most of the sur
 Energy. Diagonals, cropping that cuts into the subject, a gesture caught mid-action, an element that breaks a boundary, light with a direction. A frame where everything is centred, level and evenly spaced is calm; make it calm only when calm is the idea.
 
 ## Checks
+- Does one element have far more area, contrast or colour than any other?
+- Is the dominant element concrete: a person, a hand, the product or a readable result?
+- Do the dominant element and the headline separate from the ground at thumbnail size?
+- Do the subject and the headline together cover most of the frame?
 
 ## Signs for the reviewer
-
+At thumbnail size no element is larger or stronger than the rest.
+Small type sits in a large calm field.
+Everything is centred, level and evenly spaced when calm is not the idea.

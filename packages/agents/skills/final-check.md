@@ -20,6 +20,12 @@ Before a frame is called finished, look at the render, not the plan, and answer 
 Report the weakest point first and say what to change, in terms of the element and the decision (scale, position, colour proportion, wording of the break, which subject), not as a general wish. Praise is not a finding. A frame that passes the kit's rules but fails questions one to three is not approved.
 
 ## Checks
+- Can a stranger say what is sold, and to whom, from the picture and the headline in two seconds?
+- Can you name one dominant element that is neither empty space nor decoration?
+- Does the picture show the product, its result or the viewer's moment?
+- Is the mark on a suitable ground with its clear space?
 
 ## Signs for the reviewer
-
+A stranger needs the brief to say what is sold.
+No single element stands out at thumbnail size.
+The frame meets every kit rule and still could be anyone's ad.

@@ -22,6 +22,12 @@ Brand placement is part of the composition. The mark gets a fixed, quiet, legibl
 Before you finish, squint: you should see two or three large shapes with clear value differences. If you see many small similar pieces, merge, enlarge or remove.
 
 ## Checks
+- Does the frame use one structure: a subject with the headline, the headline as the subject, or a split?
+- Do the headline and the subject touch, overlap, align or point at each other?
+- [extension] Is each format recomposed with its own crop, scale or order rather than shrunk?
+- Does the frame show two or three large shapes with clear value differences when you squint?
 
 ## Signs for the reviewer
-
+Elements of two structures share one frame.
+The headline and the subject float apart, as if assembled by accident.
+Depth comes from glows and shadows laid over flat shapes.

@@ -24,6 +24,12 @@ Check edges: nothing touches the frame edge by accident, nothing overlaps unless
 Measure after rendering. If a measured finding says a word is clipped, overlapping or too small, change the rule that produced it, so the fix holds for every variation and not only for the view you looked at.
 
 ## Checks
+- Are margins, gaps and type sizes visibly multiples of one unit in every format?
+- Does every element sit on one of a few shared edges or axes?
+- Are every word and the mark inside the safe area in each format?
+- Is the subject of every picture still visible after each format's crop?
 
 ## Signs for the reviewer
-
+An element is almost aligned with another.
+Equal gaps everywhere hide which things belong together.
+Something touches a frame edge by accident.

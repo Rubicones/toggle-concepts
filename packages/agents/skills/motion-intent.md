@@ -22,6 +22,10 @@ Character comes from the brand. A precise brand moves in short, exact steps; a w
 Describe motion concretely for the next stage: what element, what property (position, scale, opacity, mask, colour), start and end state, duration in seconds, and the feel of the easing. A viewer with sound off and attention elsewhere should still get the promise from the frames at one, three and the last second.
 
 ## Checks
+- Does each scene's key frame show its subject and its words without any motion?
+- Is the subject or the first line visible in the first frame of the first scene?
+- Do the offer and the call to action appear in the last scene?
 
 ## Signs for the reviewer
-
+The first scene opens on an empty or nearly empty frame.
+A key frame says nothing without the motion planned for it.

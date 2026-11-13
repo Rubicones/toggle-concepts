@@ -20,6 +20,12 @@ Keep the brand's things real. The product, the interface and the marks come from
 Ask for few pictures and use each fully. One strong picture, large, does more than several small ones. A stand-in is acceptable only when it already shows the real subject at draft quality; a shadow or an empty shape where the subject will be is not a draft of the idea.
 
 ## Checks
+- Does each generated picture show something code cannot draw: the product in use, a person, a real material or place?
+- Is every generated picture free of words, numbers and logos?
+- Does the picture leave a calm area where the headline and the mark sit?
+- Is the picture's subject clear of the edges, so every format can crop it?
 
 ## Signs for the reviewer
-
+A generic object or an empty scene stands where the subject should be.
+Several small pictures where one large picture would do.
+Lettering or a mark appears inside a generated picture.

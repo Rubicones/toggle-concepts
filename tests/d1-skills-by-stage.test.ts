@@ -24,11 +24,11 @@ const preD1=JSON.parse(readFileSync('tests/fixtures/skills/pre-d1.json','utf8'))
 const skills=readSkills(),staged=buildStageSkills(skills,[]),signs=skills.find(s=>s.id==='default-look')!.signs;
 const ctx=(stageSkills?:StageSkills)=>{const {common,byRole}=splitSkills(skills,[]);return buildRunContext({briefText:'{"product":"lamp"}',brandPack:'BRAND CHARACTER\nCalm.',packVersion:1,commonSkills:common,roleSkills:byRole,materials:{entries:[],budget:DEFAULT_MATERIAL_BUDGET},...(stageSkills?{stageSkills}:{})});};
 
-test('D1: the 14 skills are converted mechanically: their text is the principles, nothing is lost, no checks yet', ()=>{
+test('D1: the 14 skills are converted mechanically: their text is the principles, nothing is lost; default checks ship with them', ()=>{
  assert.equal(skills.length,14);
  for(const s of skills){
   const before=preD1.texts[s.id];assert.ok(before,`${s.id}: a pre-D1 text`);
-  assert.equal(s.text,before,`${s.id}: the text earlier layouts read is unchanged`);assert.deepEqual(s.checks,[],`${s.id}: no checks yet`);
+  assert.equal(s.text,before,`${s.id}: the text earlier layouts read is unchanged`);assert.ok(s.checks.length>=3&&s.checks.length<=5,`${s.id}: three to five default checks`);
   assert.equal(s.id==='default-look'?s.signs:s.principles,before);
  }
  const d=skills.find(s=>s.id==='default-look')!;assert.equal(d.principles,'');assert.deepEqual(d.stages,['critic'],'the failure looks are the reviewer\'s signs');
@@ -40,12 +40,12 @@ test('D1: each stage gets only its own skills\' principles; the critic gets chec
  const hero=creatorStageText(staged,'hero'),ext=creatorStageText(staged,'extension'),critic=criticStageText(staged);
  assert.match(hero,/^SKILLS FOR THIS STAGE \(the hero frame\)\n\nSKILL ad-idea — /);for(const id of ['variation-engine','layout-craft','motion-intent','default-look'])assert.ok(!hero.includes(`SKILL ${id} `),id);
  assert.ok(ext.includes('SKILL variation-engine — ')&&ext.includes('SKILL layout-craft — '));
- assert.match(critic,/^WHAT TO CHECK[\s\S]*SKILL default-look — Refuse the default look\nSigns of failure:\n/);assert.ok(!critic.includes(skills.find(s=>s.id==='ad-idea')!.principles.slice(0,60)),'no principles for the critic');
+ assert.match(critic,/^WHAT TO CHECK[\s\S]*SKILL default-look — Refuse the default look\nChecks:\n- Is [\s\S]*\nSigns of failure:\n/);assert.ok(!/\n- \[/.test(critic),'no stage tags in the text');assert.ok(!critic.includes(skills.find(s=>s.id==='ad-idea')!.principles.slice(0,60)),'no principles for the critic');
  for(const role of ['research','strategy','script','visual-direction','designer','creative-code','image'])for(const effort of [undefined,'design-hero','design-create']){
   const m=stageMessage(staged,role,effort);assert.ok(!m.includes(signs.slice(0,80))&&!m.includes('Signs of failure'),`${role}/${effort}: no signs`);
  }
  assert.equal(requestStage('designer','design-hero'),'hero');assert.equal(requestStage('designer','design-create'),'extension');assert.equal(requestStage('script'),'ideas');assert.equal(requestStage('critic'),'critic');
- assert.deepEqual(stageSkillIds(staged,'critic'),['default-look'],'only skills with checks or signs add to the critic');
+ assert.ok(['default-look','final-check','variation-engine'].every(id=>stageSkillIds(staged,'critic').includes(id)),'the reviewed stages\' skills with checks');assert.deepEqual(stageSkillIds(buildStageSkills(skills.map(s=>s.id==='default-look'?s:{...s,checks:[],signs:''}),[]),'critic'),['default-look'],'only skills with checks or signs add to the critic');
  // The owner's saved attachments win; a skill detached from every role serves no stage.
  const saved=buildStageSkills(skills,[{skill_id:'variation-engine',role:'critic'},{skill_id:'one-idea',role:NO_ROLE}]);
  assert.ok(saved.stages.critic!.some(s=>s.id==='variation-engine')&&!saved.stages.extension!.some(s=>s.id==='variation-engine'));assert.ok(SKILL_STAGES.every(x=>!saved.stages[x]?.some(s=>s.id==='one-idea')));

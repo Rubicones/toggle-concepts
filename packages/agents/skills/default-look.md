@@ -9,6 +9,10 @@ stages: critic
 ## Principles
 
 ## Checks
+- Is the dominant element something concrete from this product or the named moment?
+- Is the frame free of glows, blurs and gradients used to make flat shapes look finished?
+- Does the headline have its place in the composition without a box added around it?
+- Does every interface in the frame show believable content rather than empty cards?
 
 ## Signs for the reviewer
 When nothing in a frame was decided from the brand and the idea, the result drifts to a recognisable default. Treat each of these as a sign the decision was skipped, and replace it with a choice made from the brand's character and the promise.

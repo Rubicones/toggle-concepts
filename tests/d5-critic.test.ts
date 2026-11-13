@@ -28,7 +28,7 @@ const answer=(o:Record<string,unknown>)=>JSON.stringify({rulings:[],checks:[],no
 const round1=answer({checks:[{s:'reading-order',n:1,ok:false,e:'The price shouts first.'},{s:'reading-order',n:2,ok:true,e:'Offer second.'}],notes:[{s:'reading-order',n:1,priority:'P1',view:'square',problem:'The price leads.',fix:'Make the headline the largest element.',replaces:''},{s:'reading-order',n:2,priority:'P2',view:'square',problem:'Tight.',fix:'Give the offer more room.',replaces:''}]});
 
 test('D5: the checks are the stage\'s own (hero apart from the end review); earlier notes travel as text with a ruling each', ()=>{
- const hero=stageReviewMaterial(staged,'hero');assert.deepEqual(hero.checks.map(c=>`${c.skill} ${c.n}`),['reading-order 1','reading-order 2']);assert.ok(hero.signs.some(s=>s.startsWith('default-look: ')),'the critic stage\'s signs');
+ const hero=stageReviewMaterial(staged,'hero');assert.deepEqual(hero.checks.filter(c=>c.skill==='reading-order').map(c=>`${c.skill} ${c.n}`),['reading-order 1','reading-order 2']);assert.ok(hero.signs.some(s=>s.startsWith('default-look: ')),'the critic stage\'s signs');
  assert.deepEqual(stageReviewMaterial(buildStageSkills([reading],[{skill_id:'reading-order',role:'designer'}]),'extension').checks.length,2);
  const first=settleHeroReview(round1,1,[],0)!;assert.equal(first.result.stop,undefined);assert.equal(first.round.notes[0].id,'R1N1');
  const ctx=reviewContextText({territory:'The hook you can hold.',checks:hero.checks,signs:hero.signs,hard:[],memory:[first.round]});

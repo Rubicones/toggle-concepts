@@ -20,6 +20,12 @@ Declare every axis the design supports in the preview options (all ordered local
 One component, one set of rules, per scene a small description of what differs. Shared pieces (the mark, the call to action, the headline block) are written once and reused. Keep the file small enough to change safely: clarity of structure is part of the craft.
 
 ## Checks
+- Does the longest headline fit the narrowest format without clipping?
+- Does the shortest headline fill its area without a large empty gap?
+- Do all formats share one structure, with sizes set by the frame?
+- Is every word on the canvas from the approved copy?
 
 ## Signs for the reviewer
-
+A layout works only for the reference copy.
+Text shrinks below a legible size instead of the composition changing.
+One variation has a different structure for no reason.

@@ -20,6 +20,13 @@ Contrast and ground. Type sits on a ground that keeps it readable at phone size:
 The call to action looks like something to act on and repeats the offer in the brand's words. Alignment follows one decision per frame: text shares an edge or an axis with the main subject.
 
 ## Checks
+- Does each headline line end where a person would pause for breath?
+- Is the headline free of hyphenated words and of a last line of one short word?
+- Are there at most three text sizes, each visibly larger than the next?
+- Is all type on a ground that keeps it readable at phone size?
+- Is the call to action set apart from the other text by its shape, colour or position?
 
 ## Signs for the reviewer
-
+A line ends on an article, a preposition or a lone short word.
+Letters touch.
+Type sits over the subject's key area or in a tinted box added late.

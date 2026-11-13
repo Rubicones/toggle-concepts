@@ -2,15 +2,16 @@
 // run contexts frozen from D5 on (critic@2). One request shape for the hero review, the end-of-draft review and the
 // selection of image ideas: the work (render or ideas), the territory, the stage's checks and signs, the hard findings,
 // and the critic's own earlier review as text. Never the designer's conversation. Pure.
-import type {StageSkills,SkillStage} from '../agents/stage-skills';
+import {checksForStage,reviewStageSkills,type StageSkills,type SkillStage} from '../agents/stage-skills';
 
 export const CRITIC_VERSION='critic@2';
 export const HERO_REVIEW_ROUNDS=2;
 export type CriticCheck={skill:string;n:number;question:string};
-/** A stage's checks, numbered per skill ("reading-order 2"), and its signs (with the critic stage's own signs). */
+/** A stage's checks, numbered per skill within the stage ("reading-order 2"), and its signs (with the critic stage's own
+ * signs). From stage-skills@2 a check's tag picks its stages and the critic stage's own checks join the render reviews. */
 export function stageReviewMaterial(st:StageSkills|undefined,stage:SkillStage){
  const list=st?.stages[stage]??[],critic=st?.stages.critic??[];
- const checks:CriticCheck[]=list.flatMap(s=>s.checks.map((q,i)=>({skill:s.id,n:i+1,question:q})));
+ const checks:CriticCheck[]=reviewStageSkills(st,stage).flatMap(s=>checksForStage(s.checks,stage,st).map((q,i)=>({skill:s.id,n:i+1,question:q})));
  const seen=new Set<string>(),signs=[...list,...critic].filter(s=>s.signs&&!seen.has(s.id)&&seen.add(s.id)).map(s=>`${s.id}: ${s.signs}`);
  return {checks,signs};
 }

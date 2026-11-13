@@ -4,7 +4,9 @@
 // with the run context. Pure.
 import {estimateTokens,NO_ROLE,type SkillFile} from './skill-files';
 
-export const STAGE_SKILLS_VERSION='stage-skills@1';
+/** @2 (default checks): checks may carry a stage tag, untagged checks serve the render reviews only, and the critic
+ * stage's own checks join the hero and end-of-draft reviews. Contexts frozen at @1 keep their exact reading. */
+export const STAGE_SKILLS_VERSION='stage-skills@2';
 export const SKILL_STAGES=['ideas','visual-direction','hero','extension','pictures','critic'] as const;
 export type SkillStage=typeof SKILL_STAGES[number];
 export const STAGE_LABELS:Record<SkillStage,string>={ideas:'ideas and planning','visual-direction':'visual direction',hero:'the hero frame',extension:'every scene, format and variation',pictures:'pictures',critic:'the review'};
@@ -20,6 +22,28 @@ export function stagesFromRoles(id:string,roles:string[]):SkillStage[]{
  const out=new Set<SkillStage>();for(const r of roles)for(const st of ROLE_STAGES[r]??[])if(!(st==='hero'&&HERO_EXCLUDED.has(id)))out.add(st);
  return SKILL_STAGES.filter(st=>out.has(st));
 }
+
+/** The smallest per-check stage tag: "[ideas] Does …?", "[hero] Is …?", "[extension] Is …?" (or a comma list). An
+ * untagged check serves the stages that review a render (the hero frame and the end of the draft); the ideas stage
+ * reads only the checks tagged for it. */
+export const CHECK_STAGES=['ideas','hero','extension'] as const;
+const CHECK_TAG=/^\[([^\]]*)\]\s*/;
+export function checkTag(line:string):{stages:string[]|null;question:string}{
+ const t=line.trim(),m=CHECK_TAG.exec(t);return m?{stages:m[1].split(',').map(x=>x.trim()).filter(Boolean),question:t.slice(m[0].length).trim()}:{stages:null,question:t};
+}
+const legacyChecks=(st:StageSkills|undefined)=>st?.version==='stage-skills@1';
+/** A skill's checks for one review stage, without their tags. At @1 every check served every stage. */
+export function checksForStage(checks:string[],stage:SkillStage,st?:StageSkills):string[]{
+ if(legacyChecks(st))return checks;
+ return checks.flatMap(c=>{const t=checkTag(c);return (t.stages?t.stages.includes(stage):stage==='hero'||stage==='extension')?[t.question]:[];});
+}
+/** The skills whose checks a review stage reads: that stage's skills, then (from @2, for the hero and end reviews) the
+ * critic stage's own skills. */
+export function reviewStageSkills(st:StageSkills|undefined,stage:SkillStage):StageSkill[]{
+ const list=st?.stages[stage]??[];if(legacyChecks(st)||(stage!=='hero'&&stage!=='extension'))return list;
+ const ids=new Set(list.map(s=>s.id));return [...list,...(st?.stages.critic??[]).filter(s=>!ids.has(s.id))];
+}
+const renderChecks=(s:StageSkill,st:StageSkills)=>legacyChecks(st)?s.checks:[...new Set([...checksForStage(s.checks,'hero',st),...checksForStage(s.checks,'extension',st)])];
 
 export type StageSkill={id:string;title:string;version:string;principles:string;checks:string[];signs:string};
 export type StageSkills={version:string;stages:Partial<Record<SkillStage,StageSkill[]>>};
@@ -56,7 +80,7 @@ export function creatorStageText(st:StageSkills,stage:SkillStage){
 /** The stages a reviewer judges, and its own: their skills' Checks and Signs (a skill with neither adds nothing). */
 export const REVIEWED_STAGES:SkillStage[]=['hero','extension','critic'];
 export function criticStageText(st:StageSkills){
- const seen=new Set<string>(),list=REVIEWED_STAGES.flatMap(x=>st.stages[x]??[]).filter(s=>!seen.has(s.id)&&seen.add(s.id)&&(s.checks.length||s.signs));
+ const seen=new Set<string>(),list=REVIEWED_STAGES.flatMap(x=>st.stages[x]??[]).filter(s=>!seen.has(s.id)&&seen.add(s.id)).map(s=>({...s,checks:renderChecks(s,st)})).filter(s=>s.checks.length||s.signs);
  return list.length?`WHAT TO CHECK (the skills the work was made with)\n\n${list.map(s=>[`SKILL ${s.id} — ${s.title}`,...(s.checks.length?[`Checks:\n${s.checks.map(c=>`- ${c}`).join('\n')}`]:[]),...(s.signs?[`Signs of failure:\n${s.signs}`]:[])].join('\n')).join('\n\n')}`:'';
 }
 /** The one stage message of a request ('' when its stage has no skills). */
@@ -66,11 +90,11 @@ export function stageMessage(st:StageSkills,role:string|undefined,effortStage?:s
 /** The ids a request carried, for its usage line. */
 export function stageSkillIds(st:StageSkills,role:string|undefined,effortStage?:string){
  const stage=requestStage(role,effortStage);
- return stage==='critic'?[...new Set(REVIEWED_STAGES.flatMap(x=>st.stages[x]??[]).filter(s=>s.checks.length||s.signs).map(s=>s.id))]:(st.stages[stage]??[]).filter(s=>s.principles).map(s=>s.id);
+ return stage==='critic'?[...new Set(REVIEWED_STAGES.flatMap(x=>st.stages[x]??[]).filter(s=>renderChecks(s,st).length||s.signs).map(s=>s.id))]:(st.stages[stage]??[]).filter(s=>s.principles).map(s=>s.id);
 }
 export const stageSkillTitles=(st:StageSkills,stage:SkillStage)=>(st.stages[stage]??[]).filter(s=>s.principles).map(s=>s.title);
 /** D4: the checks of one stage's skills (the selection of image ideas reads the `ideas` checks); '' when none. */
 export function stageChecksText(st:StageSkills|undefined,stage:SkillStage){
- const list=(st?.stages[stage]??[]).filter(s=>s.checks.length);
- return list.length?`THE ${STAGE_LABELS[stage].toUpperCase()} CHECKS\n${list.flatMap(s=>s.checks.map(c=>`- ${c}`)).join('\n')}`:'';
+ const lines=reviewStageSkills(st,stage).flatMap(s=>checksForStage(s.checks,stage,st));
+ return lines.length?`THE ${STAGE_LABELS[stage].toUpperCase()} CHECKS\n${lines.map(c=>`- ${c}`).join('\n')}`:'';
 }

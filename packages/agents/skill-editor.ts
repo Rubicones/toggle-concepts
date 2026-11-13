@@ -1,7 +1,7 @@
 // D2 (docs/plans/2026-11-13-skills-critic-image-owner.md): the skill editor. The owner writes a skill's three parts in
 // Models & agents; the saved text (table studio_skill_texts, migration 20261113000600) replaces the file's for new runs.
 // The checks on save, the token counts and the preview of what a stage will receive. Pure.
-import {buildStageSkills,creatorStageText,criticStageText,stageBudgetProblems,stageTokens,SKILL_STAGES,STAGE_LABELS,STAGE_SKILL_BUDGET,type SkillStage} from './stage-skills';
+import {buildStageSkills,checkTag,CHECK_STAGES,creatorStageText,criticStageText,stageBudgetProblems,stageTokens,SKILL_STAGES,STAGE_LABELS,STAGE_SKILL_BUDGET,type SkillStage} from './stage-skills';
 import type {SkillFile} from './skill-files';
 
 export type SkillDraft={title:string;purpose:string;stages:string[];principles:string;checks:string[];signs:string};
@@ -43,7 +43,15 @@ export function checkSkillDraft(d:SkillDraft):SkillCheck{
  }
  if(t.total>SKILL_PART_LIMITS.skill)errors.push(`The skill is about ${t.total} tokens; the limit is ${SKILL_PART_LIMITS.skill}.`);
  if(d.checks.length>SKILL_PART_LIMITS.checks)errors.push(`Write at most ${SKILL_PART_LIMITS.checks} questions for the reviewer.`);
- for(const c of d.checks)if(!YES_NO.test(c.trim()))errors.push(`"${c.trim().slice(0,80)}": write it as a question the reviewer answers yes or no: start with "Is", "Does" or "Can" and end with "?".`);
+ for(const c of d.checks){
+  const t=checkTag(c);
+  if(t.stages){
+   const unknown=t.stages.filter(x=>!(CHECK_STAGES as readonly string[]).includes(x));
+   if(unknown.length||!t.stages.length)errors.push(`"${c.trim().slice(0,80)}": a check's stage tag names ideas, hero or extension ("[hero] Is …?").`);
+   else for(const x of t.stages)if(!d.stages.includes(x)&&!(x!=='ideas'&&d.stages.includes('critic')))warnings.push({line:c.trim().slice(0,200),message:`This check is for ${x}, a stage the skill is not used in: no reviewer will read it.`});
+  }else if(!['hero','extension','critic'].some(x=>d.stages.includes(x)))warnings.push({line:c.trim().slice(0,200),message:'A check without a tag goes to the reviews of the hero frame and the end of the draft, stages this skill is not used in: tag it [ideas] or add a stage.'});
+  if(!YES_NO.test(t.question))errors.push(`"${c.trim().slice(0,80)}": write it as a question the reviewer answers yes or no: start with "Is", "Does" or "Can" and end with "?".`);
+ }
  if(d.checks.length&&d.checks.length<3)warnings.push({line:'',message:'Three to six questions give the reviewer enough to go on.'});
  for(const stage of d.stages)if(!(SKILL_STAGES as readonly string[]).includes(stage))errors.push(`Unknown stage "${stage}".`);
  for(const line of d.principles.split(/\n|(?<=[.!?])\s+/).map(l=>l.trim()).filter(Boolean))if(PROHIBITION.test(line))warnings.push({line:line.slice(0,200),message:'This tells what not to do: write what to do instead (you may keep it).'});
