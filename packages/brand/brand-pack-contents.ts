@@ -18,7 +18,8 @@ export const CHARACTER_PICTURE_LIMIT=12;
 
 export type PictureRef={objectKey:string;sha256:string;page:number;width:number;height:number};
 export type SheetRef={section:string;slice:number;sha256:string;objectKey:string;width:number;height:number};
-export type CatalogueEntry={name:string;kind:string;line:string;size:string;materialId?:string;picture?:PictureRef};
+export type CatalogueEntry={name:string;kind:string;line:string;size:string;materialId?:string;picture?:PictureRef;
+ /** C3: what an agent receives when it asks for this entry by name (a kit section's rules, a material's findings). */detail?:string};
 export type Signature={name:string;why:string};
 export type StoredBrandPack={id?:string;tenant_id?:string;campaign_id?:string;version:number;origin:'model'|'edit'|'copy';character:string;signatures:Signature[];catalogue:CatalogueEntry[];sheet:SheetRef[];source_sha256?:string;created_at?:string};
 export type PackMaterial={id:string;filename:string;relative_path?:string|null;mime:string;state?:string;included?:boolean;role:MaterialRole;
@@ -49,6 +50,8 @@ const KIND_ORDER:MaterialRole[]=['photo','screenshot','uikit','reference','brand
 const kindRank=(m:PackMaterial)=>{const i=KIND_ORDER.indexOf(m.role);return i<0?99:i;};
 /** The catalogue lists at most this many materials (the most telling first); the rest are not offered to agents. */
 export const CATALOGUE_MATERIAL_LIMIT=60;
+/** C3: the most text one catalogue entry gives when asked for (a kit's direction may give twice this). */
+export const DETAIL_MAX=3000;
 /** A short name a model can use: the file name in lower case, letters and digits joined by '-'. */
 const slug=(name:string)=>clean(name.replace(/\.[a-z0-9]{1,5}$/i,'')).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,32).replace(/-+$/,'')||'file';
 
@@ -63,13 +66,16 @@ const kitOf=(revision:unknown):Kit|null=>{let v=revision;if(typeof v==='string')
 export function materialCatalogue(revision:unknown,materials:PackMaterial[],findings:PackFinding[]):CatalogueEntry[]{
  const out:CatalogueEntry[]=[],kit=kitOf(revision);
  if(kit){
-  if(typeof kit.instructions==='string'&&kit.instructions.trim())out.push({name:'kit-direction',kind:'kit section',line:'the brand\'s direction in its own words',size:`~${tokensOf(kit.instructions)} tokens`});
-  if(typeof kit.boundaries==='string'&&kit.boundaries.trim())out.push({name:'kit-limits',kind:'kit section',line:'what agents may and may not change',size:`~${tokensOf(kit.boundaries)} tokens`});
+  if(typeof kit.instructions==='string'&&kit.instructions.trim())out.push({name:'kit-direction',kind:'kit section',line:'the brand\'s direction in its own words',size:`~${tokensOf(kit.instructions)} tokens`,detail:kit.instructions.trim().slice(0,DETAIL_MAX*2)});
+  if(typeof kit.boundaries==='string'&&kit.boundaries.trim())out.push({name:'kit-limits',kind:'kit section',line:'what agents may and may not change',size:`~${tokensOf(kit.boundaries)} tokens`,detail:kit.boundaries.trim().slice(0,DETAIL_MAX)});
   const rules=(Array.isArray(kit.rules)?kit.rules:[]) as {category?:unknown;key?:unknown;value?:unknown;decision?:unknown}[];
   const by=new Map<string,{keys:string[];text:string}>();
   for(const r of rules){if(typeof r?.category!=='string'||typeof r.key!=='string'||typeof r.value!=='string'||!r.value.trim()||(r.decision!==undefined&&r.decision!=='accepted'))continue;const e=by.get(r.category)??{keys:[],text:''};e.keys.push(r.key);e.text+=`${r.key}: ${r.value}\n`;by.set(r.category,e);}
-  for(const [category,e] of [...by.entries()].sort(([a],[b])=>a.localeCompare(b))){const keys=[...new Set(e.keys)].sort();out.push({name:`kit-${slug(category)}`,kind:'kit section',line:`${keys.length} accepted rule${keys.length===1?'':'s'}: ${clip(keys.slice(0,5).join(', '),70)}${keys.length>5?', …':''}`,size:`~${tokensOf(e.text)} tokens`});}
+  for(const [category,e] of [...by.entries()].sort(([a],[b])=>a.localeCompare(b))){const keys=[...new Set(e.keys)].sort();out.push({name:`kit-${slug(category)}`,kind:'kit section',line:`${keys.length} accepted rule${keys.length===1?'':'s'}: ${clip(keys.slice(0,5).join(', '),70)}${keys.length>5?', …':''}`,size:`~${tokensOf(e.text)} tokens`,detail:e.text.trim().slice(0,DETAIL_MAX)});}
  }
+ // C3: every kit section is an entry; interface components are read from the findings (the kit keeps no rule for them).
+ const components=[...new Set(findings.filter(f=>f.field==='components'&&f.decision!=='reject').map(f=>clean(f.edited_value??f.value)).filter(Boolean))].sort();
+ if(components.length)out.push({name:'kit-components',kind:'kit section',line:`${components.length} interface component${components.length===1?'':'s'} named in the brand's files`,size:`~${tokensOf(components.join('\n'))} tokens`,detail:components.map(c=>`- ${clip(c,300)}`).join('\n').slice(0,DETAIL_MAX)});
  const used=new Set(out.map(e=>e.name)),marked=new Set(markedMaterials(materials,findings).map(m=>m.id));
  const live=findings.filter(f=>f.decision!=='reject');
  // Marked first (by kind); the others take turns by kind, so a large brand keeps a varied few of each.
@@ -83,7 +89,8 @@ export function materialCatalogue(revision:unknown,materials:PackMaterial[],find
   const images=(m.extraction?.images??[]).filter(i=>i&&typeof i.objectKey==='string'&&/^[a-f0-9]{64}$/.test(i.sha256)).sort((a,b)=>a.page-b.page);
   const first=images[0],picture=first&&!NOT_PICTURES.has(m.role)?{objectKey:first.objectKey,sha256:first.sha256,page:first.page,width:first.width,height:first.height}:undefined;
   const size=picture?`picture ${picture.width}×${picture.height}${images.length>1?`, ${images.length} pages`:''}`:m.role==='font'?`font file${m.extraction?.metadata?.weight?` ${String(m.extraction.metadata.weight)}`:''}`:images.length?`${images.length} pages`:'document';
-  out.push({name,kind:`${KIND[m.role]??'file'}${marked.has(m.id)?' (Use this)':''}`,line:clip(said||family||text||m.filename,90),size,materialId:m.id,...(picture?{picture}:{})});
+  const detail=[...new Set([...own.filter(f=>f.decision==='keep'),...own.filter(f=>f.decision!=='keep')].map(f=>`${f.field}: ${clip(f.edited_value??f.value,300)}`).filter(l=>!/<svg\b|data:/i.test(l)))].join('\n').slice(0,DETAIL_MAX)||(family?`font family ${family}${m.extraction?.metadata?.weight?`, weight ${String(m.extraction.metadata.weight)}`:''}`:'');
+  out.push({name,kind:`${KIND[m.role]??'file'}${marked.has(m.id)?' (Use this)':''}`,line:clip(said||family||text||m.filename,90),size,materialId:m.id,...(picture?{picture}:{}),...(detail?{detail}:{})});
  }
  return out;
 }

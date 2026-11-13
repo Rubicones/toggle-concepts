@@ -12,7 +12,10 @@ process.stdin.on('end',()=>{
  const texts=content.filter(c=>c.type==='text').map(c=>c.text),images=content.filter(c=>c.type==='image');
  const out=e=>process.stdout.write(JSON.stringify(e)+'\n');
  const system=(()=>{const i=args.indexOf('--system-prompt-file');return i>=0?readFileSync(args[i+1],'utf8'):'';})();
- if(process.env.FAKE_CLAUDE_RECORD)writeFileSync(process.env.FAKE_CLAUDE_RECORD,JSON.stringify({args,system,content,cwd:process.cwd(),env:Object.keys(process.env).sort(),maxOutput:process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS??null}));
+ const resumedCall=args.includes('--resume');
+ // C3: a resumed call may be recorded apart (FAKE_CLAUDE_RECORD_RESUMED), so a two-call request keeps both records.
+ const recordTo=resumedCall&&process.env.FAKE_CLAUDE_RECORD_RESUMED?process.env.FAKE_CLAUDE_RECORD_RESUMED:process.env.FAKE_CLAUDE_RECORD;
+ if(recordTo)writeFileSync(recordTo,JSON.stringify({args,system,content,cwd:process.cwd(),env:Object.keys(process.env).sort(),maxOutput:process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS??null}));
  const leak=scenario==='leak',schema=args.includes('--json-schema');
  const resumeAt=args.indexOf('--resume'),resumed=resumeAt>=0?args[resumeAt+1]:null,sessionId=resumed?(args.includes('--fork-session')?`${resumed}>f${Date.now()%100000}${Math.floor(Math.random()*1000)}`:resumed):(process.env.FAKE_CLAUDE_SESSION??'s1');
  if(scenario==='nosession'&&resumed){out({type:'result',subtype:'error_during_execution',is_error:true,result:`No conversation found with session ID: ${resumed}`,session_id:sessionId});process.exit(1);}
@@ -37,6 +40,10 @@ process.stdin.on('end',()=>{
   out({type:'assistant',message:{content:[{type:'tool_use',name:'StructuredOutput',input:{answer:'ok'}}]}});
   out({type:'result',subtype:'success',is_error:false,result:'A response was prepared.',...(scenario==='schema'?{structured_output:{answer:'ok'}}:{}),usage,num_turns:2,session_id:'s1',stop_reason:'tool_use'});return;
  }
+ // C3: a recorded structured answer (FAKE_CLAUDE_STRUCTURED), and another one for a resumed call of the same request.
+ if(scenario==='structured'){const v=JSON.parse(resumedCall&&process.env.FAKE_CLAUDE_STRUCTURED_RESUMED?process.env.FAKE_CLAUDE_STRUCTURED_RESUMED:process.env.FAKE_CLAUDE_STRUCTURED??'{}');
+  out({type:'assistant',message:{content:[{type:'tool_use',name:'StructuredOutput',input:v}]}});
+  out({type:'result',subtype:'success',is_error:false,result:'A response was prepared.',structured_output:v,usage,num_turns:2,session_id:sessionId,stop_reason:'tool_use',total_cost_usd:0.001});return;}
  // Terminal results the transport must map onto the OpenRouter failure codes.
  if(scenario==='maxtokens'||scenario==='refusal'||scenario==='empty'){const text=scenario==='empty'?'':'cut';out({type:'result',subtype:'success',is_error:false,result:text,usage,num_turns:1,session_id:'s1',stop_reason:scenario==='maxtokens'?'max_tokens':scenario==='refusal'?'refusal':'end_turn'});return;}
  // ok and echo: the answer describes what arrived, so tests can check the request reached the model intact.

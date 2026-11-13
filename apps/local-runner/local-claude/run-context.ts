@@ -12,6 +12,7 @@ import {latestBrandPack} from '../../../packages/brand/brand-pack-store';
 import {encodeCompactImages,encodePackImages,storedPicture,type PictureReader} from './pack-images';
 import {compactSheetFor,type CompactPage} from '../compact-sheet';
 import type {StoredBrandPack} from '../../../packages/brand/brand-pack-contents';
+import {DEFAULT_MATERIAL_BUDGET,type MaterialBudget} from '../../../packages/agents/materials';
 
 const dir=()=>join(toggleHome(),'local-claude','run-context');
 export const runContextPath=(runId:string)=>join(dir(),`${runId}.json`);
@@ -28,7 +29,7 @@ export async function freezeRunContext(runId:string,ctx:RunContext):Promise<RunC
 }
 
 /** The frozen context, or one built now from the approved brief and the accepted brand; null before A1. */
-export type ContextExtras={commonSkills:Skill[];roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>};
+export type ContextExtras={commonSkills:Skill[];roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>;/** C3: per-role material budgets from Models & agents */materialBudget?:Record<string,MaterialBudget>};
 export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()=>Promise<ContextExtras>=async()=>({commonSkills:[]}),deps:{read?:PictureReader;compact?:(pack:StoredBrandPack)=>Promise<CompactPage[]|null>}={}):Promise<RunContext|null>{
  const frozen=await readRunContext(runId);if(frozen)return frozen;
  const c1=await admin.from('studio_c1_checkpoints').select('brief_text').eq('run_id',runId).maybeSingle();
@@ -45,9 +46,12 @@ export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()
  if(stored){
   const read=deps.read??storedPicture,compact=await (deps.compact??(p=>compactSheetFor(admin,p)))(stored);
   const packImages=(compact?.length?await encodeCompactImages(compact,read):null)??await encodePackImages(stored,read);
-  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...await extras()}));
+  // C3: the catalogue's entries can be asked for by name, inside each role's budget (defaults without the setting).
+  const {materialBudget,...rest}=await extras();
+  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...rest,materials:{entries:stored.catalogue,budget:{...DEFAULT_MATERIAL_BUDGET,...materialBudget}}}));
  }
  // C2: contexts frozen from now on carry the brand pack instead of the raw revision; frozen ones keep theirs.
  const brandPack=brandPackText(brand.data.canonical_text);
- return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,...(brandPack?{brandPack}:{brandText:brand.data.canonical_text}),...await extras()}));
+ const {materialBudget:_unused,...rest}=await extras();void _unused;
+ return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,...(brandPack?{brandPack}:{brandText:brand.data.canonical_text}),...rest}));
 }

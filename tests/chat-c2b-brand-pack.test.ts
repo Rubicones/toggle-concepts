@@ -55,7 +55,7 @@ const photo=(i:number,role:PackMaterial['role']='photo'):PackMaterial=>{const b=
 
 test('C2b: the catalogue lists "Use this" first, then the most telling materials, compressed; one short deterministic line each', ()=>{
  const catalogue=materialCatalogue(revision,materials,findings);
- assert.deepEqual(catalogue.map(e=>e.name),['kit-direction','kit-limits','kit-color','kit-typography','desk-photo','app-screen','house-bold','unmarked-photo']);
+ assert.deepEqual(catalogue.map(e=>e.name),['kit-direction','kit-limits','kit-color','kit-typography','kit-components','desk-photo','app-screen','house-bold','unmarked-photo']);
  assert.ok(!catalogue.some(e=>/old-photo/.test(e.name)),'a material left out by the AD is never listed');
  const lines=catalogue.map(catalogueLine);
  assert.match(lines.find(l=>l.startsWith('- desk-photo'))!,/^- desk-photo · photo \(Use this\) · Daylight photographs, close crops · picture 1024×768$/);

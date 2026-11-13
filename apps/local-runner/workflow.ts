@@ -111,7 +111,7 @@ async function execute(claim:Claim){
   execution=await textExecutionFor(admin,"run",job.run_id);
   // C2 (second part): the brand character request writes the brand pack itself, so it never freezes the run context.
   const brandCharacter=!!(job.payload.snapshot as {brandCharacter?:unknown}).brandCharacter;
-  const shared=brandCharacter?undefined:sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,role:job.role,stage:stageOf(job.role),...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{})});
+  const shared=brandCharacter?undefined:sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,role:job.role,stage:stageOf(job.role),runId:job.run_id,...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{})});
   if(execution.mode!=="local_claude"&&!process.env.OPENROUTER_API_KEY)throw new Error("PROVIDER_NOT_CONFIGURED");
   const run=checked(await admin.from("studio_runs").select("id,config_snapshot").eq("id",job.run_id).eq("tenant_id",sharedTenant).single());
   if(!run)throw new Error("RUN_NOT_ACTIVE");

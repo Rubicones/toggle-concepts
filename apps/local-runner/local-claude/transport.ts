@@ -6,6 +6,9 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {cliArgs,childEnv,hasUnexpectedCliTools,runCli,streamUserMessage,type CliEvent,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
+import {SINGLE_ANSWER_ROLES,budgetLeft,materialBudgetFor,materialRequestInstruction,readWrapped,withMaterialRequest} from '../../../packages/agents/materials';
+import {fetchMaterials,materialsUsed} from './materials';
+import type {PictureReader} from './pack-images';
 import {createHash} from 'node:crypto';
 import {parseDataUrl,prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCliRequest,type ImageInput,type PreparedTextRequest,type CliTextRequest} from '../../../packages/agents/prepared-request';
 import {localModelFor,type LocalModelChoice} from '../../../packages/agents/local-models';
@@ -55,6 +58,8 @@ export type LocalTextDetails={
  stage?:StageId;
  /** The first try did not answer in time; this is the second. */
  retriedAfterTimeout?:boolean;
+ /** C3: the one round of materials a single-answer role asked for (names attached and refused with the reason). */
+ materials?:{asked:string[];attached:string[];refused:string[]};
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
 
@@ -62,6 +67,14 @@ export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalText
 export function withoutPackPictures(images:ImageInput[],ctx:RunContext|null){
  const sources=new Set((ctx?.images??[]).map(i=>i.source));if(!sources.size)return images;
  return images.filter(i=>{const d=parseDataUrl(i.url);return !d||!sources.has(createHash('sha256').update(Buffer.from(d.dataBase64,'base64')).digest('hex'));});
+}
+
+/** C3: two calls of one request (the material round and the answer) as one result: the answer, the summed usage. */
+export function mergeCalls(a:CliResult,b:CliResult):CliResult{
+ const add=(k:'input_tokens'|'output_tokens'|'cache_creation_input_tokens'|'cache_read_input_tokens')=>(a.usage?.[k]??0)+(b.usage?.[k]??0);
+ return {...b,usage:a.usage||b.usage?{input_tokens:add('input_tokens'),output_tokens:add('output_tokens'),cache_creation_input_tokens:add('cache_creation_input_tokens'),cache_read_input_tokens:add('cache_read_input_tokens')}:undefined,
+  internalAttempts:a.internalAttempts+b.internalAttempts,numTurns:(a.numTurns??0)+(b.numTurns??0),durationMs:a.durationMs+b.durationMs,events:[...a.events,...b.events],stderr:a.stderr+b.stderr,
+  ...(a.apiEquivalentUsd!==undefined||b.apiEquivalentUsd!==undefined?{apiEquivalentUsd:(a.apiEquivalentUsd??0)+(b.apiEquivalentUsd??0)}:{})};
 }
 
 const finishOf=(stop:string|null|undefined)=>stop==='end_turn'||stop==='stop_sequence'?'stop':stop==='max_tokens'?'length':stop==='refusal'?'content_filter':stop??null;
@@ -99,7 +112,9 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
  /** LC3/LC4: continue (or branch from) a stored conversation; null starts a new, persisted one. Shared runs only. */
  session?:()=>Promise<Plan>;
  /** LC5: the requesting role's skill key, so its own skills follow its instructions. LC6: the stage of a request. */
- role?:string;stage?:StageId}={}){
+ role?:string;stage?:StageId;
+ /** C3: the run whose material budget a single-answer role spends (its context must hold materials). */
+ runId?:string;readPicture?:PictureReader}={}){
  return async function cliText(model:string,prompt:string,cfg:TextSnapshot,images:ImageInput[]=[],requestTag?:string):Promise<LocalTextReceipt>{
   const refuse=(failure:string):LocalTextReceipt=>({provider:'claude-cli',outcome:'failed',cost:0,text:null,generation:null,usage:null,failure});
   // The same refusals as submitText, before anything is sent.
@@ -121,10 +136,17 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   const stage=ctx&&options.stage&&!prepared.reasoning.disabled?options.stage:undefined;if(stage)cli={...cli,effort:stageEffort(stage,ctx!.stageEffort)};
   const skillsUsed=ctx?[...ctx.holds.skills,...(options.role?ctx.roleSkills?.[options.role]??[]:[]).map(s=>s.id)]:[];
   // LC3/LC4: a shared run's conversations are persisted; a continuation sends only what the history does not hold yet.
-  const plan=ctx&&options.session?await options.session():null,fullShared=cli;
+  const plan=ctx&&options.session?await options.session():null;let fullShared=cli;
   let conversation:LocalTextDetails['conversation']|undefined=ctx&&options.session?{kind:plan?.condensed?'condensed':'new'}:undefined;
   if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode}),prepared,ctx,plan,options.role);if(stage)cli={...cli,effort:stageEffort(stage,ctx.stageEffort)};conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
-  const persist=!!conversation;let resume=plan&&!plan.condensed&&plan.resume?{resume:plan.resume,fork:plan.fork}:null;
+  // C3: a single-answer role in a run with materials may first ask for up to four catalogue entries (one round); its
+  // schema then has two branches, and the app answers in the same conversation with the role's own schema.
+  const original=cli.jsonSchema,budget=ctx?.materials&&options.role?materialBudgetFor(options.role,ctx.materials.budget):null;
+  const materialsOn=!!(ctx?.materials&&options.runId&&original&&budget&&budget.count>0&&(SINGLE_ANSWER_ROLES as readonly string[]).includes(options.role??''));
+  let left={count:0};
+  if(materialsOn){left=budgetLeft(options.role!,budget!,await materialsUsed(options.runId!));
+   const offer=(c:CliTextRequest):CliTextRequest=>({...c,jsonSchema:withMaterialRequest(original!),parts:[...c.parts,{type:'text',text:materialRequestInstruction(left)}]});cli=offer(cli);fullShared=offer(fullShared);}
+  const persist=!!conversation||materialsOn;let resume=plan&&!plan.condensed&&plan.resume?{resume:plan.resume,fork:plan.fork}:null;
   const inputParts=largestInputParts((sent as {campaignContext?:unknown}).campaignContext);
   const recordPath=options.record?await options.record(prepared):undefined;
   const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=setup.workDir??join(dir,'work');
@@ -150,8 +172,25 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    // An answer that did not arrive in time cost nothing on the subscription: ask once more before giving up.
    if(attempt===0&&(r.failure==='CLI_TIMEOUT'||r.failure==='CLI_STALLED')&&!options.signal?.aborted){timedOut=true;continue;}
    break;}
+   // C3: the answer, or one round of materials and then the answer in the same conversation.
+   let materials:LocalTextDetails['materials'];
+   if(materialsOn&&r.outcome==='succeeded'&&!leak){
+    const read=readWrapped(r.structured);
+    if(read&&'answer' in read)r={...r,structured:read.answer};
+    else if(read&&r.init?.sessionId){
+     const fetched=await fetchMaterials(ctx!,{runId:options.runId!,role:options.role!,requests:read.request,read:options.readPicture});
+     materials={asked:fetched.plan.map(p=>p.name),attached:fetched.plan.filter(p=>p.status==='attached').map(p=>p.name),refused:fetched.plan.filter(p=>p.status!=='attached').map(p=>`${p.name}: ${p.status}`)};
+     const parts:CliTextRequest['parts']=[{type:'text',text:`${fetched.text}\nNow answer: requestMaterials is closed.`},...fetched.images.flatMap(i=>[{type:'text' as const,text:i.label},{type:'image' as const,mediaType:'image/jpeg',dataBase64:i.url.split(',')[1]}])];
+     const argv=cliArgs({includePartialMessages:true,bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:{...setup.isolation,noSessionPersistence:false},resume:r.init.sessionId,forkSession:false,...(setup.turnLimit?{maxTurns:TURN_LIMIT.schema}:{}),jsonSchema:original!,...(cli.effort?{effort:cli.effort}:{})});
+     const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
+     const second=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cliOutputRoom(cli.maxOutputTokens,cli.effort))}),stdin:streamUserMessage(parts),timeoutMs:cliTimeoutMs(cfg),idleMs:CLI_SILENCE_MS,signal:stop.signal,
+      onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,true))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
+     options.signal?.removeEventListener('abort',relay);
+     r=mergeCalls(r,second);
+    }else if(r.structured!==undefined)r={...r,structured:undefined,text:''};
+   }
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
-   const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
+   const details:Omit<LocalTextDetails,'events'|'stderr'>={...(materials?{materials}:{}),transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
     internalAttempts:r.internalAttempts,...(()=>{const size=lastCallSize(r.events);return size!==undefined?{conversationSize:size}:{};})(),...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:ctx.images?.length??prepared.attachments.filter(a=>a.prefix).length,...(ctx.pack?{pack:ctx.pack}:{})}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};

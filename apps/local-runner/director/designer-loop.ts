@@ -34,12 +34,16 @@ export type DesignerTools={
  resumePictures?:(reported:string[])=>Promise<{id:string;settle:()=>Promise<PictureResult>}[]>;
  /** The live tools' finish: every ordered option implemented, typechecked and built. */
  finish:()=>Promise<{complete:true}|{complete:false;issue:string}>;
+ /** C3 (materialsVersion 1): materials on request. fetch plans a turn's request inside the run budget (and reports it
+  * on the timeline); load gives what is due for the next turn; left is the budget still open; references are the
+  * catalogue lines of the designer's own references (the pack's catalogue is in the run context). */
+ materials?:{fetch:(requests:{name:string;why:string}[],seen:string[])=>Promise<{lines:string[];attached:string[]}>;load:(names:string[])=>Promise<{text:string;images:{url:string;label:string}[]}>;left:()=>Promise<number>;references?:string[]};
  /** Point 3 (designerVersion 2): one critic request on the hero frame's render; undefined when the quote has no critic. */
  reviewHero?:(round:number,shots:{label:string;file:string}[],findings:{view:string;severity:string;detail:string}[])=>Promise<{accepted:boolean;notes:{recipient:string;priority:string;view:string;problem:string;fix:string}[]}|undefined>;
 };
 /** Point 3d: hero frame milestones for the timeline. */
 export type HeroEvent={kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'no-critic'|'review-failed';looked?:string};
-export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number};scenes:{sceneId:string;formats:{format:string;renders:number;revisionsLeft:number}[]}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];/** Point 4a: the designer's own notes, always sent. */notes?:string;/** Point 4b: set when the attached images are a render the designer must look at first. */lookFirst?:boolean;/** Point 3: the hero frame to settle first (designerVersion 2). */hero?:{sceneId:string;format:string;settled:boolean;reviewsLeft:number};lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
+export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number;/** C3 */materialsLeft?:number};/** C3: the designer's own references, by catalogue name. */references?:string[];/** C3: the text of the materials asked for last turn. */materials?:string;scenes:{sceneId:string;formats:{format:string;renders:number;revisionsLeft:number}[]}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];/** Point 4a: the designer's own notes, always sent. */notes?:string;/** Point 4b: set when the attached images are a render the designer must look at first. */lookFirst?:boolean;/** Point 3: the hero frame to settle first (designerVersion 2). */hero?:{sceneId:string;format:string;settled:boolean;reviewsLeft:number};lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
 
 /** The views the designer asked for: the reference copy in each requested format (default: the reference format),
  * plus the longest copy in the same formats so overflow shows up while the scene is designed. Screenshots only for
@@ -103,12 +107,17 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
   // C1: the short payload only when this turn really continues the designer's own conversation; a condensed, new or
   // restarted turn gets the full payload (every file, recent results, notes and the latest render).
   const short=args.conversation?(args.conversation.decide?await args.conversation.decide():args.conversation.continuing()):false;
-  try{text=await args.call({...(heroOn?{notes:state.notes??'',...(last?{lookFirst:true}:{})}:{}),turn:state.turn,budget:{turnsLeft:args.maxTurns-state.turn,picturesLeft:Math.max(0,args.maxPictures-state.pictures)},
+  // C3: materials asked for last turn arrive now; a conversation that starts over no longer holds earlier ones.
+  if(!short&&state.materialsSeen?.length)state.materialsSeen=[];
+  const due=tools.materials&&state.materialsDue?.length?await tools.materials.load(state.materialsDue):null;
+  const materialsLeft=tools.materials?await tools.materials.left():undefined;
+  try{text=await args.call({...(heroOn?{notes:state.notes??'',...(last?{lookFirst:true}:{})}:{}),turn:state.turn,budget:{turnsLeft:args.maxTurns-state.turn,picturesLeft:Math.max(0,args.maxPictures-state.pictures),...(materialsLeft!==undefined?{materialsLeft}:{})},
+   ...(tools.materials?.references?.length?{references:tools.materials.references}:{}),...(due?.text?{materials:due.text}:{}),
    scenes:scenes.map(sceneId=>({sceneId,formats:input.formats.map(f=>({format:f.id,renders:state.renders[renderKey(sceneId,f.id)]??0,revisionsLeft:Math.max(0,DESIGNER_REVISIONS_PER_SCENE+1-(state.renders[renderKey(sceneId,f.id)]??0))})).filter(f=>f.renders>0||f.format===referenceFormat)})),
    // LC4: in a continued conversation the history holds everything earlier: only new results and changed files go.
    ...(short?{toolResults:sinceLastTurn(state.transcript),currentFiles:changedFiles(files,state.filesSeen)}:{toolResults:state.transcript.slice(-12),currentFiles:files}),
    ...(state.hero?{hero:{sceneId:state.hero.sceneId,format:state.hero.format,settled:state.hero.state==='accepted',reviewsLeft:Math.max(0,(args.heroReviews??0)-state.hero.reviews)}}:{}),
-   ...(last?{lastRender:{sceneId:last.sceneId,views:last.views.map(v=>v.label),findings:last.findings.slice(0,30).map(f=>({view:f.view,severity:f.severity,detail:f.detail}))}}:{})},images);}
+   ...(last?{lastRender:{sceneId:last.sceneId,views:last.views.map(v=>v.label),findings:last.findings.slice(0,30).map(f=>({view:f.view,severity:f.severity,detail:f.detail}))}}:{})},[...images,...(due?.images??[])]);}
   catch(error){if(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'){state.turn++;await log({error:'Your answer was cut off. Return a smaller turn: fewer files, exact edits.'});continue;}
    // C1: the stored conversation is not on this computer: start over once with the full payload (same turn).
    if(error instanceof Error&&error.message==='CONVERSATION_MISSING'&&args.conversation?.lost&&!missingRetried){missingRetried=true;args.conversation.lost();continue;}
@@ -124,6 +133,8 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
   // LC4: a readable turn becomes part of the direction's conversation; an unreadable one is left out of it.
   await args.conversation?.accept();
   if(args.conversation)state.filesSeen=fileHashes(files);
+  // C3: what arrived with this turn is in the conversation now.
+  if(due&&state.materialsDue?.length){state.materialsSeen=[...new Set([...(state.materialsSeen??[]),...state.materialsDue])];state.materialsDue=[];await args.save(state);}
   // Point 4: notes are working memory; a turn after a render must first say what it saw (look, name, then fix).
   if(heroOn&&turn.notes){state.notes=turn.notes;await args.save(state);}
   // Refused once per render: a second turn without seen is applied, so a model that keeps omitting it cannot burn
@@ -150,6 +161,11 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
     // Version 3: the result names the resource id the picture will have, so the frame binds it without guessing.
     const issued=usesEngineKit(input)?input.resourceIds[state.pictures-1]:undefined;
     results.push({picture:'requested',...(issued?{id:issued,read:`resources['${issued}']`}:{}),scene:picture.scene,purpose:picture.purpose.slice(0,120)});
+   }
+   // C3: materials it named arrive with the next turn (inside the run budget; never twice in one conversation).
+   if(turn.materials?.length){
+    if(!tools.materials)results.push({materials:['Materials on request are not available in this draft.']});
+    else{const asked=await tools.materials.fetch(turn.materials,[...(state.materialsSeen??[]),...(state.materialsDue??[])]);state.materialsDue=[...new Set([...(state.materialsDue??[]),...asked.attached])];await args.save(state);results.push({materials:asked.lines});}
    }
    // 3. Render: only a building source; the first render designs the scene, later ones are revisions.
    if(turn.render&&built.ok){

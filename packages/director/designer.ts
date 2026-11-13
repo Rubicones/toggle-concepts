@@ -14,6 +14,9 @@ export const heroFirst=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.
 /** Engine rebuild (designerVersion 3): the draft is built on the neutral engine kit ('./kit'), and one render may show
  * several scenes. Earlier blocks run exactly as before. */
 export const usesEngineKit=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.designerVersion)>=3;
+/** Chat-shaped plan C3 (brief.materialsVersion 1, engine-kit blocks of shared Local runs): the designer may name up to
+ * four catalogue entries per turn; they arrive with the next turn. Earlier blocks keep their exact requests. */
+export const usesMaterials=(input:Pick<DirectionInput,'brief'>)=>usesEngineKit(input)&&Number(input.brief.materialsVersion)===1;
 /** The scene that proves the promise: the first with a proof from the script (point 1d), else the first scene. */
 export function heroScene(input:Pick<DirectionInput,'storyboard'>){return (input.storyboard.find(s=>s.proof)??input.storyboard[0])?.id??'';}
 
@@ -37,7 +40,7 @@ export const designerTurnSchema=z.strictObject({
   scenes:z.array(z.strictObject({sceneId:id,moment:text(160),motion:text(240).optional(),sound:text(200).optional()})).min(1).max(40),
  }).optional(),
 });
-export type DesignerTurn=Omit<z.infer<typeof designerTurnSchema>,'render'>&{render?:{sceneId:string;formats:string[];more?:string[]};settleHero?:boolean;notes?:string;seen?:z.infer<typeof seenSchema>};
+export type DesignerTurn=Omit<z.infer<typeof designerTurnSchema>,'render'>&{render?:{sceneId:string;formats:string[];more?:string[]};settleHero?:boolean;notes?:string;seen?:z.infer<typeof seenSchema>;/** C3 */materials?:{name:string;why:string}[]};
 export type DesignerPicture=z.infer<typeof designerPictureSchema>;
 
 /** The provider sees the portable core; the full zod contract checks every answer afterwards. */
@@ -54,14 +57,17 @@ export const designerTurnResponseV2={name:'designer_turn_v2',schema:z.toJSONSche
 /** Version 3 turns (engine rebuild): one render may show up to three more scenes in the same formats. */
 export const designerTurnSchemaV3=designerTurnSchemaV2.extend({render:z.strictObject({sceneId:id,formats:z.array(id).max(8).default([]),more:z.array(id).max(3).default([])}).optional()});
 export const designerTurnResponseV3={name:'designer_turn_v3',schema:z.toJSONSchema(designerTurnSchemaV3,{io:'input'}) as Record<string,unknown>};
-export const designerTurnResponseFor=(input:Pick<DirectionInput,'brief'>)=>usesEngineKit(input)?designerTurnResponseV3:heroFirst(input)?designerTurnResponseV2:designerTurnResponse;
+/** C3: the designer names the materials it wants to see next turn (catalogue names, up to four, each with why). */
+export const designerTurnSchemaV3M=designerTurnSchemaV3.extend({materials:z.array(z.strictObject({name:z.string().min(1).max(80),why:z.string().min(1).max(200)})).max(4).default([])});
+export const designerTurnResponseV3M={name:'designer_turn_v3_materials',schema:z.toJSONSchema(designerTurnSchemaV3M,{io:'input'}) as Record<string,unknown>};
+export const designerTurnResponseFor=(input:Pick<DirectionInput,'brief'>)=>usesMaterials(input)?designerTurnResponseV3M:usesEngineKit(input)?designerTurnResponseV3:heroFirst(input)?designerTurnResponseV2:designerTurnResponse;
 
 /**
  * Reads one answer. Ids must be issued (scenes, formats, reference assets); a picture without a known scene or a
  * finish that omits a scene is refused with a sentence the designer can act on next turn. Sound needs an audio file.
  */
 export function readDesignerTurn(value:unknown,input:Pick<DirectionInput,'storyboard'|'formats'|'assets'>&Partial<Pick<DirectionInput,'brief'>>):DesignerTurn{
- const turn:DesignerTurn=(input.brief&&usesEngineKit({brief:input.brief})?designerTurnSchemaV3:input.brief&&heroFirst({brief:input.brief})?designerTurnSchemaV2:designerTurnSchema).parse(value),scenes=new Set(input.storyboard.map(s=>s.id)),formats=new Set(input.formats.map(f=>f.id)),assets=new Set(input.assets.map(a=>a.id));
+ const turn:DesignerTurn=(input.brief&&usesMaterials({brief:input.brief})?designerTurnSchemaV3M:input.brief&&usesEngineKit({brief:input.brief})?designerTurnSchemaV3:input.brief&&heroFirst({brief:input.brief})?designerTurnSchemaV2:designerTurnSchema).parse(value),scenes=new Set(input.storyboard.map(s=>s.id)),formats=new Set(input.formats.map(f=>f.id)),assets=new Set(input.assets.map(a=>a.id));
  const audio=input.assets.some(a=>a.mime.startsWith('audio/'));
  if(!scenes.has(turn.focus.sceneId))throw new Error(`DESIGNER_UNKNOWN_SCENE: focus.sceneId must be one of ${[...scenes].join(', ')}.`);
  for(const p of turn.pictures){
@@ -75,7 +81,7 @@ export function readDesignerTurn(value:unknown,input:Pick<DirectionInput,'storyb
   if(missing.length||new Set(named).size!==named.length||named.some(s=>!scenes.has(s)))throw new Error(`DESIGNER_FINISH_SCENES: finish names every scene exactly once (${[...scenes].join(', ')}).`);
   if(!audio)for(const s of turn.finish.scenes)delete s.sound;
  }
- if(!turn.files.length&&!turn.edits.length&&!turn.pictures.length&&!turn.render&&!turn.finish&&!turn.settleHero&&!turn.notes)throw new Error('DESIGNER_EMPTY_TURN: change the code, request a picture, ask for a render or finish.');
+ if(!turn.files.length&&!turn.edits.length&&!turn.pictures.length&&!turn.render&&!turn.finish&&!turn.settleHero&&!turn.notes&&!turn.materials?.length)throw new Error('DESIGNER_EMPTY_TURN: change the code, request a picture, ask for a render or finish.');
  return turn;
 }
 
@@ -108,6 +114,7 @@ export function designerTurnSummary(results:unknown[]):string[]{
   else if(typeof r.render==='string'&&typeof r.views==='number'){const hard=Number(r.hard??0);lines.push(`Rendered ${r.views} view${r.views===1?'':'s'}: ${hard?`${hard} objective issue${hard===1?'':'s'} to fix`:'no objective issues'}.`);}
   else if(r.render==='refused')lines.push('No more revisions for this scene; the designer moves on.');
   else if(r.finish==='complete')lines.push('The draft is finished.');else if(r.finish==='refused')lines.push('Not finished yet: some options still need work.');
+  else if(Array.isArray(r.materials))lines.push(...(r.materials as string[]).map(String));
   else if(typeof r.error==='string')lines.push('This step needs another attempt.');
  }
  if(results.some(r=>(r as {refused?:string})?.refused==='seen'))lines.push('Not applied: the designer must first say what it saw in the render.');
@@ -120,6 +127,8 @@ export function designerTurnSummary(results:unknown[]):string[]{
 export type DesignerLoopState={
  /** LC4 (shared Local runs): the direction's stored conversation after its last accepted turn, and the files it has seen. */
  session?:{role:string;sessionId:string;tokens:number};filesSeen?:Record<string,string>;
+ /** C3: materials fetched for the next turn (names), and those already in the current conversation. */
+ materialsDue?:string[];materialsSeen?:string[];
  /** Point 4a: the designer's notes, sent at the top of every request (outside the 12-result window); a restart keeps them. */
  notes?:string;
  /** point 4b: the turn after this render was already refused once for a missing seen */

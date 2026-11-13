@@ -18,7 +18,9 @@ import {staticCoderInstructionsFor,staticFilesSchema,staticToolsSchema} from '..
 import {slimDirectorInput} from '../../../packages/director/inputs';
 import {directorEvents} from './events';
 import {publishDirectorReference,processDirectorDelivery,restoreIteration,type SealedIteration} from './delivery';
-import {materialize,visionImages} from './assets';
+import {materialize,visionImages,referenceEntries} from './assets';
+import {fetchMaterials,loadMaterials,materialsUsed} from '../local-claude/materials';
+import {budgetLeft,materialBudgetFor} from '../../../packages/agents/materials';
 import {prepareMaterialMemory} from './material-memory';
 import {critiqueIteration} from './critic';
 import {directorCriticInstructions,directorCriticSchema,staticCriticInstructions} from '../../../packages/agents/prompts/director-critic-v1';
@@ -65,7 +67,7 @@ import {liveCriticInstructionsFor,liveCriticSchema} from '../../../packages/agen
 import {reviewImages} from './review-sheet';
 import {prepareImageMethods,derivedReferences,finishImageMethod} from './image-methods';
 import {storeCutout,emitCutout,pictureRoleDetail} from './cutout';
-import {usesEngineKit,usesDesigner,heroFirst,designerActivityLine,designerTurnSummary,designerTurnResponseFor,seenLines} from '../../../packages/director/designer';
+import {usesEngineKit,usesMaterials,usesDesigner,heroFirst,designerActivityLine,designerTurnSummary,designerTurnResponseFor,seenLines} from '../../../packages/director/designer';
 import {designerContext} from '../../../packages/director/designer-context';
 import {designerInstructionsFor} from '../../../packages/agents/prompts/designer-v1';
 import {readLiveCritique} from '../../../packages/director/live-review';
@@ -165,7 +167,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    // The AD sees that an answer is being written and since when (a long answer streams for minutes).
    state.activeCall={role,startedAt:Date.now()};note(`${role}: request sent${JSON.stringify(identity).includes('"retry"')?' (retry)':''}.`);await save();
    // LC0: a Local answer's usage becomes a request line in the timeline ("in 12k · cached 140k · out 3k").
-   let lastUsage:unknown=null;const sharedCtx=sharedContextFor(admin,execution,input.runId),baseTransport=transportFor(execution,local,{shared:sharedCtx,role:skillRoleOf(role),stage:stageOf(role,{revising:role==='designer'&&!!(state.designer as DesignerLoopState|undefined)?.lastRender&&(state.designer as DesignerLoopState|undefined)?.hero?.state==='accepted',repair:role==='assembler'&&!!(identity as {review?:unknown}|null)?.review}),...(sharedCtx&&role==='designer'?{session:designerConversation.plan}:{})}),transport:typeof baseTransport=execution.mode==='local_claude'?async(...a:Parameters<typeof baseTransport>)=>{const r=await baseTransport(...a);lastUsage=r.usage;if(role==='designer')designerConversation.answered(r.usage);return r;}:baseTransport;
+   let lastUsage:unknown=null;const sharedCtx=sharedContextFor(admin,execution,input.runId),baseTransport=transportFor(execution,local,{shared:sharedCtx,role:skillRoleOf(role),...(role==='critic'&&usesMaterials(input)?{runId:input.runId}:{}),stage:stageOf(role,{revising:role==='designer'&&!!(state.designer as DesignerLoopState|undefined)?.lastRender&&(state.designer as DesignerLoopState|undefined)?.hero?.state==='accepted',repair:role==='assembler'&&!!(identity as {review?:unknown}|null)?.review}),...(sharedCtx&&role==='designer'?{session:designerConversation.plan}:{})}),transport:typeof baseTransport=execution.mode==='local_claude'?async(...a:Parameters<typeof baseTransport>)=>{const r=await baseTransport(...a);lastUsage=r.usage;if(role==='designer')designerConversation.answered(r.usage);return r;}:baseTransport;
    try{const answer=await paidText({identity:localIdentity?{call:id,...localIdentity}:id,transport,localText:execution.mode==='local_claude',role:modelRole,model:prior?.model_id??config.modelId,prompt:prior?.prompt??prompt,snapshot:cfg,allowanceMicroUsd:admitted.remainingMicroUsd,images,ledger:directorLedger(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,device,token:work.lease_token})});note(`${role}: answer received (${answer.text.length.toLocaleString('en-US')} characters, $${(answer.costMicroUsd/1e6).toFixed(3)}${answer.reused?', saved earlier':''}).`);
     const used=lastUsage?localCallUsage({role,usage:lastUsage}):null;if(used)await events.emit(`local-usage:${id}`,{stepId:`local-usage:${id}`,kind:'request',status:'done',model:used.model,costMicroUsd:0,message:`${role} (Claude subscription): ${usageLine(used)}`,detail:{localUsage:used}}).catch(()=>{});
     return answer;}
@@ -316,7 +318,18 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      if(await prepareImageMethods(folder,input,{...design,resources:[resource]},state.catalog as PricedResource[],async message=>{await events.emit(`picture:method:${resource.id}`,{stepId:`picture:method:${resource.id}`,kind:'picture',status:'done',costMicroUsd:0,message});}))await save();
      const made=await buildResourceCatalog({folder,input,design:{...design,resources:[resource]},...pictureArgs(controls)});await writeResources(folder,input,state.catalog??[]);await save();return made[0];};
     const tools=designerTools({folder,input,design,preview,deadline:()=>Math.max(Date.now()+60000,started()+allowance.timeMs),facts:()=>Object.fromEntries((state.catalog??[]).filter(c=>c.image).map(c=>[c.url,c.image])),save:()=>save(),buy});
-    const prefix=await designerPrefixImages(folder,input,brandSheetImages,visionImages);
+    // C3 (materialsVersion 1, shared Local runs with a stored pack): materials on request. With a compact brand sheet in
+    // the run context, the designer's own brand references and logos leave its prefix and become entries it asks for.
+    const runContext=usesMaterials(input)&&execution.mode==='local_claude'&&execution.context_mode==='shared'?await sharedContextFor(admin,execution,input.runId)?.()??null:null;
+    const compactSheet=!!runContext?.images?.some(i=>i.kind==='compact'),references=compactSheet?referenceEntries(folder,input):[];
+    const prefix=await designerPrefixImages(folder,input,brandSheetImages,(f,i)=>visionImages(f,i,{brandReferences:!compactSheet}));
+    if(runContext?.materials){const ctx=runContext,budget=materialBudgetFor('designer',ctx.materials!.budget);tools.materials={references:references.map(e=>`- ${e.name} · ${e.kind} · ${e.line}`),
+     fetch:async(requests,seen)=>{const f=await fetchMaterials(ctx,{runId:input.runId,role:'designer',requests,extra:references,seen});const attached=f.plan.filter(p=>p.status==='attached').map(p=>p.name);
+      // The timeline: what the designer looked at, with the first picture as its thumbnail.
+      let thumb:string|undefined;if(f.images[0]){await mkdir(resolve(folder,'materials'),{recursive:true});thumb=resolve(folder,'materials',`${f.images[0].name.replace(/[^a-z0-9-]/gi,'')}.jpg`);await writeFile(thumb,f.images[0].bytes);}
+      if(attached.length)await events.emit(`materials:${state.iteration??1}:${loop.turn}`,{stepId:`materials:${state.iteration??1}:${loop.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:`The designer looked at: ${attached.join(', ')}.`,detail:{materials:attached,refused:f.plan.filter(p=>p.status!=='attached').map(p=>`${p.name}: ${p.status}`)}},thumb);
+      return {attached,lines:f.plan.map(p=>p.status==='attached'?`Asked to see ${p.name}; it arrives with the next turn.`:`${p.name}: ${p.status}.`)};},
+     load:names=>loadMaterials(ctx,names,references),left:async()=>budgetLeft('designer',budget,await materialsUsed(input.runId)).count};}
     // Point 3: the hero frame's reviews use the critic requests the quote added for them (estimate.heroReviews).
     const heroCritic=heroFirst(input)&&!!snapshot.models.critic?.vision?Math.min(estimate.heroReviews??0,estimate.roles.critic.requests):0;
     tools.reviewHero=heroCritic?async(round,shots,measured)=>{await controls();const hero=input.storyboard.find(s=>s.id===loop.hero?.sceneId);
