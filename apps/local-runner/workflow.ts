@@ -41,6 +41,7 @@ import {modelCatalog} from "../../packages/agents/catalog";
 import type {TextSnapshot} from "../../packages/agents/text-provider";
 import {roleReasoning,usesRoleEffort} from "../../packages/agents/effort";
 import {planningPlan} from "../../packages/agents/local-session";
+import {usesPlanningChat,VISUAL_CONCEPT_TASK,sheetMaterials,sheetOnRequestLine} from "../../packages/agents/planning-chat";
 import {LOCAL_TEXT_RESERVATION_MICRO_USD} from "../../packages/agents/local-usage";
 import {stageOf} from "../../packages/agents/stage-effort";
 import {loadLocalRuntime,textExecutionFor,transportFor,sharedContextFor,planningPoints,subscriptionWaitUntil,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime,type TextExecution} from "./local-claude/runtime";
@@ -111,7 +112,9 @@ async function execute(claim:Claim){
   execution=await textExecutionFor(admin,"run",job.run_id);
   // C2 (second part): the brand character request writes the brand pack itself, so it never freezes the run context.
   const brandCharacter=!!(job.payload.snapshot as {brandCharacter?:unknown}).brandCharacter;
-  const shared=brandCharacter?undefined:sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,role:job.role,stage:stageOf(job.role),runId:job.run_id,...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{})});
+  // C9: visual direction may ask for the full brand sheet's pages by name (planning-chat contexts; the transport decides).
+  const sheetPages=job.role==='visual-direction'?sheetMaterials((job.payload.snapshot as {brandSheetImages?:unknown}).brandSheetImages):[];
+  const shared=brandCharacter?undefined:sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,role:job.role,stage:stageOf(job.role),runId:job.run_id,...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{}),...(sheetPages.length?{materials:sheetPages}:{})});
   if(execution.mode!=="local_claude"&&!process.env.OPENROUTER_API_KEY)throw new Error("PROVIDER_NOT_CONFIGURED");
   const run=checked(await admin.from("studio_runs").select("id,config_snapshot").eq("id",job.run_id).eq("tenant_id",sharedTenant).single());
   if(!run)throw new Error("RUN_NOT_ACTIVE");
@@ -148,12 +151,17 @@ async function execute(claim:Claim){
   }
   // Treatment sequence: the three visual treatments are written one per request (packages/contracts/treatment-sequence.ts).
   let treatmentSequence=job.role==='visual-direction'&&claim.round.kind==='draft'&&!creative&&!!snapshot.scenarioSelection&&usesTreatmentSequence(snapshot.instructions);
-  const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence}):null;
+  // C9: in run contexts frozen with the planning chat, visual direction writes its concept in prose first.
+  // A request quoted before it ran (a reserved step) keeps exactly what was quoted.
+  const concept=envelope&&job.role==='visual-direction'&&reserved?.status!=='reserved'&&!!shared&&usesPlanningChat(await shared().catch(()=>null),job.role);
+  const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence,...(concept?{concept:true}:{})}):null;
   if(schema&&planningEnvelopeSchema({id:modelId,supportedParameters:model.supportedParameters},schema)){
    snapshot.responseSchema=modelId==='google/gemini-2.5-flash'?schema:{name:schema.name,schema:typeArraysAsAnyOf(providerJsonSchema(schema.schema)) as Record<string,unknown>};snapshot.outputFormat='json_schema';
   }
   let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence})):'';
   if(envelope)transportTask=envelopeRoleInstruction(job.role)+(transportTask?'\n'+transportTask:'');
+  // The compact sheet is in the run context; the full sheet's pages are asked for by name instead of always sent.
+  if(concept)transportTask+=`\n${VISUAL_CONCEPT_TASK}`+(sheetPages.length?`\n${sheetOnRequestLine(sheetPages)}`:'');
   // Guided planning contexts are built in SQL without the feeling brief; it travels with the task text, because the
   // frozen campaignContext is compared byte for byte at admission (studio_begin_workflow) and must stay unchanged.
   if(claim.round.kind==='draft'&&!creative&&(CREATIVE_FOCUS_ROLES as readonly string[]).includes(job.role)){
@@ -204,7 +212,7 @@ async function execute(claim:Claim){
   // A new Local request reserves the minimum (see LOCAL_TEXT_RESERVATION_MICRO_USD); an admitted one keeps its own.
   if(execution.mode==='local_claude'&&!initial)reservation=LOCAL_TEXT_RESERVATION_MICRO_USD;
   protocolSchema=snapshot.responseSchema?.name??null;
-  const vision=creative?await loadCreativeVision(creative.stage,creative.input,job.campaign_id,upstream):[...await loadBrandVision(snapshot as unknown as Record<string,unknown>,job.campaign_id),...await loadBrandSheetVision(snapshot as unknown as Record<string,unknown>),...await loadBrandCharacterVision(snapshot as unknown as Record<string,unknown>,job.campaign_id)];
+  const vision=creative?await loadCreativeVision(creative.stage,creative.input,job.campaign_id,upstream):[...await loadBrandVision(snapshot as unknown as Record<string,unknown>,job.campaign_id),...(concept?[]:await loadBrandSheetVision(snapshot as unknown as Record<string,unknown>)),...await loadBrandCharacterVision(snapshot as unknown as Record<string,unknown>,job.campaign_id)];
   if(stopping)throw new Error("LOCAL_PROCESS_STOPPING");
   const submittedStep=await rpc("studio_begin_workflow",{target_job:job.id,token:job.lease_token,device,snapshot,reservation});
   if(brandCharacter)characterStep=submittedStep.id;

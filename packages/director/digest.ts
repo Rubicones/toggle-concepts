@@ -15,7 +15,10 @@ export const label=(key:string)=>key.replace(/([a-z])([A-Z])/g,'$1 $2').replace(
 const clean=(v:string)=>v.replace(/\s+/g,' ').trim();
 
 /** Any structured value as labelled plain text, deterministic, within `max` characters. */
-export function plainText(value:unknown,max=DIGEST_MAX_CHARS,stringMax=400):string{
+/** C9: a planning stage keeps the short ids the next stage must answer with ("concept-2", "territory-1", "scene-3"):
+ * a key that names one id is kept; id-like values (uuids, hashes) are still left out. */
+const ONE_ID=/^(?:id|(?!step|job|request|checkpoint|run|campaign|revision)[a-z]+Id)$/;
+export function plainText(value:unknown,max=DIGEST_MAX_CHARS,stringMax=400,options:{keepIds?:boolean}={}):string{
  const lines:string[]=[];let size=0,full=false;
  const push=(line:string)=>{if(full)return;if(size+line.length+1>max){lines.push('… (more in the full output, available by name)');full=true;return;}lines.push(line);size+=line.length+1;};
  const scalar=(v:unknown):string|undefined=>{if(typeof v==='string'){const t=clean(v);return !t||ID_LIKE.test(t)?undefined:t.length>stringMax?`${t.slice(0,stringMax-1)}…`:t;}if(typeof v==='number'||typeof v==='boolean')return String(v);return undefined;};
@@ -26,7 +29,7 @@ export function plainText(value:unknown,max=DIGEST_MAX_CHARS,stringMax=400):stri
    if(v.every(x=>x===null||typeof x!=='object')){const list=v.map(scalar).filter((x):x is string=>!!x);if(list.length)push(`${pad}${name?`${name}: `:''}${list.join(' · ')}`);return;}
    if(name&&v.length)push(`${pad}${name}:`);v.forEach((item,i)=>{if(item&&typeof item==='object'&&!Array.isArray(item))push(`${pad}  ${i+1}.`);visit(item,depth+1);});return;}
   if(v&&typeof v==='object'){
-   const entries=Object.entries(v as Record<string,unknown>).filter(([k,x])=>!SKIP.test(k)&&x!=null&&x!==''&&!(Array.isArray(x)&&!x.length));
+   const entries=Object.entries(v as Record<string,unknown>).filter(([k,x])=>(!SKIP.test(k)||!!options.keepIds&&ONE_ID.test(k))&&x!=null&&x!==''&&!(Array.isArray(x)&&!x.length));
    if(name&&entries.length)push(`${pad}${name}:`);for(const [k,x] of entries)visit(x,depth+1,k);}
  };
  visit(value,0);return lines.join('\n');

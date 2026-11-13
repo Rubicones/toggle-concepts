@@ -44,6 +44,10 @@ process.stdin.on('end',()=>{
  if(scenario==='structured'){const v=JSON.parse(resumedCall&&process.env.FAKE_CLAUDE_STRUCTURED_RESUMED?process.env.FAKE_CLAUDE_STRUCTURED_RESUMED:process.env.FAKE_CLAUDE_STRUCTURED??'{}');
   out({type:'assistant',message:{content:[{type:'tool_use',name:'StructuredOutput',input:v}]}});
   out({type:'result',subtype:'success',is_error:false,result:'A response was prepared.',structured_output:v,usage,num_turns:2,session_id:sessionId,stop_reason:'tool_use',total_cost_usd:0.001});return;}
+ // C7 follow-up: a text answer (FAKE_CLAUDE_ANSWER), and another one for a resumed call (FAKE_CLAUDE_ANSWER_RESUMED).
+ if(scenario==='text'){const text=resumedCall&&process.env.FAKE_CLAUDE_ANSWER_RESUMED!==undefined?process.env.FAKE_CLAUDE_ANSWER_RESUMED:process.env.FAKE_CLAUDE_ANSWER??'';
+  out({type:'assistant',message:{content:[{type:'text',text}],usage}});
+  out({type:'result',subtype:'success',is_error:false,result:text,usage,num_turns:1,session_id:sessionId,stop_reason:'end_turn',total_cost_usd:0.001});return;}
  // Terminal results the transport must map onto the OpenRouter failure codes.
  if(scenario==='maxtokens'||scenario==='refusal'||scenario==='empty'){const text=scenario==='empty'?'':'cut';out({type:'result',subtype:'success',is_error:false,result:text,usage,num_turns:1,session_id:'s1',stop_reason:scenario==='maxtokens'?'max_tokens':scenario==='refusal'?'refusal':'end_turn'});return;}
  // ok and echo: the answer describes what arrived, so tests can check the request reached the model intact.

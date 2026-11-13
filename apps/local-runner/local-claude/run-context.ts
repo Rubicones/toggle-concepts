@@ -47,8 +47,10 @@ export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()
   const read=deps.read??storedPicture,compact=await (deps.compact??(p=>compactSheetFor(admin,p)))(stored);
   const packImages=(compact?.length?await encodeCompactImages(compact,read):null)??await encodePackImages(stored,read);
   // C3: the catalogue's entries can be asked for by name, inside each role's budget (defaults without the setting).
+  // C9: contexts frozen from now on let the planning chain read the earlier stages in short; C7 follow-up: their
+  // planning roles send the answer format as text, so every role reads the same cached prefix.
   const {materialBudget,...rest}=await extras();
-  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...rest,materials:{entries:stored.catalogue,budget:{...DEFAULT_MATERIAL_BUDGET,...materialBudget}}}));
+  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...rest,materials:{entries:stored.catalogue,budget:{...DEFAULT_MATERIAL_BUDGET,...materialBudget}},planningChat:true,schemaInText:true}));
  }
  // C2: contexts frozen from now on carry the brand pack instead of the raw revision; frozen ones keep theirs.
  const brandPack=brandPackText(brand.data.canonical_text);

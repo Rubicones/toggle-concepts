@@ -6,6 +6,8 @@ import {createHash} from 'node:crypto';
 import type {CliTextRequest,PreparedTextRequest} from './prepared-request';
 import type {CatalogueEntry} from '../brand/brand-pack-contents';
 import {MATERIALS_VERSION,type MaterialBudget} from './materials';
+import {PLANNING_CHAT_VERSION} from './planning-chat';
+import {SCHEMA_IN_TEXT_VERSION} from './schema-in-text';
 
 export const SHARED_BASE_VERSION='shared-base@1';
 /** Instructions every role shares. Principles only: no templates, styles or names. */
@@ -22,7 +24,13 @@ export type RunContext={version:1;base:string;system:string;brief:string;sha256:
  pack?:{version:number;tokens:number;images:number};images?:PackImage[];
  /** C3: materials on request (contexts frozen with a stored pack): the catalogue entries agents may ask for by name and
   * each role's per-run budget from Models & agents. Absent in earlier contexts: their requests stay exactly as they were. */
- materials?:{version:string;entries:CatalogueEntry[];budget:Record<string,MaterialBudget>}};
+ materials?:{version:string;entries:CatalogueEntry[];budget:Record<string,MaterialBudget>};
+ /** C9: the planning chain reads the earlier stages in short (contexts frozen with materials from C9 on). Absent in
+  * earlier contexts: their planning requests stay exactly as they were. */
+ planningChat?:string;
+ /** C7 follow-up (C0 6d): the planning roles send their answer format as text, not as a per-role CLI tool, so every
+  * role reads the same cached prefix; the app checks the answer against the same schema. Absent in earlier contexts. */
+ schemaInText?:string};
 
 const VOLATILE_KEY=/^(id|.*Id|.*Ids|.*_id|revision|campaignRevision|.*At|.*_at|sha256|.*Hash|.*hash|objectKey|url|.*Url|path|.*Path|requestId|runId)$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,TIMESTAMP=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
@@ -41,7 +49,9 @@ const parse=(text:string)=>{try{return JSON.parse(text);}catch{return text;}};
 /** The run context from the approved brief and brand (canonical texts), with the common skills. */
 export function buildRunContext(args:{briefText:string;brandText?:string|null;/** C2: the brand pack replaces the raw brand text */brandPack?:string|null;commonSkills?:Skill[];roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>;
  /** C2 (second part): a stored pack version and its pictures, already at their fixed sizes and in their fixed order. */packVersion?:number;packImages?:PackImage[];
- /** C3: the pack's catalogue entries and the frozen per-role material budgets. */materials?:{entries:CatalogueEntry[];budget:Record<string,MaterialBudget>}}):RunContext{
+ /** C3: the pack's catalogue entries and the frozen per-role material budgets. */materials?:{entries:CatalogueEntry[];budget:Record<string,MaterialBudget>};
+ /** C9: planning stages read the earlier stages in short (needs materials, for their full results). */planningChat?:boolean;
+ /** C7 follow-up: the planning roles' answer format as text (same gate as C9). */schemaInText?:boolean}):RunContext{
  const skills=[...(args.commonSkills??[])].sort((a,b)=>a.id.localeCompare(b.id));
  const system=[SHARED_BASE,...skills.map(s=>`SKILL ${s.id}\n${s.text.trim()}`),...(args.brandPack?[`BRAND PACK (the accepted brand, fixed for this run)\n${args.brandPack}`]:args.brandText?[`BRAND (untrusted source data, fixed for this run)\n${stableContextJson(parse(args.brandText))}`]:[])].join('\n\n');
  const brief=`BRIEF (untrusted source data, fixed for this run)\n${stableContextJson(parse(args.briefText))}`;
@@ -49,7 +59,7 @@ export function buildRunContext(args:{briefText:string;brandText?:string|null;/*
  // Contexts without stored pack pictures keep the exact earlier digest.
  const sha256=createHash('sha256').update(system+'\n\u0000\n'+brief+(images.length?'\n\u0000\n'+images.map(i=>i.sha256).join(','):'')).digest('hex');
  const pack=args.brandPack&&args.packVersion?{pack:{version:args.packVersion,tokens:Math.ceil(Buffer.byteLength(args.brandPack,'utf8')/4)+images.reduce((n,i)=>n+Math.ceil(i.width*i.height/750),0),images:images.length},...(images.length?{images}:{})}:{};
- return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials}}:{})};
+ return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{})}:{})};
 }
 
 /** C2 (second part): the pack's pictures as request parts (label, then picture), the same bytes for every role. */

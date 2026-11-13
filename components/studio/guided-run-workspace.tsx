@@ -29,7 +29,7 @@ import { SharedMedia } from "./shared-media";
 import { ProviderReceipts } from "./provider-receipts";
 import { DraftReview } from "./draft-review";
 import styles from "./guided-run-workspace.module.css";
-import { BrandCheck, ScenarioChoice, VisualTreatments, visualTreatments } from "./run-decisions";
+import { BrandCheck, ScenarioChoice, VisualTreatments, visualConcept, visualTreatments } from "./run-decisions";
 function focusPlanningNote(){
  const note=document.getElementById('run-note'),panel=note?.closest('details');
  if(panel)panel.open=true;
@@ -169,7 +169,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
   const targetRole = role || (data.failureStep?.role === "creative-code" ? "script" : data.failureStep?.role) || "script";
   const scenarioJob=data.jobs.find(j=>j.job_key==='script'&&j.state==='succeeded'),scenarioOutput=scenarioJob?.output,scenarioData=scenarioOutput?readableOutput(scenarioOutput).deliverable:null,directions=scenarioPresentation(scenarioData)??[];
   const verdictsFor=(key:string)=>ideaReview.find(l=>l.key===key)?.state.result?.directions??[];
-  const lookJob=data.jobs.find(j=>j.job_key==='asset-plan'&&j.state==='succeeded'),looks=lookJob?.output?visualTreatments(readableOutput(lookJob.output).deliverable):[];
+  const lookJob=data.jobs.find(j=>j.job_key==='asset-plan'&&j.state==='succeeded'),looks=lookJob?.output?visualTreatments(readableOutput(lookJob.output).deliverable):[],lookConcept=lookJob?.output?visualConcept(readableOutput(lookJob.output).deliverable):'';
   const resumable=control&&(control.status==='paused'||(control.status==='blocked'&&["LOCAL_API_UNAVAILABLE","RUN_COORDINATOR_FAILED","ASSETS_REQUIRED"].includes(control.blocker??"")));
   return (
     <div className={styles.workspace}>
@@ -516,6 +516,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
           {looks.length > 0 && (
             <VisualTreatments
               treatments={looks}
+              concept={lookConcept}
               verdicts={verdictsFor("asset-plan")}
               built={new Set()}
               campaignId={campaignId}

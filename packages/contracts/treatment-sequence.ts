@@ -63,7 +63,8 @@ export function mergeTreatmentSequence(parts:Extract<SequencePart,{kind:'treatme
  return canonicalJson({...first,
   status:envelopes.some(e=>e.status==='needs_review')?'needs_review':'draft',
   summary:envelopes.map((e,i)=>`concept-${i+1}: ${typeof e.summary==='string'?e.summary:''}`).join('\n'),
-  deliverable:{treatments:parts.map(p=>({...p.treatment,scenarioId:selection.scenarioId})),productionConstraints:union(deliverables.map(d=>d.productionConstraints))},
+  // C9: each request wrote its treatment's concept first; the answer keeps all three, in order (absent before C9).
+  deliverable:{...(deliverables.some(d=>typeof d.concept==='string'&&d.concept.trim())?{concept:deliverables.map((d,i)=>typeof d.concept==='string'&&d.concept.trim()?`concept-${i+1}: ${d.concept.trim()}`:'').filter(Boolean).join('\n\n')}:{}),treatments:parts.map(p=>({...p.treatment,scenarioId:selection.scenarioId})),productionConstraints:union(deliverables.map(d=>d.productionConstraints))},
   inputRefs:union(envelopes.map(e=>e.inputRefs)),assumptions:union(envelopes.map(e=>e.assumptions)),
   blockingQuestions:union(envelopes.map(e=>e.blockingQuestions)),warnings:union(envelopes.map(e=>e.warnings)),
   handoff:{...handoff,checks:union(envelopes.map(e=>(e.handoff as Record<string,unknown>|undefined)?.checks))},

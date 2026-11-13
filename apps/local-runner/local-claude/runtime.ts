@@ -67,14 +67,14 @@ export async function latestPlanningPoint(admin:SupabaseClient,runId:string):Pro
 function pointsOf(rows:{role:string;usage:unknown;created_at:string}[]):StoredPoint[]{
  return rows.flatMap(r=>{const l=(r.usage as {_local?:{sessionId?:string;conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0]}}|null)?._local;return l?.sessionId?[{role:r.role,sessionId:l.sessionId,tokens:storedSize(l),at:r.created_at}]:[];});
 }
-export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>;session?:()=>Promise<Plan>;role?:string;stage?:StageId;/** C3: the run whose material budget the request may spend */runId?:string;/** C7 */longCache?:boolean}={}):typeof submitText{
+export function transportFor(execution:TextExecution,runtime:LocalRuntime,options:{signal?:AbortSignal;shared?:()=>Promise<RunContext|null>;session?:()=>Promise<Plan>;role?:string;stage?:StageId;/** C3: the run whose material budget the request may spend */runId?:string;/** C7 */longCache?:boolean;/** C9 */materials?:import('../../../packages/agents/materials').MaterialEntry[]}={}):typeof submitText{
  if(execution.mode!=='local_claude')return submitText;
  if(!runtime.setup||!runtime.device)throw new Error(runtime.reason??'LOCAL_PROFILE_REQUIRED');
  if(execution.device_id!==runtime.device.id)throw new Error('LOCAL_DEVICE_MISMATCH');
  // A run keeps the model and CLI it started with; a change is an explicit stop, never a silent switch.
  if(execution.execution_model!==runtime.setup.sonnet)throw new Error('LOCAL_MODEL_CHANGED');
  if(execution.cli_version&&execution.cli_version.split(/\s+/)[0]!==runtime.setup.cliVersion.split(/\s+/)[0])throw new Error('LOCAL_CLI_CHANGED');
- return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p),...(options.shared?{shared:options.shared}:{}),...(options.shared&&options.session?{session:options.session}:{}),...(options.role?{role:options.role}:{}),...(options.stage?{stage:options.stage}:{}),...(options.shared&&options.runId?{runId:options.runId}:{}),...(options.shared&&options.longCache?{longCache:true}:{})});
+ return cliTextTransport(runtime.setup,{signal:options.signal,record:p=>recordPreparedRequest(p),...(options.shared?{shared:options.shared}:{}),...(options.shared&&options.session?{session:options.session}:{}),...(options.role?{role:options.role}:{}),...(options.stage?{stage:options.stage}:{}),...(options.shared&&options.runId?{runId:options.runId}:{}),...(options.shared&&options.longCache?{longCache:true}:{}),...(options.shared&&options.materials?.length?{materials:options.materials}:{})});
 }
 
 // ---- Subscription waiting (plan §10): durable on the device, bounded probes, no busy loop. ----

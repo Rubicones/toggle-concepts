@@ -6,7 +6,7 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {cliArgs,childEnv,hasUnexpectedCliTools,runCli,streamUserMessage,type CliEvent,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
-import {SINGLE_ANSWER_ROLES,budgetLeft,materialBudgetFor,materialRequestInstruction,readWrapped,withMaterialRequest} from '../../../packages/agents/materials';
+import {SINGLE_ANSWER_ROLES,budgetLeft,materialBudgetFor,materialRequestInstruction,readWrapped,withMaterialRequest,type MaterialEntry} from '../../../packages/agents/materials';
 import {fetchMaterials,materialsUsed} from './materials';
 import type {PictureReader} from './pack-images';
 import {createHash} from 'node:crypto';
@@ -15,6 +15,8 @@ import {localModelFor,type LocalModelChoice} from '../../../packages/agents/loca
 import {sharedLayout,sharedLayoutDifferences,continuingLayout,type RunContext} from '../../../packages/agents/run-context';
 import type {Plan} from '../../../packages/agents/local-session';
 import {lastCallSize} from '../../../packages/agents/local-session';
+import {usesSchemaInText,schemaIssues,readJsonAnswer,answerFormatText,repairText,MATERIALS_ANSWER_FORMAT} from '../../../packages/agents/schema-in-text';
+import {usesPlanningChat,planningContextText,planningUpstreamText,planningMaterials} from '../../../packages/agents/planning-chat';
 import {withoutBrandDuplicates} from '../../../packages/brand/brand-pack';
 import {largestInputParts} from '../../../packages/agents/local-usage';
 import {stageEffort,type StageId} from '../../../packages/agents/stage-effort';
@@ -62,6 +64,8 @@ export type LocalTextDetails={
  cacheTtl?:'1h'|'5m';
  /** C3: the one round of materials a single-answer role asked for (names attached and refused with the reason). */
  materials?:{asked:string[];attached:string[];refused:string[]};
+ /** C7 follow-up: a text answer that did not fit its format at first (repaired in the same conversation) or at all. */
+ schemaCheck?:{repaired:boolean;issues:string[]};
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
 
@@ -125,7 +129,9 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
  runId?:string;readPicture?:PictureReader;
  /** C7: ask the CLI for its one-hour prompt cache (CLAUDE_CODE_PROMPT_CACHE_TTL, found in the installed CLI 2.1.x); the
   * usage then shows which lifetime was written. Long conversations whose turns wait for renders and pictures. */
- longCache?:boolean}={}){
+ longCache?:boolean;
+ /** C9: more materials this request may ask for by name (visual direction: the full brand sheet's pages). */
+ materials?:MaterialEntry[]}={}){
  return async function cliText(model:string,prompt:string,cfg:TextSnapshot,images:ImageInput[]=[],requestTag?:string):Promise<LocalTextReceipt>{
   const refuse=(failure:string):LocalTextReceipt=>({provider:'claude-cli',outcome:'failed',cost:0,text:null,generation:null,usage:null,failure});
   // The same refusals as submitText, before anything is sent.
@@ -134,10 +140,16 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   if(images.length&&!setup.visual)return refuse('LOCAL_VISUAL_NOT_QUALIFIED');
   let mapping:LocalModelChoice;try{mapping=localModelFor(model,{sonnet:setup.sonnet});}catch(error){return refuse((error as Error).message);}
   // C2: with a brand pack in the run context, the request does not repeat the brand (the frozen snapshot is unchanged).
-  const packed=options.shared?await options.shared():null,sent=packed?.holds.brandPack&&cfg.campaignContext!==undefined?{...cfg,campaignContext:withoutBrandDuplicates(cfg.campaignContext)}:cfg;
+  const packed=options.shared?await options.shared():null,unpacked=packed?.holds.brandPack&&cfg.campaignContext!==undefined?{...cfg,campaignContext:withoutBrandDuplicates(cfg.campaignContext)}:cfg;
+  // C9: in contexts frozen with the planning chat, a chain role reads the campaign context as plain text and the earlier
+  // stages in short; their full results are materials it may ask for. The frozen snapshot is unchanged.
+  const planningChat=usesPlanningChat(packed,options.role),sent=planningChat?{...unpacked,contextText:planningContextText(unpacked.campaignContext),upstreamText:planningUpstreamText(cfg.upstream as Parameters<typeof planningUpstreamText>[0])}:unpacked;
   // C2 (second part): the pack's pictures open every request; a request's own copy of one of them is not sent again.
   const prepared=prepareTextRequest(model,prompt,sent,withoutPackPictures(images,packed),{requestTag});
-  let cli:CliTextRequest;try{cli=toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode});}catch(error){return refuse((error as Error).message);}
+  // C7 follow-up (C0 6d): in contexts frozen with it, a planning role's answer format travels as text, not as a
+  // per-role tool before the system prompt, so every role reads the same cached prefix; the app checks the answer below.
+  const textSchema=usesSchemaInText(packed,options.role)&&!!prepared.output.schema,schemaMode=textSchema?'plain' as const:setup.schemaMode;
+  let cli:CliTextRequest;try{cli=toCliRequest(prepared,{executionModel:mapping.execution,schemaMode});}catch(error){return refuse((error as Error).message);}
   // The input check of plan §3.2 runs on every call, not only in tests.
   if(projectionDifferences(projectPrepared(prepared),projectCli(cli,prepared.output.schema?.schema)).length)return refuse('LOCAL_CONTEXT_MISMATCH');
   // LC2: in a 'shared' run every request starts with the same run context; the role's instructions and input follow it.
@@ -149,15 +161,18 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   // LC3/LC4: a shared run's conversations are persisted; a continuation sends only what the history does not hold yet.
   const plan=ctx&&options.session?await options.session():null;let fullShared=cli;
   let conversation:LocalTextDetails['conversation']|undefined=ctx&&options.session?{kind:plan?.condensed?'condensed':'new'}:undefined;
-  if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode}),prepared,ctx,plan,options.role);if(stage)cli={...cli,effort:stageEffort(stage,ctx.stageEffort)};conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
+  if(ctx&&plan&&!plan.condensed&&plan.resume){cli=continuingLayout(toCliRequest(prepared,{executionModel:mapping.execution,schemaMode}),prepared,ctx,plan,options.role);if(stage)cli={...cli,effort:stageEffort(stage,ctx.stageEffort)};conversation={kind:plan.fork?'branched':'continued',resumedFrom:plan.resume};}
   // C3: a single-answer role in a run with materials may first ask for up to four catalogue entries (one round); its
   // schema then has two branches, and the app answers in the same conversation with the role's own schema.
-  const original=cli.jsonSchema,budget=ctx?.materials&&options.role?materialBudgetFor(options.role,ctx.materials.budget):null;
+  const original=textSchema?prepared.output.schema!.schema:cli.jsonSchema,budget=ctx?.materials&&options.role?materialBudgetFor(options.role,ctx.materials.budget):null;
   const materialsOn=!!(ctx?.materials&&options.runId&&original&&budget&&budget.count>0&&(SINGLE_ANSWER_ROLES as readonly string[]).includes(options.role??''));
   let left={count:0};
   if(materialsOn){left=budgetLeft(options.role!,budget!,await materialsUsed(options.runId!));
-   const offer=(c:CliTextRequest):CliTextRequest=>({...c,jsonSchema:withMaterialRequest(original!),parts:[...c.parts,{type:'text',text:materialRequestInstruction(left)}]});cli=offer(cli);fullShared=offer(fullShared);}
-  const persist=!!conversation||materialsOn;let resume=plan&&!plan.condensed&&plan.resume?{resume:plan.resume,fork:plan.fork}:null;
+   const offer=(c:CliTextRequest):CliTextRequest=>({...c,...(textSchema?{}:{jsonSchema:withMaterialRequest(original!)}),parts:[...c.parts,{type:'text',text:materialRequestInstruction(left)}]});cli=offer(cli);fullShared=offer(fullShared);}
+  // The answer format closes the role's message, after the shared prefix (with materials: the two-branch format).
+  const answerSchema=textSchema?(materialsOn?withMaterialRequest(original!):original!):undefined;
+  if(answerSchema){const add=(c:CliTextRequest):CliTextRequest=>({...c,parts:[...c.parts,{type:'text',text:answerFormatText(answerSchema)}]});cli=add(cli);fullShared=add(fullShared);}
+  const persist=!!conversation||materialsOn||textSchema;let resume=plan&&!plan.condensed&&plan.resume?{resume:plan.resume,fork:plan.fork}:null;
   const inputParts=largestInputParts((sent as {campaignContext?:unknown}).campaignContext);
   const recordPath=options.record?await options.record(prepared):undefined;
   const dir=await mkdtemp(join(tmpdir(),'toggle-cli-')),work=setup.workDir??join(dir,'work');
@@ -183,26 +198,43 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    // An answer that did not arrive in time cost nothing on the subscription: ask once more before giving up.
    if(attempt===0&&(r.failure==='CLI_TIMEOUT'||r.failure==='CLI_STALLED')&&!options.signal?.aborted){timedOut=true;continue;}
    break;}
+   // A further call in the same stored conversation (materials, or the answer format's one repair turn).
+   const again=async(sessionId:string,parts:CliTextRequest['parts'],jsonSchema?:Record<string,unknown>)=>{
+    const argv=cliArgs({includePartialMessages:true,bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:{...setup.isolation,noSessionPersistence:false},resume:sessionId,forkSession:false,...(setup.turnLimit?{maxTurns:jsonSchema?TURN_LIMIT.schema:TURN_LIMIT.plain}:{}),...(jsonSchema?{jsonSchema}:{}),...(cli.effort?{effort:cli.effort}:{})});
+    const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
+    const next=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cliOutputRoom(cli.maxOutputTokens,cli.effort)),...(options.longCache?{CLAUDE_CODE_PROMPT_CACHE_TTL:'1h'}:{})}),stdin:streamUserMessage(parts),timeoutMs:cliTimeoutMs(cfg),idleMs:CLI_SILENCE_MS,signal:stop.signal,
+     onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,jsonSchema!==undefined))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
+    options.signal?.removeEventListener('abort',relay);return next;
+   };
+   // C7 follow-up: a text answer must fit the schema the CLI used to enforce. One repair turn in the same conversation,
+   // as the CLI's own check did; an answer that still does not fit fails with the workflow's own code.
+   let schemaCheck:LocalTextDetails['schemaCheck'];
+   const settle=async(schema:Record<string,unknown>)=>{
+    if(!textSchema||r.outcome!=='succeeded'||leak||finishOf(r.stopReason)!=='stop')return;
+    const check=(text:string|null|undefined):{value:unknown}|{issues:string[]}=>{const read=readJsonAnswer(text);if('error' in read)return {issues:['answer: not one JSON object']};const issues=schemaIssues(read.value,schema);return issues.length?{issues}:{value:read.value};};
+    let c=check(r.text);
+    if('issues' in c&&r.init?.sessionId){const first=c.issues;r=mergeCalls(r,await again(r.init.sessionId,[{type:'text',text:repairText(first)}]));schemaCheck={repaired:true,issues:first};
+     if(r.outcome!=='succeeded'||leak||finishOf(r.stopReason)!=='stop')return;c=check(r.text);}
+    if('value' in c){r={...r,structured:c.value};return;}
+    schemaCheck={repaired:!!schemaCheck,issues:c.issues};r={...r,outcome:'failed',failure:'INVALID_OUTPUT_SCHEMA'};
+   };
+   if(answerSchema)await settle(answerSchema);
    // C3: the answer, or one round of materials and then the answer in the same conversation.
    let materials:LocalTextDetails['materials'];
    if(materialsOn&&r.outcome==='succeeded'&&!leak){
     const read=readWrapped(r.structured);
     if(read&&'answer' in read)r={...r,structured:read.answer};
     else if(read&&r.init?.sessionId){
-     const fetched=await fetchMaterials(ctx!,{runId:options.runId!,role:options.role!,requests:read.request,read:options.readPicture});
+     const fetched=await fetchMaterials(ctx!,{runId:options.runId!,role:options.role!,requests:read.request,read:options.readPicture,...(planningChat?{extra:[...planningMaterials(cfg.upstream as Parameters<typeof planningMaterials>[0]),...(options.materials??[])]}:{})});
      materials={asked:fetched.plan.map(p=>p.name),attached:fetched.plan.filter(p=>p.status==='attached').map(p=>p.name),refused:fetched.plan.filter(p=>p.status!=='attached').map(p=>`${p.name}: ${p.status}`)};
-     const parts:CliTextRequest['parts']=[{type:'text',text:`${fetched.text}\nNow answer: requestMaterials is closed.`},...fetched.images.flatMap(i=>[{type:'text' as const,text:i.label},{type:'image' as const,mediaType:'image/jpeg',dataBase64:i.url.split(',')[1]}])];
-     const argv=cliArgs({includePartialMessages:true,bin:setup.bin,model:cli.model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,isolation:{...setup.isolation,noSessionPersistence:false},resume:r.init.sessionId,forkSession:false,...(setup.turnLimit?{maxTurns:TURN_LIMIT.schema}:{}),jsonSchema:original!,...(cli.effort?{effort:cli.effort}:{})});
-     const relay=()=>stop.abort();options.signal?.addEventListener('abort',relay,{once:true});
-     const second=await runCli({bin:setup.bin,argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:String(cliOutputRoom(cli.maxOutputTokens,cli.effort)),...(options.longCache?{CLAUDE_CODE_PROMPT_CACHE_TTL:'1h'}:{})}),stdin:streamUserMessage(parts),timeoutMs:cliTimeoutMs(cfg),idleMs:CLI_SILENCE_MS,signal:stop.signal,
-      onEvent:e=>{if(e.type==='system'&&e.subtype==='init'){if(hasUnexpectedCliTools(e.tools,e.mcp_servers,true))leak='LOCAL_ISOLATION_BROKEN';else if(e.apiKeySource&&e.apiKeySource!=='none')leak='LOCAL_NOT_SUBSCRIPTION';if(leak)stop.abort();}options.onEvent?.(e);}});
-     options.signal?.removeEventListener('abort',relay);
-     r=mergeCalls(r,second);
+     const parts:CliTextRequest['parts']=[{type:'text',text:`${fetched.text}\nNow answer: requestMaterials is closed.${textSchema?`\n${MATERIALS_ANSWER_FORMAT}`:''}`},...fetched.images.flatMap(i=>[{type:'text' as const,text:i.label},{type:'image' as const,mediaType:'image/jpeg',dataBase64:i.url.split(',')[1]}])];
+     r=mergeCalls(r,await again(r.init.sessionId,parts,textSchema?undefined:original!));
+     if(textSchema)await settle(original!);
     }else if(r.structured!==undefined)r={...r,structured:undefined,text:''};
    }
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const ttl=cacheLifetime(r.usage);
-   const details:Omit<LocalTextDetails,'events'|'stderr'>={...(materials?{materials}:{}),...(ttl?{cacheTtl:ttl}:{}),transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
+   const details:Omit<LocalTextDetails,'events'|'stderr'>={...(materials?{materials}:{}),...(schemaCheck?{schemaCheck}:{}),...(ttl?{cacheTtl:ttl}:{}),transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
     internalAttempts:r.internalAttempts,...(()=>{const size=lastCallSize(r.events);return size!==undefined?{conversationSize:size}:{};})(),...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:ctx.images?.length??prepared.attachments.filter(a=>a.prefix).length,...(ctx.pack?{pack:ctx.pack}:{})}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};

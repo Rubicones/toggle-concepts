@@ -84,7 +84,7 @@ export function scriptProofFor(instructions?:string){
  const found=instructionVersion(instructions);if(!found)return false;const [date,n]=SCRIPT_PROOF_VERSION.split('.');
  return found[1]>date||found[1]===date&&Number(found[2])>=Number(n);
 }
-export function agentResponseSchema(role:string,manifest?:{entries:Record<string,unknown>[]},options:{scriptProof?:boolean;scenarioSelection?:boolean;scenarioId?:string;treatmentSequence?:boolean}={}){
+export function agentResponseSchema(role:string,manifest?:{entries:Record<string,unknown>[]},options:{scriptProof?:boolean;scenarioSelection?:boolean;scenarioId?:string;treatmentSequence?:boolean;/** C9: visual direction writes its concept in prose first */concept?:boolean}={}){
  const string={type:'string'},strings={type:'array',items:string},list={type:'array',items:{type:'object',additionalProperties:true}};
  const narrative=options.scenarioSelection===true,sequence=narrative&&role==='visual-direction'&&options.treatmentSequence===true,proof=role==='script'&&(options.scriptProof===true||narrative),dataKey=proof?'world':'productData';
  const hooks=[...new Set(['primary',...(manifest?.entries??[]).map(e=>typeof e.hook==='string'&&e.hook.trim()?e.hook.trim():'primary')])];
@@ -97,7 +97,10 @@ export function agentResponseSchema(role:string,manifest?:{entries:Record<string
   localization:{type:'object',additionalProperties:false,properties:{localizedCopy:localized,terminologyNotes:strings,expansionRisks:strings},required:['localizedCopy','terminologyNotes','expansionRisks']},
   'visual-direction':{type:'object',additionalProperties:false,properties:{treatments:{type:'array',...(sequence?{minItems:1,maxItems:1}:narrative?{minItems:3,maxItems:3}:{}),items:{type:'object',additionalProperties:false,properties:{conceptId:{type:'string',enum:['concept-1','concept-2','concept-3']},...(narrative?{scenarioId:{type:'string',enum:options.scenarioId?[options.scenarioId]:['concept-1','concept-2','concept-3']}}:{}),name:string,visualIdea:string,makingTechnique:string,composition:string,visualHierarchy:string,paletteAndLighting:string,lensAndCamera:string,productScale:string,typographyTreatment:string,motionLanguage:string,formatAdaptation:string,assetPromptBriefs:strings,proxyContracts:strings},required:['conceptId',...(narrative?['scenarioId']:[]),'name','visualIdea','makingTechnique','composition','visualHierarchy','paletteAndLighting','lensAndCamera','productScale','typographyTreatment','motionLanguage','formatAdaptation','assetPromptBriefs','proxyContracts']}},productionConstraints:strings},required:['treatments','productionConstraints']},
  };
- const deliverable=deliverables[role]??{type:'object',properties:{},additionalProperties:true};
+ const base=deliverables[role]??{type:'object',properties:{},additionalProperties:true};
+ // C9 (chat-shaped plan): visual direction thinks in prose before its structured answer. One free field, written first:
+ // the visual idea and why it is right for this brand and this line. The structured result follows as before.
+ const deliverable=role==='visual-direction'&&options.concept?{...base,properties:{concept:string,...base.properties},required:['concept',...(base.required??[])]}:base;
  return {name:sequence?'agent_output_v1_5':narrative?'agent_output_v1_4':proof?'agent_output_v1_3':'agent_output_v1_2',schema:{type:'object',additionalProperties:false,properties:{schemaVersion:{type:'string',enum:['1.0']},role:{type:'string',enum:[role]},status:{type:'string',enum:['draft','blocked','needs_review']},summary:string,deliverable,inputRefs:strings,assumptions:strings,blockingQuestions:strings,warnings:strings,handoff:{type:'object',additionalProperties:false,properties:{nextRole:{type:['string','null']},requiredInputs:strings,checks:strings},required:['nextRole','requiredInputs','checks']}},required:['schemaVersion','role','status','summary','deliverable','inputRefs','assumptions','blockingQuestions','warnings','handoff']}};
 }
 export function planningRecovery(text:string,role:string,manifest:{entries:Record<string,unknown>[]}){
