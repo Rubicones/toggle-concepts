@@ -43,7 +43,7 @@ test('D3: the new lines keep the prompt rules: no examples, no colours, no names
 });
 
 test('D3: behind its own version, off by default; frozen contexts and runs without it keep their texts byte for byte', async()=>{
- assert.equal(POSITIVE_DEFAULT,false,'not the default until the owner approves');
+ assert.equal(POSITIVE_DEFAULT,true,'the owner approved the texts on 2026-11-13');
  assert.match(readFileSync('apps/local-runner/local-claude/run-context.ts','utf8'),/positive:POSITIVE_DEFAULT/);
  const on=ctx(true),off=ctx(false);
  assert.equal(on.instructionsVersion,POSITIVE_VERSION);assert.equal(off.instructionsVersion,undefined);

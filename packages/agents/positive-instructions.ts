@@ -3,11 +3,11 @@
 // E, hero and end critic) is sorted: (a) measured by the app, removed; (b) written as a target; (c) a true boundary,
 // kept once in plain words. The changes are sentence replacements applied to the texts a request carries, only in run
 // contexts frozen with this version. Runs already started and earlier designer versions keep their texts byte for byte.
-// OWNER APPROVAL GATE: POSITIVE_DEFAULT stays false until the owner approves the texts (docs/reviews/2026-11-13-d3-*).
+// OWNER APPROVAL GATE: the owner approved the texts on 2026-11-13 (docs/reviews/2026-11-13-d3-*); new run contexts take positive@1.
 
 export const POSITIVE_VERSION='positive@1';
 /** New run contexts take this version only after the owner's approval (one-line switch). */
-export const POSITIVE_DEFAULT=false;
+export const POSITIVE_DEFAULT=true;
 
 export type Category='measured'|'target'|'boundary';
 export type TextKey='base'|'shared'|'strategy'|'script'|'visual-direction'|'stageH'|'stageE'|'heroCritic'|'endCritic';
