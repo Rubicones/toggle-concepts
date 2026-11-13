@@ -15,6 +15,8 @@ import {readSkills} from '../../packages/agents/skill-files';
 import {designerInstructionsFor} from '../../packages/agents/prompts/designer-v1';
 import {designerTurnResponseFor} from '../../packages/director/designer';
 import {designerContext} from '../../packages/director/designer-context';
+import {liveCriticInstructionsFor,liveCriticSchema} from '../../packages/agents/prompts/director-critic-v1';
+import {readLiveCritique} from '../../packages/director/live-review';
 import {loadImage} from '@napi-rs/canvas';
 import type {DirectionInput,CatalogEntry,Resource} from '../../packages/director/types';
 
@@ -54,8 +56,24 @@ async function main(){
  const log:{turn:number;seconds:number;usage:Usage;usd?:number}[]=[];let session:string|undefined,usd=0;
  // The CLI's validator has no meta-schema to resolve.
  const {$schema:_meta,...schema}=designerTurnResponseFor(input).schema;void _meta;
+ // The hero frame's review, as in a run: the critic sees the render and the measured findings and returns notes.
+ const heroReviews=Number(arg('reviews','2')),criticFile=join(dir,'critic.txt');
+ await writeFile(criticFile,liveCriticInstructionsFor(input.brief)+'\n\nSKILLS\n'+readSkills().filter(s=>s.defaultRoles.includes('critic')).map(s=>`## ${s.title}\n${s.text.trim()}`).join('\n\n'));
+ const {$schema:_m2,...criticSchema}=liveCriticSchema.schema;void _m2;let criticUsd=0,criticSeconds=0;
+ if(heroReviews>0)tools.reviewHero=async(round,shots,measured)=>{
+  try{
+   const hero=input.storyboard.find(s=>s.id===state.hero?.sceneId),parts:Part[]=[{type:'text',text:JSON.stringify({task:'Review the hero frame: the scene that proves the promise, in the reference format. Judge it as the frame every other scene will follow.',hero:{copy:hero?.copy,notes:hero?.visualNotes},product:input.brief.product,offer:input.brief.offer,audience:input.brief.audience,brandTokens:input.brand.tokens,measured:{findings:measured.slice(0,20)},views:shots.map(x=>x.label),round})}];
+   for(const shot of shots){const url=await screenshotForDesigner(shot.file,1024),[head,data]=url.split(',');parts.push({type:'text',text:shot.label},{type:'image',mediaType:head.slice(5,head.indexOf(';')),dataBase64:data});}
+   const argv=cliArgs({bin:'claude',model,systemPromptFile:criticFile,emptyMcpConfigFile:mcpFile,cwd:work,includePartialMessages:true,effort:'medium',jsonSchema:criticSchema,isolation:{safeMode:true,restricted:true,noSessionPersistence:true,disableSlashCommands:true}});
+   const r=await runCli({bin:'claude',argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:'32000'}),stdin:streamUserMessage(parts),timeoutMs:900000,idleMs:300000});
+   if(r.outcome!=='succeeded')throw new Error(r.failure??r.outcome);
+   criticUsd+=r.apiEquivalentUsd??0;criticSeconds+=Math.round(r.durationMs/1000);
+   const review=readLiveCritique(r.structured!==undefined?JSON.stringify(r.structured):r.text??'');
+   await writeFile(join(out,`hero-review-${round}.json`),JSON.stringify(review,null,1));return review;
+  }catch(error){console.error('hero review failed:',error instanceof Error?error.message:error);return undefined;}
+ };
  const state=newDesignerState();
- await runDesigner({input,state,maxTurns,maxPictures,timeMs:3600000,tools,save:async()=>{},
+ await runDesigner({input,state,maxTurns,maxPictures,heroReviews,timeMs:3600000,tools,save:async()=>{},
   conversation:{continuing:()=>!!session,accept:async()=>{}},
   onTurn:async(turn,results)=>{await writeFile(join(out,`turn-${state.turn}.json`),JSON.stringify({focus:turn.focus,seen:turn.seen,notes:turn.notes,render:turn.render,settleHero:turn.settleHero,finish:turn.finish,files:turn.files.map(f=>`${f.path} ${f.source.length}`),edits:turn.edits.length,results},null,1));},
   call:async(request,images)=>{
@@ -77,7 +95,7 @@ async function main(){
    for(const shot of r.shots){const jpeg=await screenshotForDesigner(shot.file,540);await writeFile(join(sweep,`${shot.key.replace(/[^\w.-]+/g,'_')}.jpg`),Buffer.from(jpeg.split(',')[1],'base64'));}}
  }catch(error){console.error('sweep:',error instanceof Error?error.message:error);}
  const total=log.reduce((t,l)=>({seconds:t.seconds+l.seconds,input:t.input+(l.usage.input_tokens??0)+(l.usage.cache_creation_input_tokens??0),cached:t.cached+(l.usage.cache_read_input_tokens??0),output:t.output+(l.usage.output_tokens??0)}),{seconds:0,input:0,cached:0,output:0});
- const summary={brand:brand.id,version,model,effort,turns:state.turn,complete:state.complete,hero:state.hero?.acceptedBy,...total,usd:Math.round(usd*100)/100,sweep:{hard,soft},frame:await readFile(join(folder,'Frame.tsx'),'utf8').then(s=>s.length,()=>0),log};
+ const summary={brand:brand.id,version,model,effort,turns:state.turn,complete:state.complete,hero:state.hero?.acceptedBy,...total,usd:Math.round(usd*100)/100,criticUsd:Math.round(criticUsd*100)/100,criticSeconds,sweep:{hard,soft},frame:await readFile(join(folder,'Frame.tsx'),'utf8').then(s=>s.length,()=>0),log};
  await writeFile(join(out,'summary.json'),JSON.stringify(summary,null,1));
  console.log(JSON.stringify({...summary,log:undefined,out}));
  await rm(dir,{recursive:true,force:true});
