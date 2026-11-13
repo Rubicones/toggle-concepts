@@ -106,6 +106,14 @@ if [ "${SKIP_CLAUDE:-}" != "1" ]; then
     if [ "$answer" != "no" ]; then node --import tsx apps/local-runner/local-claude/doctor.ts --fix --extra-usage-off || true; fi
   fi
 fi
+step "Database updates (migrations)"
+# Applies the studio's pending database updates with the access in .env.local. Already applied ones are skipped.
+# A failure never stops the install: the studio says when an update is missing, and Update-Database.cmd retries.
+if grep -qE '^(SUPABASE_DB_URL|SUPABASE_ACCESS_TOKEN)=\S' .env.local 2>/dev/null; then
+  if npm run -s data:deploy; then echo "The database is up to date."; else printf '\n\033[33mThe database update did not finish. Double-click C:\\toggle\\Update-Database.cmd to retry.\033[0m\n'; fi
+else
+  printf '\033[33mNo database access in .env.local (SUPABASE_DB_URL or SUPABASE_ACCESS_TOKEN): ask the developer to apply the updates.\033[0m\n'
+fi
 # On Windows the installer in C:\toggle is a copy made at the first install. Keep it and the database launcher equal to
 # the repository's, so installer changes (Ubuntu's memory and core limits) arrive with an update: they apply the next
 # time the installer runs.
