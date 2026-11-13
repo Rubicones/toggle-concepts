@@ -1,0 +1,17 @@
+.howto ol { display: grid; gap: 10px; padding-left: 20px; line-height: 1.65; font-size: 14px; }
+.howto h2 { margin-bottom: 12px; }
+.pair { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 18px; display: grid; gap: 12px; }
+.pictures { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pictures figure { margin: 0; border: 2px solid transparent; border-radius: 12px; padding: 6px; }
+.pictures img { width: 100%; height: auto; max-height: 520px; object-fit: contain; display: block; background: #f4f4f4; border-radius: 8px; }
+.pictures figcaption { text-align: center; font-weight: 600; margin-top: 6px; }
+.chosen { border-color: #2b7aa0 !important; }
+.judge { display: grid; gap: 10px; }
+.judge textarea { width: 100%; }
+.add { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 18px; }
+.score { font-size: 15px; }
+.table { overflow-x: auto; margin-top: 12px; }
+.table table { border-collapse: collapse; font-size: 13px; min-width: 760px; }
+.table th, .table td { border-bottom: 1px solid var(--line); padding: 6px 10px; text-align: right; }
+.table th[scope="row"], .table thead th:first-child { text-align: left; }
+@media (max-width: 720px) { .pictures { grid-template-columns: 1fr; } }

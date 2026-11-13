@@ -66,6 +66,8 @@ export type LocalTextDetails={
  materials?:{asked:string[];attached:string[];refused:string[]};
  /** C7 follow-up: a text answer that did not fit its format at first (repaired in the same conversation) or at all. */
  schemaCheck?:{repaired:boolean;issues:string[]};
+ /** C7b: the answer format travelled as text (the C10 report counts these answers for the repair rate). */
+ answerFormat?:'text';
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
 
@@ -234,7 +236,7 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    }
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const ttl=cacheLifetime(r.usage);
-   const details:Omit<LocalTextDetails,'events'|'stderr'>={...(materials?{materials}:{}),...(schemaCheck?{schemaCheck}:{}),...(ttl?{cacheTtl:ttl}:{}),transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
+   const details:Omit<LocalTextDetails,'events'|'stderr'>={...(materials?{materials}:{}),...(schemaCheck?{schemaCheck}:{}),...(textSchema?{answerFormat:'text' as const}:{}),...(ttl?{cacheTtl:ttl}:{}),transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
     internalAttempts:r.internalAttempts,...(()=>{const size=lastCallSize(r.events);return size!==undefined?{conversationSize:size}:{};})(),...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:ctx.images?.length??prepared.attachments.filter(a=>a.prefix).length,...(ctx.pack?{pack:ctx.pack}:{})}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};

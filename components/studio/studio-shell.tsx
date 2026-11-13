@@ -3,7 +3,7 @@
 import { createContext, Suspense, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronRight, Command, HelpCircle, Images, LayoutGrid, Menu, Monitor, Search, Settings2, SlidersHorizontal, Video } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronRight, Command, HelpCircle, Images, LayoutGrid, Menu, Monitor, Scale, Search, Settings2, SlidersHorizontal, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -18,6 +18,7 @@ const nav = [
   { href: "/workspace", label: "Shared workspace", icon: LayoutGrid },
   { href: "/queue", label: "Queue & devices", icon: Monitor },
   { href: "/models", label: "Models & agents", icon: SlidersHorizontal },
+  { href: "/compare", label: "Chat vs. studio", icon: Scale },
   { href: "/media", label: "Media library", icon: Images },
   { href: "/settings", label: "Settings", icon: Settings2 },
 ];
