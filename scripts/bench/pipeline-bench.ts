@@ -36,6 +36,8 @@ async function main(){
  await mkdir(work,{recursive:true});await writeFile(mcpFile,'{"mcpServers":{}}');
  await writeFile(systemFile,designerInstructionsFor(input)+'\n\nSKILLS\n'+skills.map(s=>`## ${s.title}\n${s.text.trim()}`).join('\n\n'));
  const log:{turn:number;seconds:number;usage:Usage;usd?:number}[]=[];let session:string|undefined,usd=0;
+ // The CLI's validator has no meta-schema to resolve.
+ const {$schema:_meta,...schema}=designerTurnResponseFor(input).schema;void _meta;
  const state=newDesignerState();
  await runDesigner({input,state,maxTurns,maxPictures:0,timeMs:3600000,tools,save:async()=>{},
   conversation:{continuing:()=>!!session,accept:async()=>{}},
@@ -43,7 +45,7 @@ async function main(){
   call:async(request,images)=>{
    const parts:Part[]=[{type:'text',text:JSON.stringify(session?request:{input:designerContext(input),request})}];
    for(const image of images){const [head,data]=image.url.split(',');parts.push({type:'text',text:image.label},{type:'image',mediaType:head.slice(5,head.indexOf(';')),dataBase64:data});}
-   const argv=cliArgs({bin:'claude',model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,includePartialMessages:true,effort,jsonSchema:designerTurnResponseFor(input).schema,
+   const argv=cliArgs({bin:'claude',model,systemPromptFile:systemFile,emptyMcpConfigFile:mcpFile,cwd:work,includePartialMessages:true,effort,jsonSchema:schema,
     isolation:{safeMode:true,restricted:true,noSessionPersistence:false,disableSlashCommands:true},...(session?{resume:session}:{})});
    const r=await runCli({bin:'claude',argv,cwd:work,env:childEnv(process.env,{CLAUDE_CODE_MAX_OUTPUT_TOKENS:'64000'}),stdin:streamUserMessage(parts),timeoutMs:1500000,idleMs:300000});
    if(r.outcome!=='succeeded')throw new Error(`CLI ${r.failure??r.outcome}: ${(r.text??r.stderr).slice(0,400)}`);
