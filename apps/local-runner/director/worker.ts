@@ -65,7 +65,7 @@ import {liveCriticInstructionsFor,liveCriticSchema} from '../../../packages/agen
 import {reviewImages} from './review-sheet';
 import {prepareImageMethods,derivedReferences,finishImageMethod} from './image-methods';
 import {storeCutout,emitCutout,pictureRoleDetail} from './cutout';
-import {usesDesigner,heroFirst,designerActivityLine,designerTurnSummary,designerTurnResponseFor,seenLines} from '../../../packages/director/designer';
+import {usesEngineKit,usesDesigner,heroFirst,designerActivityLine,designerTurnSummary,designerTurnResponseFor,seenLines} from '../../../packages/director/designer';
 import {designerContext} from '../../../packages/director/designer-context';
 import {designerInstructionsFor} from '../../../packages/agents/prompts/designer-v1';
 import {readLiveCritique} from '../../../packages/director/live-review';
@@ -280,7 +280,9 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
       loop.transcript.push({from:'tool',text:JSON.stringify({review:kind,round,note:note.slice(0,3000),ask:'Fix this in the views it names, render to check, then finish again.'})});
       if(views?.shots.length)loop.lastRender={sceneId:views.shots[0].sceneId??input.storyboard[0].id,findings:findings(views.summary),views:views.shots.slice(0,4).map(v=>({label:v.label,file:v.file,width:v.width??0,height:v.height??0}))};
      }
-     try{await designerRun(loop.turn+Math.min(3,left));}catch(error){await restore();const message=error instanceof Error?error.message:'REPAIR_FAILED';if(CONTROL_FAILURE.test(message)||transientExecutionFailure(message))throw error;return {applied:false,reason:message.slice(0,200)};}
+     // Version 3: a repair round may render again (the revision counts start over) and has room to look after fixing.
+     if(usesEngineKit(input))loop.renders={};
+     try{await designerRun(loop.turn+Math.min(usesEngineKit(input)?5:3,left));}catch(error){await restore();const message=error instanceof Error?error.message:'REPAIR_FAILED';if(CONTROL_FAILURE.test(message)||transientExecutionFailure(message))throw error;return {applied:false,reason:message.slice(0,200)};}
      if(!state.designer?.complete){await restore();return {applied:false,reason:'The designer did not finish the repair within its bounded turns.'};}
      return {applied:true};
     };
