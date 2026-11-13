@@ -7,6 +7,9 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {buildRunContext,type RunContext,type Skill} from '../../../packages/agents/run-context';
 import {toggleHome} from './device';
 import {brandPackText} from '../../../packages/brand/brand-pack';
+import {storedPackText} from '../../../packages/brand/brand-pack-contents';
+import {latestBrandPack} from '../../../packages/brand/brand-pack-store';
+import {encodePackImages,storedPicture,type PictureReader} from './pack-images';
 
 const dir=()=>join(toggleHome(),'local-claude','run-context');
 export const runContextPath=(runId:string)=>join(dir(),`${runId}.json`);
@@ -24,7 +27,7 @@ export async function freezeRunContext(runId:string,ctx:RunContext):Promise<RunC
 
 /** The frozen context, or one built now from the approved brief and the accepted brand; null before A1. */
 export type ContextExtras={commonSkills:Skill[];roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>};
-export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()=>Promise<ContextExtras>=async()=>({commonSkills:[]})):Promise<RunContext|null>{
+export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()=>Promise<ContextExtras>=async()=>({commonSkills:[]}),read:PictureReader=storedPicture):Promise<RunContext|null>{
  const frozen=await readRunContext(runId);if(frozen)return frozen;
  const c1=await admin.from('studio_c1_checkpoints').select('brief_text').eq('run_id',runId).maybeSingle();
  if(c1.error||!c1.data?.brief_text)return null;
@@ -32,6 +35,10 @@ export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()
  if(a1.error||!a1.data?.brand_revision_id)return null;
  const brand=await admin.from('studio_brand_revisions').select('canonical_text').eq('id',a1.data.brand_revision_id).maybeSingle();
  if(brand.error||!brand.data?.canonical_text)return null;
+ // C2 (second part): the version of the stored brand pack current now (character, rules, catalogue and pictures).
+ // Without the migration or before a character exists, the first part's pack below.
+ const stored=await latestBrandPack(admin,a1.data.brand_revision_id);
+ if(stored)return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages:await encodePackImages(stored,read),...await extras()}));
  // C2: contexts frozen from now on carry the brand pack instead of the raw revision; frozen ones keep theirs.
  const brandPack=brandPackText(brand.data.canonical_text);
  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,...(brandPack?{brandPack}:{brandText:brand.data.canonical_text}),...await extras()}));

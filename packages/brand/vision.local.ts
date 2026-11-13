@@ -29,3 +29,23 @@ export async function loadBrandSheetVision(snapshot:Record<string,unknown>,get:(
  }
  return images;
 }
+
+/**
+ * Chat-shaped plan C2 (second part): the pictures of the one brand character request, the first picture of each
+ * material marked "Use this" (pinned in its frozen snapshot). Each is read from the brand's own ready material and
+ * checked against its hash. Absent for every other request.
+ */
+const characterRefSchema=z.array(materialImageSchema.extend({materialId:z.uuid(),label:z.string().max(300)})).max(12);
+export async function loadBrandCharacterVision(snapshot:Record<string,unknown>,campaignId:string){
+ if(snapshot.brandCharacterImages===undefined)return [];
+ const admin=adminClient(),refs=characterRefSchema.parse(snapshot.brandCharacterImages),images:{url:string;label:string}[]=[];let total=0;
+ const source=await admin.from('campaigns').select('brand_source_campaign_id').eq('id',campaignId).maybeSingle(),scope=(source.error?null:(source.data as {brand_source_campaign_id?:string|null}|null)?.brand_source_campaign_id)??campaignId;
+ for(const ref of refs){
+  const material=checked(await admin.from('studio_brand_materials').select('extraction').eq('id',ref.materialId).eq('tenant_id',sharedTenant).eq('campaign_id',scope).eq('state','ready').single());
+  if(!material?.extraction.images.some((i:{objectKey:string;sha256:string})=>i.objectKey===ref.objectKey&&i.sha256===ref.sha256))throw new Error('BRAND_SOURCE_INVALID');
+  const bytes=(await objectStore().get(ref.objectKey)).body;total+=bytes.length;if(total>12582912)throw new Error('VISION_PACK_TOO_LARGE');
+  if(createHash('sha256').update(bytes).digest('hex')!==ref.sha256)throw new Error('BRAND_SOURCE_HASH_MISMATCH');
+  images.push({url:`data:image/jpeg;base64,${bytes.toString('base64')}`,label:ref.label});
+ }
+ return images;
+}

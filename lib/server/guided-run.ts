@@ -19,6 +19,7 @@ export async function supplementRunBrand(control:Pick<GuidedRunControl,'campaign
 }
 import type {GuidedRunControl} from '@/packages/contracts/guided-run';
 import {brandRoleOf} from './brand-roles';
+import {requestBrandCharacterQuietly} from './brand-pack';
 const stableId=(value:string)=>{const h=createHash('sha256').update(value).digest('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-8${h.slice(17,20)}-${h.slice(20,32)}`;};
 export function guidedDbError(error:{code?:string;message:string}|null){
  if(!error)return;
@@ -50,6 +51,9 @@ export async function approveRunBrand(control:GuidedRunControl,input:{reviewerNa
   const review=a1ReviewSource(revision,actorId,{decision:'accepted',reviewerName:input.reviewerName,comments:note,attestations:{rules:true,fonts:true,c1Constraints:true}});
   brandDbError((await admin.rpc('studio_review_a1',{target_campaign:control.campaign_id,target_revision:revision.id,request_key:stableId(revision.id+':review'),source:review,acting_user:actorId})).error);
  }
+ // C2 (second part): the brand character is asked for before planning starts, so the worker writes it first and the
+ // run's planning freezes it. It never stops the approval: without it the run uses the first part's pack.
+ await requestBrandCharacterQuietly(control.run_id);
  guidedDbError((await admin.rpc('studio_start_workflow',{target_run:control.run_id,acting_user:actorId})).error);
  const latest=checked(await admin.from('studio_campaign_run_controls').select('*').eq('run_id',control.run_id).single());
  const result=await admin.rpc('studio_set_guided_run',{target_run:control.run_id,expected_version:latest.version,action:'approved',change_id:null,agent_role:null,note_text:null,acting_user:actorId});guidedDbError(result.error);return result.data;

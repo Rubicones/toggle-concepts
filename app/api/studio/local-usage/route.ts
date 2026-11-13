@@ -14,7 +14,8 @@ export async function GET(request:Request){return api(async()=>{
   const rows=checked(await base().eq("run_id",runId).order("created_at").limit(2000))??[];
   const calls=rows.map(r=>({row:r,usage:localCallUsage(r)})).filter((c):c is {row:typeof rows[number];usage:LocalCallUsage}=>!!c.usage);
   const totals=usageTotals(calls.map(c=>c.usage));
-  const shared=[...rows].reverse().map(r=>(r.usage as {_local?:{sharedContext?:{tokens:number;images:number;holds:{brief:boolean;brand:boolean;skills:string[];brandPack?:boolean}}}}|null)?._local?.sharedContext).find(Boolean)??null;
+  // C2: the latest request's shared context, with the brand pack version it froze (when the run has a stored pack).
+  const shared=[...rows].reverse().map(r=>(r.usage as {_local?:{sharedContext?:{tokens:number;images:number;holds:{brief:boolean;brand:boolean;skills:string[];brandPack?:boolean};pack?:{version:number;tokens:number;images:number}}}}|null)?._local?.sharedContext).find(Boolean)??null;
   return json({sharedContext:shared,calls:calls.map(c=>({stepId:c.row.id,at:c.row.created_at,status:c.row.status,...c.usage,line:usageLine(c.usage),...(c.usage.effortStage?{effortStageLabel:STAGES.find(s=>s.id===c.usage.effortStage)?.label??c.usage.effortStage}:{}),...(c.usage.conversation?{conversationLine:conversationLabel(c.usage.conversation as Parameters<typeof conversationLabel>[0],c.usage.role)}:{})})),totals,totalsLine:totals.calls?totalsLine(totals):null,apiEquivalent:totals.calls?apiEquivalentLabel(totals.apiEquivalentUsd):null,byRole:roleAverages(calls.map(c=>c.usage))});
  }
  const rows=checked(await base().order("created_at",{ascending:false}).limit(400))??[];

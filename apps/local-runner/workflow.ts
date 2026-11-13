@@ -25,7 +25,9 @@ import {studioChangeDirectory} from "../../packages/data/studio-changes";
 import type {ProviderErrorDetail} from "../../packages/contracts/provider-error";
 import {diagnoseIntakeOutput} from "../../packages/contracts/brand-intake";
 import {processBrandSheet} from "./brand-sheet";
-import {loadBrandVision,loadBrandSheetVision} from "../../packages/brand/vision.local";
+import {loadBrandVision,loadBrandSheetVision,loadBrandCharacterVision} from "../../packages/brand/vision.local";
+import {parseBrandCharacter,type CatalogueEntry} from "../../packages/brand/brand-pack-contents";
+import {ingestBrandCharacter} from "../../packages/brand/brand-pack-store";
 import {processBrandFieldAnalysis,flushBrandReadReceipts} from "./brand-field-analysis";
 import {processBrandMaterial} from "./brand-materials";
 import {compileDraftClaim} from "./compile-drafts";
@@ -101,11 +103,14 @@ async function execute(claim:Claim){
  if(Boolean(job.payload.creativeInputs)||job.kind==='compile'){await rpc('studio_retire_creative_claim',{target_job:job.id,token:job.lease_token,device});return;}
  const beat=setInterval(()=>{if(heartbeatBusy)return;heartbeatBusy=true;void rpc("studio_heartbeat_workflow",{target_job:job.id,token:job.lease_token,device}).catch(()=>{}).finally(()=>{heartbeatBusy=false;});},15000);
  if(job.kind==="compile"){try{if(job.payload.creativeInputs)await compileCreativeClaim(job as Parameters<typeof compileCreativeClaim>[0],device);else await compileDraftClaim(job,device);}finally{clearInterval(beat);}return;}
- let outputLimit=job.payload.snapshot.maxOutputTokens,protocolSchema:string|null=null;
+ let outputLimit=job.payload.snapshot.maxOutputTokens,protocolSchema:string|null=null,characterStep:string|null=null;
  let result:{outcome:string;cost:number|null;text:string|null;generation:string|null;usage:unknown;failure:string|null;finishReason?:string|null;validation?:unknown;providerError?:ProviderErrorDetail;originalOutput?:string;normalizations?:string[]}={outcome:"failed",cost:0,text:null,generation:null,usage:null,failure:null};
  try{
   // The mode frozen on the run decides the transport; Local runs never fall back to OpenRouter.
-  execution=await textExecutionFor(admin,"run",job.run_id);const shared=sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,role:job.role,stage:stageOf(job.role),...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{})});
+  execution=await textExecutionFor(admin,"run",job.run_id);
+  // C2 (second part): the brand character request writes the brand pack itself, so it never freezes the run context.
+  const brandCharacter=!!(job.payload.snapshot as {brandCharacter?:unknown}).brandCharacter;
+  const shared=brandCharacter?undefined:sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,role:job.role,stage:stageOf(job.role),...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{})});
   if(execution.mode!=="local_claude"&&!process.env.OPENROUTER_API_KEY)throw new Error("PROVIDER_NOT_CONFIGURED");
   const run=checked(await admin.from("studio_runs").select("id,config_snapshot").eq("id",job.run_id).eq("tenant_id",sharedTenant).single());
   if(!run)throw new Error("RUN_NOT_ACTIVE");
@@ -198,9 +203,10 @@ async function execute(claim:Claim){
   // A new Local request reserves the minimum (see LOCAL_TEXT_RESERVATION_MICRO_USD); an admitted one keeps its own.
   if(execution.mode==='local_claude'&&!initial)reservation=LOCAL_TEXT_RESERVATION_MICRO_USD;
   protocolSchema=snapshot.responseSchema?.name??null;
-  const vision=creative?await loadCreativeVision(creative.stage,creative.input,job.campaign_id,upstream):[...await loadBrandVision(snapshot as unknown as Record<string,unknown>,job.campaign_id),...await loadBrandSheetVision(snapshot as unknown as Record<string,unknown>)];
+  const vision=creative?await loadCreativeVision(creative.stage,creative.input,job.campaign_id,upstream):[...await loadBrandVision(snapshot as unknown as Record<string,unknown>,job.campaign_id),...await loadBrandSheetVision(snapshot as unknown as Record<string,unknown>),...await loadBrandCharacterVision(snapshot as unknown as Record<string,unknown>,job.campaign_id)];
   if(stopping)throw new Error("LOCAL_PROCESS_STOPPING");
   const submittedStep=await rpc("studio_begin_workflow",{target_job:job.id,token:job.lease_token,device,snapshot,reservation});
+  if(brandCharacter)characterStep=submittedStep.id;
   // From this point a crash/timeout is uncertain and can never be automatically resubmitted.
   submitted=true;
   outputLimit=snapshot.maxOutputTokens;
@@ -236,6 +242,9 @@ async function execute(claim:Claim){
      if(prepared.normalized)result={...result,text:prepared.text,originalOutput:text,normalizations:[PREVIEW_PROTOCOL]};
      if(prepared.blocked)result={...result,outcome:'blocked',failure:'AGENT_INPUT_BLOCKED'};
     }
+    // C2 (second part): an unreadable character answer is a failed answer (asked again like any other), never a pack.
+    const character=(snapshot as unknown as {brandCharacter?:{catalogue:CatalogueEntry[]}}).brandCharacter;
+    if(character&&result.outcome==="succeeded"){try{parseBrandCharacter(text,character.catalogue);}catch{result={...result,outcome:"failed",failure:"INVALID_OUTPUT_SCHEMA",validation:{code:"INVALID_OUTPUT_SCHEMA",message:"The brand character answer was unreadable or too short.",issues:[]}};}}
     if(!creative&&result.outcome==="succeeded"&&(claim.round.kind==="draft"||snapshot.outputFormat==="json_object"||snapshot.outputFormat==="json_schema")){
      const validation=prepareAgentOutput(result.text!,job.role,claim.round.kind==="draft",snapshot.campaignContext?.variantManifest);
      const bound=bindScenarioOutput(validation.text,job.role,snapshot.scenarioSelection,scenarioSelection);
@@ -251,6 +260,10 @@ async function execute(claim:Claim){
  const receipt={target_job:job.id,token:job.lease_token,device,expected_input:job.input_hash,expected_config:job.config_hash,outcome:result.outcome,actual_cost:result.cost,result_text:result.text,provider_generation:result.generation,token_usage:(result.usage||result.providerError||result.finishReason)?{...(result.usage as Record<string,unknown>),_studio:{finishReason:result.finishReason??null,maxOutputTokens:outputLimit,validation:result.validation??null,providerError:result.providerError??null,normalizations:result.normalizations??[],...(result.originalOutput?{originalOutput:result.originalOutput}:{}),responseSchema:protocolSchema}}:null,failure:result.failure};
  const file=resolve(directory,"receipts",`${attempt.id}.json`),tmp=file+'.tmp';await writeFile(tmp,JSON.stringify(receipt),{mode:0o600});await rename(tmp,file);
  await rpc("studio_complete_workflow",receipt);await unlink(file);await unlink(resolve(directory,'provider-ids',`${attempt.id}.json`)).catch(()=>{});
+ // C2 (second part): a written brand character becomes the next version of the brand pack before the next request is
+ // claimed, so a run whose planning waits behind it freezes the new pack. A failure here is repaired when the brand
+ // page is opened (ingestPendingCharacters); it never stops the queue.
+ if(result.outcome==="succeeded"&&characterStep)await ingestBrandCharacter(admin,characterStep).catch(error=>console.error('[brand-pack] the brand character could not be stored:',error instanceof Error?error.message:error));
 }
 async function main(){
  const host=new URL(process.env.NEXT_PUBLIC_APP_URL??"https://invalid").hostname;

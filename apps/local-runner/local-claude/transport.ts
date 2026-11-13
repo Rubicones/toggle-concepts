@@ -6,7 +6,8 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {cliArgs,childEnv,hasUnexpectedCliTools,runCli,streamUserMessage,type CliEvent,type CliProfile,type CliResult} from '../../../packages/agents/claude-cli.local';
-import {prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCliRequest,type ImageInput,type PreparedTextRequest,type CliTextRequest} from '../../../packages/agents/prepared-request';
+import {createHash} from 'node:crypto';
+import {parseDataUrl,prepareTextRequest,projectCli,projectPrepared,projectionDifferences,toCliRequest,type ImageInput,type PreparedTextRequest,type CliTextRequest} from '../../../packages/agents/prepared-request';
 import {localModelFor,type LocalModelChoice} from '../../../packages/agents/local-models';
 import {sharedLayout,sharedLayoutDifferences,continuingLayout,type RunContext} from '../../../packages/agents/run-context';
 import type {Plan} from '../../../packages/agents/local-session';
@@ -44,8 +45,8 @@ export type LocalTextDetails={
  /** Hypothetical text cost on the target model (plan §9, quantity 3): Sonnet's tokens at the target's prices. A forecast
   * with an unmeasured error, never an actual cost or a receipt. */
  forecast?:{targetModel:string;microUsd:number;method:'cli-tokens-x-target-price@1';errorMeasured:false};
- /** LC2: the shared run context this request started with ('shared' runs). */
- sharedContext?:{sha256:string;tokens:number;holds:RunContext['holds'];images:number};
+ /** LC2: the shared run context this request started with ('shared' runs); C2: the stored pack version it froze. */
+ sharedContext?:{sha256:string;tokens:number;holds:RunContext['holds'];images:number;pack?:RunContext['pack']};
  /** LC3/LC4: how this request used a stored conversation. */
  conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted';resumedFrom?:string};
  /** LC5: the skills this request carried (common and its role's own). */
@@ -56,6 +57,12 @@ export type LocalTextDetails={
  retriedAfterTimeout?:boolean;
 };
 export type LocalTextReceipt=TextReceipt&{provider:'claude-cli';local?:LocalTextDetails};
+
+/** C2 (second part): a request's pictures without those the run context's pack already opens with (same stored bytes). */
+export function withoutPackPictures(images:ImageInput[],ctx:RunContext|null){
+ const sources=new Set((ctx?.images??[]).map(i=>i.source));if(!sources.size)return images;
+ return images.filter(i=>{const d=parseDataUrl(i.url);return !d||!sources.has(createHash('sha256').update(Buffer.from(d.dataBase64,'base64')).digest('hex'));});
+}
 
 const finishOf=(stop:string|null|undefined)=>stop==='end_turn'||stop==='stop_sequence'?'stop':stop==='max_tokens'?'length':stop==='refusal'?'content_filter':stop??null;
 
@@ -102,12 +109,13 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   let mapping:LocalModelChoice;try{mapping=localModelFor(model,{sonnet:setup.sonnet});}catch(error){return refuse((error as Error).message);}
   // C2: with a brand pack in the run context, the request does not repeat the brand (the frozen snapshot is unchanged).
   const packed=options.shared?await options.shared():null,sent=packed?.holds.brandPack&&cfg.campaignContext!==undefined?{...cfg,campaignContext:withoutBrandDuplicates(cfg.campaignContext)}:cfg;
-  const prepared=prepareTextRequest(model,prompt,sent,images,{requestTag});
+  // C2 (second part): the pack's pictures open every request; a request's own copy of one of them is not sent again.
+  const prepared=prepareTextRequest(model,prompt,sent,withoutPackPictures(images,packed),{requestTag});
   let cli:CliTextRequest;try{cli=toCliRequest(prepared,{executionModel:mapping.execution,schemaMode:setup.schemaMode});}catch(error){return refuse((error as Error).message);}
   // The input check of plan §3.2 runs on every call, not only in tests.
   if(projectionDifferences(projectPrepared(prepared),projectCli(cli,prepared.output.schema?.schema)).length)return refuse('LOCAL_CONTEXT_MISMATCH');
   // LC2: in a 'shared' run every request starts with the same run context; the role's instructions and input follow it.
-  const ctx=options.shared?await options.shared():null;
+  const ctx=packed;
   if(ctx){const original=cli;cli=sharedLayout(original,prepared,ctx,options.role);if(sharedLayoutDifferences(cli,original,prepared,ctx,options.role).length)return refuse('LOCAL_CONTEXT_MISMATCH');}
   // LC6: in a shared run the effort follows the stage (frozen with the run context), after the layout checks above.
   const stage=ctx&&options.stage&&!prepared.reasoning.disabled?options.stage:undefined;if(stage)cli={...cli,effort:stageEffort(stage,ctx!.stageEffort)};
@@ -145,7 +153,7 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    const u=r.usage,p=cfg.pricing,forecast=u?{targetModel:model,microUsd:Math.ceil(((u.input_tokens??0)*p.inputPrice+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice)+(u.cache_creation_input_tokens??0)*(p.cacheWritePrice??p.inputPrice)+(u.output_tokens??0)*p.outputPrice)*1e6),method:'cli-tokens-x-target-price@1' as const,errorMeasured:false as const}:undefined;
    const details:Omit<LocalTextDetails,'events'|'stderr'>={transport:'claude-cli',mapping,semanticInputHash:prepared.semanticInputHash,schemaMode:cli.schemaMode,unsupported:cli.unsupported,cliVersion:r.init?.cliVersion??setup.cliVersion,
     ...(r.init?.model?{executedModel:r.init.model}:{}),...(r.init?.sessionId?{sessionId:r.init.sessionId}:{}),...(r.init?.apiKeySource?{apiKeySource:r.init.apiKeySource}:{}),
-    internalAttempts:r.internalAttempts,...(()=>{const size=lastCallSize(r.events);return size!==undefined?{conversationSize:size}:{};})(),...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:prepared.attachments.filter(a=>a.prefix).length}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
+    internalAttempts:r.internalAttempts,...(()=>{const size=lastCallSize(r.events);return size!==undefined?{conversationSize:size}:{};})(),...(r.numTurns!==undefined?{numTurns:r.numTurns}:{}),...(cli.effort?{effort:cli.effort}:{}),...(r.apiEquivalentUsd!==undefined?{apiEquivalentUsd:r.apiEquivalentUsd}:{}),stopReason:r.stopReason??null,durationMs:r.durationMs,exitCode:r.exitCode,...(r.limitReached?{limitReached:true}:{}),...(r.usage?{usage:r.usage}:{}),...(recordPath?{recordPath}:{}),...(forecast?{forecast}:{}),...(ctx?{sharedContext:{sha256:ctx.sha256,tokens:ctx.tokens,holds:ctx.holds,images:ctx.images?.length??prepared.attachments.filter(a=>a.prefix).length,...(ctx.pack?{pack:ctx.pack}:{})}}:{}),...(conversation?{conversation}:{}),...(skillsUsed.length?{skills:skillsUsed}:{}),...(stage?{stage}:{}),...(timedOut?{retriedAfterTimeout:true}:{}),...(inputParts.length?{inputParts}:{})};
    const local:LocalTextDetails={...details,events:r.events,stderr:r.stderr},usage=usageOf(r,details),base={provider:'claude-cli' as const,generation:null,usage,local};
    if(leak)return {...base,outcome:'failed',cost:0,text:null,failure:leak};
    if(r.outcome==='cancelled')return {...base,outcome:'unknown',cost:null,text:null,failure:'CANCELLED'};
