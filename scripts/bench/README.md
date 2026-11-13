@@ -30,6 +30,27 @@ python3 scripts/bench/sheet.py artifacts/bench/<run folder> en-GB primary   # co
 node --import tsx scripts/bench/sweep.ts <brand> artifacts/bench/<run folder> # re-render, no model call
 ```
 
+## Skill ablation (D6)
+
+Run the same brand twice, once with every skill and once without one, then make a blind pair:
+
+```bash
+node --import tsx scripts/bench/pipeline-bench.ts <brand> --turns=18 --pictures=4
+node --import tsx scripts/bench/pipeline-bench.ts <brand> --turns=18 --pictures=4 --without-skill=<skill id>
+node --import tsx scripts/bench/ablation-pair.ts artifacts/bench/<first run> artifacts/bench/<second run>
+```
+
+`--without-skill=<id>` leaves exactly that skill out of the designer's and the critic's text (ids: the file names in
+`packages/agents/skills/`); everything else is the same. `ablation-pair.ts` copies the two sweeps to
+`artifacts/bench/pair-<brand>-<skill>/A` and `/B` in an order fixed by the pair, so the owner judges without knowing
+which is which. `.key.json` in that folder says which side left the skill out and the token difference; open it after
+judging. Record the verdict on the skill's card (Models & agents → Skills: "I noticed it was missing" / "I could not
+tell"). Two or more pairs where the owner could not tell give the label "no measured effect"; only the owner retires a
+skill.
+
+In the studio itself, `STUDIO_WITHOUT_SKILL=<id>` in `.env.local` freezes new runs without that skill (the run context
+records it); remove the line afterwards.
+
 ## What the machine needs
 
 - Claude Code CLI signed in (`claude` on PATH).

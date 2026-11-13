@@ -5,6 +5,7 @@ import {ApiError} from "@/lib/server/api";
 import {studioContext,checked} from "@/lib/server/studio";
 import {objectStore} from "@/packages/media/s3.server";
 import {STAGES} from "@/packages/agents/stage-effort";
+import {criticSummary,criticLine,type CheckRow} from "@/packages/agents/skill-measure";
 import {pictureType,comparisonView,drawChatFirst,canReveal,runFrames,runReport,sideOf,type StoredComparison,type StoredPair,type BriefKind,type Verdict} from "@/packages/agents/comparison";
 
 const MISSING=new Set(["42P01","PGRST205","PGRST204"]);
@@ -46,7 +47,9 @@ export async function comparisonFrames(runId:string){const {admin,tenant}=await 
 export async function comparisonReport(runId:string){
  const {admin,tenant}=await studioContext();await runRecord(admin,tenant,runId);
  const rows=checked(await admin.from("studio_agent_steps").select("role,status,usage,config_snapshot,created_at").eq("tenant_id",tenant).eq("run_id",runId).not("usage->_local","is",null).order("created_at").limit(4000))??[];
- return runReport(rows as Parameters<typeof runReport>[0],stage=>STAGES.find(s=>s.id===stage)?.label??stage);
+ // D7: critic rounds and stop reasons from the stored check answers (migration 20261113000700; none before it).
+ const checks=await admin.from("studio_critic_checks").select("run_id,direction_id,stage,round,skill_id,check_no,ok,stop").eq("tenant_id",tenant).eq("run_id",runId);
+ return {...runReport(rows as Parameters<typeof runReport>[0],stage=>STAGES.find(s=>s.id===stage)?.label??stage),criticLine:criticLine(criticSummary(checks.error?[]:(checks.data??[]) as CheckRow[]))};
 }
 
 export async function createComparison(input:{runId:string;briefKind:BriefKind;title:string;chatTokens?:number|null}){

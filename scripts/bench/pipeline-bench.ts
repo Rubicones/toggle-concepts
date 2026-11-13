@@ -12,6 +12,7 @@ import {designerTools,provisionalDesign} from '../../apps/local-runner/director/
 import {designerViews,screenshotForDesigner,runDesigner,newDesignerState} from '../../apps/local-runner/director/designer-loop';
 import {cliArgs,runCli,childEnv,streamUserMessage} from '../../packages/agents/claude-cli.local';
 import {readSkills} from '../../packages/agents/skill-files';
+import {withoutSkill} from '../../packages/agents/skill-measure';
 import {designerInstructionsFor} from '../../packages/agents/prompts/designer-v1';
 import {designerTurnResponseFor} from '../../packages/director/designer';
 import {designerContext} from '../../packages/director/designer-context';
@@ -27,7 +28,9 @@ const arg=(name:string,fallback:string)=>process.argv.find(a=>a.startsWith(`--${
 async function main(){
  const brand=brands.find(b=>b.id===process.argv[2]);if(!brand)throw new Error(`Brand: ${brands.map(b=>b.id).join(' | ')}`);
  const maxTurns=Number(arg('turns','12')),model=arg('model','claude-sonnet-5-5'),effort=arg('effort','high'),version=Number(arg('version','3'));
- const out=resolve(arg('out','artifacts/bench'),`${brand.id}-pipeline-v${version}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);
+ // D6: --without-skill=<id> runs the same brief without exactly one skill (designer and critic), for a blind pair.
+ const without=arg('without-skill','')||undefined;if(without&&!readSkills().some(s=>s.id===without))throw new Error(`--without-skill: no skill ${without}`);
+ const out=resolve(arg('out','artifacts/bench'),`${brand.id}-pipeline-v${version}${without?`-without-${without}`:''}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);
  await mkdir(out,{recursive:true});
  // Mode "propose": the client gave no words. One request writes the hooks and each scene's line together with its
  // visual event, from the planning skills; the designer then builds that proposal.
@@ -63,7 +66,7 @@ async function main(){
   catalog.push(entry);await writeResources(folder,input,catalog);return entry;
  };
  const design=provisionalDesign(input),tools=designerTools({folder,input,design,deadline:()=>Date.now()+600000,preview:async()=>{},facts:()=>({}),save:async()=>{},buy});
- const skills=readSkills().filter(s=>s.defaultRoles.includes('designer'));
+ const skills=withoutSkill(readSkills(),without).filter(s=>s.defaultRoles.includes('designer'));
  const dir=await mkdtemp(join(tmpdir(),'bench-cli-')),systemFile=join(dir,'system.txt'),mcpFile=join(dir,'mcp.json'),work=resolve(out,'cli');
  await mkdir(work,{recursive:true});await writeFile(mcpFile,'{"mcpServers":{}}');
  await writeFile(systemFile,designerInstructionsFor(input)+'\n\nSKILLS\n'+skills.map(s=>`## ${s.title}\n${s.text.trim()}`).join('\n\n'));
@@ -72,7 +75,7 @@ async function main(){
  const {$schema:_meta,...schema}=designerTurnResponseFor(input).schema;void _meta;
  // The hero frame's review, as in a run: the critic sees the render and the measured findings and returns notes.
  const heroReviews=Number(arg('reviews','2')),criticFile=join(dir,'critic.txt');
- await writeFile(criticFile,liveCriticInstructionsFor(input.brief)+'\n\nSKILLS\n'+readSkills().filter(s=>s.defaultRoles.includes('critic')).map(s=>`## ${s.title}\n${s.text.trim()}`).join('\n\n'));
+ await writeFile(criticFile,liveCriticInstructionsFor(input.brief)+'\n\nSKILLS\n'+withoutSkill(readSkills(),without).filter(s=>s.defaultRoles.includes('critic')).map(s=>`## ${s.title}\n${s.text.trim()}`).join('\n\n'));
  const {$schema:_m2,...criticSchema}=liveCriticSchema.schema;void _m2;let criticUsd=0,criticSeconds=0;
  if(heroReviews>0)tools.reviewHero=async(round,shots,measured)=>{
   try{
@@ -133,7 +136,7 @@ async function main(){
    for(const shot of r.shots){const jpeg=await screenshotForDesigner(shot.file,540);await writeFile(join(sweep,`${shot.key.replace(/[^\w.-]+/g,'_')}.jpg`),Buffer.from(jpeg.split(',')[1],'base64'));}}
  }catch(error){console.error('sweep:',error instanceof Error?error.message:error);}
  const total=log.reduce((t,l)=>({seconds:t.seconds+l.seconds,input:t.input+(l.usage.input_tokens??0)+(l.usage.cache_creation_input_tokens??0),cached:t.cached+(l.usage.cache_read_input_tokens??0),output:t.output+(l.usage.output_tokens??0)}),{seconds:0,input:0,cached:0,output:0});
- const summary={brand:brand.id,version,model,effort,turns:state.turn,complete:state.complete,hero:state.hero?.acceptedBy,...total,usd:Math.round(usd*100)/100,criticUsd:Math.round(criticUsd*100)/100,criticSeconds,sweep:{hard,soft},frame:await readFile(join(folder,'Frame.tsx'),'utf8').then(s=>s.length,()=>0),log};
+ const summary={brand:brand.id,...(without?{withoutSkill:without}:{}),version,model,effort,turns:state.turn,complete:state.complete,hero:state.hero?.acceptedBy,...total,usd:Math.round(usd*100)/100,criticUsd:Math.round(criticUsd*100)/100,criticSeconds,sweep:{hard,soft},frame:await readFile(join(folder,'Frame.tsx'),'utf8').then(s=>s.length,()=>0),log};
  await writeFile(join(out,'summary.json'),JSON.stringify(summary,null,1));
  console.log(JSON.stringify({...summary,log:undefined,out}));
  await rm(dir,{recursive:true,force:true});

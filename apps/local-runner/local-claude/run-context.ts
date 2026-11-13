@@ -30,7 +30,7 @@ export async function freezeRunContext(runId:string,ctx:RunContext):Promise<RunC
 }
 
 /** The frozen context, or one built now from the approved brief and the accepted brand; null before A1. */
-export type ContextExtras={commonSkills:Skill[];/** D1 */stageSkills?:import('../../../packages/agents/stage-skills').StageSkills;roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>;/** C3: per-role material budgets from Models & agents */materialBudget?:Record<string,MaterialBudget>};
+export type ContextExtras={/** D6: the skill an ablation run leaves out */withoutSkill?:string;commonSkills:Skill[];/** D1 */stageSkills?:import('../../../packages/agents/stage-skills').StageSkills;roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>;/** C3: per-role material budgets from Models & agents */materialBudget?:Record<string,MaterialBudget>};
 export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()=>Promise<ContextExtras>=async()=>({commonSkills:[]}),deps:{read?:PictureReader;compact?:(pack:StoredBrandPack)=>Promise<CompactPage[]|null>}={}):Promise<RunContext|null>{
  const frozen=await readRunContext(runId);if(frozen)return frozen;
  const c1=await admin.from('studio_c1_checkpoints').select('brief_text').eq('run_id',runId).maybeSingle();

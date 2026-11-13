@@ -31,6 +31,7 @@ import {forkFromDirection} from '../../../packages/agents/local-session';
 import {usesImageIdeas,IDEAS_TASK,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext} from '../../../packages/director/image-ideas';
 import {DESIGNER_ROLE_V4} from '../../../packages/director/roles';
 import {screenshotForDesigner,RENDER_LONG_SIDE} from './designer-loop';
+import {recordCheckAnswers} from './critic-checks';
 import {checksText,stageReviewMaterial,REVIEW_INSTRUCTIONS,HERO_REVIEW_WHAT,END_REVIEW_WHAT,reviewSchemaV2,reviewContextText,readReview,withAllRulings,toDesignerNotes,settleHeroReview,HERO_REVIEW_ROUNDS} from '../../../packages/director/critic-review';
 import {code3dNotes,THREE_D_MECHANICS} from '../../../packages/director/three-d';
 import {runHeroChat,HERO_TURN_SHARE} from './hero-chat-loop';
@@ -332,7 +333,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
       const ctx2=heroChat(input)&&execution.mode==='local_claude'&&execution.context_mode==='shared'?await sharedContextFor(admin,execution,input.runId)?.():null;
       if(ctx2?.criticVersion){const loopNow=state.designer as DesignerLoopState,memory=loopNow?.endMemory??[],material=stageReviewMaterial(ctx2.stageSkills,'extension'),hard=findings(views.summary).filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
        const text=(await call('critic','Review these rendered views of the draft.',REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),checks:material.checks,signs:material.signs,hard,memory})},{review:'live',round,critic:2},await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:criticCrops(6)}))).text;
-       const read=readReview(text,round);if(!read)return text;const r=withAllRulings(read,memory);if(loopNow){loopNow.endMemory=[...memory,r];await save();}
+       const read=readReview(text,round);if(!read)return text;const r=withAllRulings(read,memory);if(loopNow){loopNow.endMemory=[...memory,r];await save();}void recordCheckAnswers(admin,{runId:input.runId,directionId:input.directionId,stage:'extension',round,answers:r.answers});
        return JSON.stringify({accepted:r.accepted,summary:(JSON.parse(text) as {summary?:string}).summary?.slice(0,1200)||'Reviewed.',notes:toDesignerNotes(r).slice(0,10)});}
       return (await call('critic','Review these rendered views of the live draft and the measurements.',liveCriticInstructionsFor(input.brief),liveCriticSchema,context,{review:'live',round},[...await brandSheetImages(folder,input),...await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:criticCrops(6)})])).text;}:undefined,selfReview:usesDesigner(input)?false:coderSees,
      context:()=>({concept:design.designDocument.slice(0,2500),...(input.creativeHandoff?.intent.feeling?{feeling:input.creativeHandoff.intent.feeling}:{}),keyFrames:design.keyFrames,resources:design.resources.map(r=>({id:r.id,scene:r.scene,purpose:r.purpose,proxy:r.proxy,...(input.brief.pictureRulesVersion===1?{...(r.proxyFor?{proxyFor:r.proxyFor}:{}),...(r.cutout?{cutout:true}:{})}:{})})),formats:input.formats.map(f=>({id:f.id,width:f.width,height:f.height})),brandTokens:input.brand.tokens}),
@@ -392,7 +393,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      const memory=loop.heroMemory??[],material=stageReviewMaterial(staged,'hero'),hard=measured.filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
      const text=(await call('critic','Review this hero frame.',REVIEW_INSTRUCTIONS(HERO_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input,{sceneIds:false}),checks:material.checks,signs:material.signs,hard,memory})},{review:'hero',round,stage:'H',critic:2},[...(shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame now, at full size'}]:[]),...(sheetOnRequest?[]:await brandSheetImages(folder,input))])).text;
      const settled=settleHeroReview(text,round,memory,hard.length,Math.min(HERO_REVIEW_ROUNDS,heroCritic));if(!settled)return undefined;
-     loop.heroMemory=[...memory,settled.round];return settled.result;}
+     loop.heroMemory=[...memory,settled.round];void recordCheckAnswers(admin,{runId:input.runId,directionId:input.directionId,stage:'hero',round,answers:settled.round.answers,stop:settled.result.stop??null});return settled.result;}
     :heroCritic&&heroChat(input)?async(round,shots,measured)=>{await controls();
      // C5: the hero review of stage H judges stopping power, idea and craft first, with the brand pack (prefix) and the
      // digest; a separate request with no designer history.

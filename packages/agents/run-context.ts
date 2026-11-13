@@ -42,7 +42,9 @@ export type RunContext={version:1;base:string;system:string;brief:string;sha256:
  /** D4: designer version 5 (opt-in, STUDIO_DESIGNER_VERSION=5 when the context froze): visual direction writes territories. */
  imageOwner?:string;
  /** D5: the critic with shared checks, memory and bounded rounds (contexts frozen from D5 on). */
- criticVersion?:string};
+ criticVersion?:string;
+ /** D6: an ablation run: the one skill left out of every stage (STUDIO_WITHOUT_SKILL when the context froze). */
+ withoutSkill?:string};
 
 const VOLATILE_KEY=/^(id|.*Id|.*Ids|.*_id|revision|campaignRevision|.*At|.*_at|sha256|.*Hash|.*hash|objectKey|url|.*Url|path|.*Path|requestId|runId)$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,TIMESTAMP=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
@@ -66,7 +68,7 @@ export function buildRunContext(args:{briefText:string;brandText?:string|null;/*
  /** C7 follow-up: the planning roles' answer format as text (same gate as C9). */schemaInText?:boolean;
  /** D1: the skills by stage (same gate); replaces commonSkills and roleSkills. */stageSkills?:StageSkills;
  /** D3: positive instructions (same gate; off by default until the owner approves). */positive?:boolean;
- /** D4: designer version 5, opt-in (same gate). */imageOwner?:boolean;/** D5 (same gate) */critic?:boolean}):RunContext{
+ /** D4: designer version 5, opt-in (same gate). */imageOwner?:boolean;/** D5 (same gate) */critic?:boolean;/** D6 */withoutSkill?:string}):RunContext{
  const positive=!!(args.brandPack&&args.packVersion&&args.materials&&args.positive),base=positive?positiveText(SHARED_BASE,['base']):SHARED_BASE;
  // D1: with skills by stage the shared system text carries no skill; a stage over its budget stops the run with its reason.
  const staged=args.brandPack&&args.packVersion&&args.materials&&args.stageSkills?args.stageSkills:undefined;
@@ -78,7 +80,7 @@ export function buildRunContext(args:{briefText:string;brandText?:string|null;/*
  // Contexts without stored pack pictures keep the exact earlier digest.
  const sha256=createHash('sha256').update(system+'\n\u0000\n'+brief+(images.length?'\n\u0000\n'+images.map(i=>i.sha256).join(','):'')).digest('hex');
  const pack=args.brandPack&&args.packVersion?{pack:{version:args.packVersion,tokens:Math.ceil(Buffer.byteLength(args.brandPack,'utf8')/4)+images.reduce((n,i)=>n+Math.ceil(i.width*i.height/750),0),images:images.length},...(images.length?{images}:{})}:{};
- return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(!staged&&args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{}),...(staged?{stageSkills:staged}:{}),...(positive?{instructionsVersion:POSITIVE_VERSION}:{}),...(args.imageOwner?{imageOwner:'image-owner@1'}:{}),...(args.critic?{criticVersion:'critic@2'}:{})}:{})};
+ return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(!staged&&args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{}),...(staged?{stageSkills:staged}:{}),...(positive?{instructionsVersion:POSITIVE_VERSION}:{}),...(args.imageOwner?{imageOwner:'image-owner@1'}:{}),...(args.critic?{criticVersion:'critic@2'}:{}),...(args.withoutSkill?{withoutSkill:args.withoutSkill}:{})}:{})};
 }
 
 /** C2 (second part): the pack's pictures as request parts (label, then picture), the same bytes for every role. */

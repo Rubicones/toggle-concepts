@@ -113,13 +113,14 @@ function AddPair({comparisonId,runId,added,fail}:{comparisonId:string;runId:stri
 
 /** The run's numbers per stage and in total, next to the verdicts. */
 function RunNumbers({runId,chatTokens}:{runId:string;chatTokens:number|null}){
- const {data}=useShared<RunReport>(`/api/studio/comparisons?report=${runId}`,{live:false});
+ const {data}=useShared<RunReport&{criticLine?:string}>(`/api/studio/comparisons?report=${runId}`,{live:false});
  if(!data)return null;
  const t=data.total,row=(s:RunReport["stages"][number],wall?:number)=><tr key={s.stage}><th scope="row">{s.label}</th><td>{s.totals.calls}</td><td>{s.turns}</td><td>{minutes(wall??s.timeMs)}</td><td>{k(s.totals.input)}</td><td>{k(s.totals.cacheRead)}</td><td>{k(s.totals.cacheCreation)}</td><td>{k(s.totals.output)}</td><td>${s.totals.apiEquivalentUsd.toFixed(2)}</td><td>{Math.round(s.totals.cachedShare*100)}%</td></tr>;
  return <Disclosure><summary>The run in numbers: {t.totals.calls} requests · {minutes(t.wallMs)} · {k(t.totals.input+t.totals.cacheCreation+t.totals.cacheRead)} in, {Math.round(t.totals.cachedShare*100)}% from the cache · {k(t.totals.output)} out{chatTokens!==null?` (the chat: ${k(chatTokens)} tokens)`:""}</summary>
   <div className={styles.table}><table><thead><tr><th scope="col">Stage</th><th scope="col">Requests</th><th scope="col">Turns</th><th scope="col">Time</th><th scope="col">Input</th><th scope="col">Cache read</th><th scope="col">Cache write</th><th scope="col">Output</th><th scope="col">≈ API price</th><th scope="col">Cached share</th></tr></thead>
    <tbody>{data.stages.map(s=>row(s))}{row(t,t.wallMs)}</tbody></table></div>
   {data.cacheLine&&<p className="muted">{data.cacheLine}</p>}
+  {data.criticLine&&<p className="muted">{data.criticLine}</p>}
   <p className="muted">{data.repair.answers?`Planning answers written as text: ${data.repair.answers}; ${data.repair.repaired} needed a second try to fit their format (${Math.round((data.repair.share??0)*100)}%)${data.repair.notFitting?`, ${data.repair.notFitting} still did not fit`:""}.`:"This run has no planning answers written as text (it started before that change)."}</p>
   <p className="muted">Time per stage is the time its requests took; the total is from the first request to the end of the last. ≈ API price is the subscription quota at API prices, not money spent.</p>
  </Disclosure>;
