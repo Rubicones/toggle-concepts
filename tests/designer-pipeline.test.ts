@@ -50,7 +50,7 @@ test('the worker, the quote and the start route carry the designer pipeline; ear
  assert.match(worker,/if\(usesDesigner\(input\)&&!state\.design\)/);assert.match(worker,/studio_designer_policy_version/);
  assert.match(worker,/if\(usesDesigner\(input\)\)await designDraft\(\);else await livePipeline/);
  assert.match(worker,/repair:usesDesigner\(input\)\?designerRepair:repair/);assert.match(worker,/selfReview:usesDesigner\(input\)\?false:coderSees/);
- const start=readFileSync('lib/server/director-start.ts','utf8');assert.match(start,/\.\.\.\(designer\?\(await sharedLocalRun\(saved\.admin,saved\.run\.id\)\?\{designerVersion:process\.env\.STUDIO_HERO_CHAT==='1'\?4:3,materialsVersion:1,digestVersion:1\}:\{designerVersion:3\}\):\{\}\)/,'C5: shared Local runs quote version 4; others keep version 3');assert.match(start,/estimateDesignerDirection\(\{designer:models\.director\.pricing/);
+ const start=readFileSync('lib/server/director-start.ts','utf8');assert.match(start,/\.\.\.\(designer\?\(await sharedLocalRun\(saved\.admin,saved\.run\.id\)\?\{designerVersion:4,materialsVersion:1,digestVersion:1\}:\{designerVersion:3\}\):\{\}\)/,'C5: shared Local runs quote version 4; others keep version 3');assert.match(start,/estimateDesignerDirection\(\{designer:models\.director\.pricing/);
  assert.match(readFileSync('app/api/studio/campaigns/[id]/creative/route.ts','utf8'),/pipeline:z\.enum\(\['director','designer'\]\)\.optional\(\)/);
  assert.match(readFileSync('components/studio/director-workspace.tsx','utf8'),/One designer per direction \(new\)/);
  assert.equal(directionStatus({id:'d',status:'running',progress:{phase:'designer'}} as never),'The designer is working');

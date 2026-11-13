@@ -11,7 +11,7 @@
 - **How to Apply:** nothing to run. Update the app and the runner (`Install-Toggle.cmd`).
 - **Backward Compatibility:** new designer quotes in shared Local runs carry `designerVersion: 4` (with C3's and C4's flags); every other designer quote stays version 3. Blocks quoted before, versions 1–3 and frozen runs keep their exact requests (tested; one source-text test of the quote was updated to the new line).
 
-**Owner's approval gate (added at commit):** new designer blocks of shared Local runs quote `designerVersion: 3` with the C3/C4 flags until the owner approves the stage H instruction below. Version 4 is opt-in on the computer that runs the app with `STUDIO_HERO_CHAT=1`; after approval this becomes the default (one line in `lib/server/director-start.ts`).
+**Owner's approval (13 November):** the owner approved the stage H instruction; version 4 is now the default for new designer blocks of shared Local runs. Earlier note, kept for the record — new designer blocks of shared Local runs quote `designerVersion: 3` with the C3/C4 flags until the owner approves the stage H instruction below. Version 4 is opt-in on the computer that runs the app with `STUDIO_HERO_CHAT=1`; after approval this becomes the default (one line in `lib/server/director-start.ts`).
 
 ## 2. Summary of Changes
 
