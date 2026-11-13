@@ -132,6 +132,9 @@ export type DesignerLoopState={
  session?:{role:string;sessionId:string;tokens:number};filesSeen?:Record<string,string>;
  /** C3: materials fetched for the next turn (names), and those already in the current conversation. */
  materialsDue?:string[];materialsSeen?:string[];
+ /** C5 (designerVersion 4, stage H): the app's next message (the render note, corrections, the reviewer's notes); stage E
+  * has opened in the conversation (its mechanics were sent once). */
+ heroNote?:string;stageEOpened?:boolean;
  /** Point 4a: the designer's notes, sent at the top of every request (outside the 12-result window); a restart keeps them. */
  notes?:string;
  /** point 4b: the turn after this render was already refused once for a missing seen */

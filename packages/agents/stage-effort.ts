@@ -8,6 +8,7 @@ export const STAGES=[
  {id:'planning-create',label:'Strategy, script and visual planning',default:'high'},
  {id:'supporting',label:'Research, brand reading, variants and localization',default:'medium'},
  {id:'design-create',label:'Designing a frame (first design, hero frame, recomposition)',default:'high'},
+ {id:'design-hero',label:'The hero frame as a chat (stage H)',default:'high'},
  {id:'design-revise',label:'Revising after a render or measured findings',default:'medium'},
  {id:'code-build',label:'Building the component from the design (coder)',default:'medium'},
  {id:'code-repair',label:'Code repairs',default:'medium'},
@@ -18,8 +19,10 @@ export const DEFAULT_STAGE_EFFORT=Object.fromEntries(STAGES.map(s=>[s.id,s.defau
 
 const PLANNING=new Set(['strategy','script','asset-plan','visual-direction','layout']);
 /** The stage of a request from its role and what the turn does. */
-export function stageOf(role:string,detail:{revising?:boolean;repair?:boolean}={}):StageId{
+export function stageOf(role:string,detail:{revising?:boolean;repair?:boolean;hero?:boolean}={}):StageId{
  if(role==='critic')return 'critic';
+ // C5: stage H (designerVersion 4) runs at its own effort, high by default, every turn of the hero conversation.
+ if(role==='designer'&&detail.hero)return 'design-hero';
  if(role==='designer')return detail.revising?'design-revise':'design-create';
  // The coder implements the director's design; it does not invent it, so its turns are not the inventing stage.
  if(role==='assembler'||role==='coder'||role==='creative-code')return detail.repair?'code-repair':'code-build';

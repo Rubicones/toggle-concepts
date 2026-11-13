@@ -18,7 +18,9 @@ const section=(title:string,body:string|undefined|null)=>body&&body.trim()?`${ti
 const words=(v:unknown)=>typeof v==='string'?v.replace(/\s+/g,' ').trim():v==null?'':plainText(v,1200);
 
 /** The designer's first-turn input as plain labelled text. Deterministic for the same input. */
-export function designerDigestText(input:DirectionInput):string{
+/** C5: stage H (designerVersion 4, hero open) names scenes only ("Scene 1"); ids follow when stage E starts. */
+export function designerDigestText(input:DirectionInput,options:{sceneIds?:boolean}={}):string{
+ const ids=options.sceneIds!==false;
  const h=input.creativeHandoff,intent=h?.intent,reference=input.variants[0],hero=heroScene(input),scenes=input.storyboard;
  const sceneName=(id:string)=>`Scene ${scenes.findIndex(s=>s.id===id)+1}`;
  const lines=(sceneId:string)=>reference?input.variantFacts?.[reference.id]?.sceneCopy[sceneId]??scenes.find(s=>s.id===sceneId)?.copy??[]:[];
@@ -32,8 +34,8 @@ export function designerDigestText(input:DirectionInput):string{
   section('GOAL AND AUDIENCE',[intent?.goal?`Goal: ${words(intent.goal)}`:'',intent?.audience?`Audience: ${words(intent.audience)}`:''].filter(Boolean).join('\n')),
   section('STRATEGY (in short)',h?.strategy?plainText(h.strategy,2400,300):''),
   section('VISUAL DIRECTION (in short)',h?.visual?plainText(h.visual,3000,300):''),
-  section('SCENARIO (scene id for focus, render and code; what it shows; what proves its line)',scenes.map((s,i)=>`Scene ${i+1} · id ${s.id} · ${s.start}–${s.end} s${s.id===hero?' · HERO':''}\n  Shows: ${s.visualNotes.replace(/\s+/g,' ').slice(0,400)}${s.proof?`\n  Proof: ${s.proof}`:''}`).join('\n')),
-  section('HERO SCENE',`${sceneName(hero)} (id ${hero}): design it first, in the reference format.`),
+  section(ids?'SCENARIO (scene id for focus, render and code; what it shows; what proves its line)':'SCENARIO (what each scene shows; what proves its line)',scenes.map((s,i)=>`Scene ${i+1}${ids?` · id ${s.id}`:''} · ${s.start}–${s.end} s${s.id===hero?' · HERO':''}\n  Shows: ${s.visualNotes.replace(/\s+/g,' ').slice(0,400)}${s.proof?`\n  Proof: ${s.proof}`:''}`).join('\n')),
+  section('HERO SCENE',`${sceneName(hero)}${ids?` (id ${hero})`:''}: design it first, in the reference format.`),
   section('FORMATS',input.formats.map(f=>`${f.id} · ${f.width}×${f.height}${f.id===format?.id?' · REFERENCE':''} · smallest text ${f.minTextPx} px · safe area top ${Math.round(f.safe.top)} right ${Math.round(f.safe.right)} bottom ${Math.round(f.safe.bottom)} left ${Math.round(f.safe.left)} px`).join('\n')),
   squarePreviewOnly(input)?section('DRAFT SCOPE',squarePreviewInstructions):'',
   section(`REFERENCE COPY (${reference?`${reference.locale}, hook ${reference.hook}, call to action ${reference.cta}, ${reference.length} s`:'reference'}; approved words, verbatim)`,scenes.map((s,i)=>`Scene ${i+1}: ${lines(s.id).join(' / ')||'(no words)'}`).join('\n')),

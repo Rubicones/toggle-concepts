@@ -25,3 +25,8 @@ export function referenceEntries(folder:string,input:DirectionInput){
  const slug=(url:string)=>url.replace(/\.[a-z0-9]{1,5}$/i,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,28)||'file';
  return [...input.brand.references.map(r=>({r,kind:'brand reference'})),...input.brand.logos.map(r=>({r,kind:'logo'}))].filter(({r})=>/\.(png|jpe?g|webp|gif|svg)$/i.test(r.url)).map(({r,kind})=>({name:name(`ref-${slug(r.url)}`),kind,line:`your ${kind} ${r.url}`,size:'picture',file:resolve(folder,'public',r.url)}));
 }
+
+/** C5 (designerVersion 4): the full brand sheet pages as catalogue entries the designer asks for by name. */
+export function sheetEntries(folder:string,input:DirectionInput){
+ return (input.brand.sheet??[]).map(p=>({name:`sheet-${p.section}${p.slice?`-${p.slice+1}`:''}`,kind:'brand sheet page',line:`the full brand sheet: ${p.section}${p.slice?`, part ${p.slice+1}`:''}`,size:'picture',file:resolve(folder,'public',p.url)}));
+}
