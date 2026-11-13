@@ -161,6 +161,9 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
    if(turn.settleHero&&heroOpen()){
     const hero=state.hero!;
     if(!hero.shots?.length)results.push({hero:'refused',detail:'Render the hero frame before asking for its review.'});
+    // Version 3: a hero frame is not judged while a picture it asked for is still being made (the reviewer would see
+    // an empty place). The loop waits for the pictures here, so no turn is spent on waiting.
+    else if(usesEngineKit(input)&&pending.size>arrived.size){await Promise.all(pending.values());stopIfFatal();results.push({hero:'refused',detail:'The pictures you requested have arrived now. Render the hero frame with them, look, then set settleHero.'});}
     else if(hero.reviews>=(args.heroReviews??0)||!tools.reviewHero){await accept(tools.reviewHero&&(args.heroReviews??0)>0?'reviews-used':'no-critic');results.push({hero:'accepted',detail:'Design the other scenes and formats now.'});}
     else{
      const review=await tools.reviewHero(hero.reviews+1,hero.shots,(state.lastRender?.findings??[]).map(f=>({view:f.view,severity:f.severity,detail:f.detail})));hero.reviews++;await args.save(state);
