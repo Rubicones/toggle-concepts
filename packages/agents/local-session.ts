@@ -67,3 +67,17 @@ export function conversationLabel(kind:'new'|'continued'|'branched'|'condensed'|
  if(role==='designer'&&kind!=='new')return ({continued:'Continued the conversation',branched:'Continued the conversation',condensed:'Started over with the full draft: the conversation was too long',restarted:'Started over with the full draft: the conversation was not found on this computer'} as const)[kind];
  return ({new:'Started a new conversation',continued:'Continuing the conversation',branched:role==='designer'?'Continuing the direction’s conversation from its last accepted turn':CHAIN_ROLES.has(role)?'Continuing the planning conversation':'Branched from the approved planning point',condensed:'Conversation condensed: earlier stages kept as their results',restarted:'The stored conversation was not found on this computer; started again with the shared context'} as const)[kind];
 }
+
+/** D4 follow-up: the version 5 designer forks its direction's planning conversation only while it is in the cache. */
+export const DIRECTION_CACHE_MS=55*60*1000;
+/**
+ * Fork the visual direction's conversation, or start from the direction's digest? Fork only when the fork keeps its
+ * prefix cache (same system text and no per-role tool: contexts with the schema in text) and the stored conversation is
+ * within the one-hour cache, and when reading its extra history from the cache on every hero turn (0.1x) costs no more
+ * than writing the digest seed once (1.25x): 0.1 × (conversation − prefix − digest) × turns ≤ 1.25 × digest.
+ */
+export function forkFromDirection(a:{pointTokens:number;ageMs:number;sameShape:boolean;prefixTokens:number;digestTokens:number;turns:number}){
+ if(!a.sameShape||a.ageMs<0||a.ageMs>DIRECTION_CACHE_MS)return false;
+ const extra=Math.max(0,a.pointTokens-a.prefixTokens-a.digestTokens);
+ return 0.1*extra*Math.max(1,a.turns)<=1.25*a.digestTokens;
+}

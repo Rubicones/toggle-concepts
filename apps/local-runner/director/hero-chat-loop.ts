@@ -10,6 +10,7 @@ import {resolveAssetReferences} from '../../../packages/director/asset-names';
 import {propagateExecutionFailure} from '../../../packages/director/execution-failures';
 import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
+import {openPointsNote} from '../../../packages/director/critic-review';
 import {MAX_IDEA_ROUNDS,chosenMessage,ideaCards,ideasAgain,type Selection} from '../../../packages/director/image-ideas';
 import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
 
@@ -21,11 +22,11 @@ export const HERO_TURN_SHARE=0.5;
 export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;tools:DesignerTools;call:HeroCall;save:(s:DesignerLoopState)=>Promise<void>;heroReviews?:number;
  conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;
  /** D4 (version 5): three image ideas before any code; an independent selection picks one (at most one extra round). */
- ideas?:{task:string;select:(ideas:string,round:number)=>Promise<Selection|null>;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
+ ideas?:{task:string;select:(ideas:string,round:number)=>Promise<Selection|null>;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  if(!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
  const hero=state.hero,pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];
- const accept=async(by:'critic'|'reviews-used'|'turns-used'|'no-critic'|'review-failed')=>{hero.state='accepted';hero.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:hero.sceneId,format:hero.format,by});};
+ const accept=async(by:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed')=>{hero.state='accepted';hero.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:hero.sceneId,format:hero.format,by});};
  // D4: the ideas turns open stage H (the first carries the task); the choice is the next message, then the build.
  if(args.ideas&&!state.ideas?.picked){
   const ideas=state.ideas??={rounds:0};
@@ -101,8 +102,10 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
      const findings=(state.lastRender?.findings??[]).map(f=>({view:f.view,severity:f.severity,detail:f.detail}));
      const review=await tools.reviewHero(hero.reviews+1,hero.shots,findings);hero.reviews++;await args.save(state);
      if(!review){await accept('review-failed');results.push('The review could not run; the hero frame is accepted.');}
-     else{await args.onHero?.({kind:'reviewed',sceneId:hero.sceneId,format:hero.format,notes:review.notes.length,looked:hero.shots[0]?.file});
-      if(review.accepted||!review.notes.length){await accept('critic');results.push('The review accepted the hero frame.');}
+     else{await args.onHero?.({kind:'reviewed',sceneId:hero.sceneId,format:hero.format,notes:review.notes.length,looked:hero.shots[0]?.file,...(review.checks?{review:{checks:review.checks,rulings:review.rulings??[],...(review.stop?{stop:review.stop}:{})}}:{})});
+      // D5: a stop by rule ends the hero review; what stays open goes to the AD and into stage E as notes.
+      if(review.stop){notes.push(openPointsNote(review.open??[]));await accept(review.stop==='all-pass'?'critic':review.stop==='no-progress'?'no-progress':'reviews-used');results.push(review.stop==='all-pass'?'Review finished: all checks passed.':review.stop==='no-progress'?'Stopped: no further progress — open points listed.':'Review finished after its rounds — open points listed.');}
+      else if(review.accepted||!review.notes.length){await accept('critic');results.push('The review accepted the hero frame.');}
       else{notes.push(`The reviewer's notes on your hero frame:\n${review.notes.map(n=>`- [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}\n${hero.reviews>=(args.heroReviews??0)?'Apply what you agree with; the next review request accepts the frame.':'Apply what you agree with, then ask for the review again.'}`);results.push(`Review: ${review.notes.length} note${review.notes.length===1?'':'s'}.`);}}
     }
    }

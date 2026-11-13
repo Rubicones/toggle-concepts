@@ -162,7 +162,8 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   const ctx=packed;
   // D1: in contexts with skills by stage, the stage's skill message follows the role heading (principles for creators,
   // checks and signs for the critic).
-  const stageText=ctx?.stageSkills?stageMessage(ctx.stageSkills,options.role,options.stage):'';
+  // D5: a critic@2 request carries its own stage's checks and signs in its context, so no D1 critic message is added.
+  const stageText=ctx?.stageSkills&&!(options.role==='critic'&&ctx.criticVersion)?stageMessage(ctx.stageSkills,options.role,options.stage):'';
   if(ctx){const original=cli;cli=sharedLayout(original,prepared,ctx,options.role,stageText);if(sharedLayoutDifferences(cli,original,prepared,ctx,options.role,stageText).length)return refuse('LOCAL_CONTEXT_MISMATCH');}
   // LC6: in a shared run the effort follows the stage (frozen with the run context), after the layout checks above.
   const stage=ctx&&options.stage&&!prepared.reasoning.disabled?options.stage:undefined;if(stage)cli={...cli,effort:stageEffort(stage,ctx!.stageEffort)};

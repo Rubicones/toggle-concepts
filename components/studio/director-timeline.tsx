@@ -45,6 +45,7 @@ function EventFact({event,scenes,expanded=false}:{event:DirectorEvent;scenes:{sc
   <p>{writing?`${({assembler:'The coder',director:'The director',designer:'The designer',critic:'The critic',resources:'The picture model'} as Record<string,string>)[role]??'The agent'} is writing its answer since ${new Date(event.startedAt??event.at).toLocaleTimeString()}.`:publicStepMessage(event.message)}</p>
   {expanded&&event.startedAt&&<p className="director-timeline-meta">Started {new Date(event.startedAt).toLocaleTimeString()}{event.endedAt?` · finished ${new Date(event.endedAt).toLocaleTimeString()}`:''}</p>}
   {event.kind==='designer'&&<DesignerTurnNotes detail={event.detail}/>}
+  {event.kind==='designer'&&<ReviewMarks review={(event.detail as {hero?:{review?:ReviewDetail}})?.hero?.review}/>}
   {event.kind==='designer'&&Array.isArray((event.detail as {ideas?:unknown})?.ideas)&&<ol className="director-timeline-ideas" aria-label="Three ideas for the key frame">{((event.detail as {ideas:string[]}).ideas).map((idea,i)=><li key={i}><strong>Idea {i+1}.</strong> {publicStepMessage(idea,400)}</li>)}</ol>}
   {event.kind==='checks'&&<CheckNotes detail={event.detail}/>}{event.kind==='review'&&<ReviewNote detail={event.detail} scenes={scenes}/>}
   {event.kind==='critic'&&<ul>{((event.detail as {notes?:{recipient:string;text:string}[]})?.notes??[]).map((n,i)=><li key={i}>{n.recipient==='designer'?'Designer':n.recipient==='director'?'Director':'Coder'}: {publicStepMessage(n.text)}</li>)}</ul>}
@@ -62,3 +63,14 @@ function ReviewNote({detail,scenes}:{detail:unknown;scenes:{sceneId:string}[]}){
 
 /** The designer's step (designer pipeline plan, point 4d): what it saved, asked for, rendered and decided. */
 function DesignerTurnNotes({detail}:{detail:unknown}){const lines=(detail as {summary?:string[]})?.summary??[],seen=(detail as {seen?:string[]})?.seen??[],chat=detail as {chat?:boolean;prose?:string;files?:string[];actions?:string};return <>{chat?.chat&&chat.prose&&<Disclosure><summary>The designer&apos;s idea, in its own words</summary><p className="director-timeline-document">{publicStepMessage(chat.prose,6000)}</p></Disclosure>}{chat?.chat&&(chat.files?.length||chat.actions)?<DeferredDetails summary="Technical details: files and actions"><pre className="director-timeline-technical">{[...(chat.files?.length?[`Files: ${chat.files.join(', ')}`]:[]),...(chat.actions?[`Actions: ${chat.actions}`]:[])].join('\n')}</pre></DeferredDetails>:null}{seen.length>0&&<dl className="director-timeline-seen" aria-label="What the designer saw">{seen.map((line,i)=>{const [label,...rest]=line.split(': ');return <div key={i}><dt>{label}</dt><dd>{publicStepMessage(rest.join(': '))}</dd></div>;})}</dl>}{lines.length>0&&<ul>{lines.map((line,i)=><li key={i}>{publicStepMessage(line)}</li>)}</ul>}</>;}
+
+/** D5: a hero review's checks (passed / not passed), its rulings on earlier notes and how it stopped. */
+type ReviewDetail={checks:{label:string;ok:boolean}[];rulings:{note:string;ruling:string}[];stop?:string};
+function ReviewMarks({review}:{review?:ReviewDetail}){
+ if(!review)return null;
+ return <div className="director-timeline-review">
+  {review.checks.length>0&&<ul aria-label="Checks">{review.checks.map(c=><li key={c.label}>{c.ok?'✓':'✗'} {c.label} · {c.ok?'passed':'not passed'}</li>)}</ul>}
+  {review.rulings.length>0&&<ul aria-label="Earlier notes">{review.rulings.map(r=><li key={r.note}>{r.note}: {r.ruling==='fixed'?'fixed':r.ruling==='worse'?'worse':'still open'}</li>)}</ul>}
+  {review.stop&&<p><strong>{review.stop==='all-pass'?'Review finished: all checks passed':review.stop==='no-progress'?'Stopped: no further progress — open points listed':'Review finished after its rounds — open points listed'}</strong></p>}
+ </div>;
+}

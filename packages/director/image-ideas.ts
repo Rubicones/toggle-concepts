@@ -4,6 +4,8 @@
 // territory, the brand and the `ideas` stage checks, picks one and says why; the choice is the next message of the
 // designer's conversation, which then builds it. One more ideas round at most. The run never waits for the AD. Pure.
 
+import {CRITIC_BASE,SELECTION_WHAT} from './critic-review';
+
 export const usesImageIdeas=(input:{brief:{designerVersion?:unknown}})=>Number(input.brief.designerVersion)>=5;
 /** At most one extra ideas round. */
 export const MAX_IDEA_ROUNDS=2;
@@ -17,7 +19,8 @@ export const ideasAgain=(notes:string[])=>`None of the three ideas passes the ke
 export const chosenMessage=(pick:number,reason:string,by:'reviewer'|'fallback')=>`THE CHOSEN IDEA: IDEA ${pick}. ${by==='reviewer'?`Why: ${reason}`:reason}\nBuild it now: write the files of the hero frame for this idea.`;
 
 /** The selection request: a reviewer who did not write the ideas. */
-export const SELECTION_INSTRUCTIONS=`You choose which of three image ideas for an ad's hero frame gets built. You did not write them. Read the territory, the brand (in the run context) and the checks. For each idea answer the key questions: is it one clear idea; does it fit this brand and this territory; would it stop the scroll for this product; and the checks given. Then pick the strongest passing idea and give the reason in two sentences. When none passes the key questions, set pick to 0 and say for each what is missing.`;
+/** D5 (5e): the selection is the critic's request shape with the three ideas as the work and the `ideas` checks. */
+export const SELECTION_INSTRUCTIONS=`${CRITIC_BASE} ${SELECTION_WHAT}`;
 export const selectionSchema={name:'idea_selection_v1',schema:{type:'object',additionalProperties:false,properties:{
  ideas:{type:'array',minItems:3,maxItems:3,items:{type:'object',additionalProperties:false,properties:{idea:{type:'integer',enum:[1,2,3]},passes:{type:'boolean'},why:{type:'string'}},required:['idea','passes','why']}},
  pick:{type:'integer',enum:[0,1,2,3]},reason:{type:'string'}},required:['ideas','pick','reason']}};

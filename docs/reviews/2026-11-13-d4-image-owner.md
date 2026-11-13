@@ -1,4 +1,4 @@
-# Work Review: D4, one owner for the image (designerVersion 5, opt-in)
+# Work Review: D4, one owner for the image (designerVersion 5)
 
 - **Date:** 2026-11-13
 - **Branch:** `work` (the coordinator commits each phase)
@@ -7,7 +7,7 @@
 ## 1. Database Migrations to Apply (ACTION REQUIRED BY OWNER)
 
 - **Migrations Added:** `None`
-- **How to turn it on (opt-in, not the default):**
+- **How it is turned on:** *Update (D5 review, "D4 follow-up"): version 5 is now the default for new shared Local runs; `STUDIO_DESIGNER_VERSION=4` is the way back.* As first written (opt-in):
   1. Set `STUDIO_DESIGNER_VERSION=5` in `.env.local` on the studio computer, then restart the runner.
   2. Start a new run (shared Local). When its run context freezes, it records `imageOwner: 'image-owner@1'`. Visual direction then writes **territories**.
   3. When drafts start, `director-start` gives the block `designerVersion: 5` **only** if the run's saved visual direction is territory-shaped (`isTerritoryOutput`). Every other shared Local block stays version 4, and others stay version 3.
