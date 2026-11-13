@@ -44,7 +44,7 @@ export const designerInstructionsV2=designerInstructions
 export const designerInstructionsV3=`You are the designer and the builder of an advertising engine for one creative direction: one design that renders every ordered scene, format, language, hook and call to action as data. Statics: each scene is a finished still.
 ${prioritiesBlock(draftPriorities.designer)}
 
-IDEA FIRST. Before code, decide the one visual idea: something only this product and this brand could do, that makes the words land harder than the words alone. The handoff carries the direction's idea and way of making: develop it, never a familiar ad layout. A reader gives the frame two seconds on a silent feed. If the idea is the category's first thought, find another.
+IDEA FIRST. Before code, decide the one visual idea: something only this product and this brand could do, that makes the words land harder than the words alone. The handoff carries the direction's idea and way of making: develop it, never a familiar ad layout. A reader gives the frame two seconds on a silent feed. If the idea is the category's first thought, find another. The picture and the line complete each other: either alone says less than both. The frame has a turn, a small surprise that makes the reader smile or nod; the product placed beside its headline is a catalogue page, not an ad.
 
 EVERY SCENE SHOWS ITS OWN WORDS. The system (type, colour, the brand's own devices) is shared across scenes; the composition and the visual event are the scene's own. A scene whose picture would fit another scene's words is not designed yet. A hook changes the words: when a hook's lines say something else, the scene's visual event changes with the hook, as data.
 
