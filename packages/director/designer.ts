@@ -11,6 +11,9 @@ export const usesDesigner=(input:Pick<DirectionInput,'brief'|'stage'>)=>input.st
 /** Design quality plan (designerVersion 2): the hero frame first, with the critic in the loop (point 3). Version 1 blocks
  * run exactly as before. */
 export const heroFirst=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.designerVersion)>=2;
+/** Engine rebuild (designerVersion 3): the draft is built on the neutral engine kit ('./kit'), and one render may show
+ * several scenes. Earlier blocks run exactly as before. */
+export const usesEngineKit=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.designerVersion)>=3;
 /** The scene that proves the promise: the first with a proof from the script (point 1d), else the first scene. */
 export function heroScene(input:Pick<DirectionInput,'storyboard'>){return (input.storyboard.find(s=>s.proof)??input.storyboard[0])?.id??'';}
 
@@ -34,7 +37,7 @@ export const designerTurnSchema=z.strictObject({
   scenes:z.array(z.strictObject({sceneId:id,moment:text(160),motion:text(240).optional(),sound:text(200).optional()})).min(1).max(40),
  }).optional(),
 });
-export type DesignerTurn=z.infer<typeof designerTurnSchema>&{settleHero?:boolean;notes?:string;seen?:z.infer<typeof seenSchema>};
+export type DesignerTurn=Omit<z.infer<typeof designerTurnSchema>,'render'>&{render?:{sceneId:string;formats:string[];more?:string[]};settleHero?:boolean;notes?:string;seen?:z.infer<typeof seenSchema>};
 export type DesignerPicture=z.infer<typeof designerPictureSchema>;
 
 /** The provider sees the portable core; the full zod contract checks every answer afterwards. */
@@ -48,14 +51,17 @@ export const designerTurnSchemaV2=designerTurnSchema.extend({settleHero:z.boolea
  /** Point 4b: required on a turn that follows a render. */
  seen:seenSchema.optional()});
 export const designerTurnResponseV2={name:'designer_turn_v2',schema:z.toJSONSchema(designerTurnSchemaV2,{io:'input'}) as Record<string,unknown>};
-export const designerTurnResponseFor=(input:Pick<DirectionInput,'brief'>)=>heroFirst(input)?designerTurnResponseV2:designerTurnResponse;
+/** Version 3 turns (engine rebuild): one render may show up to three more scenes in the same formats. */
+export const designerTurnSchemaV3=designerTurnSchemaV2.extend({render:z.strictObject({sceneId:id,formats:z.array(id).max(8).default([]),more:z.array(id).max(3).default([])}).optional()});
+export const designerTurnResponseV3={name:'designer_turn_v3',schema:z.toJSONSchema(designerTurnSchemaV3,{io:'input'}) as Record<string,unknown>};
+export const designerTurnResponseFor=(input:Pick<DirectionInput,'brief'>)=>usesEngineKit(input)?designerTurnResponseV3:heroFirst(input)?designerTurnResponseV2:designerTurnResponse;
 
 /**
  * Reads one answer. Ids must be issued (scenes, formats, reference assets); a picture without a known scene or a
  * finish that omits a scene is refused with a sentence the designer can act on next turn. Sound needs an audio file.
  */
 export function readDesignerTurn(value:unknown,input:Pick<DirectionInput,'storyboard'|'formats'|'assets'>&Partial<Pick<DirectionInput,'brief'>>):DesignerTurn{
- const turn:DesignerTurn=(input.brief&&heroFirst({brief:input.brief})?designerTurnSchemaV2:designerTurnSchema).parse(value),scenes=new Set(input.storyboard.map(s=>s.id)),formats=new Set(input.formats.map(f=>f.id)),assets=new Set(input.assets.map(a=>a.id));
+ const turn:DesignerTurn=(input.brief&&usesEngineKit({brief:input.brief})?designerTurnSchemaV3:input.brief&&heroFirst({brief:input.brief})?designerTurnSchemaV2:designerTurnSchema).parse(value),scenes=new Set(input.storyboard.map(s=>s.id)),formats=new Set(input.formats.map(f=>f.id)),assets=new Set(input.assets.map(a=>a.id));
  const audio=input.assets.some(a=>a.mime.startsWith('audio/'));
  if(!scenes.has(turn.focus.sceneId))throw new Error(`DESIGNER_UNKNOWN_SCENE: focus.sceneId must be one of ${[...scenes].join(', ')}.`);
  for(const p of turn.pictures){
@@ -63,7 +69,7 @@ export function readDesignerTurn(value:unknown,input:Pick<DirectionInput,'storyb
   const unknown=p.referenceAssetIds.find(a=>!assets.has(a));if(unknown)throw new Error(`DESIGNER_UNKNOWN_REFERENCE: ${unknown} is not a supplied file.`);
   if(p.becomes&&!p.proxyFor)delete p.becomes;
  }
- if(turn.render){if(!scenes.has(turn.render.sceneId))throw new Error('DESIGNER_UNKNOWN_SCENE: render.sceneId must be an issued scene.');const f=turn.render.formats.find(x=>!formats.has(x));if(f)throw new Error(`DESIGNER_UNKNOWN_FORMAT: ${f} is not an ordered format (${[...formats].join(', ')}).`);}
+ if(turn.render){if(!scenes.has(turn.render.sceneId))throw new Error('DESIGNER_UNKNOWN_SCENE: render.sceneId must be an issued scene.');const f=turn.render.formats.find(x=>!formats.has(x));if(f)throw new Error(`DESIGNER_UNKNOWN_FORMAT: ${f} is not an ordered format (${[...formats].join(', ')}).`);if(turn.render.more?.some(x=>!scenes.has(x)))throw new Error('DESIGNER_UNKNOWN_SCENE: render.more names issued scenes.');}
  if(turn.finish){
   const named=turn.finish.scenes.map(s=>s.sceneId),missing=[...scenes].filter(s=>!named.includes(s));
   if(missing.length||new Set(named).size!==named.length||named.some(s=>!scenes.has(s)))throw new Error(`DESIGNER_FINISH_SCENES: finish names every scene exactly once (${[...scenes].join(', ')}).`);

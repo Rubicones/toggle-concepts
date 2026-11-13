@@ -143,7 +143,11 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
     if(heroOpen()&&(sceneId!==state.hero!.sceneId||formats.some(f=>f!==state.hero!.format)))results.push({render:'refused',detail:heroAsk()});
     else if(spent.length)results.push({render:'refused',detail:`Three revisions of this scene in ${spent.join(', ')} are used. Move on and say in the finish what remains.`});
     else{
-     const views=designerViews(input,sceneId,formats),out=await tools.render(views);for(const f of formats)state.renders[renderKey(sceneId,f)]=(state.renders[renderKey(sceneId,f)]??0)+1;
+     // Version 3: up to three more scenes in the same formats, so several scenes are judged in one turn. While the hero is
+     // open only the hero is rendered.
+     const more=heroOpen()?[]:[...new Set(turn.render.more??[])].filter(id=>id!==sceneId&&formats.every(f=>(state.renders[renderKey(id,f)]??0)<=DESIGNER_REVISIONS_PER_SCENE));
+     const label=(id:string,text:string)=>more.length?`scene ${scenes.indexOf(id)+1} · ${text}`:text;
+     const views=[sceneId,...more].flatMap(id=>designerViews(input,id,formats).map(v=>({...v,label:label(id,v.label)}))),out=await tools.render(views);for(const id of [sceneId,...more])for(const f of formats)state.renders[renderKey(id,f)]=(state.renders[renderKey(id,f)]??0)+1;
      const findings=out.summary.reports.flatMap(r=>r.findings).sort((a,b)=>Number(b.severity==='hard')-Number(a.severity==='hard'));
      state.lastRender={sceneId,findings,views:views.filter(v=>v.shot).flatMap(v=>{const shot=out.shots.find(s=>s.key===v.key);return shot?[{label:v.label,file:shot.file,width:v.props.width,height:v.props.height}]:[];})};
      results.push({render:sceneId,views:views.length,hard:out.summary.hard,soft:out.summary.soft});

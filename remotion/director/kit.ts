@@ -1,6 +1,6 @@
 // Engine kit: neutral mechanics for a draft's Frame.tsx. It measures and computes; it never decides how a frame looks.
 // No layouts, components, colours, spacing or type choices live here: everything visible is the designer's.
-// Copied into each draft workspace as ./kit (read-only), next to ./brand.
+// Copied into each draft workspace as ./kit (read-only), next to ./brand (designerVersion 3).
 import {useEffect, useState} from 'react';
 import {continueRender, delayRender} from 'remotion';
 
@@ -25,14 +25,14 @@ export function stage(width: number, height: number): Stage {
 
 /* ---------- text ---------- */
 
-export type TypeSpec = {family: string; weight?: number | string; italic?: boolean; /** letter spacing in em */ tracking?: number; uppercase?: boolean};
+export type TypeSpec = {family: string; weight?: number | string; italic?: boolean; /** letter spacing in em */ tracking?: number; uppercase?: boolean; /** BCP 47 tag: capitals follow the language's rules. */ locale?: string};
 export type Measure = (text: string, type: TypeSpec, size: number) => number;
 
 let canvas: CanvasRenderingContext2D | null | undefined;
 /** Width of one line in px, measured with the real font (after the brand fonts have loaded). */
 export const measure: Measure = (text, type, size) => {
   if (canvas === undefined) canvas = typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
-  const shown = type.uppercase ? text.toUpperCase() : text;
+  const shown = type.uppercase ? text.toLocaleUpperCase(type.locale) : text;
   if (!canvas) return shown.length * size * 0.55;
   canvas.font = `${type.italic ? 'italic ' : ''}${type.weight ?? 400} ${size}px "${type.family}"`;
   return canvas.measureText(shown).width + (type.tracking ?? 0) * size * shown.length;
