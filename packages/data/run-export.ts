@@ -1,6 +1,7 @@
 // Run export (scripts/export-run.ts): the pure parts. What is written never holds a key, a token or a picture's
 // bytes: every string is redacted, data URLs become a size and a hash, and signed links lose their signature. Pure.
 import {createHash} from 'node:crypto';
+import {tokenPricedUsd} from '../agents/local-usage';
 
 const REDACTED='[redacted]';
 /** Secrets by their shape: provider and platform keys, JWTs, bearer headers, private keys. */
@@ -59,14 +60,14 @@ export function requestComposition(step:StepRow){
  return {id:step.id,role:step.role,directorRole:(s.directorRole as string|undefined)??null,status:step.status,error:step.error_code??null,model:step.model_id??null,at:step.created_at??null,finishedAt:step.updated_at??null,
   snapshotBytes:Object.values(parts).reduce((n,x)=>n+x,0),roughTokens:Math.ceil(Object.entries(parts).filter(([k])=>!k.endsWith('(count)')).reduce((n,[,x])=>n+x,0)/4),parts:sorted,
   usage:{input:u.prompt_tokens??null,cached:u.prompt_tokens_details?.cached_tokens??null,cacheWrite:u.prompt_tokens_details?.cache_write_tokens??null,output:u.completion_tokens??null},
-  local:{stage:local.stage??null,effort:local.effort??null,turns:local.numTurns??null,internalAttempts:local.internalAttempts??null,conversation:local.conversation??null,conversationSize:local.conversationSize??null,sessionId:local.sessionId??null,skills:local.skills??null,materials:local.materials??null,schemaCheck:local.schemaCheck??null,cacheTtl:local.cacheTtl??null,apiEquivalentUsd:local.apiEquivalentUsd??null,durationMs:local.durationMs??null,stopReason:local.stopReason??null,recordPath:local.recordPath??null,unknownFailure:local.unknownFailure??null},
+  local:{stage:local.stage??null,effort:local.effort??null,turns:local.numTurns??null,internalAttempts:local.internalAttempts??null,conversation:local.conversation??null,conversationSize:local.conversationSize??null,sessionId:local.sessionId??null,skills:local.skills??null,materials:local.materials??null,schemaCheck:local.schemaCheck??null,cacheTtl:local.cacheTtl??null,/** the CLI's figure: a running total of the conversation, not this request */cliRunningUsd:local.apiEquivalentUsd??null,/** this request, from its tokens at its model's prices */apiEquivalentUsd:(local.usage&&s.pricing?tokenPricedUsd(local.usage as Parameters<typeof tokenPricedUsd>[0],s.pricing as Parameters<typeof tokenPricedUsd>[1]):undefined)??null,durationMs:local.durationMs??null,stopReason:local.stopReason??null,recordPath:local.recordPath??null,unknownFailure:local.unknownFailure??null},
   directorCallId:s.directorCallId??null,maxOutputTokens:s.maxOutputTokens??null,requestInputCap:s.requestInputCap??null,directorRawInputBound:s.directorRawInputBound??null};
 }
 const csv=(v:unknown)=>{const t=v===null||v===undefined?'':typeof v==='object'?JSON.stringify(v):String(v);return /[",\n]/.test(t)?`"${t.replace(/"/g,'""')}"`:t;};
 /** One line per request for a spreadsheet. */
 export function requestsCsv(rows:ReturnType<typeof requestComposition>[]):string{
  const head=['at','role','directorRole','status','error','stage','conversation','turns','input','cached','cacheWrite','output','apiEquivalentUsd','roughTokens','largest parts','id'];
- return [head.join(','),...rows.map(r=>[r.at,r.role,r.directorRole,r.status,r.error,r.local.stage,(r.local.conversation as {kind?:string}|null)?.kind??'',r.local.turns,r.usage.input,r.usage.cached,r.usage.cacheWrite,r.usage.output,r.local.apiEquivalentUsd,r.roughTokens,Object.entries(r.parts).slice(0,5).map(([k,n])=>`${k} ${n}`).join('; '),r.id].map(csv).join(','))].join('\n')+'\n';
+ return [head.join(','),...rows.map(r=>[r.at,r.role,r.directorRole,r.status,r.error,r.local.stage,(r.local.conversation as {kind?:string}|null)?.kind??'',r.local.turns,r.usage.input,r.usage.cached,r.usage.cacheWrite,r.usage.output,typeof r.local.apiEquivalentUsd==="number"?Number(r.local.apiEquivalentUsd.toFixed(4)):null,r.roughTokens,Object.entries(r.parts).slice(0,5).map(([k,n])=>`${k} ${n}`).join('; '),r.id].map(csv).join(','))].join('\n')+'\n';
 }
 /** The frozen run context without its pictures' bytes: the texts, versions and flags, and each picture's size. */
 export function slimRunContext(ctx:Record<string,unknown>|null){

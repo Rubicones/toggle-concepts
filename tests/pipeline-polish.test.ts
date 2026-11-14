@@ -61,11 +61,12 @@ test('a human stop or temporary worker fault is never converted into another mod
  assert.equal(propagateExecutionFailure(Error('Frame.tsx: TS2322 incompatible props')),false);assert.equal(propagateExecutionFailure(Error("Frame.tsx: TS2339 Property 'network' does not exist")),false);
 });
 test('preview scalar constants are resolved statically without calls, mutable references or cycles',()=>{
+ const strictInput={...(recorded as DirectionInput),brief:{...(recorded as DirectionInput).brief,designerVersion:3}} as DirectionInput;
  const input=recorded as DirectionInput,scene=input.storyboard[0].id,variant=input.variants[0],source=`const SCENE=${JSON.stringify(scene)}; export const previewOptions={hooks:[${JSON.stringify(variant.hook)}],ctas:[${JSON.stringify(variant.cta)}],locales:[${JSON.stringify(variant.locale)}],lengths:[${variant.length}],scenes:[SCENE],adaptive:true};`;
  assert.deepEqual(readLiveOptions(source,input).options.scenes,[scene]);
- assert.throws(()=>readLiveOptions(source.replace('const SCENE=','let SCENE='),input),/LITERAL/);
- assert.throws(()=>readLiveOptions(source.replace(`const SCENE=${JSON.stringify(scene)}`,"const SCENE=readFile('/private')"),input),/LITERAL/);
- assert.throws(()=>readLiveOptions(source.replace(`const SCENE=${JSON.stringify(scene)}`,'const SCENE=SCENE'),input),/LITERAL/);
+ assert.throws(()=>readLiveOptions(source.replace('const SCENE=','let SCENE='),strictInput),/LITERAL/);
+ assert.throws(()=>readLiveOptions(source.replace(`const SCENE=${JSON.stringify(scene)}`,"const SCENE=readFile('/private')"),strictInput),/LITERAL/);
+ assert.throws(()=>readLiveOptions(source.replace(`const SCENE=${JSON.stringify(scene)}`,'const SCENE=SCENE'),strictInput),/LITERAL/);
 });
 test('campaign dashboard projects durable progress and counted costs without turning a closed run into active work',()=>{
  const controls=[{campaign_id:'one',run_id:'run',stage:'assembly',status:'running',blocker:null,updated_at:'2026-10-30T00:00:00Z'}],runs=[{id:'run',campaign_id:'one',status:'closed',cap_micro_usd:2000000,charged_micro_usd:500000,reserved_micro_usd:250000}],before=structuredClone({controls,runs});

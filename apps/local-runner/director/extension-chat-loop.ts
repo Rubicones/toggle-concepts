@@ -10,7 +10,7 @@ import {propagateExecutionFailure} from '../../../packages/director/execution-fa
 import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
 import type {InspectionView} from '../../../packages/director/layout-inspection';
-import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,DESIGNER_REVISIONS_PER_SCENE,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
+import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,buildStuck,DESIGNER_REVISIONS_PER_SCENE,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
 import type {HeroCall,HeroTurnEvent} from './hero-chat-loop';
 import {liveFormat} from '../../../packages/director/live-preview';
 
@@ -52,10 +52,11 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
   await args.conversation?.accept();
   if(due&&state.materialsDue?.length){state.materialsSeen=[...new Set([...(state.materialsSeen??[]),...state.materialsDue])];state.materialsDue=[];}
   state.transcript.push({from:'agent',text:text.slice(0,2000)});await args.save(state);
-  const answer=parseChatAnswer(text,extensionActionsSchema),actions=answer.actions??{},results:string[]=[],notes:string[]=[];let looked:string|undefined;
+  const answer=parseChatAnswer(text,extensionActionsSchema),actions=answer.actions??{},results:string[]=[],notes:string[]=[];let looked:string|undefined;let stuck:string|null=null;
   try{
    for(const f of answer.files){await tools.write(f.path,f.source);results.push(`Saved ${f.path}.`);}
    const built=await tools.build();if(!built.ok){results.push('The code does not build yet.');notes.push(`The code does not build:\n${shortIssue(built.issue)}`);}
+   stuck=buildStuck(state,built.ok?null:built.issue);
    if(answer.actionsError){results.push('The actions block could not be read.');notes.push(actionsCorrection(answer.actionsError));}
    if(actions.notes){state.notes=actions.notes;}
    if(actions.materials?.length&&tools.materials){const asked=await tools.materials.fetch(actions.materials,[...(state.materialsSeen??[]),...(state.materialsDue??[])]);state.materialsDue=[...new Set([...(state.materialsDue??[]),...asked.attached])];notes.push(asked.lines.join('\n'));}
@@ -104,6 +105,7 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
   if(!answer.files.length&&!answer.actions&&!answer.actionsError)notes.push('No files and no actions in your answer: write the complete files in fenced code blocks with their paths.');
   state.heroNote=notes.filter(Boolean).join('\n\n');state.transcript.push({from:'tool',text:state.heroNote.slice(0,2000)});await args.save(state);
   await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:answer.files.map(f=>f.path),...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
+  if(stuck){await args.save(state);throw Object.assign(new Error('DESIGNER_BUILD_STUCK'),{detail:`designer: the code failed to build three times in a row with the same error: ${stuck.slice(0,400)}`});}
  }
  await Promise.allSettled(pending.values());
  return state;

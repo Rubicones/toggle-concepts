@@ -17,6 +17,22 @@ export const usesDigest=(input:Pick<DirectionInput,'brief'>)=>usesMaterials(inpu
 const section=(title:string,body:string|undefined|null)=>body&&body.trim()?`${title}\n${body.trim()}`:'';
 const words=(v:unknown)=>typeof v==='string'?v.replace(/\s+/g,' ').trim():v==null?'':plainText(v,1200);
 
+/** The direction's territory as visual direction wrote it (version 5), or its way of making (earlier shapes), found in
+ * the handoff's visual part wherever it sits. Short fields, kept whole: live run 2026-11-14 built a code-drawn frame for
+ * a direction whose way of making was photography, and nothing downstream could see the difference. */
+export function territoryOf(input:Pick<DirectionInput,'creativeHandoff'>):{visualIdea?:string;twoSeconds?:string;productRole?:string;makingTechnique?:string;success?:string}|null{
+ let found:Record<string,unknown>|null=null;
+ const visit=(v:unknown,depth:number)=>{if(found||depth>8||!v||typeof v!=='object')return;if(Array.isArray(v)){for(const x of v)visit(x,depth+1);return;}
+  const o=v as Record<string,unknown>;if(typeof o.makingTechnique==='string'&&o.makingTechnique.trim()){found=o;return;}for(const x of Object.values(o))visit(x,depth+1);};
+ visit(input.creativeHandoff?.visual,0);if(!found)return null;
+ const pick=(k:string)=>typeof (found as Record<string,unknown>)[k]==='string'?String((found as Record<string,unknown>)[k]).replace(/\s+/g,' ').trim().slice(0,1500):undefined;
+ return Object.fromEntries(['visualIdea','twoSeconds','productRole','makingTechnique','success'].map(k=>[k,pick(k)]).filter(([,v])=>v));
+}
+/** The territory as plain lines, for the designer (version 5) and for the reviewer. */
+export function territoryText(input:Pick<DirectionInput,'creativeHandoff'>):string{
+ const t=territoryOf(input);if(!t)return '';
+ return [t.visualIdea?`Visual idea: ${t.visualIdea}`:'',t.twoSeconds?`In two seconds: ${t.twoSeconds}`:'',t.productRole?`The product's role: ${t.productRole}`:'',t.makingTechnique?`Way of making: ${t.makingTechnique}`:'',t.success?`Success: ${t.success}`:''].filter(Boolean).join('\n');
+}
 /** The designer's first-turn input as plain labelled text. Deterministic for the same input. */
 /** C5: stage H (designerVersion 4, hero open) names scenes only ("Scene 1"); ids follow when stage E starts. */
 export function designerDigestText(input:DirectionInput,options:{sceneIds?:boolean}={}):string{
@@ -33,6 +49,8 @@ export function designerDigestText(input:DirectionInput,options:{sceneIds?:boole
   section('FEELING',intent?.feeling),section('AD SHAPE',intent?.adShape),
   section('GOAL AND AUDIENCE',[intent?.goal?`Goal: ${words(intent.goal)}`:'',intent?.audience?`Audience: ${words(intent.audience)}`:''].filter(Boolean).join('\n')),
   section('STRATEGY (in short)',h?.strategy?plainText(h.strategy,2400,300):''),
+  // Version 5: the territory whole (its fields are short and are the designer's brief); the rest stays in short.
+  Number(input.brief.designerVersion)>=5?section('THE TERRITORY OF THIS DIRECTION (whole; keep to its way of making, or say why you change it)',territoryText(input)):'',
   section('VISUAL DIRECTION (in short)',h?.visual?plainText(h.visual,3000,300):''),
   section(ids?'SCENARIO (scene id for focus, render and code; what it shows; what proves its line)':'SCENARIO (what each scene shows; what proves its line)',scenes.map((s,i)=>`Scene ${i+1}${ids?` · id ${s.id}`:''} · ${s.start}–${s.end} s${s.id===hero?' · HERO':''}\n  Shows: ${s.visualNotes.replace(/\s+/g,' ').slice(0,400)}${s.proof?`\n  Proof: ${s.proof}`:''}`).join('\n')),
   section('HERO SCENE',`${sceneName(hero)}${ids?` (id ${hero})`:''}: design it first, in the reference format.`),

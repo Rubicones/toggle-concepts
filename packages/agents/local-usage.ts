@@ -16,17 +16,32 @@ export type LocalCallUsage={
  /** C3: the materials a single-answer role asked to see before answering. */
  lookedAt?:string[];
 };
-type Raw={input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number};
-type LocalRecord={materials?:{attached?:string[]};inputParts?:{part:string;tokens:number}[];internalAttempts?:number;stopReason?:string|null;retriedAfterTimeout?:boolean;executedModel?:string;effort?:string;numTurns?:number;durationMs?:number;usage?:Raw;apiEquivalentUsd?:number;conversation?:{kind:string};stage?:string;skills?:string[]};
+type Raw={input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number;cache_creation?:{ephemeral_1h_input_tokens?:number;ephemeral_5m_input_tokens?:number}};
+type Pricing={inputPrice?:number;outputPrice?:number;cacheReadPrice?:number;cacheWritePrice?:number};
+/** One request's API-equivalent price from its own tokens at its model's prices. A one-hour cache write costs twice
+ * the input price, a five-minute one the model's cache-write price (1.25 times when not published).
+ * Live run 2026-11-14: the CLI's own figure is the running total of the whole conversation, so a continued or branched
+ * conversation's requests were each shown, and summed, with everything before them ($31 shown for about $7). */
+export function tokenPricedUsd(u:Raw,p:Pricing):number|undefined{
+ if(typeof p.inputPrice!=='number'||typeof p.outputPrice!=='number')return undefined;
+ const written=u.cache_creation_input_tokens??0,hour=Math.min(written,u.cache_creation?.ephemeral_1h_input_tokens??0),short=written-hour;
+ return (u.input_tokens??0)*p.inputPrice+hour*p.inputPrice*2+short*(p.cacheWritePrice??p.inputPrice*1.25)+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice*0.1)+(u.output_tokens??0)*p.outputPrice;
+}
+type LocalRecord={materials?:{attached?:string[]};inputParts?:{part:string;tokens:number}[];internalAttempts?:number;stopReason?:string|null;retriedAfterTimeout?:boolean;executedModel?:string;effort?:string;numTurns?:number;durationMs?:number;usage?:Raw;apiEquivalentUsd?:number;forecast?:{microUsd?:number};conversation?:{kind:string};stage?:string;skills?:string[]};
 
 /** One call's usage from a step row; null for OpenRouter steps and Local refusals that never reached the CLI. */
 export function localCallUsage(row:{role:string;usage?:unknown;config_snapshot?:unknown}):LocalCallUsage|null{
  const local=(row.usage as {_local?:LocalRecord}|null|undefined)?._local;if(!local)return null;
- const u=local.usage??{},snapshot=(row.config_snapshot??{}) as {directorRole?:string;creativeStage?:string;localStage?:string};
+ const u=local.usage??{},snapshot=(row.config_snapshot??{}) as {directorRole?:string;creativeStage?:string;localStage?:string;pricing?:Pricing};
+ // This request's own price: the CLI's figure for a conversation's first single-call request (there it is the
+ // request's own); otherwise, because that figure is a running total, its tokens at its model's prices, or the
+ // transport's per-request forecast.
+ const own=local.usage&&snapshot.pricing?tokenPricedUsd(u,snapshot.pricing):undefined,started=!local.conversation||local.conversation.kind==='new';
+ const usd=started&&(local.numTurns??1)<=1&&typeof local.apiEquivalentUsd==='number'?local.apiEquivalentUsd:own??(typeof local.forecast?.microUsd==='number'?local.forecast.microUsd/1e6:typeof local.apiEquivalentUsd==='number'?local.apiEquivalentUsd:undefined);
  return {role:snapshot.directorRole??row.role,...(snapshot.localStage??snapshot.creativeStage?{stage:snapshot.localStage??snapshot.creativeStage}:{}),
   ...(local.executedModel?{model:local.executedModel}:{}),...(local.effort?{effort:local.effort}:{}),...(local.numTurns!==undefined?{turns:local.numTurns}:{}),...(local.durationMs!==undefined?{durationMs:local.durationMs}:{}),
   input:u.input_tokens??0,cacheCreation:u.cache_creation_input_tokens??0,cacheRead:u.cache_read_input_tokens??0,output:u.output_tokens??0,
-  ...(typeof local.apiEquivalentUsd==='number'?{apiEquivalentUsd:local.apiEquivalentUsd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{}),...(requestTrouble(local)?{trouble:requestTrouble(local)}:{}),...(local.inputParts?.length?{inputParts:local.inputParts}:{}),...(local.materials?.attached?.length?{lookedAt:local.materials.attached}:{}),...(local.stage?{effortStage:local.stage}:{}),...(local.skills?.length?{skills:local.skills}:{})};
+  ...(usd!==undefined?{apiEquivalentUsd:usd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{}),...(requestTrouble(local)?{trouble:requestTrouble(local)}:{}),...(local.inputParts?.length?{inputParts:local.inputParts}:{}),...(local.materials?.attached?.length?{lookedAt:local.materials.attached}:{}),...(local.stage?{effortStage:local.stage}:{}),...(local.skills?.length?{skills:local.skills}:{})};
 }
 
 /** What a Local Claude text request reserves against money caps: the smallest amount the ledger accepts. It runs on

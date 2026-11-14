@@ -29,6 +29,22 @@ export function compactLists(v:unknown):unknown{
 }
 
 /** Parts of the campaign context the shared prefix already holds (brief, brand) or that are bookkeeping only. */
+/** Live run 2026-11-14: research, variants and localization start their own conversations and each read the brief
+ * again as JSON (about 18k characters) although the run context above already holds it, and research read the whole
+ * variation table (about 19k) it never uses. In run contexts frozen with this version, what is SENT to those roles
+ * leaves them out; the frozen snapshot the database compares is never changed. */
+export const LEAN_CONTEXT_VERSION='lean-context@1';
+const BRIEF_ABOVE='The brief is in the run context above (BRIEF); it is not repeated here.';
+const NO_TABLE='Not sent to this role: the variation table belongs to the roles that write or check per-variation rows (variants, script, localization, layout, review).';
+/** What a role outside the planning chat truly needs of the campaign context: scope, checkpoint state and feedback for
+ * all; the variation table for every role but research. */
+export function leanCampaignContext(context:unknown,role:string|undefined):unknown{
+ if(!context||typeof context!=='object'||Array.isArray(context))return context;
+ const c={...(context as Record<string,unknown>)};
+ if('submittedBrief' in c)c.submittedBrief=BRIEF_ABOVE;
+ if(role==='research'&&'variantManifest' in c)c.variantManifest=NO_TABLE;
+ return c;
+}
 const NOT_SENT=new Set(['submittedBrief','acceptedBrandKit','acceptedA1','campaignId','checkpointId','reuseGeneratedOutputs']);
 /** The campaign context as plain labelled text: what this run adds to the brief and the brand pack above. */
 export function planningContextText(context:unknown):string{

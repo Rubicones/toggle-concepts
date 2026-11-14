@@ -147,8 +147,11 @@ export type DesignerLoopState={
  heroMemory?:import('./critic-review').ReviewRound[];
  /** D5: the end review's own earlier rounds. */
  endMemory?:import('./critic-review').ReviewRound[];
- ideas?:{rounds:number;picked?:number;reason?:string;notes?:string[];texts?:string[]};
- hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;acceptedBy?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
+ ideas?:{rounds:number;picked?:number;reason?:string;notes?:string[];texts?:string[];/** why no reviewer chose (the first idea was built) */unreviewed?:string};
+ /** Live run 2026-11-14: the same build error in a row (three stops the direction with a question), and extra hero
+  * turns granted by a retry after such a stop. */
+ buildStuck?:{code:string;count:number};heroExtraTurns?:number;
+ hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;acceptedBy?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';/** why its review did not run */reviewError?:string;shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
 
 /** Point 4d: the designer's look at a render, as timeline lines. */
 export function seenLines(seen:NonNullable<DesignerTurn['seen']>){return [`Read first: ${seen.first}`,`Read second: ${seen.second}`,`Read third: ${seen.third}`,...seen.weakest.map((w,i)=>`${i===0?'Weakest point':'Also weak'}: ${w}`)];}

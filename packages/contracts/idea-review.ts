@@ -147,7 +147,7 @@ export function ideaReviewLines(value:unknown){
  const v=obj(value);if(v.version!==2)return [];
  const gates=obj(v.gates) as IdeaReviewState['gates'];
  return IDEA_GATES.flatMap(g=>{const s=gates[g.key];if(!s)return [];
-  const status=s.status==='reviewing'||!s.status?'reviewing':s.status==='revised'?'sent back for one revision':s.status==='accepted'?'accepted':s.status==='skipped'?'skipped':'notes for the AD';
+  const status=s.status==='reviewing'||!s.status?'reviewing':s.status==='revised'?'sent back for one revision':s.status==='accepted'?'accepted':s.status==='skipped'?'NOT REVIEWED (the review could not run)':'notes for the AD';
   return [{key:g.key,label:g.label,status,state:s}];});
 }
 export const isIdeaGateKey=isGate;

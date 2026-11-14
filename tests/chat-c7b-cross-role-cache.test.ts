@@ -43,7 +43,9 @@ test('C7b: the app checks a text answer against the schema the CLI enforced; eve
 test('C7b: a text answer is read as one JSON object: whole, fenced or with a line of prose; nothing else is guessed', ()=>{
  assert.deepEqual(readJsonAnswer('{"a":1}'),{value:{a:1}});assert.deepEqual(readJsonAnswer('```json\n{"a":1}\n```'),{value:{a:1}});
  assert.deepEqual(readJsonAnswer('Here it is:\n{"a":{"b":2}}'),{value:{a:{b:2}}});
- for(const bad of ['','not json','[1,2]','{"a":1','```\n{"a":\n```'])assert.deepEqual(readJsonAnswer(bad),{error:'INCOMPLETE_JSON'},bad);
+ for(const bad of ['','not json','[1,2]','{"a":"cut off','```\n{"a":\n```'])assert.deepEqual(readJsonAnswer(bad),{error:'INCOMPLETE_JSON'},bad);
+ // Live run 2026-11-14: a complete answer that only lacks its last closing brackets is closed, never rerun.
+ assert.deepEqual(readJsonAnswer('{"a":{"b":[1,2]'),{value:{a:{b:[1,2]}},completed:true});assert.deepEqual(readJsonAnswer('{"a":1}}'),{value:{a:1},completed:true});
 });
 
 const envelope=(role:string)=>JSON.stringify({...(sample(sent(role).schema as S) as object)});
@@ -81,7 +83,7 @@ test('C7b: an answer that breaks its format gets one repair turn in the same con
  assert.match(String(a.content[0].text),/^That answer does not match the answer format:\n- answer\.answer/);
  const failed=await call('strategy',ctxFor(true),{FAKE_CLAUDE_ANSWER:broken,FAKE_CLAUDE_ANSWER_RESUMED:'still not JSON'});
  assert.equal(failed.outcome,'failed');assert.equal(failed.failure,'INVALID_OUTPUT_SCHEMA','the code the workflow uses for an answer that does not fit');assert.equal(failed.text,null);
- assert.deepEqual(failed.local?.schemaCheck?.issues,['answer: not one JSON object']);
+ assert.deepEqual(failed.local?.schemaCheck?.issues,['answer: there is no JSON object in the answer']);
 });
 
 test('C7b: materials still work as one round; the designer, the critic and earlier contexts keep --json-schema', async()=>{

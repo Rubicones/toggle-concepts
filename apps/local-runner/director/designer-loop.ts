@@ -71,7 +71,39 @@ export async function screenshotForDesigner(file:string,maxSide=1080){
  return `data:image/jpeg;base64,${canvas.toBuffer('image/jpeg',82).toString('base64')}`;
 }
 /** LC4: build errors as their first lines, never a file dump. */
-export const shortIssue=(issue:string)=>issue.split('\n').filter(l=>l.trim()).slice(0,12).join('\n').slice(0,1200);
+/** Every build problem the designer reads names what to change (live run 2026-11-14: a bare code was answered by ten
+ * guessing turns). A code without a line here keeps its own text, followed by what a bare code means. */
+export const BUILD_ISSUE_HELP:Record<string,string>={
+ PREVIEW_OPTIONS_FIELDS_REQUIRED:'previewOptions is missing fields. Write exactly: export const previewOptions={hooks:[…],ctas:[…],locales:[…],lengths:[…],scenes:[…],adaptive:false} with the issued ids as literal values, or delete the export: the app then lists the variations itself.',
+ PREVIEW_OPTIONS_MUST_BE_LITERAL:'previewOptions must be written out as literal values (strings, numbers, arrays, true/false): no function calls, map(), spreads or computed values. Or delete the export: the app then lists the variations itself.',
+ UNISSUED_PREVIEW_OPTION:'previewOptions names a hook, call to action, language, length or scene id that is not one of the issued ones. Use the ids from the VARIATIONS and SCENARIO sections exactly, or delete the export.',
+ INVALID_PREVIEW_LABELS:'previewOptions.labels must be {hooks:{id:"label"},…} with labels of at most 80 characters for ids listed in the same previewOptions. Remove labels if unsure.',
+ INVALID_PREVIEW_ADAPTIVENESS:'previewOptions.adaptive must be true or false.',
+ PREVIEW_OPTIONS_NOT_READY:'previewOptions lists no usable combination: include at least one issued hook, call to action, language and length, and one scene id.',
+ FRAME_NOT_WRITTEN:'There is no Frame.tsx yet: write the complete file in a fenced block that starts with ```tsx Frame.tsx.',
+ PREVIEW_IMPORT_NOT_FOUND:'A file imports a module that does not exist in this workspace. Import only react, remotion, three (through ./kit3d), ./brand, ./kit, ./kit3d and files you wrote yourself, with their exact names.',
+ PREVIEW_IMPORT_REJECTED:'A file imports a package this draft may not use. Import only react, remotion, ./brand, ./kit, ./kit3d and files you wrote yourself.',
+ WORKSPACE_PATH_REJECTED:'A file path is not allowed: write files in the workspace root with simple names (Frame.tsx, parts.tsx), no folders above it.',
+ LIVE_PREVIEW_SIZE_LIMIT:'The built code is too large for the preview: remove embedded data (base64 pictures, long generated tables) and ask for pictures instead.',
+ IMAGE_EXPORT_DISABLED:'Do not render image files in code: the app renders Frame.tsx itself.',
+ MODEL_NOT_GLB:'The 3D model file is not a GLB: use the model the app gave you through resources, unchanged.',
+};
+/** Counts the same build error in a row; returns the issue when it has now failed three times (the count restarts,
+ * so a retry gets three more attempts). A build that passes clears it. */
+export function buildStuck(state:Pick<DesignerLoopState,'buildStuck'>,issue:string|null):string|null{
+ if(issue===null){delete state.buildStuck;return null;}
+ const code=(/^[A-Z][A-Z0-9_]{5,}/.exec(issue.trim())?.[0]??issue.trim().split('\n')[0].replace(/\d+/g,'#')).slice(0,160);
+ state.buildStuck=state.buildStuck?.code===code?{code,count:state.buildStuck.count+1}:{code,count:1};
+ if(state.buildStuck.count<3)return null;
+ delete state.buildStuck;return plainBuildIssue(issue);
+}
+export function plainBuildIssue(issue:string):string{
+ const first=issue.split('\n').find(l=>l.trim())?.trim()??'',code=/^[A-Z][A-Z0-9_]{5,}/.exec(first)?.[0];
+ if(code&&BUILD_ISSUE_HELP[code])return `${BUILD_ISSUE_HELP[code]}${first.length>code.length+2?`\n(${first.slice(code.length).replace(/^[:\s]+/,'')})`:''}`;
+ if(code&&first===code)return `${code}: the app refused the files for this reason code and has no further detail. Check the last change you made against the task's rules; if the cause is unclear, undo that change.`;
+ return issue;
+}
+export const shortIssue=(issue:string)=>plainBuildIssue(issue).split('\n').filter(l=>l.trim()).slice(0,12).join('\n').slice(0,1200);
 /** Tool results since the designer's last answer: what a continued conversation does not hold yet. */
 export function sinceLastTurn(transcript:{from:'agent'|'tool';text:string}[]){let i=transcript.length;while(i>0&&transcript[i-1].from!=='agent')i--;return transcript.slice(i);}
 const hash=(text:string)=>createHash('sha256').update(text).digest('hex').slice(0,16);

@@ -12,7 +12,7 @@ import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
 import {openPointsNote} from '../../../packages/director/critic-review';
 import {MAX_IDEA_ROUNDS,chosenMessage,ideaCards,ideasAgain,type Selection} from '../../../packages/director/image-ideas';
-import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
+import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,buildStuck,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
 
 export type HeroCall=(message:string,images:{url:string;label:string}[])=>Promise<string>;
 export type HeroTurnEvent={turn:number;idea:string;prose:string;files:string[];actions?:string;results:string[];looked?:string};
@@ -22,7 +22,7 @@ export const HERO_TURN_SHARE=0.5;
 export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;tools:DesignerTools;call:HeroCall;save:(s:DesignerLoopState)=>Promise<void>;heroReviews?:number;
  conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;
  /** D4 (version 5): three image ideas before any code; an independent selection picks one (at most one extra round). */
- ideas?:{task:string;select:(ideas:string,round:number)=>Promise<Selection|null>;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
+ ideas?:{task:string;select:(ideas:string,round:number)=>Promise<Selection|null>;/** why the selection returned nothing without an error (no review in the quote, its allowance used) */unreviewedReason?:()=>string|undefined;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  if(!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
  const hero=state.hero,pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];
@@ -31,12 +31,18 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
  if(args.ideas&&!state.ideas?.picked){
   const ideas=state.ideas??={rounds:0};
   while(!ideas.picked&&ideas.rounds<MAX_IDEA_ROUNDS&&state.turn<args.maxTurns){
+   // The ideas turn is a turn of the designer's own conversation: decided and accepted like every other, so the build
+   // continues it and reads the ideas it wrote.
+   await args.conversation?.decide();
    const text=await args.call(ideas.rounds===0?`${heroTask(input)}\n\n${args.ideas.task}`:ideasAgain(ideas.notes??[]),[]);
+   await args.conversation?.accept();
    state.turn++;ideas.rounds++;ideas.texts=[...(ideas.texts??[]),text.slice(0,8000)];await args.save(state);
    await args.ideas.onIdeas?.(ideaCards(text),text,ideas.rounds);
-   const chosen=await args.ideas.select(text,ideas.rounds).catch(error=>{if(propagateExecutionFailure(error))throw error;return null;});
-   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=chosen.reason;state.heroNote=chosenMessage(chosen.pick,chosen.reason,'reviewer');}
-   else if(!chosen||ideas.rounds>=MAX_IDEA_ROUNDS){ideas.picked=1;ideas.reason=!chosen?'The selection could not run, so the first idea is built.':'No idea passed after the extra round, so the first idea is built.';state.heroNote=chosenMessage(1,ideas.reason,'fallback');}
+   // A selection that cannot run is recorded with its reason (it is said on the timeline and on the draft).
+   let selectError='NO_REVIEW_IN_QUOTE';
+   const chosen=await args.ideas.select(text,ideas.rounds).catch(error=>{if(propagateExecutionFailure(error))throw error;selectError=error instanceof Error?error.message.slice(0,120):'UNREADABLE';return null;});
+   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=chosen.reason;state.heroNote=chosenMessage(chosen.pick,chosen.reason,'reviewer',text);}
+   else if(!chosen||ideas.rounds>=MAX_IDEA_ROUNDS){ideas.picked=1;if(!chosen)ideas.unreviewed=args.ideas.unreviewedReason?.()??selectError;ideas.reason=!chosen?'The selection could not run, so the first idea is built.':'No idea passed after the extra round, so the first idea is built.';state.heroNote=chosenMessage(1,ideas.reason,'fallback',text);}
    else ideas.notes=chosen.notes;
    await args.save(state);
    if(ideas.picked)await args.ideas.onChosen?.(ideas.picked,ideas.reason??'');
@@ -62,12 +68,13 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
   await args.conversation?.accept();
   if(due&&state.materialsDue?.length){state.materialsSeen=[...new Set([...(state.materialsSeen??[]),...state.materialsDue])];state.materialsDue=[];}
   state.transcript.push({from:'agent',text:text.slice(0,2000)});await args.save(state);
-  const answer:HeroAnswer=parseHeroAnswer(text),results:string[]=[],notes:string[]=[];let looked:string|undefined;
+  const answer:HeroAnswer=parseHeroAnswer(text),results:string[]=[],notes:string[]=[];let looked:string|undefined;let stuck:string|null=null;
   try{
    // 1. Files: written whole, then built. A building change is rendered: the app shows it, as in a chat.
    for(const f of answer.files){await tools.write(f.path,f.source);results.push(`Saved ${f.path}.`);}
    const built=await tools.build();
    if(!built.ok){results.push('The code does not build yet.');notes.push(`The code does not build:\n${shortIssue(built.issue)}`);}
+   stuck=buildStuck(state,built.ok?null:built.issue);
    if(answer.actionsError){results.push('The actions block could not be read.');notes.push(actionsCorrection(answer.actionsError));}
    const actions=answer.actions??{};
    // 2. Materials and pictures, inside their budgets; pictures arrive in a later message.
@@ -113,9 +120,25 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
   if(!answer.files.length&&!answer.actions&&!answer.actionsError)notes.push('No files and no actions in your answer: write the complete files in fenced code blocks with their paths.');
   state.heroNote=notes.filter(Boolean).join('\n\n');state.transcript.push({from:'tool',text:state.heroNote.slice(0,2000)});await args.save(state);
   await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:answer.files.map(f=>f.path),...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
+  // The same build error three times in a row: stop with a question instead of spending the turns on guesses.
+  if(stuck){await args.save(state);throw Object.assign(new Error('DESIGNER_BUILD_STUCK'),{detail:`designer: the code failed to build three times in a row with the same error: ${stuck.slice(0,400)}`});}
  }
  // Stage H's share of turns used without an accepted review: the frame as it stands leads the other scenes.
- if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&hero.shots?.length)await accept(hero.reviews>0?'reviews-used':'turns-used');
+ // A hero that was rendered but never sent for review is reviewed once here, so the critic has seen what stage E
+ // builds on; its notes travel into stage E.
+ if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&hero.shots?.length){
+  if(hero.reviews===0&&tools.reviewHero&&(args.heroReviews??0)>0){
+   const review=await tools.reviewHero(1,hero.shots,(state.lastRender?.findings??[]).map(f=>({view:f.view,severity:f.severity,detail:f.detail})));hero.reviews++;
+   if(review){await args.onHero?.({kind:'reviewed',sceneId:hero.sceneId,format:hero.format,notes:review.notes.length,looked:hero.shots[0]?.file,...(review.checks?{review:{checks:review.checks,rulings:review.rulings??[],...(review.stop?{stop:review.stop}:{})}}:{})});
+    if(review.notes.length)state.heroNote=[state.heroNote??'',`The reviewer's notes on your hero frame (your turns for it are used; apply what you agree with as you go on):\n${review.notes.map(n=>`- [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}`].filter(Boolean).join('\n\n');
+    await accept('reviews-used');}
+   else await accept('review-failed');
+  }else await accept(hero.reviews>0?'reviews-used':'turns-used');
+ }
+ // Never on without a hero the designer saw: stage E does not open on a frame that never rendered.
+ const rendered=Object.values(state.renders).some(n=>n>0);
+ if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&!rendered){state.heroExtraTurns=(state.heroExtraTurns??0)+4;await args.save(state);}
+ if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&!rendered)throw Object.assign(new Error('HERO_FRAME_NOT_RENDERED'),{detail:`designer: ${state.turn} turns were used and the hero frame never rendered${state.heroNote?`; the last message to the designer was: ${state.heroNote.slice(0,300)}`:''}`});
  // Pictures still being made are reported to the extension stage by the usual restart path.
  await Promise.allSettled(pending.values());
  if(arrived.length)state.reported=[...(state.reported??[]),...arrived.map(a=>a.id).filter(Boolean)];

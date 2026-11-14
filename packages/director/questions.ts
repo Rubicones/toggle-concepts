@@ -23,6 +23,8 @@ const plain:Record<string,string>={
  DRAFT_REQUEST_SIZE_CAP:'The required material still exceeds the request limit after automatic compaction. Saved work is retained; no new request was sent.',
  LEGACY_DRAFT_READ_ONLY:'This earlier run used the motion pipeline. Start a new static draft run; saved versions stay available.',
  LOCAL_RESULT_MISSING:'Local Claude ended without a final answer several times in a row. Nothing was charged; saved work is retained.',
+ DESIGNER_BUILD_STUCK:'The designer\'s code failed to build three times in a row with the same error, so it was stopped instead of spending more turns (the error is in Technical details). Retry gives it three more attempts in the same conversation.',
+ HERO_FRAME_NOT_RENDERED:'The designer used its turns for the hero frame without one successful render, so nothing was shown or reviewed. Retry gives it more turns in the same conversation; the last error is in Technical details.',
  LOCAL_REQUEST_LIVE:'A Local Claude request for this direction is still running in another runner session. Wait for it to finish, then retry.',
  PROVIDER_400:'The model provider rejected the request format before generating anything (nothing was charged).',
 };

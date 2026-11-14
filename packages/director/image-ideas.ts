@@ -16,7 +16,16 @@ export const IDEAS_TASK=`FIRST, THREE IMAGE IDEAS FOR THE HERO FRAME (no code ye
 3. Give the final three as IDEA 1, IDEA 2 and IDEA 3, each with: what the viewer sees; the turn or surprise; the way of making (photo, rendered 3D, code-built graphics or interface, or a mix); why it stops the scroll for this product.
 Keep the answer short, about 600 to 1,000 tokens. An independent reviewer picks one; you then build it in this conversation.`;
 export const ideasAgain=(notes:string[])=>`None of the three ideas passes the key checks:\n${notes.map(n=>`- ${n}`).join('\n')}\nWrite three new ideas the same way (IDEA 1, IDEA 2, IDEA 3), bolder and closer to the territory. This is the last ideas round.`;
-export const chosenMessage=(pick:number,reason:string,by:'reviewer'|'fallback')=>`THE CHOSEN IDEA: IDEA ${pick}. ${by==='reviewer'?`Why: ${reason}`:reason}\nBuild it now: write the files of the hero frame for this idea.`;
+/** The chosen idea in the designer's own words (the whole of its IDEA n section); when the sections cannot be told
+ * apart, the whole ideas answer, so the build never starts without the idea's text. */
+export function ideaText(ideas:string,pick:number):string{
+ const parts=ideas.split(/^\s*(?:#+\s*)?(?:\*\*)?IDEA\s*([123])\b[:.)\s*-]*/im);
+ for(let i=parts.length-2;i>=1;i-=2)if(Number(parts[i])===pick&&parts[i+1].trim())return parts[i+1].trim().slice(0,3000);
+ return ideas.trim().slice(0,6000);
+}
+/** Live run 2026-11-14: the build started in a new conversation that had never seen the ideas, and a different frame was
+ * built. The message now quotes the chosen idea, whatever conversation reads it. */
+export const chosenMessage=(pick:number,reason:string,by:'reviewer'|'fallback',ideas='')=>`THE CHOSEN IDEA: IDEA ${pick}. ${by==='reviewer'?`Why: ${reason}`:reason}${ideas.trim()?`\n\nIDEA ${pick}, AS YOU WROTE IT\n${ideaText(ideas,pick)}`:''}\n\nBuild it now: write the files of the hero frame for this idea, in the way of making it names. If you change the way of making, say so and why in your first sentence.`;
 
 /** The selection request: a reviewer who did not write the ideas. */
 /** D5 (5e): the selection is the critic's request shape with the three ideas as the work and the `ideas` checks. */
@@ -34,7 +43,10 @@ export function readSelection(text:string|null|undefined):Selection|null{
  }catch{return null;}
 }
 /** The selection request's context: the territory, the three ideas and the stage's checks, as plain text. */
-export const selectionContext=(territory:string,ideas:string,checks:string)=>`THE TERRITORY OF THIS DIRECTION\n${territory.trim()}\n\nTHE THREE IDEAS\n${ideas.trim()}${checks.trim()?`\n\n${checks.trim()}`:''}`;
+export const selectionContext=(territory:string,ideas:string,checks:string,making='')=>`THE TERRITORY OF THIS DIRECTION\n${territory.trim()}${making.trim()?`\n\n${wayOfMakingNote(making)}`:''}\n\nTHE THREE IDEAS\n${ideas.trim()}${checks.trim()?`\n\n${checks.trim()}`:''}`;
+/** What the direction asked for, so a reviewer can say when the work was made another way (photography asked for, a
+ * code-drawn frame delivered). */
+export const wayOfMakingNote=(territory:string)=>`WHAT THE DIRECTION ASKED FOR\n${territory.trim()}\nIf the work is made another way than this way of making (a photograph asked for, the frame drawn in code; or the reverse) and the designer gave no reason, say so in a P1 note.`;
 /** The three ideas as short cards for the timeline. */
 export function ideaCards(text:string):string[]{
  const parts=text.split(/^\s*(?:\*\*)?IDEA\s*([123])\b[:.)\s*-]*/im);const cards:string[]=[];

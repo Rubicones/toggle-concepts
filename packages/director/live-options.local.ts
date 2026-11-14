@@ -6,7 +6,19 @@ import type {DirectionInput} from './types';
 import type {LiveOptions} from './live-preview';
 import {readyLiveVariants} from './live-preview';
 /** Read static declarations, never execute agent code to discover readiness. */
-export function readLiveOptions(source:string,input:DirectionInput):{options:LiveOptions;legacy:boolean}{
+/** Chat designers (version 4 and later) never fail on previewOptions (live run 2026-11-14: ten turns were spent guessing
+ * its fields). Their copy is data read through props, so the app lists every issued value and scene itself; only
+ * `adaptive: true` is read from what the designer wrote. Earlier pipelines keep the strict reader. */
+export function readLiveOptions(source:string,input:DirectionInput):{options:LiveOptions;legacy:boolean;/** the declaration was not usable and the app's own list was used */fallback?:string}{
+ if(!(Number(input.brief.designerVersion)>=4))return strictLiveOptions(source,input);
+ try{return strictLiveOptions(source,input);}
+ catch(error){
+  const code=error instanceof Error?error.message:'';if(!/^(PREVIEW_OPTIONS_|UNISSUED_PREVIEW_OPTION|INVALID_PREVIEW_)/.test(code))throw error;
+  const all=<K extends 'hook'|'cta'|'locale'|'length'>(k:K)=>[...new Set(input.variants.map(v=>v[k]))];
+  return {options:{hooks:all('hook'),ctas:all('cta'),locales:all('locale'),lengths:all('length'),scenes:input.storyboard.map(s=>s.id),adaptive:!squarePreviewOnly(input)&&/\badaptive\s*:\s*true\b/.test(source)} as LiveOptions,legacy:false,fallback:code.split(':')[0]};
+ }
+}
+function strictLiveOptions(source:string,input:DirectionInput):{options:LiveOptions;legacy:boolean}{
  const tree=ts.createSourceFile('Frame.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let value:ts.Expression|undefined;
  for(const node of tree.statements)if(ts.isVariableStatement(node)&&node.modifiers?.some(m=>m.kind===ts.SyntaxKind.ExportKeyword))for(const d of node.declarationList.declarations)if(ts.isIdentifier(d.name)&&d.name.text==='previewOptions')value=d.initializer;
  const first=input.variants[0],defaults:LiveOptions={hooks:first?[first.hook]:[],ctas:first?[first.cta]:[],locales:first?[first.locale]:[],lengths:first?[first.length]:[],scenes:input.storyboard.map(s=>s.id),adaptive:false};

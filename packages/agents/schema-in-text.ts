@@ -45,12 +45,41 @@ export function schemaIssues(value:unknown,schema:Schema,path='answer',out:strin
  return out.slice(0,limit);
 }
 
+/** The brackets a JSON text leaves open at its end, and whether it ends inside a string. */
+function openBrackets(t:string):{open:string[];inString:boolean;extra:number}{
+ const open:string[]=[];let inString=false,escaped=false,extra=0;
+ for(const c of t){
+  if(inString){if(escaped)escaped=false;else if(c==='\\')escaped=true;else if(c==='"')inString=false;continue;}
+  if(c==='"')inString=true;else if(c==='{'||c==='[')open.push(c);else if(c==='}'||c===']'){if(open.length)open.pop();else extra++;}
+ }
+ return {open,inString,extra};
+}
+/** What is wrong with a text that is not one JSON object, in words the model can act on. */
+export function jsonProblem(text:string|null|undefined):string{
+ const t=(text??'').trim();if(!t)return 'the answer is empty';
+ const start=t.indexOf('{');if(start<0)return 'there is no JSON object in the answer';
+ const b=openBrackets(t.slice(start));
+ if(b.inString)return 'the JSON stops inside a text value: it was cut off';
+ if(b.open.length)return `the JSON is not closed: ${b.open.length} closing bracket${b.open.length===1?'':'s'} missing at the end (${[...b.open].reverse().map(c=>c==='{'?'}':']').join(' ')})`;
+ if(b.extra)return `the JSON has ${b.extra} closing bracket${b.extra===1?'':'s'} too many`;
+ try{JSON.parse(t.slice(start,t.lastIndexOf('}')+1));return 'the answer is not one JSON object';}catch(error){return `the JSON does not parse: ${error instanceof Error?error.message.slice(0,160):'syntax error'}`;}
+}
 /** The JSON object of a text answer: the whole text, or the inside of one code fence around it, or the outermost
- * object when a line of prose surrounds it. Nothing is repaired or guessed beyond that. */
-export function readJsonAnswer(text:string|null|undefined):{value:unknown}|{error:'INCOMPLETE_JSON'}{
+ * object when a line of prose surrounds it. One mechanical completion only (live run 2026-11-14: a 9,000-character
+ * answer missed its last closing brace twice, and each time the whole 180k request was run again): a complete answer
+ * whose only fault is closing brackets missing at its very end, or too many of them, is closed or trimmed. Nothing
+ * inside the answer is repaired or guessed. */
+export function readJsonAnswer(text:string|null|undefined):{value:unknown;completed?:true}|{error:'INCOMPLETE_JSON'}{
  const t=(text??'').trim(),fenced=/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i.exec(t)?.[1]?.trim();
  for(const candidate of [fenced??t,t.slice(t.indexOf('{'),t.lastIndexOf('}')+1)]){
   if(!candidate)continue;try{const value=JSON.parse(candidate);if(value&&typeof value==='object'&&!Array.isArray(value))return {value};}catch{/* next candidate */}
+ }
+ const body=(fenced??t).slice(Math.max(0,(fenced??t).indexOf('{'))),b=openBrackets(body);
+ if(body.startsWith('{')&&!b.inString&&/[}\]"0-9el]$/.test(body)){
+  let fixed=body;
+  if(b.open.length&&!b.extra)fixed=body+[...b.open].reverse().map(c=>c==='{'?'}':']').join('');
+  else if(b.extra&&!b.open.length){for(let n=b.extra;n>0&&/[}\]]$/.test(fixed);n--)fixed=fixed.slice(0,-1).trimEnd();}
+  if(fixed!==body)try{const value=JSON.parse(fixed);if(value&&typeof value==='object'&&!Array.isArray(value))return {value,completed:true};}catch{/* not that simple */}
  }
  return {error:'INCOMPLETE_JSON'};
 }

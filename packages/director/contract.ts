@@ -30,7 +30,7 @@ const finalNoteFields={motion:noteText(240).optional(),sound:noteText(200).optio
 const keyFramesWithFinal=z.array(keyFramesSchema.element.extend(finalNoteFields)).min(1).max(40);
 const staticDesignWithNotes=staticDesignSchema.extend({keyFrames:keyFramesWithFinal,resources:z.array(staticResourceSchema.extend({becomes:noteText(160).optional()})).max(16)});
 export type FinalNote={motion?:string;sound?:string};
-export type Design=Omit<z.infer<typeof designSchema>,'resources'>&{resources:Resource[]}&{keyFrames?:(z.infer<typeof keyFramesSchema>[number]&FinalNote)[];bindings?:{kind:string;id:string;aliases:string[]}[];materialMemory?:MaterialMemory;materialObservations?:z.infer<typeof staticDesignSchema>['materialObservations'];/** C8: what the final adds to a version 4 draft's code-built 3D scenes, in plain words. */finalAdds?:string[]};
+export type Design=Omit<z.infer<typeof designSchema>,'resources'>&{resources:Resource[]}&{keyFrames?:(z.infer<typeof keyFramesSchema>[number]&FinalNote)[];bindings?:{kind:string;id:string;aliases:string[]}[];materialMemory?:MaterialMemory;materialObservations?:z.infer<typeof staticDesignSchema>['materialObservations'];/** Live run 2026-11-14: the reviews that did not run for this draft, in plain words (empty or absent: all ran). */reviewGaps?:string[];/** C8: what the final adds to a version 4 draft's code-built 3D scenes, in plain words. */finalAdds?:string[]};
 /** Boundary adapters resolve only issued entities; creative values and facts stay exact. */
 export function readDesign(value:unknown,input:DirectionInput):Design{
  const normalized=input.stage==='draft'?normalizeDraftReferences(value,input):value;

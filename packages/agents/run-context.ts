@@ -33,6 +33,8 @@ export type RunContext={version:1;base:string;system:string;brief:string;sha256:
  /** C7 follow-up (C0 6d): the planning roles send their answer format as text, not as a per-role CLI tool, so every
   * role reads the same cached prefix; the app checks the answer against the same schema. Absent in earlier contexts. */
  schemaInText?:string;
+ /** Live run 2026-11-14: roles outside the planning chat are sent a campaign context without the brief's copy. */
+ leanContext?:string;
  /** D1: skills as stage material (contexts frozen with a stored pack from D1 on): no skill in the system text or the
   * role heading; one message per stage with its skills' principles, and checks and signs for the critic. */
  stageSkills?:StageSkills;
@@ -65,7 +67,7 @@ export function buildRunContext(args:{briefText:string;brandText?:string|null;/*
  /** C2 (second part): a stored pack version and its pictures, already at their fixed sizes and in their fixed order. */packVersion?:number;packImages?:PackImage[];
  /** C3: the pack's catalogue entries and the frozen per-role material budgets. */materials?:{entries:CatalogueEntry[];budget:Record<string,MaterialBudget>};
  /** C9: planning stages read the earlier stages in short (needs materials, for their full results). */planningChat?:boolean;
- /** C7 follow-up: the planning roles' answer format as text (same gate as C9). */schemaInText?:boolean;
+ /** C7 follow-up: the planning roles' answer format as text (same gate as C9). */schemaInText?:boolean;/** cut the brief's copy from what cold planning roles are sent */leanContext?:boolean;
  /** D1: the skills by stage (same gate); replaces commonSkills and roleSkills. */stageSkills?:StageSkills;
  /** D3: positive instructions (same gate; off by default until the owner approves). */positive?:boolean;
  /** D4: designer version 5, opt-in (same gate). */imageOwner?:boolean;/** D5 (same gate) */critic?:boolean;/** D6 */withoutSkill?:string}):RunContext{
@@ -80,7 +82,7 @@ export function buildRunContext(args:{briefText:string;brandText?:string|null;/*
  // Contexts without stored pack pictures keep the exact earlier digest.
  const sha256=createHash('sha256').update(system+'\n\u0000\n'+brief+(images.length?'\n\u0000\n'+images.map(i=>i.sha256).join(','):'')).digest('hex');
  const pack=args.brandPack&&args.packVersion?{pack:{version:args.packVersion,tokens:Math.ceil(Buffer.byteLength(args.brandPack,'utf8')/4)+images.reduce((n,i)=>n+Math.ceil(i.width*i.height/750),0),images:images.length},...(images.length?{images}:{})}:{};
- return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(!staged&&args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{}),...(staged?{stageSkills:staged}:{}),...(positive?{instructionsVersion:POSITIVE_VERSION}:{}),...(args.imageOwner?{imageOwner:'image-owner@1'}:{}),...(args.critic?{criticVersion:'critic@2'}:{}),...(args.withoutSkill?{withoutSkill:args.withoutSkill}:{})}:{})};
+ return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(!staged&&args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{}),...(args.leanContext?{leanContext:'lean-context@1'}:{}),...(staged?{stageSkills:staged}:{}),...(positive?{instructionsVersion:POSITIVE_VERSION}:{}),...(args.imageOwner?{imageOwner:'image-owner@1'}:{}),...(args.critic?{criticVersion:'critic@2'}:{}),...(args.withoutSkill?{withoutSkill:args.withoutSkill}:{})}:{})};
 }
 
 /** C2 (second part): the pack's pictures as request parts (label, then picture), the same bytes for every role. */

@@ -142,3 +142,38 @@ Then cost:
 - `node --import tsx --test tests/run-export.test.ts`: 3/3 pass.
 - D6 suite set plus the default-checks, admission-audit and run-export tests: 456/456 pass. The second suite set: 444/444 pass.
 - `npx next build`: exit 0. No runtime file changed in this task.
+
+## 5. Confirmed from the owner's export (added after 2266226)
+
+The export settled the open questions. Where it contradicts section 2, this section is right.
+
+**Confirmed causes**
+1. **No review ran anywhere.** The review role's model was `google/gemini-4-argon`. Local mode had no mapping for it, so all five critic requests (three planning reviews, the idea selection, the end review) failed with `LOCAL_MODEL_MAPPING_REQUIRED` before anything was sent, and each failure was swallowed. The hero review never started. My first candidate ("the quote had no critic") was wrong: the quote had five critic requests.
+2. **The designer built a different idea.** As proven in section 2: the build started a second new conversation without the ideas. Idea 1 was a photographed switch; the build drew a wall of switches in code. Four pictures were allowed (synthesis "Everything") and none was asked for. My candidate "pictures were off" was wrong.
+3. **Eleven of the first eleven build answers failed on `previewOptions`** (`PREVIEW_OPTIONS_FIELDS_REQUIRED` nine times, `MUST_BE_LITERAL` once, `UNISSUED_PREVIEW_OPTION` once). The designer was sent the bare code and nothing else. No hero render existed when stage H's twelve turns ended, so the hero stayed "designing", stage E opened anyway with "THE HERO FRAME IS ACCEPTED", and every request kept the stage H label. That is candidate (a) of open question 3.
+4. **Visual direction failed twice because its answer was one closing brace short.** The 9,161-character answer was otherwise complete. The repair turn said only "answer: not one JSON object", and the model sent the same text again. Each failure made the workflow run the whole request again (126k and 186k input).
+5. **The "$31" was wrong.** The CLI's cost figure is the running total of a conversation, and the studio summed it per request. Priced from each request's own tokens at the CLI's own rates, the run cost about **$7.20**.
+
+**Real cost by role (from usage tokens)**
+
+| Role | Requests | Cost |
+|---|---|---|
+| Designer | 18 | $3.21 |
+| Visual direction | 3 | $2.80 (the two failed attempts: $1.76, a quarter of the run) |
+| Brand kit and character | 2 | $0.27 |
+| Localization | 1 | $0.26 |
+| Research | 1 | $0.20 |
+| Variants | 1 | $0.17 |
+| Strategy | 1 | $0.14 |
+| Script | 1 | $0.13 |
+| **Total** | **28** | **$7.20** |
+
+Tokens: 679k written to the cache, 1.32M read from it, 134k out. Cache share 66%.
+
+**Corrections to what was reported to me**
+- The failed visual-direction attempts were about a quarter of the real cost, not half.
+- The raw accepted kit was **not** sent to the cold planning roles. The snapshot holds it (58,862 characters), but the transport replaced it with a one-line note, as C2 intended. What those roles did receive again was the brief (18,504 characters) and the variation table (18,948 characters) as JSON.
+
+**Against the targets, with the real figures:** cost about $7.20 against a target of about $7; cache 66% against 70%. The cost target was nearly met. The result was still wrong, for the reasons above.
+
+The fixes are in `docs/reviews/2026-11-14-live-run-fixes.md`.

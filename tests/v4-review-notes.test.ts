@@ -43,7 +43,8 @@ test('v4 fix: hero notes carry priority and view; a frame accepted because its t
    tools:tools({render:async views=>({summary:{version:1 as const,revision:'r',views:views.length,hard:0,soft:0,reports:[]} as never,shots:views.filter(v=>v.shot).map(v=>({key:v.key,file:'/dev/null'}))}),reviewHero:async()=>({accepted:false,notes:critique.notes})}),
    call:async message=>{sent.push(message);return say('Idea.','export default 1;',reviews?{review:true}:undefined);}});
   return sent;};
- seen.length=0;await run(false);assert.deepEqual(seen.filter(e=>e.kind==='accepted').map(e=>e.by),['turns-used'],'no review ran');
+ // Live run 2026-11-14: a rendered hero the designer never sent for review is reviewed once when its turns end.
+ seen.length=0;await run(false);assert.deepEqual(seen.filter(e=>e.kind==='accepted').map(e=>e.by),['reviews-used'],'reviewed at the cap');
  seen.length=0;const sent=await run(true);assert.deepEqual(seen.filter(e=>e.kind==='accepted').map(e=>e.by),['reviews-used']);
  assert.match(sent[1],/- \[P0\] Scene 2 · vertical: The price sits under the product/);
  assert.match(readFileSync('apps/local-runner/director/worker.ts','utf8'),/event\.by==='turns-used'\?' when its turns were used, without a review'/);

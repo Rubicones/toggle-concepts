@@ -17,8 +17,8 @@ import type {Plan} from '../../../packages/agents/local-session';
 import {lastCallSize} from '../../../packages/agents/local-session';
 import {stageMessage,stageSkillIds,requestStage} from '../../../packages/agents/stage-skills';
 import {positiveText,POSITIVE_VERSION} from '../../../packages/agents/positive-instructions';
-import {usesSchemaInText,schemaIssues,readJsonAnswer,answerFormatText,repairText,MATERIALS_ANSWER_FORMAT} from '../../../packages/agents/schema-in-text';
-import {usesPlanningChat,planningContextText,planningUpstreamText,planningMaterials} from '../../../packages/agents/planning-chat';
+import {usesSchemaInText,schemaIssues,readJsonAnswer,jsonProblem,answerFormatText,repairText,MATERIALS_ANSWER_FORMAT} from '../../../packages/agents/schema-in-text';
+import {usesPlanningChat,leanCampaignContext,planningContextText,planningUpstreamText,planningMaterials} from '../../../packages/agents/planning-chat';
 import {withoutBrandDuplicates} from '../../../packages/brand/brand-pack';
 import {largestInputParts} from '../../../packages/agents/local-usage';
 import {stageEffort,type StageId} from '../../../packages/agents/stage-effort';
@@ -150,7 +150,9 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
   const packed=options.shared?await options.shared():null,unpacked=packed?.holds.brandPack&&cfg.campaignContext!==undefined?{...cfg,campaignContext:withoutBrandDuplicates(cfg.campaignContext)}:cfg;
   // C9: in contexts frozen with the planning chat, a chain role reads the campaign context as plain text and the earlier
   // stages in short; their full results are materials it may ask for. The frozen snapshot is unchanged.
-  const planningChat=usesPlanningChat(packed,options.role),sent=planningChat?{...unpacked,contextText:planningContextText(unpacked.campaignContext),upstreamText:planningUpstreamText(cfg.upstream as Parameters<typeof planningUpstreamText>[0])}:unpacked;
+  // Lean context: a role outside the planning chat is not sent the brief again (it is in the run context above), and
+  // research is not sent the variation table. Only what is sent changes.
+  const planningChat=usesPlanningChat(packed,options.role),lean=packed?.leanContext&&packed.holds.brief&&!planningChat&&unpacked.campaignContext!==undefined?{...unpacked,campaignContext:leanCampaignContext(unpacked.campaignContext,options.role)}:unpacked,sent=planningChat?{...unpacked,contextText:planningContextText(unpacked.campaignContext),upstreamText:planningUpstreamText(cfg.upstream as Parameters<typeof planningUpstreamText>[0])}:lean;
   // C2 (second part): the pack's pictures open every request; a request's own copy of one of them is not sent again.
   // D3: in contexts frozen with positive instructions, the instruction sentences are sent as targets (only what is sent).
   const positive=packed?.instructionsVersion===POSITIVE_VERSION,said=positive?positiveText(prompt):prompt,told=positive?{...sent,instructions:positiveText(sent.instructions),...(sent.protocolInstructions?{protocolInstructions:positiveText(sent.protocolInstructions)}:{})}:sent;
@@ -224,9 +226,11 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    let schemaCheck:LocalTextDetails['schemaCheck'];
    const settle=async(schema:Record<string,unknown>)=>{
     if(!textSchema||r.outcome!=='succeeded'||leak||finishOf(r.stopReason)!=='stop')return;
-    const check=(text:string|null|undefined):{value:unknown}|{issues:string[]}=>{const read=readJsonAnswer(text);if('error' in read)return {issues:['answer: not one JSON object']};const issues=schemaIssues(read.value,schema);return issues.length?{issues}:{value:read.value};};
+    const check=(text:string|null|undefined):{value:unknown}|{issues:string[]}=>{const read=readJsonAnswer(text);if('error' in read)return {issues:[`answer: ${jsonProblem(text)}`]};const issues=schemaIssues(read.value,schema);return issues.length?{issues}:{value:read.value};};
     let c=check(r.text);
-    if('issues' in c&&r.init?.sessionId){const first=c.issues;r=mergeCalls(r,await again(r.init.sessionId,[{type:'text',text:repairText(first)}]));schemaCheck={repaired:true,issues:first};
+    // Up to two repair turns in the same conversation, each naming exactly what is wrong: far cheaper than the workflow
+    // running the whole request again.
+    for(let turn=0;turn<2&&'issues' in c&&r.init?.sessionId;turn++){const found=c.issues;r=mergeCalls(r,await again(r.init.sessionId,[{type:'text',text:repairText(found)}]));schemaCheck={repaired:true,issues:[...(schemaCheck?.issues??[]),...found]};
      if(r.outcome!=='succeeded'||leak||finishOf(r.stopReason)!=='stop')return;c=check(r.text);}
     if('value' in c){r={...r,structured:c.value};return;}
     schemaCheck={repaired:!!schemaCheck,issues:c.issues};r={...r,outcome:'failed',failure:'INVALID_OUTPUT_SCHEMA'};
