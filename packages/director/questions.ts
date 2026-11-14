@@ -25,6 +25,7 @@ const plain:Record<string,string>={
  LOCAL_RESULT_MISSING:'Local Claude ended without a final answer several times in a row. Nothing was charged; saved work is retained.',
  DRAFT_TOOL_UNAVAILABLE:'A program or file this computer needs to build or render the draft is missing or failed (see Technical details). The designer was not asked to work around it. Fix the installation (run the installer again), then retry.',
  DESIGNER_BUILD_STUCK:'The designer\'s code failed to build three times in a row with the same error, so it was stopped instead of spending more turns (the error is in Technical details). Retry gives it three more attempts in the same conversation.',
+ DRAFT_PICTURE_NOT_LOADED:'A picture in the key frame did not load in two renders in a row, so the direction was stopped before the frame was reviewed or accepted (the file is named in Technical details). This is a fault of the app or of the files on this computer, not of the design. Check that the file is in the draft, then retry.',
  HERO_FRAME_NOT_RENDERED:'The designer used its turns for the hero frame without one successful render, so nothing was shown or reviewed. Retry gives it more turns in the same conversation; the last error is in Technical details.',
  LOCAL_REQUEST_LIVE:'A Local Claude request for this direction is still running in another runner session. Wait for it to finish, then retry.',
  PROVIDER_400:'The model provider rejected the request format before generating anything (nothing was charged).',

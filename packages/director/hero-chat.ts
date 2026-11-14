@@ -104,7 +104,7 @@ export function applyEdits(files:{path:string;source:string}[],edits:FileEdit[])
 export const actionsCorrection=(reason:string)=>`Your actions block could not be read (${reason}); your files were applied. If you need it, write it again as JSON, for example {"render":true}, {"review":true}, {"pictures":[{"purpose":"…","prompt":"…","aspect":"4:5"}]} or {"materials":[{"name":"…","why":"…"}]}.`;
 
 /** Stage H: only these stop the hero frame; everything else is an observation the designer weighs against its idea. */
-export const STAGE_H_HARD=new Set(['COPY_MISSING','RENDER_ERROR','LOGO_MISSING','LOGO_LOW_CONTRAST','FONT_NOT_BRAND']);
+export const STAGE_H_HARD=new Set(['COPY_MISSING','RENDER_ERROR','LOGO_MISSING','LOGO_LOW_CONTRAST','FONT_NOT_BRAND','IMAGE_NOT_LOADED']);
 export const stageHFindings=<F extends Pick<Finding,'code'|'severity'>>(findings:F[]):F[]=>findings.map(f=>({...f,severity:STAGE_H_HARD.has(f.code)?'hard':'soft'}));
 
 /** The app's next message after a render: what it measured, written as observations. */
@@ -131,7 +131,10 @@ export function heroBriefLine(input:DirectionInput){
 export const EDITS_NOTE=`CHANGING A FILE YOU HAVE WRITTEN
 Your first build writes each file whole. After that, change a file with edits, not by writing it again: one fenced block per edit, opened with \`\`\`edit and the file's path, holding the exact current text, then a line of =======, then the text that replaces it. The current text must be in the file exactly as you quote it, and only once: quote enough of it to be found once. Edits are applied in the order you write them. Write a file whole again only when most of it changes.`;
 const HERO_CODE_NOTE=(pictures:string)=>`WHAT YOUR CODE CAN USE
-Frame.tsx default-exports one React component with props {width,height} that draws this frame at exactly that size. From './brand': brand.tokens (the accepted rules as strings), brand.logos (draw one with <Img src={staticFile(logo.url)} data-brand-logo={logo.id}/>), resources (pictures you asked for, by the id the app gives you). The brand's fonts are loaded by family name. './kit' has optional helpers (fitText, measure, contrast); './kit3d' draws a code-built 3D object or scene (ask for the material kit-3d to see how). Any CSS, SVG, masks, blend modes and filters work. Do not write a previewOptions export for this frame: the app lists the variations itself.${pictures}
+Frame.tsx default-exports one React component with props {width,height} that draws this frame at exactly that size. From './brand': brand.tokens (the accepted rules as strings), brand.logos (draw one with <Img src={staticFile(logo.url)} data-brand-logo={logo.id}/>), resources (pictures you asked for, by the id the app gives you). The brand's fonts are loaded by family name. './kit' has optional helpers (fitText, measure, contrast); './kit3d' draws a code-built 3D object or scene (ask for the material kit-3d to see how). Any CSS, SVG, masks, blend modes and filters work. Do not write a previewOptions export for this frame: the app lists the variations itself.
+
+PICTURES IN CODE
+Every picture file is drawn the same way: <Img src={staticFile(url)}/>. The url of a picture you asked for is resources[id].url (resources[id].cutoutUrl for its cutout, when it has one); the url of a supplied file is given with its name under SUPPLIED FILES; the url of a logo is brand.logos[n].url. Only these files load. A picture that does not load is reported with the render.${pictures}
 
 Answer as you would in a chat: first your idea in prose, then the complete files in fenced code blocks with their paths (\`\`\`tsx Frame.tsx), then, if you need it, one fenced actions block with JSON: {"render":true} to see it, {"pictures":[…]} to ask for pictures (purpose, prompt, aspect, references by file name, cutout), {"materials":[…]} to look at brand materials by name, {"review":true} when the frame is finished. Every change of code is rendered for you.
 

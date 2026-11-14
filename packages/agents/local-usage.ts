@@ -15,6 +15,9 @@ export type LocalCallUsage={
  inputParts?:{part:string;tokens:number}[];
  /** C3: the materials a single-answer role asked to see before answering. */
  lookedAt?:string[];
+ /** Plan E2c: the conversation's size after this request's last model call, when the request made more than one
+  * (input, cached and output above count the conversation once per call). */
+ conversationSize?:number;
 };
 type Raw={input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number;cache_creation?:{ephemeral_1h_input_tokens?:number;ephemeral_5m_input_tokens?:number}};
 type Pricing={inputPrice?:number;outputPrice?:number;cacheReadPrice?:number;cacheWritePrice?:number};
@@ -27,7 +30,7 @@ export function tokenPricedUsd(u:Raw,p:Pricing):number|undefined{
  const written=u.cache_creation_input_tokens??0,hour=Math.min(written,u.cache_creation?.ephemeral_1h_input_tokens??0),short=written-hour;
  return (u.input_tokens??0)*p.inputPrice+hour*p.inputPrice*2+short*(p.cacheWritePrice??p.inputPrice*1.25)+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice*0.1)+(u.output_tokens??0)*p.outputPrice;
 }
-type LocalRecord={materials?:{attached?:string[]};inputParts?:{part:string;tokens:number}[];internalAttempts?:number;stopReason?:string|null;retriedAfterTimeout?:boolean;executedModel?:string;effort?:string;numTurns?:number;durationMs?:number;usage?:Raw;apiEquivalentUsd?:number;forecast?:{microUsd?:number};conversation?:{kind:string};stage?:string;skills?:string[]};
+type LocalRecord={conversationSize?:number;lastCallSize?:number;materials?:{attached?:string[]};inputParts?:{part:string;tokens:number}[];internalAttempts?:number;stopReason?:string|null;retriedAfterTimeout?:boolean;executedModel?:string;effort?:string;numTurns?:number;durationMs?:number;usage?:Raw;apiEquivalentUsd?:number;forecast?:{microUsd?:number};conversation?:{kind:string};stage?:string;skills?:string[]};
 
 /** One call's usage from a step row; null for OpenRouter steps and Local refusals that never reached the CLI. */
 export function localCallUsage(row:{role:string;usage?:unknown;config_snapshot?:unknown}):LocalCallUsage|null{
@@ -38,10 +41,11 @@ export function localCallUsage(row:{role:string;usage?:unknown;config_snapshot?:
  // transport's per-request forecast.
  const own=local.usage&&snapshot.pricing?tokenPricedUsd(u,snapshot.pricing):undefined,started=!local.conversation||local.conversation.kind==='new';
  const usd=started&&(local.numTurns??1)<=1&&typeof local.apiEquivalentUsd==='number'?local.apiEquivalentUsd:own??(typeof local.forecast?.microUsd==='number'?local.forecast.microUsd/1e6:typeof local.apiEquivalentUsd==='number'?local.apiEquivalentUsd:undefined);
+ const sequence=Array.isArray((row.usage as {treatmentSequence?:unknown[]}|null|undefined)?.treatmentSequence),several=sequence||(local.numTurns??1)>1,size=local.lastCallSize??(sequence?undefined:local.conversationSize);
  return {role:snapshot.directorRole??row.role,...(snapshot.localStage??snapshot.creativeStage?{stage:snapshot.localStage??snapshot.creativeStage}:{}),
   ...(local.executedModel?{model:local.executedModel}:{}),...(local.effort?{effort:local.effort}:{}),...(local.numTurns!==undefined?{turns:local.numTurns}:{}),...(local.durationMs!==undefined?{durationMs:local.durationMs}:{}),
   input:u.input_tokens??0,cacheCreation:u.cache_creation_input_tokens??0,cacheRead:u.cache_read_input_tokens??0,output:u.output_tokens??0,
-  ...(usd!==undefined?{apiEquivalentUsd:usd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{}),...(requestTrouble(local)?{trouble:requestTrouble(local)}:{}),...(local.inputParts?.length?{inputParts:local.inputParts}:{}),...(local.materials?.attached?.length?{lookedAt:local.materials.attached}:{}),...(local.stage?{effortStage:local.stage}:{}),...(local.skills?.length?{skills:local.skills}:{})};
+  ...(usd!==undefined?{apiEquivalentUsd:usd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{}),...(requestTrouble(local)?{trouble:requestTrouble(local)}:{}),...(local.inputParts?.length?{inputParts:local.inputParts}:{}),...(local.materials?.attached?.length?{lookedAt:local.materials.attached}:{}),...(local.stage?{effortStage:local.stage}:{}),...(local.skills?.length?{skills:local.skills}:{}),...(size!==undefined&&several?{conversationSize:size}:{})};
 }
 
 /** What a Local Claude text request reserves against money caps: the smallest amount the ledger accepts. It runs on
@@ -70,6 +74,8 @@ function requestTrouble(local:LocalRecord){
  if(local.retriedAfterTimeout)parts.push('second try after no answer');
  return parts.join('; ');
 }
+/** Plan E2c, for the run page: "the conversation is 61k after this request" when the figures count it more than once. */
+export const conversationSizeNote=(u:Pick<LocalCallUsage,'conversationSize'>)=>u.conversationSize!==undefined?`the conversation is ${k(u.conversationSize)} after this request; the figures count it once per model call`:'';
 const k=(n:number)=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1000?`${Math.round(n/1000)}k`:String(n);
 /** All input the model read: new input, cache writes and cache reads. */
 export const totalInput=(u:Pick<LocalCallUsage,'input'|'cacheCreation'|'cacheRead'>)=>u.input+u.cacheCreation+u.cacheRead;
@@ -124,4 +130,10 @@ export function cacheLine(r:ReturnType<typeof cacheReport>,label:(stage:string)=
  if(r.missesAfterEffortChange)parts.push(`${r.missesAfterEffortChange} after an effort change`);
  if(r.oneHour||r.fiveMinutes)parts.push(r.fiveMinutes?`cache kept 5 minutes on ${r.fiveMinutes} request${r.fiveMinutes===1?'':'s'}`:'cache kept one hour');
  return parts.join('; ')+'.';
+}
+
+/** Plan E2e: a visual-direction step of a chosen scenario that ran as one request (no treatment sequence). */
+export function onePassNote(row:{role:string;usage?:unknown;config_snapshot?:unknown}):string{
+ const snapshot=(row.config_snapshot??{}) as {scenarioSelection?:unknown;treatmentSequence?:unknown},usage=(row.usage??{}) as {treatmentSequence?:unknown;_local?:unknown};
+ return row.role==='visual-direction'&&!!snapshot.scenarioSelection&&!snapshot.treatmentSequence&&!usage.treatmentSequence&&!!usage._local?'Visual direction: all territories in one pass.':'';
 }

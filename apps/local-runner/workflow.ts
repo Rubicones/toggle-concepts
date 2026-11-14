@@ -42,7 +42,7 @@ import {modelCatalog} from "../../packages/agents/catalog";
 import type {TextSnapshot} from "../../packages/agents/text-provider";
 import {roleReasoning,usesRoleEffort} from "../../packages/agents/effort";
 import {planningPlan} from "../../packages/agents/local-session";
-import {usesPlanningChat,VISUAL_CONCEPT_TASK,sheetMaterials,sheetOnRequestLine} from "../../packages/agents/planning-chat";
+import {usesPlanningChat,VISUAL_CONCEPT_TASK,sheetMaterials,sheetOnRequestLine,oneRequestVisualDirection} from "../../packages/agents/planning-chat";
 import {TERRITORY_TASK} from "../../packages/director/image-ideas";
 import {LOCAL_TEXT_RESERVATION_MICRO_USD} from "../../packages/agents/local-usage";
 import {stageOf} from "../../packages/agents/stage-effort";
@@ -159,6 +159,10 @@ async function execute(claim:Claim){
   const concept=!!planningCtx&&usesPlanningChat(planningCtx,job.role);
   // D4: designer version 5 (frozen with the run context): visual direction writes territories, not frames.
   const territory=concept&&!!planningCtx?.imageOwner;
+  // Plan E2 (one-mind contexts): every territory in one request, and no offer of full brand-sheet pages (the compact
+  // sheet in the shared prefix is the brand evidence). Earlier contexts keep the treatment sequence.
+  const oneRequest=oneRequestVisualDirection(planningCtx,job.role);
+  if(oneRequest)treatmentSequence=false;
   const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence,...(concept?{concept:true}:{}),...(territory?{territory:true}:{})}):null;
   if(schema&&planningEnvelopeSchema({id:modelId,supportedParameters:model.supportedParameters},schema)){
    snapshot.responseSchema=modelId==='google/gemini-2.5-flash'?schema:{name:schema.name,schema:typeArraysAsAnyOf(providerJsonSchema(schema.schema)) as Record<string,unknown>};snapshot.outputFormat='json_schema';
@@ -167,7 +171,7 @@ async function execute(claim:Claim){
   if(envelope)transportTask=envelopeRoleInstruction(job.role)+(transportTask?'\n'+transportTask:'');
   // The compact sheet is in the run context; the full sheet's pages are asked for by name instead of always sent.
   if(territory)transportTask+=`\n${TERRITORY_TASK}`;
-  if(concept)transportTask+=`\n${VISUAL_CONCEPT_TASK}`+(sheetPages.length?`\n${sheetOnRequestLine(sheetPages)}`:'');
+  if(concept)transportTask+=`\n${VISUAL_CONCEPT_TASK}`+(sheetPages.length&&!oneRequest?`\n${sheetOnRequestLine(sheetPages)}`:'');
   // Guided planning contexts are built in SQL without the feeling brief; it travels with the task text, because the
   // frozen campaignContext is compared byte for byte at admission (studio_begin_workflow) and must stay unchanged.
   if(claim.round.kind==='draft'&&!creative&&(CREATIVE_FOCUS_ROLES as readonly string[]).includes(job.role)){

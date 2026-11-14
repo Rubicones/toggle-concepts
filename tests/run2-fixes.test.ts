@@ -132,9 +132,14 @@ test('bench cases: a product brand built on the supplied photograph, and a digit
  const root=await mkdtemp(join(tmpdir(),'case-')),pub=join(root,'public'),supplied=join(root,'supplied');await mkdir(pub);await mkdir(supplied);
  await assert.rejects(prepareBrandWorkspace(brask,pub,supplied),/BENCH_SUPPLIED_FILE_MISSING\nPut brask-casserole-ember\.png in .*It is the client's own file: A studio product photograph/);
  await writeFile(join(supplied,'brask-casserole-ember.png'),png('#F3EBDD','#B4432B',800,600));await prepareBrandWorkspace(brask,pub,supplied);
- const input=benchInputV5(brask),lines=await referenceFactLines(root,input,benchCatalogue(brask,pub));
- assert.match(lines[0],/^brand\.references\[0\] · brask-casserole-ember · product photograph \(Use this\) · A studio product photograph of one enamelled cast-iron casserole.* · 800×600 · its own ground #F3EBDD$/);
- assert.ok(designerDigestText({...input,brief:{...input.brief,designerVersion:6}} as DirectionInput,{heroOnly:true,referenceLines:lines}).includes('The brand\'s own pictures (draw one with <Img src={staticFile(brand.references[n].url)}/>; used as supplied, never redrawn):\n- brand.references[0] · brask-casserole-ember'));
+ // The supplied photograph is one of the block's assets (the files the renderer serves), marked "use it", and the
+ // designer can also look at it by its catalogue name. Brand reference pictures are listed as evidence only.
+ const input=benchInputV5(brask);assert.deepEqual(input.assets.map(a=>a.url),['brask-casserole-ember.png']);assert.deepEqual(input.creativeHandoff?.referenceAssetIds,['asset-casserole']);assert.equal(input.brand.references.length,0);
+ assert.equal(benchCatalogue(brask,pub)[0].name,'brask-casserole-ember');
+ const withRefs={...input,brief:{...input.brief,designerVersion:6},brand:{...input.brand,references:[{id:'r1',url:'brask-casserole-ember.png'}]}} as DirectionInput,lines=await referenceFactLines(root,withRefs,[{name:'pot-on-linen',kind:'signature picture',line:'The pot on a linen cloth.',materialId:'r1'}]);
+ assert.match(lines[0],/^brand\.references\[0\] · pot-on-linen · signature picture · The pot on a linen cloth\. · 800×600 · its own ground #F3EBDD$/);
+ const digest=designerDigestText(withRefs,{heroOnly:true,referenceLines:lines});
+ assert.ok(digest.includes('The brand\'s own pictures (evidence of the brand: look at one by asking for it by name in materials; they are not files your code can draw):\n- pot-on-linen · signature picture'));assert.ok(!digest.includes('brand.references['),'no path the renderer does not serve');
  assert.match(String(input.creativeHandoff?.visual&&JSON.stringify(input.creativeHandoff.visual)),/supplied product photograph, used as it is/);
  // The digital product: its real structure is prop text for the interface, and the territory forbids a generated screen.
  const r=benchInputV5(rota);assert.ok(designerDigestText({...r,brief:{...r.brief,designerVersion:6}} as DirectionInput,{heroOnly:true}).includes('World (prop text for products and interfaces, never headlines): Shift: Thu 14 Nov · 07:00–15:00 · Ward 4B · Staff nurse'));

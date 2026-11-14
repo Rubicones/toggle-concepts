@@ -1,3 +1,4 @@
+import {assetNames} from '../../../packages/director/asset-names';
 import {usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3} from '../../../packages/director/quality';
 import {transientExecutionFailure,propagateExecutionFailure,localTemporaryStop,LOCAL_RECOVERY_LIMIT} from '../../../packages/director/execution-failures';
 import {recoverUnsubmittedClock} from '../../../packages/director/working-clock';
@@ -20,7 +21,7 @@ import {slimDirectorInput} from '../../../packages/director/inputs';
 import {directorEvents} from './events';
 import {publishDirectorReference,processDirectorDelivery,restoreIteration,type SealedIteration} from './delivery';
 import {materialize,visionImages,referenceEntries,sheetEntries} from './assets';
-import {measureLogos,logoFactLines,referenceFactLines} from './logo-facts';
+import {measureLogos,logoFactLines,referenceFactLines,suppliedFactLines} from './logo-facts';
 import {fetchMaterials,loadMaterials,materialsUsed} from '../local-claude/materials';
 import {designerDigestEntries,designerDigestText,usesDigest,territoryText} from '../../../packages/director/designer-digest';
 import {reviewGaps,reviewReason,unreviewedStatus} from '../../../packages/director/review-gaps';
@@ -30,7 +31,8 @@ import {tripoSettings,MODELS_NOT_SET_UP} from '../../../packages/director/tripo'
 import {makeModel,directorModelLedger,modelRequestId,taskMemory} from './tripo-model';
 import {reviewRepairMessage} from '../../../packages/director/extension-chat';
 import {creatorStageText,stageSkillTitles} from '../../../packages/agents/stage-skills';
-import {forkFromDirection} from '../../../packages/agents/local-session';
+import {forkFromDirection,branchFromDirection,directionBranchLine,type DirectionBranch} from '../../../packages/agents/local-session';
+import {localModelFor} from '../../../packages/agents/local-models';
 import {usesImageIdeas,IDEAS_TASK,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../../packages/director/image-ideas';
 import {designerRoleLine} from '../../../packages/director/roles';
 import {directorAdmissionProblem,directorRequestSnapshot,criticAllowanceUsed} from '../../../packages/director/admission';
@@ -59,7 +61,7 @@ import {localCallUsage,usageLine,LOCAL_TEXT_RESERVATION_MICRO_USD} from '../../.
 import {textRequestQuote} from '../../../packages/agents/text-quote';
 import {skillRoleOf} from '../../../packages/agents/skill-files';
 import {stageOf} from '../../../packages/agents/stage-effort';
-import {designerPlan,conversationTokens,conversationLabel,storedSize,continuesOwnConversation,relativeCap,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
+import {branchesFromPlanning,designerPlan,conversationTokens,conversationLabel,storedSize,continuesOwnConversation,relativeCap,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
 import {textExecutionFor,transportFor,sharedContextFor,latestPlanningPoint,markSubscriptionLimit,type LocalRuntime} from '../local-claude/runtime';
 import {paidText,requestId,roleNames,resumeBudgetClock,retryableProviderFailure,type Role} from '../../../packages/director/money';
 import type {BlockSnapshot,WorkState,ADQuestion} from '../../../packages/director/state';
@@ -217,18 +219,25 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
   // unreadable answer is never accepted, so it never becomes part of the history.
   // C1 (chat-shaped plan): the turn's conversation plan is decided BEFORE its request is built, so the loop sends the
   // short payload only on a real continuation of the designer's own conversation, and the transport uses that same plan.
+  let branchDecision:{decision:DirectionBranch;planning?:string;designer?:string}|undefined;
   const designerConversation=(()=>{let pending:StoredPoint|null=null,decided:Plan|undefined;const loopState=()=>(state.designer??{}) as DesignerLoopState;
    // C6 (designerVersion 4): the cap is relative to the conversation's seed (its first request) plus a working room.
    // D4 follow-up (version 5): fork its direction's planning conversation when that is cheap (forkFromDirection), else
    // start from the direction's digest. A missing conversation restarts with the full request (the digest), as in C1.
    const planningPoint=async()=>{if(loopState().session)return null;const point=await latestPlanningPoint(admin,input.runId);if(!point||!usesImageIdeas(input))return point;
     const ctx=execution.mode==='local_claude'&&execution.context_mode==='shared'?await sharedContextFor(admin,execution,input.runId)?.():null;if(!ctx)return null;
+    // Plan E3c (version 6): continue the planning conversation whenever it is under the cap and on the designer's
+    // model; a cold cache is said, not avoided. The reason of a new conversation is kept for the timeline.
+    if(heroMeaning(input)){
+     let model:string|undefined;try{model=local.setup?localModelFor(snapshot.models.director.modelId,{sonnet:local.setup.sonnet}).execution:undefined;}catch{model=undefined;}
+     branchDecision={decision:branchFromDirection({point,cap:relativeCap(undefined),model,sameShape:!!ctx.schemaInText,now:Date.now()}),planning:point.model,designer:model};
+     return branchDecision.decision.branch?{...point,tokens:point.trueTokens??point.tokens}:null;}
     const prefixTokens=ctx.tokens+(ctx.images??[]).reduce((n,i)=>n+Math.ceil(i.width*i.height/750),0),digestTokens=Math.ceil(Buffer.byteLength(designerDigestText(input),'utf8')/4);
     return forkFromDirection({pointTokens:point.tokens,ageMs:Date.now()-Date.parse(point.at??''),sameShape:!!ctx.schemaInText,prefixTokens,digestTokens,turns:Math.max(1,Math.ceil((estimate.roles.designer?.requests??24)*0.5))})?point:null;};
    const compute=async():Promise<Plan>=>designerPlan({session:loopState().session},await planningPoint(),heroChat(input)?relativeCap(loopState().session?.seed):undefined);
    return {plan:async():Promise<Plan>=>decided!==undefined?decided:compute(),
     decide:async()=>{decided=await compute();return continuesOwnConversation(decided);},
-    answered:(usage:unknown)=>{const l=(usage as {_local?:{sessionId?:string;conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0];conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted'}}}|null)?._local;if(usesImageIdeas(input)&&!loopState().session&&l?.conversation){const forked=l.conversation.kind==='branched',step=`designer:${state.iteration??1}:start`;void events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:forked?"Continuing from its direction's conversation.":"Started from its direction's summary."}).catch(()=>undefined);}decided=undefined;pending=l?.sessionId&&l.conversation?{role:'designer',sessionId:l.sessionId,tokens:storedSize(l),...(heroChat(input)?{seed:l.conversation.kind==='continued'?loopState().session?.seed??storedSize(l):storedSize(l)}:{})}:null;if(pending&&l?.conversation&&['condensed','restarted'].includes(l.conversation.kind))void events.emit(`conversation:${l.sessionId}`,{stepId:`conversation:${l.sessionId}`,kind:'compaction',status:'done',costMicroUsd:0,message:heroChat(input)&&l.conversation.kind==='condensed'&&loopState().hero?.state==='accepted'?'Conversation condensed: kept the draft, notes and the approved hero':conversationLabel(l.conversation.kind,'designer')}).catch(()=>{});},
+    answered:(usage:unknown)=>{const l=(usage as {_local?:{sessionId?:string;conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0];conversation?:{kind:'new'|'continued'|'branched'|'condensed'|'restarted'}}}|null)?._local;if(usesImageIdeas(input)&&!loopState().session&&l?.conversation){const forked=l.conversation.kind==='branched',step=`designer:${state.iteration??1}:start`;void events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:heroMeaning(input)&&branchDecision?directionBranchLine(forked?branchDecision.decision.branch?branchDecision.decision:{branch:true,coldCache:false}:branchDecision.decision.branch?{branch:false,reason:'no-conversation'}:branchDecision.decision,{planning:branchDecision.planning,designer:branchDecision.designer}):forked?"Continuing from its direction's conversation.":"Started from its direction's summary."}).catch(()=>undefined);}decided=undefined;pending=l?.sessionId&&l.conversation?{role:'designer',sessionId:l.sessionId,tokens:storedSize(l),...(heroChat(input)?{seed:l.conversation.kind==='continued'?loopState().session?.seed??storedSize(l):storedSize(l)}:{})}:null;if(pending&&l?.conversation&&['condensed','restarted'].includes(l.conversation.kind))void events.emit(`conversation:${l.sessionId}`,{stepId:`conversation:${l.sessionId}`,kind:'compaction',status:'done',costMicroUsd:0,message:heroChat(input)&&l.conversation.kind==='condensed'&&loopState().hero?.state==='accepted'?'Conversation condensed: kept the draft, notes and the approved hero':conversationLabel(l.conversation.kind,'designer')}).catch(()=>{});},
     accept: async()=>{if(!pending)return;const s=loopState();s.session=pending;pending=null;},
     // The stored conversation is not on this computer: the next attempt starts over with the full payload.
     lost:()=>{const s=loopState();delete s.session;delete s.filesSeen;decided=undefined;},
@@ -395,6 +404,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     // Version 6: each supplied logo measured once from the draft folder, so the designer picks a mark by fact.
     const logoLines=heroMeaning(input)?logoFactLines(await measureLogos(folder,input,runContext?.materials?.entries??[]),input):undefined;
     const referenceLines=heroMeaning(input)?await referenceFactLines(folder,input,runContext?.materials?.entries??[]):undefined;
+    const suppliedFacts=heroMeaning(input)?await suppliedFactLines(folder,input,assetNames(input)):undefined;
     const compactSheet=!!runContext?.images?.some(i=>i.kind==='compact'),digestOn=usesDigest(input)&&!!runContext?.materials,references=[...(compactSheet?referenceEntries(folder,input):[]),...(digestOn?designerDigestEntries(input):[])];
     // C5 (designerVersion 4): with a compact sheet, the full brand sheet pages are entries it asks for by name too.
     const sheetOnRequest=heroChat(input)&&compactSheet;if(sheetOnRequest)references.push(...sheetEntries(folder,input));
@@ -452,7 +462,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      await runHeroChat({...ideasArgs,input,state:loop,maxTurns:Math.min(allowance.requests,Math.ceil(Math.min(maxTurns,allowance.requests)*HERO_TURN_SHARE)+(loop.heroExtraTurns??0)),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,heroReviews:heroCritic,onHero,
       onPictureWait:async e=>{const step=`designer:picture-wait:${loop.turn}`;await events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:pictureWaitLine(e.pictures,e.holdMs)});},
       save:async next=>{state.designer=next;await save();},...(conversation?{conversation}:{}),
-      call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{sceneIds:false,heroOnly:true,logoLines,referenceLines})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'H'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
+      call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{sceneIds:false,heroOnly:true,logoLines,referenceLines,suppliedFacts,historyHolds:branchesFromPlanning(await designerConversation.plan())})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'H'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
       onTurn:async e=>{await events.emit(`designer:${state.iteration??1}:${e.turn}`,{stepId:`designer:${state.iteration??1}:${e.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:e.idea||'The designer answered without words; its files were applied.',detail:{chat:true,summary:e.results,prose:e.prose,files:e.files,...(e.actions?{actions:e.actions}:{})}},e.looked);}});
     }
     // C6 (designerVersion 4, stage E): the same conversation continues with the other scenes, the formats and the
@@ -461,7 +471,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     if(heroChat(input))await runExtensionChat({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,...(staged?{skills:creatorStageText(staged,'extension')}:{}),
      save:async next=>{state.designer=next;await save();},...(conversation?{conversation}:{}),
      onPhase:async(phase,label)=>{await events.emit(`designer:${state.iteration??1}:phase:${phase}`,{stepId:`designer:${state.iteration??1}:phase:${phase}`,kind:'designer',status:'done',costMicroUsd:0,message:`${label}.`,detail:{phase}});},
-     call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{logoLines,referenceLines})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'E'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
+     call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{logoLines,referenceLines,suppliedFacts})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'E'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
      onTurn:async e=>{await events.emit(`designer:${state.iteration??1}:${e.turn}`,{stepId:`designer:${state.iteration??1}:${e.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:e.idea||'The designer answered without words; its files were applied.',detail:{chat:true,summary:e.results,prose:e.prose,files:e.files,...(e.actions?{actions:e.actions}:{})}},e.looked);}});
     // C8: what the final adds to the draft's code-built 3D scenes, read from the designer's files.
     if(heroChat(input)){const adds=code3dNotes(await tools.files());if(adds.length)design.finalAdds=adds;else delete design.finalAdds;}

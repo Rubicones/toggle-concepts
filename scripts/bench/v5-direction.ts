@@ -10,12 +10,14 @@
 // worker's lease, ledger and admission (allowances, the database's own rules), the timeline table and its event rows,
 // the picture purchase through OpenRouter (the bench's `buy` stands in), 3D models, the planning chain before the
 // designer (the territory is given), and the compact brand sheet pictures of a stored brand pack.
+import {designerContext} from '../../packages/director/designer-context';
+import {assetNames} from '../../packages/director/asset-names';
 import {usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3} from '../../packages/director/quality';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {existsSync} from 'node:fs';
 import {referenceEntries,sheetEntries} from '../../apps/local-runner/director/assets';
-import {measureLogos,logoFactLines,referenceFactLines} from '../../apps/local-runner/director/logo-facts';
+import {measureLogos,logoFactLines,referenceFactLines,suppliedFactLines} from '../../apps/local-runner/director/logo-facts';
 import {designerTools,provisionalDesign,finishDesign} from '../../apps/local-runner/director/designer-run';
 import {screenshotForDesigner,newDesignerState,designerViews,RENDER_LONG_SIDE,type DesignerLoopState,type DesignerTools} from '../../apps/local-runner/director/designer-loop';
 import {runHeroChat,HERO_TURN_SHARE} from '../../apps/local-runner/director/hero-chat-loop';
@@ -73,6 +75,10 @@ export type V5Options={
  brandFileEntries?:boolean;
  /** Plan E5 (version 6): how long a hero render waits for its pictures (default: the production bound). */
  pictureHoldMs?:number;
+ /** Ablation switches of the bench (one addition off at a time). noIdeas: no ideas turn and no selection, the designer
+  * builds straight from the hero task. v3Context: the designer reads the version 3 brief (designerContext as JSON)
+  * instead of the planning-shaped digest. */
+ noIdeas?:boolean;v3Context?:boolean;
  /** Rehearsals without a browser: replace build and render (everything else stays the production code). */
  tools?:(real:DesignerTools)=>DesignerTools;
 };
@@ -145,16 +151,17 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
  const working=(stage:'hero'|'extension')=>{const titles=stageSkillTitles(staged,stage);if(titles.length)say(`The designer is working with: ${titles.join(', ')}.`);};
  const logoLines=heroMeaning(input)?logoFactLines(await measureLogos(folder,input,ctx.materials?.entries??[]),input):undefined;
  const referenceLines=heroMeaning(input)?await referenceFactLines(folder,input,ctx.materials?.entries??[]):undefined;
- const designerCall=(stage:'H'|'E')=>async(message:string,images:{url:string;label:string}[])=>call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,stage==='H'?{sceneIds:false,heroOnly:true,logoLines,referenceLines}:{logoLines,referenceLines})},images.map(i=>({...i,required:true})));
+ const suppliedFacts=heroMeaning(input)?await suppliedFactLines(folder,input,assetNames(input)):undefined;
+ const designerCall=(stage:'H'|'E')=>async(message:string,images:{url:string;label:string}[])=>call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:o.v3Context?JSON.stringify(designerContext(input)):designerDigestText(input,stage==='H'?{sceneIds:false,heroOnly:true,logoLines,referenceLines,suppliedFacts}:{logoLines,referenceLines,suppliedFacts})},images.map(i=>({...i,required:true})));
  const turnLine=async(e:{turn:number;idea:string;results:string[]})=>{say(`Turn ${e.turn}: ${e.idea.slice(0,160)||'(no words)'} — ${e.results.join(' ')}`);};
  const owned=input.creativeHandoff?.intent.direction;
  // Stage H: three ideas, the independent choice, the build in the same conversation, the hero review.
  working('hero');
  await runHeroChat({input,state,maxTurns:Math.min(requests,Math.ceil(requests*HERO_TURN_SHARE)+(state.heroExtraTurns??0)),maxPictures,timeMs:3600000,tools,heroReviews,conversation,
-  ideas:{task:`${owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:''}${IDEAS_TASK}\n\n${creatorStageText(staged,'ideas')}`,unreviewedReason:()=>heroReviews>0?undefined:'NO_REVIEW_IN_QUOTE',
+  ...(o.noIdeas?{}:{ideas:{task:`${owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:''}${IDEAS_TASK}\n\n${creatorStageText(staged,'ideas')}`,unreviewedReason:()=>heroReviews>0?undefined:'NO_REVIEW_IN_QUOTE',
    select:async(text)=>{if(heroReviews<1)return null;try{return readSelection(await call('critic','Choose one of the three ideas.',usesQuality(input)?SELECTION_INSTRUCTIONS_V3:SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(reviewMaterialFor(input,staged,'ideas').checks),territoryText(input))}));}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
    onIdeas:async()=>{say('Three ideas for the key frame.');},
-   onChosen:async(pick,reason)=>{if(state.ideas?.unreviewed)say(`The three ideas were NOT reviewed: ${reviewReason(state.ideas.unreviewed)}. The first idea is built.`);say(`Chosen: idea ${pick} — ${reason}`);}},
+   onChosen:async(pick,reason)=>{if(state.ideas?.unreviewed)say(`The three ideas were NOT reviewed: ${reviewReason(state.ideas.unreviewed)}. The first idea is built.`);say(`Chosen: idea ${pick} — ${reason}`);}}}),
   onPictureWait:async e=>{say(pictureWaitLine(e.pictures,e.holdMs));},...(o.pictureHoldMs!==undefined?{pictureHoldMs:o.pictureHoldMs}:{}),
   onHero:async e=>{say(e.kind==='started'?(heroMeaning(input)?`Hero frame started. ${heroBriefLine(input)}`:'Hero frame started.'):e.kind==='reviewed'?`Hero frame reviewed: ${e.notes} note${e.notes===1?'':'s'}.`:`Hero frame accepted (${e.by}). Designing the other scenes.`);},
   save:async()=>{},call:designerCall('H'),onTurn:turnLine});

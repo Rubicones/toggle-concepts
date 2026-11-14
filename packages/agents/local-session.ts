@@ -10,7 +10,7 @@ export const INDEPENDENT_ROLES:ReadonlySet<string>=new Set(['critic','research',
 export const CONVERSATION_CAP=120000;
 
 /** A stored point of a conversation: the session after a succeeded request, and how large the conversation was then. */
-export type StoredPoint={role:string;sessionId:string;tokens:number;at?:string;/** C6: the size of the conversation's first request */seed?:number};
+export type StoredPoint={role:string;sessionId:string;tokens:number;at?:string;/** plan E3: the model the request ran on, and the conversation's real size (E2c) */model?:string;trueTokens?:number;/** C6: the size of the conversation's first request */seed?:number};
 /** C6 (chat-shaped plan): how much a designer conversation may grow beyond its seed before it is condensed. */
 export const WORKING_ROOM=100000;
 /** C6: the cap of a conversation is relative: its seed (one full request) plus a working room, never below the seed,
@@ -30,6 +30,9 @@ export function lastCallSize(events:readonly unknown[]|undefined):number|undefin
 /** The stored size of a request's conversation: the last call's size when the events had it, else the summed usage. */
 export const storedSize=(l:{conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0]}|undefined)=>l?.conversationSize??conversationTokens(l?.usage);
 
+/** Plan E2c: the conversation's real size after a step: the size after its last request when the step was several
+ * requests (a treatment sequence stores the sum of its requests), else the stored size. */
+export const trueSize=(l:{lastCallSize?:number;conversationSize?:number;usage?:Parameters<typeof conversationTokens>[0]}|undefined)=>l?.lastCallSize??storedSize(l);
 /** Size of the conversation after a request: everything it read plus what it wrote. */
 export function conversationTokens(u:{input_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number;output_tokens?:number}|undefined){
  return (u?.input_tokens??0)+(u?.cache_creation_input_tokens??0)+(u?.cache_read_input_tokens??0)+(u?.output_tokens??0);
@@ -61,6 +64,28 @@ export function designerPlan(state:{session?:StoredPoint},planningPoint:StoredPo
  return planningPoint&&planningPoint.tokens<=cap?{resume:planningPoint.sessionId,fork:true,sameRole:false}:null;
 }
 
+/** A designer request that branches from the planning conversation (its first request, plan E3c): the history already
+ * holds the strategy, the scenario and the territory. */
+export const branchesFromPlanning=(plan:Plan)=>!!plan&&!plan.condensed&&!!plan.resume&&plan.sameRole===false;
+/** Plan E3c (designerVersion 6): the designer's first request continues its direction's planning conversation
+ * whenever that conversation is under the cap, on the model the designer runs on, and in the same request shape. The
+ * cache's age is a cost note, never a reason to start over. Replaces forkFromDirection for version 6. */
+export type DirectionBranch={branch:true;coldCache:boolean}|{branch:false;reason:'no-conversation'|'over-cap'|'other-model'|'other-shape'};
+export function branchFromDirection(a:{point:Pick<StoredPoint,'tokens'|'trueTokens'|'model'|'at'>|null;cap:number;/** the model the designer's request will run on */model?:string;sameShape:boolean;now:number}):DirectionBranch{
+ if(!a.point)return {branch:false,reason:'no-conversation'};
+ if(!a.sameShape)return {branch:false,reason:'other-shape'};
+ // A conversation and its cache belong to one model. An unknown model on either side is not assumed to be the same.
+ if(!a.model||!a.point.model||a.model!==a.point.model)return {branch:false,reason:'other-model'};
+ if((a.point.trueTokens??a.point.tokens)>a.cap)return {branch:false,reason:'over-cap'};
+ const age=a.now-Date.parse(a.point.at??'');
+ return {branch:true,coldCache:!(age>=0&&age<=DIRECTION_CACHE_MS)};
+}
+/** Plan E3d/3f: the timeline's line for the designer's first request, in plain words. */
+export function directionBranchLine(d:DirectionBranch,models?:{designer?:string;planning?:string}):string{
+ if(d.branch)return `The designer continues the planning conversation (strategy → script → visual direction → key frame).${d.coldCache?' The planning conversation is more than an hour old, so it is read again at the full price once.':''}`;
+ const why=d.reason==='other-model'?`the planning ran on ${models?.planning??'another model'} and the designer runs on ${models?.designer??'its own'}; a conversation cannot move between models`:d.reason==='over-cap'?'the planning conversation is too long to continue':d.reason==='other-shape'?'the planning requests were sent in another form than the designer\'s':'no planning conversation is stored on this computer';
+ return `The designer starts a new conversation with the key frame brief: ${why}.`;
+}
 /** Plain words for the timeline. */
 export function conversationLabel(kind:'new'|'continued'|'branched'|'condensed'|'restarted',role:string){
  // C1: the designer's turns say whether it kept its conversation or started over with the full draft, and why.

@@ -68,7 +68,7 @@ test('D4: version 4 runs are unchanged; the quote adds one selection request for
  const p={inputPrice:3e-6,outputPrice:1.5e-5},v4=estimateDesignerDirection({designer:p,critic:p},40000,2,{id:'x'},{criticRequests:2,heroReviews:2}),v5=estimateDesignerDirection({designer:p,critic:p},40000,2,{id:'x'},{criticRequests:2,heroReviews:2,ideasSelection:true});
  assert.equal(v5.roles.critic.requests,v4.roles.critic.requests+1);assert.equal(v5.ideasSelection,1);assert.equal(v4.ideasSelection,undefined);
  assert.deepEqual(estimateDesignerDirection({designer:p,critic:p},40000,2,{id:'x'},{criticRequests:2,heroReviews:2,ideasSelection:false}),v4,'version 4 quotes are byte for byte');
- assert.match(readFileSync('lib/server/director-start.ts','utf8'),/designerVersion:isTerritoryOutput\(visual\.output\)\?5:4/,'version 5 only when the run planned territories (opt-in)');
+ assert.match(readFileSync('lib/server/director-start.ts','utf8'),/designerVersion:isTerritoryOutput\(visual\.output\)\?\(process\.env\.STUDIO_DESIGNER_VERSION==='6'\?6:5\):4/,'version 5 only when the run planned territories (opt-in); version 6 only with the setting');
 });
 
 test('D4: estimated cost of the ideas turn and the selection request', ()=>{

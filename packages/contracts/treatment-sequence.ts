@@ -91,7 +91,12 @@ type Receipt={outcome:string;cost:number|null;text:string|null;generation:string
 export function combineSequenceReceipts<R extends Receipt>(receipts:R[],final:{outcome:string;text:string|null;failure:string|null}):R{
  const last=receipts[receipts.length-1];
  const cost=receipts.some(r=>r.cost===null)?null:receipts.reduce((n,r)=>n+(r.cost??0),0);
- const usage={...(receipts.reduce<unknown>((u,r)=>r.usage?sumUsage(u,r.usage):u,null) as Record<string,unknown>|null),
+ // Plan E2c: summing adds the conversation's size once per request, so a step of three requests of 61k was stored as
+ // 183k. The sum stays where it was (earlier runs read it); the size after the last request is kept beside it.
+ const lastSize=(last?.usage as {_local?:{conversationSize?:unknown}}|null|undefined)?._local?.conversationSize;
+ const summed=receipts.reduce<unknown>((u,r)=>r.usage?sumUsage(u,r.usage):u,null) as Record<string,unknown>|null;
+ if(summed&&typeof lastSize==='number'&&summed._local&&typeof summed._local==='object')summed._local={...summed._local as object,lastCallSize:lastSize};
+ const usage={...summed,
   treatmentSequence:receipts.map((r,i)=>({slot:i+1,outcome:r.outcome,cost:r.cost,generation:r.generation,finishReason:r.finishReason??null}))};
  const local=receipts.some(r=>r.local)?{events:receipts.flatMap(r=>r.local?.events??[]),stderr:receipts.map(r=>r.local?.stderr).filter(Boolean).join('\n')}:undefined;
  return {...last,...final,cost,generation:null,usage,...(local?{local}:{})};

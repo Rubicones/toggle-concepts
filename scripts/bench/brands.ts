@@ -27,7 +27,7 @@ export type BenchBrand={
  world?:string[];
  /** More than one supplied logo file (default: the one logoSvg, drawn in the text colour). */
  logos?:{id:string;file:string;svg:string}[];
- /** Files the client supplied, held as brand references as a real run holds them. The bench takes each from artifacts/bench/supplied/<brand id>/<file> (or --supplied):
+ /** Files the client supplied to be used in the ad: the block's assets. The bench takes each from artifacts/bench/supplied/<brand id>/<file> (or --supplied):
   * a real photograph cannot be invented here. `use` marks the files the direction must use. */
  supplied?:{id:string;name:string;file:string;mime:string;use?:boolean;/** what the file is, for whoever makes it for the bench */brief:string}[];
 };
@@ -261,7 +261,7 @@ export function benchInput(brand:BenchBrand):DirectionInput{
  return {protocol:'director@1',stage:'draft',runId:`bench-${brand.id}`,roundId:'round',directionId:'direction',iterationId:'iteration',
   storyboard:brand.scenes.map((s,i)=>({id:s.id,start:i*2,end:i*2+2,copy:s.copy.primary['en-GB'],visualNotes:s.notes,...(s.proof?{proof:s.proof}:{}),motionNotes:'',maxStaticSeconds:2})),
   brand:{tokens:brand.tokens,fonts:brand.fonts.map(f=>({family:f.family,url:f.file,weight:f.weight,style:f.style??'normal'})),logos:brand.logos?brand.logos.map((l,i)=>({id:l.id,url:l.file,clearSpacePx:Number(brand.tokens['logo.clearSpacePx']??24),...(i===0?{required:true}:{})})):[{id:'logo',url:'logo.svg',clearSpacePx:Number(brand.tokens['logo.clearSpacePx']??24),required:true}],
-   rules:{allowedFonts:[...new Set(brand.fonts.map(f=>f.family))],forbiddenColours:[],minimumContrast:4.5,logoRequired:true},copy:{cta:Object.fromEntries(LOCALES.map(l=>[l,brand.cta[l][0]]))},facts:{},references:(brand.supplied??[]).map(f=>({id:f.id,url:f.file}))},
+   rules:{allowedFonts:[...new Set(brand.fonts.map(f=>f.family))],forbiddenColours:[],minimumContrast:4.5,logoRequired:true},copy:{cta:Object.fromEntries(LOCALES.map(l=>[l,brand.cta[l][0]]))},facts:{},references:[]},
   brief:{product:brand.product,offer:brand.offer,cta:brand.cta['en-GB'][0],audience:brand.audience,designerVersion:2,squarePreviewVersion:0,pictureRulesVersion:1,finalNotesVersion:1,promptVersion:2,synthesisAllowed:true},
   assets:[],formats,variants,resourceIds:['picture-1','picture-2','picture-3'],variantFacts} as unknown as DirectionInput;
 }
@@ -272,10 +272,13 @@ export function benchInputV5(brand:BenchBrand):DirectionInput{
  const base=benchInput(brand),t=brand.territory;
  return {...base,brief:{...base.brief,designerVersion:5,materialsVersion:1,digestVersion:1,synthesis:'Everything',synthesisAllowed:true},brand:{...base.brand,tokens:{...base.brand.tokens,'brand.character':brand.character}},resourceIds:['picture-1','picture-2','picture-3','picture-4'],
   creativeHandoff:{version:1,owner:'draft-director',revision:'bench',intent:{goal:brand.offer,audience:brand.audience,adNotes:null,...(brand.feeling?{feeling:brand.feeling}:{}),...(brand.adShape?{adShape:brand.adShape}:{}),...(brand.creativeFocus?{creativeFocus:brand.creativeFocus}:{}),direction:{id:'concept-1',name:t?.name??brand.name,premise:brand.idea??brand.product,...(brand.world?{world:brand.world}:{})}},strategy:{promise:brand.product,audience:brand.audience,offer:brand.offer},
-   visual:t?{selected:[{path:'treatments[0]',evidence:{conceptId:'concept-1',name:t.name,visualIdea:t.visualIdea,twoSeconds:t.twoSeconds,productRole:t.productRole,makingTechnique:t.makingTechnique,success:t.success}}]}:{selected:[]},sources:[],referenceAssetIds:[],issues:[],actions:[]}} as unknown as DirectionInput;
+   visual:t?{selected:[{path:'treatments[0]',evidence:{conceptId:'concept-1',name:t.name,visualIdea:t.visualIdea,twoSeconds:t.twoSeconds,productRole:t.productRole,makingTechnique:t.makingTechnique,success:t.success}}]}:{selected:[]},sources:[],referenceAssetIds:(brand.supplied??[]).filter(f=>f.use).map(f=>f.id),issues:[],actions:[]},
+  // Files the client supplied to be used in the ad are the block's assets (the renderer serves them; brand reference
+  // pictures are evidence only and are not served to draft code).
+  ...(brand.supplied?.length?{assets:brand.supplied.map(f=>({id:f.id,url:f.file,thumbnail:f.file,width:0,height:0,sha256:'',mime:f.mime,revisionId:'supplied'})),brief:{...base.brief,designerVersion:5,materialsVersion:1,digestVersion:1,synthesis:'Everything',synthesisAllowed:true,suppliedAssetMetadata:brand.supplied.map(f=>({id:f.id,name:f.name,mime:f.mime}))}}:{})} as unknown as DirectionInput;
 }
 /** The catalogue entries a stored brand pack would hold for a bench brand's supplied files (by name, with the file in
- * the draft folder), as the run of 14 November held its brand materials: in brand.references, not in assets. */
+ * the draft folder), so the designer can also ask to look at them by name. */
 export function benchCatalogue(brand:BenchBrand,pub:string){
  return [...(brand.supplied??[]).map(f=>({name:f.name.replace(/\.[a-z0-9]+$/i,''),kind:f.use?'product photograph (Use this)':'brand material',line:f.brief.split(';')[0].slice(0,140),size:'picture',materialId:f.id,file:`${pub}/${f.file}`})),...(brand.logos??[]).map(l=>({name:l.file.replace(/\.[a-z0-9]+$/i,''),kind:'logo',line:`the supplied logo file ${l.file}`,size:'picture',materialId:l.id,file:`${pub}/${l.file}`}))];
 }

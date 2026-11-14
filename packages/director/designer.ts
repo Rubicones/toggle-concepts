@@ -156,6 +156,8 @@ export type DesignerLoopState={
  /** Live run 2026-11-14: the same build error in a row (three stops the direction with a question), and extra hero
   * turns granted by a retry after such a stop. */
  buildStuck?:{code:string;count:number};heroExtraTurns?:number;
+ /** Pictures that did not load in the last hero render, and for how many renders in a row (two stop the direction). */
+ unloaded?:{files:string[];renders:number};
  /** Plan E5 (version 6): the time hero renders waited for pictures, in ms (shown per run; not a model cost). */pictureWaitMs?:number;
  hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;acceptedBy?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';/** why its review did not run */reviewError?:string;/** critic@3 (version 6): the review finished with points open; the designer has one last turn, then `by` accepts */lastTurn?:{by:'critic'|'reviews-used'|'no-progress';turns:number};shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
 

@@ -67,3 +67,14 @@ export async function referenceFactLines(folder:string,input:Pick<DirectionInput
  }
  return out;
 }
+
+/** The files the client supplied for this ad (the block's assets), each with what the code needs to draw it: its url,
+ * its size and its ground. One line per picture file. */
+export async function suppliedFactLines(folder:string,input:Pick<DirectionInput,'assets'|'brief'>,names:{id:string;name:string;mime:string}[]):Promise<Record<string,string>>{
+ const out:Record<string,string>={};
+ for(const a of input.assets){
+  if(!/\.(png|jpe?g|webp|svg)$/i.test(a.url)||!names.some(n=>n.id===a.id))continue;
+  try{const f=await measureLogo(await readFile(resolve(folder,'public',a.url)),a.url);out[a.id]=`${f.width}×${f.height} · ${f.transparent?'transparent ground (a cutout)':`its own ground ${f.ground}`} · url '${a.url}'`;}catch{out[a.id]=`url '${a.url}' · not measured`;}
+ }
+ return out;
+}

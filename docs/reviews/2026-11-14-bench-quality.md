@@ -15,7 +15,7 @@ One entry per live bench run: the brief, the result, the cost, the turns, the ju
 
 ## 2. Summary of Changes
 
-- `docs/reviews/2026-11-14-bench-quality.md` (this file): the log of live bench runs. Run 1 and run 2 are recorded, with an art director's reading of run 2, the proposed changes, two more bench cases and the command for run 3.
+- `docs/reviews/2026-11-14-bench-quality.md` (this file): the log of live bench runs. Runs 1 to 4 are recorded, with an art director's reading of run 2, the proposed changes, two more bench cases and the command for run 3.
 
 ### Run 1 — baseline, designer version 5, hero stage only, from the owner's export
 
@@ -178,6 +178,47 @@ node --import tsx scripts/bench/pipeline-bench.ts \
 ```
 
 It is the command of run 2. What differs is in the code: measured logo and brand-picture lines, exact edits, the picture hold, the thumbnail for the reviewer, and critic@3. In the summary read `designerOutputPerTurn`, `edits`, `pictureWaitSeconds` and the turns; in the timeline read how each review ended and whether a last turn followed.
+
+### Run 3 — the interface case (`rotawell`), designer version 6 with critic@3, hero stage only
+
+| | |
+|---|---|
+| Folder | `artifacts/bench/rotawell-pipeline-v5-2026-11-14190742/` |
+| Flow | 3 ideas → idea 1 chosen → build (no picture asked; the interface is code) → review 1 (5 notes) → rebuild → review 2 (5 notes) → the reviews were used → one last turn for 13 open points → accepted |
+| Turns | 7 designer turns, 3 reviewer requests |
+| Cost, time | $1.22, 489 s |
+| Edits | 4 applied, none refused. Two turns still wrote the file whole (11,884 and 9,339 output tokens); the edit turns wrote 920 to 2,034 |
+| Accepted by | `reviews-used`: the reviewer never accepted the frame |
+
+**The owner's verdict: still far from acceptable.** The coordinator had judged it showable. That is the finding of this run: the bar used so far was too low, and neither the reviewer's checks nor a reader of the frame here is a substitute for the owner's eye.
+
+**What the numbers say, without the frame.**
+
+- E4 works mechanically: small edits apply, and an edit turn costs about a tenth of a whole-file turn.
+- critic@3 did what it was built for: it did not pass the frame. Two reviews found five problems each, and thirteen points were still open at the end.
+- The last turn was given thirteen points. One turn cannot settle thirteen points; the frame was accepted with most of them open. The reviewer and the designer did not converge inside the hero stage's turns.
+
+### Run 4 — the product case (`brask`), designer version 6 with critic@3, hero stage only: FAILED
+
+| | |
+|---|---|
+| Folder | `artifacts/bench/brask-pipeline-v5-2026-11-14191614/` |
+| Result | A headline over an empty cloth with a broken-image box. The supplied product photograph never loaded |
+| Turns | 12 designer turns (the cap), 1 reviewer request |
+| Cost, time | $0.93, 445 s |
+| Accepted by | `reviews-used`, after one review that failed 25 of 41 checks and whose first note was "the supplied casserole photograph does not render" |
+
+**Cause.** My defect. The bench held the supplied photograph as a brand reference picture, and the version 6 digest told the designer to draw it with a path the renderer never serves. The designer followed the documented pattern, saw a broken image from turn 4 on, tried other paths until turn 10, said on turn 11 that it was stopping because nothing in its file could fix it, and was still reviewed and accepted at the turn cap. Nine of twelve turns were lost.
+
+**What is wrong beyond the one path.**
+
+- No measurement existed for a picture that does not load. Every render from turn 7 on reported "0 to fix".
+- A frame the designer itself declared unfinished was reviewed as a design and accepted.
+- In a studio run, a file the client supplies for the ad was named to the designer but its path was not.
+
+All three are fixed: see `docs/reviews/2026-11-14-run4-pictures.md`. The headline's "fallback serif" is the invented brand's own font, a plain system serif; it loaded.
+
+**This run says nothing about the quality of a product frame.** It has to be run again.
 
 ### What a good bench frame does and does not promise about a live run
 

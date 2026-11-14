@@ -5,6 +5,7 @@
 // the hero is accepted, the extension (stage E) continues in the same conversation (runDesigner). Tools are injected,
 // so the loop is tested without paid calls.
 import {heroScene,heroMeaning} from '../../../packages/director/designer';
+import {unloadedFiles} from '../../../packages/director/layout-inspection';
 import {usesQuality,reasonOnly,lastTurnNote,NOTES_INSIDE_THE_IDEA} from '../../../packages/director/quality';
 import {PICTURE_HOLD_SECONDS,actionsCorrection,heroTask,parseChatAnswer,heroActionsSchema,usesEdits,applyEdits,renderNote,stageHFindings,type HeroAnswer} from '../../../packages/director/hero-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
@@ -74,7 +75,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
   await args.conversation?.accept();
   if(due&&state.materialsDue?.length){state.materialsSeen=[...new Set([...(state.materialsSeen??[]),...state.materialsDue])];state.materialsDue=[];}
   state.transcript.push({from:'agent',text:text.slice(0,2000)});await args.save(state);
-  const answer:HeroAnswer=parseChatAnswer(text,heroActionsSchema,{edits:usesEdits(input)}),results:string[]=[],notes:string[]=[];const lastTurn=hero.lastTurn;let looked:string|undefined;let stuck:string|null=null;
+  const answer:HeroAnswer=parseChatAnswer(text,heroActionsSchema,{edits:usesEdits(input)}),results:string[]=[],notes:string[]=[];const lastTurn=hero.lastTurn;let looked:string|undefined;let stuck:string|null=null;let pictureStop:string|null=null;
   try{
    // 1. Files: written whole, then built. A building change is rendered: the app shows it, as in a chat.
    for(const f of answer.files){await tools.write(f.path,f.source);results.push(`Saved ${f.path}.`);}
@@ -124,16 +125,23 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
     }
     const views=designerViews(input,hero.sceneId,[hero.format]).filter(v=>!heroMeaning(input)||v.shot),out=await tools.render(views);state.renders[renderKey(hero.sceneId,hero.format)]=(state.renders[renderKey(hero.sceneId,hero.format)]??0)+1;
     const findings=stageHFindings(out.summary.reports.flatMap(r=>r.findings)).sort((a,b)=>Number(b.severity==='hard')-Number(a.severity==='hard'));
+    // A picture that did not load: said on this render; the same file unloaded on two renders in a row stops the
+    // direction with a question (the designer cannot repair what the app does not serve).
+    {const files=unloadedFiles(findings),same=files.length&&state.unloaded&&files.some(f=>state.unloaded!.files.includes(f));
+     if(files.length)state.unloaded={files,renders:same?state.unloaded!.renders+1:1};else delete state.unloaded;
+     if(state.unloaded&&state.unloaded.renders>=2)pictureStop=`designer: a picture did not load in two renders in a row: ${state.unloaded.files.join(', ').slice(0,300)}`;}
     state.lastRender={sceneId:hero.sceneId,findings,views:views.filter(v=>v.shot).flatMap(v=>{const s=out.shots.find(x=>x.key===v.key);return s?[{label:v.label,file:s.file,width:v.props.width,height:v.props.height}]:[];})};
     hero.shots=state.lastRender.views.map(v=>({label:v.label,file:v.file}));looked=hero.shots[0]?.file;
     notes.push(renderNote(findings,state.lastRender.views.length));results.push(`Rendered: ${findings.filter(f=>f.severity==='hard').length} to fix, ${findings.filter(f=>f.severity!=='hard').length} observations.`);
    }
    // critic@3: this was the last turn after the review. The frame is accepted as it now stands; a turn whose code does
    // not build gets one more turn to repair it, then the frame is accepted as the turn cap accepts it.
-   if(lastTurn){lastTurn.turns++;if(built.ok||lastTurn.turns>=2||state.turn>=args.maxTurns){await accept(lastTurn.by);delete hero.lastTurn;results.push('The hero frame is accepted.');}else notes.push('This was the last turn and the code does not build: repair only that; the frame is accepted after the next turn.');}
+   if(lastTurn&&state.unloaded)pictureStop??=`designer: a picture does not load in the last turn's render: ${state.unloaded.files.join(', ').slice(0,300)}`;
+   else if(lastTurn){lastTurn.turns++;if(built.ok||lastTurn.turns>=2||state.turn>=args.maxTurns){await accept(lastTurn.by);delete hero.lastTurn;results.push('The hero frame is accepted.');}else notes.push('This was the last turn and the code does not build: repair only that; the frame is accepted after the next turn.');}
    // 4. The review: idea and craft first, then what must be fixed. Its notes are the next message.
    else if(actions.review){
     if(!hero.shots?.length)notes.push('Render the frame before asking for its review.');
+    else if(state.unloaded)notes.push('A picture in the frame did not load, so the frame cannot be reviewed yet: repair that first (see what must be fixed).');
     else if(pending.size){await Promise.all(pending.values());notes.push('The pictures you asked for have arrived (see below): use them, then ask for the review again.');}
     else if(hero.reviews>=(args.heroReviews??0)||!tools.reviewHero){await accept(tools.reviewHero&&(args.heroReviews??0)>0?'reviews-used':'no-critic');results.push('The hero frame is accepted.');}
     else{
@@ -157,11 +165,14 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
   state.heroNote=notes.filter(Boolean).join('\n\n');state.transcript.push({from:'tool',text:state.heroNote.slice(0,2000)});await args.save(state);
   await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:[...new Set([...answer.files.map(f=>f.path),...(answer.edits??[]).map(e=>e.path)])],...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
   // The same build error three times in a row: stop with a question instead of spending the turns on guesses.
+  if(pictureStop){await args.save(state);throw Object.assign(new Error('DRAFT_PICTURE_NOT_LOADED'),{detail:pictureStop});}
   if(stuck){await args.save(state);throw Object.assign(new Error('DESIGNER_BUILD_STUCK'),{detail:`designer: the code failed to build three times in a row with the same error: ${stuck.slice(0,400)}`});}
  }
  // Stage H's share of turns used without an accepted review: the frame as it stands leads the other scenes.
  // A hero that was rendered but never sent for review is reviewed once here, so the critic has seen what stage E
  // builds on; its notes travel into stage E.
+ // A hero whose last render has a picture that did not load is never reviewed as a design or accepted.
+ if(hero.state!=='accepted'&&state.unloaded){await args.save(state);throw Object.assign(new Error('DRAFT_PICTURE_NOT_LOADED'),{detail:`designer: the hero frame's turns are used and a picture still does not load: ${state.unloaded.files.join(', ').slice(0,300)}`});}
  if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&hero.shots?.length){
   if(hero.reviews===0&&tools.reviewHero&&(args.heroReviews??0)>0){
    const review=await tools.reviewHero(1,hero.shots,(state.lastRender?.findings??[]).map(f=>({view:f.view,severity:f.severity,detail:f.detail})));hero.reviews++;

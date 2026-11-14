@@ -73,6 +73,10 @@ export function planningMaterials(upstream:Upstream|undefined):MaterialEntry[]{
 /** C9: the one line that asks visual direction for its concept (the schema's first field) before its structured answer. */
 export const VISUAL_CONCEPT_TASK='CONCEPT FIRST: deliverable.concept comes first, in prose: the visual idea of what you write here and why it is right for this brand and this line. Then the structured fields exactly as asked.';
 
+/** Plan E2: in one-mind contexts (frozen with STUDIO_DESIGNER_VERSION=6) visual direction writes every territory in one
+ * request instead of one per treatment, and is not offered full brand-sheet pages. */
+export const oneRequestVisualDirection=(ctx:{oneMind?:string;imageOwner?:string}|null|undefined,role:string)=>role==='visual-direction'&&!!ctx?.oneMind&&!!ctx.imageOwner;
+
 /** C9: the full brand sheet's pages as materials visual direction may ask for by name; the compact sheet is in the
  * shared prefix. Only pages stored under their own hash are offered (the same check as when they were sent whole). */
 export function sheetMaterials(refs:unknown):MaterialEntry[]{

@@ -8,6 +8,7 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {brands,benchInput,benchInputV5,benchBrandPack,benchCatalogue,type BenchBrand} from './brands';
 import {runV5Direction} from './v5-direction';
+import {runChatBaseline,brandFactsFromPack} from './chat-baseline';
 import {fileDropPictures,missingBrandFiles,fillBrandFonts,missingBrandFilesMessage,prepareBrandWorkspace} from './export-files';
 import {DEFAULT_MATERIAL_BUDGET} from '../../packages/agents/materials';
 import type {RunContext} from '../../packages/agents/run-context';
@@ -28,6 +29,12 @@ import type {DirectionInput,CatalogEntry,Resource} from '../../packages/director
 type Part={type:'text';text:string}|{type:'image';mediaType:string;dataBase64:string};
 type Usage={input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number};
 const arg=(name:string,fallback:string)=>process.argv.find(a=>a.startsWith(`--${name}=`))?.split('=')[1]??fallback;
+// Ablation switches for the version 5/6 path, to find which addition changes the result (one off at a time):
+//   --no-critic=1   no selection of ideas (the first idea is built), no hero review, no end review
+//   --no-ideas=1    no ideas turn and no selection: the designer builds straight from the hero task
+//   --v3-context=1  the designer reads the version 3 brief (the whole input as JSON) instead of the planning-shaped digest
+const noCritic=arg('no-critic','0')==='1',ablation={...(arg('no-ideas','0')==='1'?{noIdeas:true}:{}),...(arg('v3-context','0')==='1'?{v3Context:true}:{})};
+const ablationName=`${noCritic?'-nocritic':''}${arg('no-ideas','0')==='1'?'-noideas':''}${arg('v3-context','0')==='1'?'-v3context':''}`;
 
 async function main(){
  // E0 reproduction: the hero stage (or the whole direction) of a real run, from its export folder. Nothing of the export
@@ -40,7 +47,7 @@ async function main(){
  const maxTurns=Number(arg('turns','12')),model=arg('model','claude-sonnet-5-5'),effort=arg('effort','high'),version=Number(arg('version','3'));
  // D6: --without-skill=<id> runs the same brief without exactly one skill (designer and critic), for a blind pair.
  const without=arg('without-skill','')||undefined;if(without&&!readSkills().some(s=>s.id===without))throw new Error(`--without-skill: no skill ${without}`);
- const out=resolve(arg('out','artifacts/bench'),`${brand.id}-pipeline-v${version}${without?`-without-${without}`:''}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);
+ const out=resolve(arg('out','artifacts/bench'),`${brand.id}-${arg('chat-baseline','0')==='1'?'chat':`pipeline-v${version}${Number(arg('designer','0'))?`d${arg('designer','0')}`:''}`}${without?`-without-${without}`:''}${ablationName}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);
  await mkdir(out,{recursive:true});
  // Mode "propose": the client gave no words. One request writes the hooks and each scene's line together with its
  // visual event, from the planning skills; the designer then builds that proposal.
@@ -172,7 +179,7 @@ async function benchFromExport(folder:string){
  const blocks=await read('database/studio_director_blocks.json') as {snapshot:{inputs:DirectionInput[]}}[],input=structuredClone(blocks.at(-1)!.snapshot.inputs[Number(arg('direction','0'))]);
  if(!input)throw new Error('The export has no direction at that index.');
  const context=await read('device/run-context.json') as {system:string;brief:string;materials?:RunContext['materials']},pack=context.system.slice(context.system.indexOf('\n',context.system.indexOf('BRAND PACK'))+1),brief=context.brief.slice(context.brief.indexOf('\n')+1);
- const out=resolve(arg('out','artifacts/bench'),`export-${input.directionId.slice(0,8)}-v${Number(arg('designer','0'))||5}${arg('hero-only','0')==='1'?'-hero':''}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);await mkdir(out,{recursive:true});
+ const out=resolve(arg('out','artifacts/bench'),`export-${input.directionId.slice(0,8)}-${arg('chat-baseline','0')==='1'?'chat':`v${Number(arg('designer','0'))||5}`}${arg('hero-only','0')==='1'?'-hero':''}${ablationName}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);await mkdir(out,{recursive:true});
  process.env.TOGGLE_HOME??=resolve(out,'home');
  const workspace=await createWorkspace(resolve(out,'workspace'),input),pub=join(workspace,'public'),source=join(folder,'designer',input.directionId.slice(0,8),'workspace','public');
  await cp(source,pub,{recursive:true}).catch(()=>{throw new Error(`The export has no workspace files at ${source}: export the run on the computer that made the draft.`);});
@@ -186,8 +193,10 @@ async function benchFromExport(folder:string){
  if(missing.length&&arg('allow-missing','0')!=='1'){console.error(`[bench] stopped before any request:\n${missingBrandFilesMessage(missing)}`);await writeFile(join(out,'summary.json'),JSON.stringify({source:'export',stopped:'BRAND_FILES_MISSING',missingBrandFiles:missing},null,1));process.exitCode=2;return;}
  const designerVersion=Number(arg('designer','0'));if(designerVersion)input.brief={...input.brief,designerVersion} as DirectionInput['brief'];
  const catalog:CatalogEntry[]=[],pictures=resolve(out,'pictures');await mkdir(pictures,{recursive:true});await writeResources(workspace,input,catalog);
+ // The chat baseline: one plain conversation on the designer's model instead of the pipeline (scripts/bench/chat-baseline.ts).
+ if(arg('chat-baseline','0')==='1'){const summary=await runChatBaseline({input,folder:workspace,out,facts:{brand:brandFactsFromPack(pack)},designerModel:arg('designer-model','anthropic/claude-opus-5.5'),sonnet:arg('sonnet','claude-sonnet-5-5'),bin:arg('bin','claude'),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000)});console.log(JSON.stringify({...summary,perTurn:undefined,out}));return;}
  const started=Date.now();let result,stopped:string|undefined;
- try{result=await runV5Direction({input,folder:workspace,out,brandPack:pack,briefText:brief,designerModel:arg('designer-model','anthropic/claude-opus-5.5'),criticModel:arg('critic-model','google/gemini-4-argon'),maxTurns:Number(arg('turns','24')),heroReviews:Number(arg('reviews','2')),endReview:arg('endreview','1')==='1',heroOnly:arg('hero-only','0')==='1',
+ try{result=await runV5Direction({input,folder:workspace,out,brandPack:pack,briefText:brief,designerModel:arg('designer-model','anthropic/claude-opus-5.5'),criticModel:arg('critic-model','google/gemini-4-argon'),maxTurns:Number(arg('turns','24')),heroReviews:noCritic?0:Number(arg('reviews','2')),endReview:!noCritic&&arg('endreview','1')==='1',heroOnly:arg('hero-only','0')==='1',...ablation,
   maxPictures:Number(arg('pictures','4')),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000),catalog,recordRequests:true,materials:context.materials,brandFileEntries:true,...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
   setup:{bin:arg('bin','claude'),cliVersion:'bench',isolation:{safeMode:true,restricted:true,noSessionPersistence:false,disableSlashCommands:true},sonnet:arg('sonnet','claude-sonnet-5-5'),schemaMode:'cli',visual:true,deviceId:'bench'}});}
  catch(error){stopped=`${error instanceof Error?error.message:error}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}`;console.error('[bench] stopped:',stopped);}
@@ -203,11 +212,12 @@ async function benchV5(brand:BenchBrand,out:string,o:{maxTurns:number;designerMo
  catch(error){console.error(`[bench] stopped before any request:\n${error instanceof Error?error.message:error}`);await writeFile(join(out,'summary.json'),JSON.stringify({brand:brand.id,stopped:'BENCH_SUPPLIED_FILE_MISSING'},null,1));process.exitCode=2;return;}
  await mkdir(pictures,{recursive:true});await writeResources(folder,input,catalog);
  const entries=benchCatalogue(brand,pub);
+ if(arg('chat-baseline','0')==='1'){const summary=await runChatBaseline({input,folder,out,facts:{brand:benchBrandPack(brand),brandName:brand.name},designerModel:o.designerModel,sonnet:o.sonnet,bin:arg('bin','claude'),buy:fileDropPictures(pictures,pub,folder,input,catalog,o.waitMs)});console.log(JSON.stringify({...summary,perTurn:undefined,brand:brand.id,out}));return;}
  const started=Date.now();let result,stopped:string|undefined;
- try{result=await runV5Direction({input,folder,out,brandPack:benchBrandPack(brand),designerModel:o.designerModel,criticModel:o.criticModel,maxTurns:o.maxTurns,heroReviews:o.heroReviews,endReview:o.endReview,heroOnly:arg('hero-only','0')==='1',maxPictures:o.maxPictures,buy:fileDropPictures(pictures,pub,folder,input,catalog,o.waitMs),catalog,recordRequests:true,...(entries.length?{materials:{entries,budget:DEFAULT_MATERIAL_BUDGET} as unknown as RunContext['materials']}:{}),...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
+ try{result=await runV5Direction({input,folder,out,brandPack:benchBrandPack(brand),designerModel:o.designerModel,criticModel:o.criticModel,maxTurns:o.maxTurns,heroReviews:noCritic?0:o.heroReviews,endReview:!noCritic&&o.endReview,...ablation,heroOnly:arg('hero-only','0')==='1',maxPictures:o.maxPictures,buy:fileDropPictures(pictures,pub,folder,input,catalog,o.waitMs),catalog,recordRequests:true,...(entries.length?{materials:{entries,budget:DEFAULT_MATERIAL_BUDGET} as unknown as RunContext['materials']}:{}),...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
   setup:{bin:arg('bin','claude'),cliVersion:'bench',isolation:{safeMode:true,restricted:true,noSessionPersistence:false,disableSlashCommands:true},sonnet:o.sonnet,schemaMode:'cli',visual:true,deviceId:'bench'}});}
  catch(error){stopped=`${error instanceof Error?error.message:error}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}`;console.error('[bench] stopped:',stopped);}
- await writeV5Summary(out,{brand:brand.id,version:5,designerVersion:Number(input.brief.designerVersion),heroOnly:arg('hero-only','0')==='1',designerModel:o.designerModel,criticModel:o.criticModel},started,result,stopped);
+ await writeV5Summary(out,{brand:brand.id,version:5,designerVersion:Number(input.brief.designerVersion),heroOnly:arg('hero-only','0')==='1',ablation:{noCritic,...ablation},designerModel:o.designerModel,criticModel:o.criticModel},started,result,stopped);
 }
 
 main().catch(error=>{console.error(error instanceof Error?error.stack:error);process.exitCode=1;});

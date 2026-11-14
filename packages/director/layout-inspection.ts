@@ -20,7 +20,7 @@ export type RawObject3D={box:Box;drawn:[number,number,number,number]|null;luma:n
 export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];objects3d?:RawObject3D[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[]};
 /** ink: alpha-weighted relative luminance of the logo's own pixels; background/overImage: what it sits on. */
 export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null};
-export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED';
+export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED'|'IMAGE_NOT_LOADED';
 export type Finding={code:FindingCode;severity:'hard'|'soft';view:string;detail:string;box?:Box};
 export type ViewReport={view:string;label:string;findings:Finding[];texts:number;images:number};
 export type InspectionSummary={version:1;revision:string;views:number;hard:number;soft:number;reports:ViewReport[]};
@@ -216,6 +216,9 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
  if(ctx.input.brand.logos.some(l=>l.url)&&!raw.logos.length)add('LOGO_MISSING','soft','No brand logo is visible in this view.');
  // Point 2c: a brand font file that failed to load is a delivery problem, reported once per view.
  for(const family of raw.fontsFailed??[])add('FONT_NOT_LOADED','soft',`The brand font file for ${family} did not load, so its text falls back to another font. This is a delivery problem, not a design choice.`);
+ // A picture that did not load (bench run of 2026-11-14: a supplied photograph drew as a broken-image box for nine
+ // turns and the frame was still reviewed). Hard, once per file, naming the file as the code asked for it.
+ for(const src of new Set(raw.images.filter(i=>!i.naturalWidth&&i.box.width>0&&i.box.height>0).map(i=>i.src)))add('IMAGE_NOT_LOADED','hard',unloadedDetail(src),raw.images.find(i=>i.src===src)?.box);
  for(const image of raw.images.filter(i=>!i.logo)){
   const rect=visibleSourceRect(image);if(!rect)continue;const scale=image.box.width/((rect[2]-rect[0])*image.naturalWidth);
   if(scale>1.6)add('PICTURE_UPSCALED','soft',`A picture is enlarged ${scale.toFixed(1)}× beyond its pixels and will look soft.`,image.box);
@@ -275,6 +278,9 @@ export function missingRequiredCopy(views:InspectionView[],raw:{key:string;raw?:
 }
 
 /** Raw browser output → per-view reports. A view that failed to build is a hard finding. */
+/** The file name inside an "IMAGE_NOT_LOADED" finding (the comparison key of two renders). */
+export const unloadedDetail=(src:string)=>`This picture did not load: "${src||'(no source)'}". Only these files load, each with <Img src={staticFile(url)}/>: a picture you asked for (resources[id].url, or its cutoutUrl), a supplied file by the url given with its name, and a logo (brand.logos[n].url).`;
+export const unloadedFiles=(findings:Pick<Finding,'code'|'detail'>[])=>[...new Set(findings.filter(f=>f.code==='IMAGE_NOT_LOADED').map(f=>/^This picture did not load: "([^"]*)"/.exec(f.detail)?.[1]??f.detail))].sort();
 export function analyzeInspection(views:InspectionView[],raw:{revision:string;views:{key:string;raw?:RawView;error?:string}[]},input:DirectionInput,facts:Record<string,ImageFacts|undefined>):InspectionSummary{
  const reports:ViewReport[]=views.map(view=>{
   const result=raw.views.find(r=>r.key===view.key),format=view.ordered?input.formats.find(f=>f.width===view.props.width&&f.height===view.props.height):undefined;
