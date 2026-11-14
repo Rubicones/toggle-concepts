@@ -3,7 +3,7 @@
 import type {DirectionInput} from '../../packages/director/types';
 
 type Lines=Record<string,string[]>; // locale → lines
-type Scene={id:string;notes:string;copy:Record<string,Lines>}; // hook → locale → lines
+type Scene={id:string;notes:string;/** what proves the scene's line, as the script writes it */proof?:string;copy:Record<string,Lines>}; // hook → locale → lines
 export type BenchBrand={
  id:string;name:string;category:string;
  /** System font files copied into the workspace as the brand's own. */
@@ -21,6 +21,15 @@ export type BenchBrand={
  /** Version 5: the territory visual direction chose for this direction (the designer's brief; its way of making is
   * binding unless the designer says why not). */
  territory?:{name:string;visualIdea:string;twoSeconds:string;productRole:string;makingTechnique:string;success:string};
+ /** Planning-shaped extras, as a real run's handoff carries them (the cases added after bench run 2). */
+ feeling?:string;adShape?:string;creativeFocus?:string;
+ /** The product's real structure: prop text for a product or an interface built in code, never headlines. */
+ world?:string[];
+ /** More than one supplied logo file (default: the one logoSvg, drawn in the text colour). */
+ logos?:{id:string;file:string;svg:string}[];
+ /** Files the client supplied, held as brand references as a real run holds them. The bench takes each from artifacts/bench/supplied/<brand id>/<file> (or --supplied):
+  * a real photograph cannot be invented here. `use` marks the files the direction must use. */
+ supplied?:{id:string;name:string;file:string;mime:string;use?:boolean;/** what the file is, for whoever makes it for the bench */brief:string}[];
 };
 
 const LOCALES=['en-GB','de-DE','tr-TR'],FORMATS=[['square',1080,1080],['vertical',1080,1920],['portrait',1080,1350],['wide',1920,1080]] as const;
@@ -187,6 +196,59 @@ export const brands:BenchBrand[]=[
    productRole:'The box is the service made visible: its seal, its label and its brass tag are the proof. Nothing else competes with it.',
    makingTechnique:'One photograph of one real archive box in soft daylight on a warm paper-white ground, generated as a picture. All type, the logo, rules and the call to action are set in code over and beside the photograph. No interface, no illustration, no code-drawn stand-in for the box.',
    success:'With the logo covered, a managing partner still reads it as a custody service, and remembers the box.'}},
+
+ // A product brand whose direction needs the SUPPLIED product photograph as the hero: the product is used as supplied,
+ // never redrawn and never generated again. The bench checks that the frame is built around the client's own picture.
+ {id:'brask',name:'Brask',category:'Consumer goods: enamelled cast-iron cookware sold direct',
+  fonts:[{family:'Brask Serif',file:'brask-serif.ttf',weight:'700',source:'/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf'},{family:'Brask Sans',file:'brask-sans.otf',weight:'400',source:'/usr/share/fonts/opentype/inter/Inter-Regular.otf'},{family:'Brask Sans',file:'brask-sans-medium.otf',weight:'500',source:'/usr/share/fonts/opentype/inter/Inter-Medium.otf'}],
+  logoSvg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120"><text x="0" y="92" font-family="Liberation Serif" font-weight="700" font-size="104" letter-spacing="6" fill="#1F1A17">BRASK</text></svg>`,
+  logos:[{id:'logo-ink',file:'brask-ink.svg',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" width="420" height="120"><text x="0" y="92" font-family="Liberation Serif" font-weight="700" font-size="104" letter-spacing="6" fill="#1F1A17">BRASK</text></svg>`},
+   {id:'logo-cream',file:'brask-cream.svg',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" width="420" height="120"><text x="0" y="92" font-family="Liberation Serif" font-weight="700" font-size="104" letter-spacing="6" fill="#F3EBDD">BRASK</text></svg>`},
+   {id:'logo-seal',file:'brask-seal.svg',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><circle cx="60" cy="60" r="56" fill="#B4432B"/><text x="60" y="82" text-anchor="middle" font-family="Liberation Serif" font-weight="700" font-size="64" fill="#F3EBDD">B</text></svg>`}],
+  tokens:{'colour.cream':'#F3EBDD','colour.ink':'#1F1A17','colour.ember':'#B4432B','colour.iron':'#3A3F42','colour.linen':'#DDD2BF','type.headline':'Brask Serif 700, sentence case, large, close leading','type.body':'Brask Sans 400','type.label':'Brask Sans 500, small, upper case, wide tracking','voice.tone':'Plain, warm, sure of itself. Short sentences. Says what the thing is and how long it lasts. No foodie adjectives.','graphic.gesture':'The pot itself, large, on a cream ground; one ember-red detail; serif headlines set close to the object; a lot of quiet cream.','logo.clearSpacePx':32},
+  character:'Temperament: steady, warm, unfussy. Signature: cream ground, near-black serif type, the pot shown large and whole, one ember-red detail, linen as the only texture. Proportions: 65% cream, 22% ink, 8% iron, 5% ember. Speech: plain and sure; it states facts about weight, heat and years. Substance: the casserole itself: its weight, its tight lid, the enamel that does not chip, the lifetime guarantee, the one pot that replaces three.',
+  product:'Brask makes one enamelled cast-iron casserole, 4.2 litres, poured and enamelled in one foundry and guaranteed for life.',
+  offer:'Free delivery and 100 nights to cook with it',audience:'People in their thirties and forties who cook most evenings and are tired of replacing non-stick pans every two years.',
+  feeling:'The calm of owning one thing that will not need replacing.',adShape:'Static frames for feed and stories; three moments: the tension, the pot as proof, the offer.',creativeFocus:'The pot is the hero. Use the supplied photograph of the casserole as it is; build the frame around it.',
+  hooks:{primary:'the last pot you buy',"hook-1":'one pot instead of three'},
+  cta:{'en-GB':['Cook with it for 100 nights'],'de-DE':['100 Nächte damit kochen'],'tr-TR':['100 gece deneyin']},
+  supplied:[{id:'asset-casserole',name:'brask-casserole-ember.png',file:'brask-casserole-ember.png',mime:'image/png',use:true,brief:'A studio product photograph of one enamelled cast-iron casserole with its lid on, ember red outside and cream inside, 4.2 litres, two loop handles, a steel knob; three-quarter view from slightly above; soft daylight from the left; plain light ground or cut out with a transparent ground; nothing else in the picture; no text and no logo. At least 2000 px on the long side.'}],
+  scenes:[
+   {id:'scene-1',notes:'The viewer has bought the same pan three times; this is the one they stop buying after.',proof:'The lifetime guarantee, and the pot itself, shown whole.',copy:{primary:{'en-GB':['The last pot','you will buy.'],'de-DE':['Der letzte Topf,','den Sie kaufen.'],'tr-TR':['Alacağınız','son tencere.']},'hook-1':{'en-GB':['One pot.','Not three.'],'de-DE':['Ein Topf.','Nicht drei.'],'tr-TR':['Tek tencere.','Üç değil.']}}},
+   {id:'scene-2',notes:'Why it lasts: cast in one piece, enamelled, guaranteed for life.',proof:'Poured and enamelled in one foundry; guaranteed for life.',copy:{primary:{'en-GB':['Cast in one piece.','Guaranteed for life.'],'de-DE':['Aus einem Stück gegossen.','Garantie auf Lebenszeit.'],'tr-TR':['Tek parça döküm.','Ömür boyu garanti.']},'hook-1':{'en-GB':['Sears, simmers, bakes.','4.2 litres.'],'de-DE':['Brät, schmort, backt.','4,2 Liter.'],'tr-TR':['Mühürler, pişirir, fırınlar.','4,2 litre.']}}},
+   {id:'scene-3',notes:'The offer and the call to action.',proof:'Free delivery; 100 nights to return it.',copy:{primary:{'en-GB':['Free delivery.','100 nights to decide.'],'de-DE':['Kostenlose Lieferung.','100 Nächte Bedenkzeit.'],'tr-TR':['Ücretsiz teslimat.','Karar için 100 gece.']},'hook-1':{'en-GB':['Free delivery.','100 nights to decide.'],'de-DE':['Kostenlose Lieferung.','100 Nächte Bedenkzeit.'],'tr-TR':['Ücretsiz teslimat.','Karar için 100 gece.']}}},
+  ],
+  territory:{name:'The pot, whole',visualIdea:'The casserole itself, large and whole, is the picture: the client\'s own photograph of it, not a new one. Its weight and its closed lid say that it stays. It fits this brand because Brask sells one object and speaks plainly about it.',
+   twoSeconds:'The viewer sees one heavy red pot, large, and reads that it is the last one they will need.',
+   productRole:'The pot is the subject and the proof. The headline stands with it, close, as part of the same picture.',
+   makingTechnique:'The supplied product photograph, used as it is: never redrawn, never generated again, not recoloured. Type, the logo and the call to action are set in code. A generated picture is allowed only for a ground or a surface the pot stands on, never for the pot.',
+   success:'With the logo covered, the viewer can still say what is sold and why it is different: one pot, for life.'}},
+ // A digital product whose direction needs a phone interface built in code from the product's real structure: no
+ // generated picture of a screen, no invented features. The bench checks that the interface is believable and specific.
+ {id:'rotawell',name:'Rotawell',category:'Digital product: a shift-swap app for hospital ward staff',
+  fonts:[{family:'Rotawell Sans',file:'rotawell-bold.otf',weight:'700',source:'/usr/share/fonts/opentype/inter/InterDisplay-Bold.otf'},{family:'Rotawell Sans',file:'rotawell-medium.otf',weight:'500',source:'/usr/share/fonts/opentype/inter/Inter-Medium.otf'},{family:'Rotawell Sans',file:'rotawell-regular.otf',weight:'400',source:'/usr/share/fonts/opentype/inter/Inter-Regular.otf'}],
+  logoSvg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120"><text x="0" y="88" font-family="Inter Display" font-weight="700" font-size="92" fill="#12343B">rotawell</text></svg>`,
+  logos:[{id:'logo-pine',file:'rotawell-pine.svg',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120"><rect x="0" y="34" width="52" height="52" rx="14" fill="#12343B"/><text x="72" y="88" font-family="Inter Display" font-weight="700" font-size="92" fill="#12343B">rotawell</text></svg>`},
+   {id:'logo-white',file:'rotawell-white.svg',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120"><rect x="0" y="34" width="52" height="52" rx="14" fill="#FFFFFF"/><text x="72" y="88" font-family="Inter Display" font-weight="700" font-size="92" fill="#FFFFFF">rotawell</text></svg>`},
+   {id:'logo-app',file:'rotawell-app.svg',svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><rect width="120" height="120" rx="28" fill="#12343B"/><rect x="34" y="34" width="52" height="52" rx="14" fill="#C8F169"/></svg>`}],
+  tokens:{'colour.pine':'#12343B','colour.lime':'#C8F169','colour.paper':'#F6F8F4','colour.slate':'#5B6B6E','colour.white':'#FFFFFF','colour.alert':'#E2572B','type.headline':'Rotawell Sans 700, sentence case, tight','type.body':'Rotawell Sans 400','type.interface':'Rotawell Sans 500 for labels and names, 400 for details','voice.tone':'Direct and kind. Speaks like a colleague at handover: short, specific, no hospital jargon, no cheer.','graphic.gesture':'The app on a phone, shown straight and large, with real shifts and names; pine and paper with one lime action; rounded cards with a clear grid; no stock photographs of staff.','interface.components':'A shift card (date, time range, ward, role); a swap request row (who offers, who takes, status pill); a primary button in lime with pine text; a bottom tab bar with Rota, Swaps, Team; a status pill: Open, Offered, Approved.','logo.clearSpacePx':24},
+  character:'Temperament: practical, calm, on your side. Signature: pine and paper, one lime action per screen, the real interface shown large on a phone, rounded cards on a clear grid. Proportions: 55% paper, 30% pine, 10% white cards, 5% lime. Speech: a colleague at handover; one short sentence. Substance: the app itself: a shift offered for swap, a colleague taking it, the ward manager approving in one tap, the rota updated for everyone.',
+  product:'Rotawell lets ward staff offer a shift, lets a qualified colleague take it, and gets the ward manager\'s approval in one tap; the rota updates for everyone.',
+  offer:'Free for one ward for 60 days',audience:'Ward managers and senior nurses in hospitals with 200 to 2,000 beds who arrange swaps by group chat and paper.',
+  feeling:'Relief: the swap is settled before the shift ends.',adShape:'Static frames for feed and stories; three moments: the app as proof, what it replaces, the offer.',creativeFocus:'Show the app doing the one thing: a shift offered, taken and approved. The interface is built in code from the product\'s real parts.',
+  world:['Shift: Thu 14 Nov · 07:00–15:00 · Ward 4B · Staff nurse','Offered by: Amira K.','Taken by: Jonas P.','Status: Open → Offered → Approved','Approved by: Ward manager, 14:52','Tabs: Rota · Swaps · Team','Button: Offer this shift'],
+  hooks:{primary:'the swap sorted before handover',"hook-1":'no more group chat'},
+  cta:{'en-GB':['Try it on one ward'],'de-DE':['Auf einer Station testen'],'tr-TR':['Tek serviste deneyin']},
+  scenes:[
+   {id:'scene-1',notes:'The swap is settled on the phone before the shift ends: offered, taken, approved.',proof:'The swap screen itself: offered by Amira K., taken by Jonas P., approved by the ward manager at 14:52.',copy:{primary:{'en-GB':['Thursday, swapped.','Approved by 14:52.'],'de-DE':['Donnerstag getauscht.','Um 14:52 genehmigt.'],'tr-TR':['Perşembe takas edildi.','14:52\'de onaylandı.']},'hook-1':{'en-GB':['No group chat.','One tap to approve.'],'de-DE':['Kein Gruppenchat.','Ein Tipp zur Freigabe.'],'tr-TR':['Grup sohbeti yok.','Tek dokunuşla onay.']}}},
+   {id:'scene-2',notes:'What it replaces: forty messages in a group chat and still no answer.',proof:'The viewer\'s own evening: a thread nobody answers.',copy:{primary:{'en-GB':['Forty messages.','Still no swap.'],'de-DE':['Vierzig Nachrichten.','Immer noch kein Tausch.'],'tr-TR':['Kırk mesaj.','Hâlâ takas yok.']},'hook-1':{'en-GB':['Can anyone','take Thursday?'],'de-DE':['Kann jemand','Donnerstag übernehmen?'],'tr-TR':['Perşembeyi','alabilecek var mı?']}}},
+   {id:'scene-3',notes:'The offer and the call to action.',proof:'Free for one ward for 60 days.',copy:{primary:{'en-GB':['Free for one ward','for 60 days'],'de-DE':['Für eine Station','60 Tage kostenlos'],'tr-TR':['Bir servis için','60 gün ücretsiz']},'hook-1':{'en-GB':['Free for one ward','for 60 days'],'de-DE':['Für eine Station','60 Tage kostenlos'],'tr-TR':['Bir servis için','60 gün ücretsiz']}}},
+  ],
+  territory:{name:'The swap, settled',visualIdea:'One phone, shown large, with the swap screen at the moment it is approved. The interface is the picture: a real shift, two real names, one approval. It fits this brand because the product is the screen, and the brand shows its own interface rather than people.',
+   twoSeconds:'The viewer sees a shift on a phone marked approved and understands that the swap is done.',
+   productRole:'The interface is the subject and the proof. Every label on it is something the product really has.',
+   makingTechnique:'A phone interface built in code from the brand\'s interface components and the product\'s real structure, shown on a phone drawn in code. No generated picture of a screen, no photograph of staff, no invented feature. Type, the logo and the call to action are set in code.',
+   success:'With the logo covered, a ward manager can say what the app does and wants to tap the screen.'}},
 ];
 
 /** The draft input the pipeline would hand the designer for this brand (designer blocks, statics, square first). */
@@ -197,9 +259,9 @@ export function benchInput(brand:BenchBrand):DirectionInput{
  variants.sort((a,b)=>Number(b.format==='square'&&b.locale==='en-GB'&&b.hook==='primary')-Number(a.format==='square'&&a.locale==='en-GB'&&a.hook==='primary'));
  const variantFacts=Object.fromEntries(variants.map(v=>{const sceneCopy=Object.fromEntries(brand.scenes.map(s=>[s.id,s.id===brand.scenes.at(-1)!.id?[...s.copy[v.hook][v.locale],...brand.cta[v.locale]]:s.copy[v.hook][v.locale]]));return [v.id,{sceneCopy,required:Object.values(sceneCopy).flat()}];}));
  return {protocol:'director@1',stage:'draft',runId:`bench-${brand.id}`,roundId:'round',directionId:'direction',iterationId:'iteration',
-  storyboard:brand.scenes.map((s,i)=>({id:s.id,start:i*2,end:i*2+2,copy:s.copy.primary['en-GB'],visualNotes:s.notes,motionNotes:'',maxStaticSeconds:2})),
-  brand:{tokens:brand.tokens,fonts:brand.fonts.map(f=>({family:f.family,url:f.file,weight:f.weight,style:f.style??'normal'})),logos:[{id:'logo',url:'logo.svg',clearSpacePx:Number(brand.tokens['logo.clearSpacePx']??24),required:true}],
-   rules:{allowedFonts:[...new Set(brand.fonts.map(f=>f.family))],forbiddenColours:[],minimumContrast:4.5,logoRequired:true},copy:{cta:Object.fromEntries(LOCALES.map(l=>[l,brand.cta[l][0]]))},facts:{},references:[]},
+  storyboard:brand.scenes.map((s,i)=>({id:s.id,start:i*2,end:i*2+2,copy:s.copy.primary['en-GB'],visualNotes:s.notes,...(s.proof?{proof:s.proof}:{}),motionNotes:'',maxStaticSeconds:2})),
+  brand:{tokens:brand.tokens,fonts:brand.fonts.map(f=>({family:f.family,url:f.file,weight:f.weight,style:f.style??'normal'})),logos:brand.logos?brand.logos.map((l,i)=>({id:l.id,url:l.file,clearSpacePx:Number(brand.tokens['logo.clearSpacePx']??24),...(i===0?{required:true}:{})})):[{id:'logo',url:'logo.svg',clearSpacePx:Number(brand.tokens['logo.clearSpacePx']??24),required:true}],
+   rules:{allowedFonts:[...new Set(brand.fonts.map(f=>f.family))],forbiddenColours:[],minimumContrast:4.5,logoRequired:true},copy:{cta:Object.fromEntries(LOCALES.map(l=>[l,brand.cta[l][0]]))},facts:{},references:(brand.supplied??[]).map(f=>({id:f.id,url:f.file}))},
   brief:{product:brand.product,offer:brand.offer,cta:brand.cta['en-GB'][0],audience:brand.audience,designerVersion:2,squarePreviewVersion:0,pictureRulesVersion:1,finalNotesVersion:1,promptVersion:2,synthesisAllowed:true},
   assets:[],formats,variants,resourceIds:['picture-1','picture-2','picture-3'],variantFacts} as unknown as DirectionInput;
 }
@@ -209,8 +271,13 @@ export function benchInput(brand:BenchBrand):DirectionInput{
 export function benchInputV5(brand:BenchBrand):DirectionInput{
  const base=benchInput(brand),t=brand.territory;
  return {...base,brief:{...base.brief,designerVersion:5,materialsVersion:1,digestVersion:1,synthesis:'Everything',synthesisAllowed:true},brand:{...base.brand,tokens:{...base.brand.tokens,'brand.character':brand.character}},resourceIds:['picture-1','picture-2','picture-3','picture-4'],
-  creativeHandoff:{version:1,owner:'draft-director',revision:'bench',intent:{goal:brand.offer,audience:brand.audience,adNotes:null,direction:{id:'concept-1',name:t?.name??brand.name,premise:brand.idea??brand.product}},strategy:{promise:brand.product,audience:brand.audience,offer:brand.offer},
+  creativeHandoff:{version:1,owner:'draft-director',revision:'bench',intent:{goal:brand.offer,audience:brand.audience,adNotes:null,...(brand.feeling?{feeling:brand.feeling}:{}),...(brand.adShape?{adShape:brand.adShape}:{}),...(brand.creativeFocus?{creativeFocus:brand.creativeFocus}:{}),direction:{id:'concept-1',name:t?.name??brand.name,premise:brand.idea??brand.product,...(brand.world?{world:brand.world}:{})}},strategy:{promise:brand.product,audience:brand.audience,offer:brand.offer},
    visual:t?{selected:[{path:'treatments[0]',evidence:{conceptId:'concept-1',name:t.name,visualIdea:t.visualIdea,twoSeconds:t.twoSeconds,productRole:t.productRole,makingTechnique:t.makingTechnique,success:t.success}}]}:{selected:[]},sources:[],referenceAssetIds:[],issues:[],actions:[]}} as unknown as DirectionInput;
+}
+/** The catalogue entries a stored brand pack would hold for a bench brand's supplied files (by name, with the file in
+ * the draft folder), as the run of 14 November held its brand materials: in brand.references, not in assets. */
+export function benchCatalogue(brand:BenchBrand,pub:string){
+ return [...(brand.supplied??[]).map(f=>({name:f.name.replace(/\.[a-z0-9]+$/i,''),kind:f.use?'product photograph (Use this)':'brand material',line:f.brief.split(';')[0].slice(0,140),size:'picture',materialId:f.id,file:`${pub}/${f.file}`})),...(brand.logos??[]).map(l=>({name:l.file.replace(/\.[a-z0-9]+$/i,''),kind:'logo',line:`the supplied logo file ${l.file}`,size:'picture',materialId:l.id,file:`${pub}/${l.file}`}))];
 }
 /** The brand pack text a run context holds for a bench brand: its character and its rules. */
 export const benchBrandPack=(brand:BenchBrand)=>`BRAND CHARACTER\n${brand.character}\n\nBRAND RULES\n${Object.entries(brand.tokens).map(([k,v])=>`${k}: ${v}`).join('\n')}`;

@@ -54,6 +54,7 @@ test('v5 rehearsal: ideas, selection, build in the same conversation, hero revie
  assert.deepEqual(result.gaps,[]);assert.equal(result.status,'Source checks complete. Ready for your review.');
  assert.ok(result.timeline.some(l=>l==='Chosen: idea 1 — One box, as the direction asks.')&&result.timeline.some(l=>l==='The creative review accepted the current views.'));
  assert.ok(result.apiEquivalentUsd>0&&result.apiEquivalentUsd<1,'priced per request, not as a running total');
+ assert.equal(records[4].content.filter(c=>c.type==='image').length,1,'version 5: the hero review sees one picture');
  assert.equal(benchRunContext(input(),benchBrandPack(brand)).stageSkills?.version,'stage-skills@2');
 });
 
@@ -75,7 +76,7 @@ test('v6 rehearsal (plan E1): stage H requests hold one scene\'s meaning and one
  const base=input(),v6={...base,brief:{...base.brief,designerVersion:6}} as ReturnType<typeof input>,heroViews:boolean[][]=[];
  const shotFile=join(await mkdtemp(join(tmpdir(),'v6-shot-')),'shot.png'),canvas=createCanvas(64,64);canvas.getContext('2d').fillRect(8,8,48,48);await writeFile(shotFile,canvas.toBuffer('image/png'));
  const tools=(real:DesignerTools):DesignerTools=>{const s=stubbed(shotFile)(real);return {...s,render:async views=>{heroViews.push(views.map(v=>!!v.shot));return s.render(views);}};};
- const {result,text}=await rehearse('v6',[IDEAS,say('Building idea 1: the photograph of the box.','export default 1;',{pictures:[{purpose:'the sealed archive box',prompt:'One sealed archive box in soft daylight on warm paper white.',aspect:'1:1'}],render:true}),say('Finished.','export default 2;',{review:true}),say('The other scenes.','export default 3;',{finish:{intent:'x'.repeat(90),scenes:scenes()}}),...critics],{input:v6,tools,endReview:false});
+ const {result,records,text}=await rehearse('v6',[IDEAS,say('Building idea 1: the photograph of the box.','export default 1;',{pictures:[{purpose:'the sealed archive box',prompt:'One sealed archive box in soft daylight on warm paper white.',aspect:'1:1'}],render:true}),say('Finished.','export default 2;',{review:true}),say('The other scenes.','export default 3;',{finish:{intent:'x'.repeat(90),scenes:scenes()}}),...critics],{input:v6,tools,endReview:false});
  const designer=result.calls.map((c,i)=>({c,i})).filter(x=>x.c.role==='designer'),stageH=designer.filter(x=>x.c.stage==='design-hero').map(x=>text(x.i)),stageE=designer.filter(x=>x.c.stage==='design-create').map(x=>text(x.i));
  assert.equal(stageH.length,3);assert.ok(stageE.length>=1);
  // Stage H: no other format, no variation list, no selected(, no "Shows:" line; the task carries meaning and words.
@@ -89,6 +90,9 @@ test('v6 rehearsal (plan E1): stage H requests hold one scene\'s meaning and one
  // Stage E opens with what was left out, once, in the same conversation.
  assert.ok(stageE[0].includes('THE REST OF THE AD (left out while you made the hero frame)')&&stageE[0].includes('vertical · 1080×1920')&&stageE[0].includes('VARIATIONS (all read through selected(props,…) in code)')&&stageE[0].includes('COPY TABLE'));
  assert.deepEqual(designer.map(x=>x.c.conversation),['new','branched','branched','branched'],'one conversation from the ideas to stage E');
+ // The hero review sees the frame at full size and at thumbnail size (version 6); the edit format is said once.
+ const heroReview=result.calls.findIndex((c,i)=>c.role==='critic'&&text(i).includes('SIGNS OF FAILURE'));assert.equal(records[heroReview].content.filter(c=>c.type==='image').length,2);assert.ok(text(heroReview).includes('The same hero frame at thumbnail size, as it appears in a feed'));
+ assert.ok(stageH[0].includes('CHANGING A FILE YOU HAVE WRITTEN')&&stageH[0].includes('Logos (each supplied file as measured')||stageH[0].includes('CHANGING A FILE YOU HAVE WRITTEN'));
  assert.ok(result.timeline.some(l=>l.startsWith('Hero frame started. Key frame brief: what this scene must say. The file a partner needs today')));
  assert.equal(result.state.hero?.acceptedBy,'critic');assert.equal(result.state.complete,true);
 });

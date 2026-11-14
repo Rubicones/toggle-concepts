@@ -3,7 +3,7 @@
 // renders what it asks for (up to four scenes, in the formats and languages it names), and answers with the render
 // and the full hard findings grouped by problem. When the conversation was condensed, the new one is seeded with the
 // mechanics, the designer's notes, the current files, the accepted hero render and what is done, and then continues.
-import {parseChatAnswer,actionsCorrection} from '../../../packages/director/hero-chat';
+import {parseChatAnswer,actionsCorrection,usesEdits,applyEdits} from '../../../packages/director/hero-chat';
 import {extensionActionsSchema,extensionNote,extensionPhase,nextRender,phaseLabels,sceneIdOf,sceneLabel,stageEMechanics,compactionSeed,variationVariants,type ExtensionPhase} from '../../../packages/director/extension-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
 import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
@@ -52,9 +52,14 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
   await args.conversation?.accept();
   if(due&&state.materialsDue?.length){state.materialsSeen=[...new Set([...(state.materialsSeen??[]),...state.materialsDue])];state.materialsDue=[];}
   state.transcript.push({from:'agent',text:text.slice(0,2000)});await args.save(state);
-  const answer=parseChatAnswer(text,extensionActionsSchema),actions=answer.actions??{},results:string[]=[],notes:string[]=[];let looked:string|undefined;let stuck:string|null=null;
+  const answer=parseChatAnswer(text,extensionActionsSchema,{edits:usesEdits(input)}),actions=answer.actions??{},results:string[]=[],notes:string[]=[];let looked:string|undefined;let stuck:string|null=null;
   try{
    for(const f of answer.files){await tools.write(f.path,f.source);results.push(`Saved ${f.path}.`);}
+   // Plan E4 (version 6): exact edits, applied in order to the files as they now stand; a refused edit is said in one
+   // line and the others still apply.
+   const edited=answer.edits?.length?applyEdits(await tools.files(),answer.edits):null;
+   if(edited){for(const f of edited.changed){await tools.write(f.path,f.source);results.push(`Changed ${f.path} (${f.edits} edit${f.edits===1?'':'s'}).`);}if(edited.refused.length){results.push(`${edited.refused.length} edit${edited.refused.length===1?' was':'s were'} not applied.`);notes.push(edited.refused.join('\n'));}}
+   const changedFiles=answer.files.length+(edited?.changed.length??0);
    const built=await tools.build();if(!built.ok){results.push('The code does not build yet.');notes.push(`The code does not build:\n${shortIssue(built.issue)}`);}
    stuck=buildStuck(state,built.ok?null:built.issue);
    if(answer.actionsError){results.push(answer.actions?'Part of the actions block could not be read.':'The actions block could not be read.');notes.push(answer.actions?`Part of your actions block could not be read (${answer.actionsError}); the rest was carried out.`:actionsCorrection(answer.actionsError));}
@@ -74,7 +79,7 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
     notes.push(made.status==='model'?`The 3D model of ${made.id} is ready: draw it with <Scene3D model={resources['${made.id}']} …/>; its picture stays the fallback.`:`No 3D model for ${made.id}: ${made.detail??'it could not be made'}. Keep the picture, or build the object in code.`);
    }
    // The render: what the designer names, else what the phase needs next; never past the revisions of a scene and format.
-   if(built.ok&&(actions.render||answer.files.length)){
+   if(built.ok&&(actions.render||changedFiles)){
     const asked=typeof actions.render==='object'?actions.render:{},next=nextRender(input,state.renders,phase);
     const named=(asked.scenes??[]).map(n=>sceneIdOf(n,input)),unknown=(asked.scenes??[]).filter((_,i)=>!named[i]);
     if(unknown.length)notes.push(`Not a scene: ${unknown.join(', ')}. Scenes are Scene 1 to Scene ${input.storyboard.length}.`);
@@ -102,9 +107,9 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
      else{stopOnEnvironmentFault(done.issue);notes.push(`Not finished yet: ${done.issue.slice(0,1200)}`);}}
    }
   }catch(error){if(propagateExecutionFailure(error))throw error;stopOnEnvironmentFault(error);notes.push(`This step needs another attempt: ${(error instanceof Error?error.message:'').slice(0,300)}`);}
-  if(!answer.files.length&&!answer.actions&&!answer.actionsError)notes.push('No files and no actions in your answer: write the complete files in fenced code blocks with their paths.');
+  if(!answer.files.length&&!answer.edits?.length&&!answer.actions&&!answer.actionsError)notes.push('No files and no actions in your answer: write the complete files in fenced code blocks with their paths.');
   state.heroNote=notes.filter(Boolean).join('\n\n');state.transcript.push({from:'tool',text:state.heroNote.slice(0,2000)});await args.save(state);
-  await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:answer.files.map(f=>f.path),...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
+  await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:[...new Set([...answer.files.map(f=>f.path),...(answer.edits??[]).map(e=>e.path)])],...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
   if(stuck){await args.save(state);throw Object.assign(new Error('DESIGNER_BUILD_STUCK'),{detail:`designer: the code failed to build three times in a row with the same error: ${stuck.slice(0,400)}`});}
  }
  await Promise.allSettled(pending.values());

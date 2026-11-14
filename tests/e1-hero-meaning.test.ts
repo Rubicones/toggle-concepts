@@ -28,7 +28,7 @@ test('E1b: the version 6 hero task names the meaning, the proof and the words, a
  assert.match(task,/^THE HERO FRAME\nMake Scene 1 of 3 as one finished frame in 1080×1080\. /);
  assert.ok(task.includes(`What it must make the viewer understand: ${b.meaning}\nWhat proves it: Any file back within two hours.\nIts approved words (en-GB), exactly as written, nothing added: "The file is somewhere." / "That is not an answer."`));
  assert.ok(task.includes('What the frame shows is yours to decide.'));
- assert.ok(task.includes('You may ask for up to 4 pictures in this direction')&&task.includes('arrives in a later message, not in the next render'));
+ assert.ok(task.includes('You may ask for up to 4 pictures in this direction')&&task.includes('its render waits for the picture'));
  assert.ok(heroTask(v6,{pictures:0}).includes('No pictures are approved for this direction'));assert.ok(!heroTask(v6).includes('\nPICTURES\n'),'no count, no picture paragraph');
  assert.ok(!/Shows:|selected\(|VARIATIONS/.test(task));
  assert.equal(heroBriefLine(v6),'Key frame brief: what this scene must say. The file a partner needs today and nobody can find. Words: "The file is somewhere." / "That is not an answer."');

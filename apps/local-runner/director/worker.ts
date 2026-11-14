@@ -19,10 +19,11 @@ import {slimDirectorInput} from '../../../packages/director/inputs';
 import {directorEvents} from './events';
 import {publishDirectorReference,processDirectorDelivery,restoreIteration,type SealedIteration} from './delivery';
 import {materialize,visionImages,referenceEntries,sheetEntries} from './assets';
+import {measureLogos,logoFactLines,referenceFactLines} from './logo-facts';
 import {fetchMaterials,loadMaterials,materialsUsed} from '../local-claude/materials';
 import {designerDigestEntries,designerDigestText,usesDigest,territoryText} from '../../../packages/director/designer-digest';
 import {reviewGaps,reviewReason,unreviewedStatus} from '../../../packages/director/review-gaps';
-import {heroChat,HERO_CRITIC_INSTRUCTIONS,heroReviewContext,STAGE_H_INSTRUCTIONS,heroBriefLine} from '../../../packages/director/hero-chat';
+import {HERO_THUMBNAIL_SIDE,HERO_THUMBNAIL_LABEL,pictureWaitLine,heroChat,HERO_CRITIC_INSTRUCTIONS,heroReviewContext,STAGE_H_INSTRUCTIONS,heroBriefLine} from '../../../packages/director/hero-chat';
 import {runExtensionChat} from './extension-chat-loop';
 import {tripoSettings,MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import {makeModel,directorModelLedger,modelRequestId,taskMemory} from './tripo-model';
@@ -390,6 +391,9 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     // C3 (materialsVersion 1, shared Local runs with a stored pack): materials on request. With a compact brand sheet in
     // the run context, the designer's own brand references and logos leave its prefix and become entries it asks for.
     const runContext=usesMaterials(input)&&execution.mode==='local_claude'&&execution.context_mode==='shared'?await sharedContextFor(admin,execution,input.runId)?.()??null:null;
+    // Version 6: each supplied logo measured once from the draft folder, so the designer picks a mark by fact.
+    const logoLines=heroMeaning(input)?logoFactLines(await measureLogos(folder,input,runContext?.materials?.entries??[]),input):undefined;
+    const referenceLines=heroMeaning(input)?await referenceFactLines(folder,input,runContext?.materials?.entries??[]):undefined;
     const compactSheet=!!runContext?.images?.some(i=>i.kind==='compact'),digestOn=usesDigest(input)&&!!runContext?.materials,references=[...(compactSheet?referenceEntries(folder,input):[]),...(digestOn?designerDigestEntries(input):[])];
     // C5 (designerVersion 4): with a compact sheet, the full brand sheet pages are entries it asks for by name too.
     const sheetOnRequest=heroChat(input)&&compactSheet;if(sheetOnRequest)references.push(...sheetEntries(folder,input));
@@ -409,7 +413,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     // and stops by rule; it sees the work at 1,024 px, the territory and the brand, never the designer's conversation.
     tools.reviewHero=heroCritic&&heroChat(input)&&runContext?.criticVersion?async(round,shots,measured)=>{await controls();
      const memory=loop.heroMemory??[],material=stageReviewMaterial(staged,'hero'),hard=measured.filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
-     const text=(await call('critic','Review this hero frame.',REVIEW_INSTRUCTIONS(HERO_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input,{sceneIds:false}),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard,memory})},{review:'hero',round,stage:'H',critic:2},[...(shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame now, at full size'}]:[]),...(sheetOnRequest?[]:await brandSheetImages(folder,input))])).text;
+     const text=(await call('critic','Review this hero frame.',REVIEW_INSTRUCTIONS(HERO_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input,{sceneIds:false}),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard,memory})},{review:'hero',round,stage:'H',critic:2},[...(shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame now, at full size'}]:[]),...(shots[0]&&heroMeaning(input)?[{url:await screenshotForDesigner(shots[0].file,HERO_THUMBNAIL_SIDE),label:HERO_THUMBNAIL_LABEL}]:[]),...(sheetOnRequest?[]:await brandSheetImages(folder,input))])).text;
      const settled=settleHeroReview(text,round,memory,hard.length,Math.min(HERO_REVIEW_ROUNDS,heroCritic));if(!settled)return undefined;
      loop.heroMemory=[...memory,settled.round];void recordCheckAnswers(admin,{runId:input.runId,directionId:input.directionId,stage:'hero',round,answers:settled.round.answers,stop:settled.result.stop??null});return settled.result;}
     :heroCritic&&heroChat(input)?async(round,shots,measured)=>{await controls();
@@ -445,8 +449,9 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
        if(unreviewed)await events.emit(`${step}:not-reviewed`,{stepId:`${step}:not-reviewed`,kind:'review',status:'failed',costMicroUsd:0,message:`The three ideas were NOT reviewed: ${reviewReason(unreviewed)}. The first idea is built.`,detail:{reason:unreviewed}}).catch(()=>undefined);
        await events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:`Chosen: idea ${pick} — ${reason}`,detail:{pick}});await events.emit(`${step}:building`,{stepId:`${step}:building`,kind:'designer',status:'running',costMicroUsd:0,message:'Building the chosen idea.'});}}}:{};
      await runHeroChat({...ideasArgs,input,state:loop,maxTurns:Math.min(allowance.requests,Math.ceil(Math.min(maxTurns,allowance.requests)*HERO_TURN_SHARE)+(loop.heroExtraTurns??0)),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,heroReviews:heroCritic,onHero,
+      onPictureWait:async e=>{const step=`designer:picture-wait:${loop.turn}`;await events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:pictureWaitLine(e.pictures,e.holdMs)});},
       save:async next=>{state.designer=next;await save();},...(conversation?{conversation}:{}),
-      call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{sceneIds:false,heroOnly:true})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'H'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
+      call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{sceneIds:false,heroOnly:true,logoLines,referenceLines})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'H'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
       onTurn:async e=>{await events.emit(`designer:${state.iteration??1}:${e.turn}`,{stepId:`designer:${state.iteration??1}:${e.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:e.idea||'The designer answered without words; its files were applied.',detail:{chat:true,summary:e.results,prose:e.prose,files:e.files,...(e.actions?{actions:e.actions}:{})}},e.looked);}});
     }
     // C6 (designerVersion 4, stage E): the same conversation continues with the other scenes, the formats and the
@@ -455,7 +460,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     if(heroChat(input))await runExtensionChat({input,state:loop,maxTurns:Math.min(maxTurns,allowance.requests),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,...(staged?{skills:creatorStageText(staged,'extension')}:{}),
      save:async next=>{state.designer=next;await save();},...(conversation?{conversation}:{}),
      onPhase:async(phase,label)=>{await events.emit(`designer:${state.iteration??1}:phase:${phase}`,{stepId:`designer:${state.iteration??1}:phase:${phase}`,kind:'designer',status:'done',costMicroUsd:0,message:`${label}.`,detail:{phase}});},
-     call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input)+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'E'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
+     call:async(message,images)=>(await call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,{logoLines,referenceLines})+(state.notes?.length?`\n\nTHE ART DIRECTOR'S NOTES\n${plainText(agentReviewNotes(state.notes??[]),3000)}`:'')},{designer:loop.turn,stage:'E'},[...prefix,...images.map(i=>({...i,required:true}))])).text,
      onTurn:async e=>{await events.emit(`designer:${state.iteration??1}:${e.turn}`,{stepId:`designer:${state.iteration??1}:${e.turn}`,kind:'designer',status:'done',costMicroUsd:0,message:e.idea||'The designer answered without words; its files were applied.',detail:{chat:true,summary:e.results,prose:e.prose,files:e.files,...(e.actions?{actions:e.actions}:{})}},e.looked);}});
     // C8: what the final adds to the draft's code-built 3D scenes, read from the designer's files.
     if(heroChat(input)){const adds=code3dNotes(await tools.files());if(adds.length)design.finalAdds=adds;else delete design.finalAdds;}

@@ -17,7 +17,9 @@ export const heroActionsSchema=z.strictObject({render:z.boolean().optional(),rev
  /** C8 follow-up: a 3D model of a picture it already has, when code cannot build that object (see the 3D mechanics). */
  models:z.array(z.strictObject({picture:z.string().min(1).max(80),why:z.string().min(1).max(200)})).max(2).optional()});
 export type HeroActions=z.infer<typeof heroActionsSchema>;
-export type ChatAnswer<A>={prose:string;files:{path:string;source:string}[];actions:A|null;actionsError?:string;raw:{actions?:string}};
+/** Plan E4 (designerVersion 6): one exact edit of a file the designer already wrote. */
+export type FileEdit={path:string;current:string;replacement:string;/** the block could not be read as an edit */problem?:string};
+export type ChatAnswer<A>={prose:string;files:{path:string;source:string}[];/** version 6 only: exact edits, in the order written */edits?:FileEdit[];actions:A|null;actionsError?:string;raw:{actions?:string}};
 export type HeroAnswer=ChatAnswer<HeroActions>;
 export const parseHeroAnswer=(text:string):HeroAnswer=>parseChatAnswer(text,heroActionsSchema);
 
@@ -45,12 +47,17 @@ function readActions<A>(raw:unknown,schema:z.ZodType<A>):{actions:A|null;error?:
  return {actions:partial?.success?partial.data:null,error:[...(said?[said]:[]),...problems.slice(0,3)].join('; ')||'it could not be read'};
 }
 /** Reads a chat answer. Files without a readable path and a malformed actions block are reported, never fatal. */
-export function parseChatAnswer<A>(text:string,schema:z.ZodType<A>):ChatAnswer<A>{
- const fence=/```([^\n`]*)\n([\s\S]*?)```/g,files:{path:string;source:string}[]=[],prose:string[]=[];let last=0,actionsText:string|undefined,m:RegExpExecArray|null;
+export function parseChatAnswer<A>(text:string,schema:z.ZodType<A>,options:{/** version 6: read ```edit blocks as exact edits */edits?:boolean}={}):ChatAnswer<A>{
+ const fence=/```([^\n`]*)\n([\s\S]*?)```/g,files:{path:string;source:string}[]=[],edits:FileEdit[]=[],prose:string[]=[];let last=0,actionsText:string|undefined,m:RegExpExecArray|null;
  while((m=fence.exec(text))){
   const before=text.slice(last,m.index);last=m.index+m[0].length;
   const info=m[1].trim(),tokens=info.split(/\s+/).filter(Boolean),body=m[2];
   if(tokens[0]?.toLowerCase()==='actions'){prose.push(before);actionsText=body.trim();continue;}
+  if(options.edits&&tokens[0]?.toLowerCase()==='edit'){
+   prose.push(before);const path=tokens.slice(1).map(t=>t.replace(/^(?:path|file)=/,'').replace(/^["'`]|["'`]$/g,'')).find(t=>PATH.test(t))??'Frame.tsx',parts=body.split(/^={5,}[ \t]*\r?\n?/m);
+   if(parts.length!==2)edits.push({path,current:'',replacement:'',problem:parts.length<2?'it has no line of ======= between the current text and its replacement':'it has more than one line of =======; write one edit per block'});
+   else edits.push({path,current:parts[0].replace(/\r?\n$/,''),replacement:parts[1].replace(/\s+$/,'')});
+   continue;}
   const named=tokens.map(t=>t.replace(/^(?:path|file|title)=/,'').replace(/^["'`]|["'`]$/g,'')).find(t=>PATH.test(t));
   // A path on the line just before the block ("Frame.tsx:", "**Frame.tsx**", "`Frame.tsx`").
   const lead=before.trim().split('\n').at(-1)?.replace(/[*`:#]/g,'').trim().split(/\s+/).at(-1)??'';
@@ -65,7 +72,33 @@ export function parseChatAnswer<A>(text:string,schema:z.ZodType<A>):ChatAnswer<A
   let raw:unknown;try{raw=JSON.parse(actionsText);}catch{actionsError='it is not valid JSON';}
   if(actionsError===undefined){const read=readActions(raw,schema);actions=read.actions;if(read.error)actionsError=read.error;}
  }
- return {prose:prose.join('').replace(/\n{3,}/g,'\n\n').trim(),files,actions,...(actionsError?{actionsError}:{}),raw:actionsText!==undefined?{actions:actionsText}:{}};
+ return {prose:prose.join('').replace(/\n{3,}/g,'\n\n').trim(),files,...(options.edits?{edits}:{}),actions,...(actionsError?{actionsError}:{}),raw:actionsText!==undefined?{actions:actionsText}:{}};
+}
+/** Plan E4 (designerVersion 6): later answers send exact edits instead of whole files. */
+export const usesEdits=(input:Pick<DirectionInput,'brief'>)=>heroMeaning(input);
+const nearest=(source:string,wanted:string)=>{
+ const lines=source.split('\n'),first=wanted.split('\n').map(l=>l.trim()).find(Boolean)??'';if(!first||!lines.length)return '';
+ const score=(l:string)=>{const t=l.trim();if(t===first)return 1e6;let n=0;while(n<t.length&&n<first.length&&t[n]===first[n])n++;return n;};
+ let best=0;for(let i=1;i<lines.length;i++)if(score(lines[i])>score(lines[best]))best=i;
+ if(score(lines[best])<4)return '';
+ return lines.slice(Math.max(0,best-1),best+2).map(l=>l.slice(0,160)).join('\n');
+};
+/** Applies exact edits in order to the files as they stand (plan E4b). An edit whose current text is not in its file
+ * exactly once is refused with a one-line correction that quotes the nearest current lines; the other edits of the
+ * answer still apply. Returns the files that changed, whole, and what was refused. */
+export function applyEdits(files:{path:string;source:string}[],edits:FileEdit[]):{changed:{path:string;source:string;edits:number}[];refused:string[]}{
+ const now=new Map(files.map(f=>[f.path,f.source])),count=new Map<string,number>(),refused:string[]=[];
+ for(const e of edits){
+  const source=now.get(e.path);
+  if(e.problem){refused.push(`An edit to ${e.path} was not applied: ${e.problem}.`);continue;}
+  if(source===undefined){refused.push(`An edit to ${e.path} was not applied: there is no such file yet; write it whole.`);continue;}
+  if(!e.current.trim()){refused.push(`An edit to ${e.path} was not applied: its current text is empty.`);continue;}
+  const hits=source.split(e.current).length-1;
+  if(hits===1){now.set(e.path,source.replace(e.current,()=>e.replacement));count.set(e.path,(count.get(e.path)??0)+1);continue;}
+  const near=hits===0?nearest(source,e.current):'';
+  refused.push(hits===0?`An edit to ${e.path} was not applied: its current text is not in the file as written${near?`. The nearest lines in the file now:\n${near}`:'.'}`:`An edit to ${e.path} was not applied: its current text is in the file ${hits} times; include more of the text around it so it is found once.`);
+ }
+ return {changed:[...count.entries()].map(([path,n])=>({path,source:now.get(path)!,edits:n})),refused};
 }
 /** The one-line correction for a malformed actions block: the files of that answer were applied. */
 export const actionsCorrection=(reason:string)=>`Your actions block could not be read (${reason}); your files were applied. If you need it, write it again as JSON, for example {"render":true}, {"review":true}, {"pictures":[{"purpose":"…","prompt":"…","aspect":"4:5"}]} or {"materials":[{"name":"…","why":"…"}]}.`;
@@ -94,15 +127,29 @@ export function heroBriefLine(input:DirectionInput){
  const b=heroBrief(input);
  return `Key frame brief: what this scene must say. ${b.meaning}${b.proof?` Proof: ${b.proof}`:''} Words: ${b.lines.length?b.lines.map(l=>`"${l}"`).join(' / '):'none'}`.slice(0,900);
 }
+/** Plan E4c (version 6): the edit format, said once in the hero task and once in the stage E opening. */
+export const EDITS_NOTE=`CHANGING A FILE YOU HAVE WRITTEN
+Your first build writes each file whole. After that, change a file with edits, not by writing it again: one fenced block per edit, opened with \`\`\`edit and the file's path, holding the exact current text, then a line of =======, then the text that replaces it. The current text must be in the file exactly as you quote it, and only once: quote enough of it to be found once. Edits are applied in the order you write them. Write a file whole again only when most of it changes.`;
 const HERO_CODE_NOTE=(pictures:string)=>`WHAT YOUR CODE CAN USE
 Frame.tsx default-exports one React component with props {width,height} that draws this frame at exactly that size. From './brand': brand.tokens (the accepted rules as strings), brand.logos (draw one with <Img src={staticFile(logo.url)} data-brand-logo={logo.id}/>), resources (pictures you asked for, by the id the app gives you). The brand's fonts are loaded by family name. './kit' has optional helpers (fitText, measure, contrast); './kit3d' draws a code-built 3D object or scene (ask for the material kit-3d to see how). Any CSS, SVG, masks, blend modes and filters work. Do not write a previewOptions export for this frame: the app lists the variations itself.${pictures}
 
-Answer as you would in a chat: first your idea in prose, then the complete files in fenced code blocks with their paths (\`\`\`tsx Frame.tsx), then, if you need it, one fenced actions block with JSON: {"render":true} to see it, {"pictures":[…]} to ask for pictures (purpose, prompt, aspect, references by file name, cutout), {"materials":[…]} to look at brand materials by name, {"review":true} when the frame is finished. Every change of code is rendered for you.`;
+Answer as you would in a chat: first your idea in prose, then the complete files in fenced code blocks with their paths (\`\`\`tsx Frame.tsx), then, if you need it, one fenced actions block with JSON: {"render":true} to see it, {"pictures":[…]} to ask for pictures (purpose, prompt, aspect, references by file name, cutout), {"materials":[…]} to look at brand materials by name, {"review":true} when the frame is finished. Every change of code is rendered for you.
+
+${EDITS_NOTE}`;
+/** Version 6: the hero review also sees the frame at the size it has in a feed, so the checks that name thumbnail
+ * size are judged on a picture, not imagined from the full-size render. */
+export const HERO_THUMBNAIL_SIDE=180;
+export const HERO_THUMBNAIL_LABEL='The same hero frame at thumbnail size, as it appears in a feed';
+/** Plan E5: the timeline's line while a hero render waits for its pictures. */
+export const pictureWaitLine=(pictures:number,holdMs:number)=>`Waiting for ${pictures===1?'the picture':`${pictures} pictures`} for the key frame (up to ${Math.round(holdMs/1000)} s).`;
+/** Plan E5: the bound of the picture hold as the task states it (apps/local-runner/director/hero-chat-loop.ts). */
+export const PICTURE_HOLD_SECONDS=180;
 /** Version 6 (plan E1b): the task names the scene's meaning, its proof and its words; nothing from planning says what
  * the frame looks like. `pictures` is the approved number of pictures for the direction, when the caller knows it. */
 function heroTaskV6(input:DirectionInput,o:{pictures?:number}){
  const b=heroBrief(input),p=o.pictures;
- const pictures=p===undefined?'':p>0?`\n\nPICTURES\nYou may ask for up to ${p} picture${p===1?'':'s'} in this direction, for all its scenes together. A picture takes a minute or more to make and arrives in a later message, not in the next render: ask for the ones this frame needs in the same answer as your first build, and build the frame so the picture takes its place when it arrives.`:'\n\nPICTURES\nNo pictures are approved for this direction: build everything in code and from the supplied files.';
+ const ids=input.resourceIds.slice(0,Math.min(p??0,4));
+ const pictures=p===undefined?'':p>0?`\n\nPICTURES\nYou may ask for up to ${p} picture${p===1?'':'s'} in this direction, for all its scenes together.${ids.length?` In the order you ask, they are ${ids.map(id=>`resources['${id}']`).join(', ')}.`:''} When an answer asks for a picture and changes the code, its render waits for the picture (up to about ${Math.round(PICTURE_HOLD_SECONDS/60)} minutes), so you see the frame with the picture in place: ask for the pictures this frame needs in the same answer as the code that draws them.`:'\n\nPICTURES\nNo pictures are approved for this direction: build everything in code and from the supplied files.';
  return `THE HERO FRAME
 Make Scene ${b.number} of ${b.of} as one finished frame in ${b.format?`${b.format.width}×${b.format.height}`:'the reference format'}. This frame alone, in this one size, with these words; the other scenes, formats and variations come after it is accepted.
 What it must make the viewer understand: ${b.meaning}${b.proof?`\nWhat proves it: ${b.proof}`:''}

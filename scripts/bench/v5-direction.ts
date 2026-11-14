@@ -14,6 +14,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {existsSync} from 'node:fs';
 import {referenceEntries,sheetEntries} from '../../apps/local-runner/director/assets';
+import {measureLogos,logoFactLines,referenceFactLines} from '../../apps/local-runner/director/logo-facts';
 import {designerTools,provisionalDesign,finishDesign} from '../../apps/local-runner/director/designer-run';
 import {screenshotForDesigner,newDesignerState,designerViews,RENDER_LONG_SIDE,type DesignerLoopState,type DesignerTools} from '../../apps/local-runner/director/designer-loop';
 import {runHeroChat,HERO_TURN_SHARE} from '../../apps/local-runner/director/hero-chat-loop';
@@ -33,7 +34,7 @@ import {designerPlan,storedSize,continuesOwnConversation,relativeCap,type Plan,t
 import {directorRequestSnapshot,criticAllowanceUsed} from '../../packages/director/admission';
 import {compactDraftRequest,designerRequestCap} from '../../packages/director/request-size';
 import {designerRoleLine,staticRoleInstructions} from '../../packages/director/roles';
-import {STAGE_H_INSTRUCTIONS,heroBriefLine} from '../../packages/director/hero-chat';
+import {STAGE_H_INSTRUCTIONS,heroBriefLine,pictureWaitLine,HERO_THUMBNAIL_SIDE,HERO_THUMBNAIL_LABEL} from '../../packages/director/hero-chat';
 import {heroMeaning} from '../../packages/director/designer';
 import {reviewRepairMessage} from '../../packages/director/extension-chat';
 import {IDEAS_TASK,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../packages/director/image-ideas';
@@ -69,6 +70,8 @@ export type V5Options={
  /** Offer the workspace's own brand references, logos and full sheet pages by name, as the worker does when the run
   * has a compact brand sheet. Files that are not in the workspace are left out. */
  brandFileEntries?:boolean;
+ /** Plan E5 (version 6): how long a hero render waits for its pictures (default: the production bound). */
+ pictureHoldMs?:number;
  /** Rehearsals without a browser: replace build and render (everything else stays the production code). */
  tools?:(real:DesignerTools)=>DesignerTools;
 };
@@ -134,12 +137,14 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
  // The hero review (critic@2): the hero checks with evidence, its own earlier rounds as text, a stop by rule.
  const reviewHero:NonNullable<DesignerTools['reviewHero']>=async(round,shots,measured)=>{
   const memory=state.heroMemory??[],material=stageReviewMaterial(staged,'hero'),hard=measured.filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
-  const text=await call('critic','Review this hero frame.',REVIEW_INSTRUCTIONS(HERO_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input,{sceneIds:false}),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard,memory})},shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame now, at full size'}]:[]);
+  const text=await call('critic','Review this hero frame.',REVIEW_INSTRUCTIONS(HERO_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input,{sceneIds:false}),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard,memory})},[...(shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame now, at full size'}]:[]),...(shots[0]&&heroMeaning(input)?[{url:await screenshotForDesigner(shots[0].file,HERO_THUMBNAIL_SIDE),label:HERO_THUMBNAIL_LABEL}]:[])]);
   const settled=settleHeroReview(text,round,memory,hard.length,Math.min(HERO_REVIEW_ROUNDS,heroReviews));if(!settled)return undefined;
   state.heroMemory=[...memory,settled.round];return settled.result;};
  if(heroReviews>0)tools.reviewHero=async(...a)=>{try{const r=await reviewHero(...a);if(!r&&state.hero)state.hero.reviewError='UNREADABLE';return r;}catch(error){const code=error instanceof Error?error.message:'REVIEW_FAILED';if(state.hero)state.hero.reviewError=code.slice(0,120);say(`The hero frame was NOT reviewed: ${reviewReason(code)}. It is accepted as it is.`);return undefined;}};
  const working=(stage:'hero'|'extension')=>{const titles=stageSkillTitles(staged,stage);if(titles.length)say(`The designer is working with: ${titles.join(', ')}.`);};
- const designerCall=(stage:'H'|'E')=>async(message:string,images:{url:string;label:string}[])=>call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,stage==='H'?{sceneIds:false,heroOnly:true}:{})},images.map(i=>({...i,required:true})));
+ const logoLines=heroMeaning(input)?logoFactLines(await measureLogos(folder,input,ctx.materials?.entries??[]),input):undefined;
+ const referenceLines=heroMeaning(input)?await referenceFactLines(folder,input,ctx.materials?.entries??[]):undefined;
+ const designerCall=(stage:'H'|'E')=>async(message:string,images:{url:string;label:string}[])=>call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,stage==='H'?{sceneIds:false,heroOnly:true,logoLines,referenceLines}:{logoLines,referenceLines})},images.map(i=>({...i,required:true})));
  const turnLine=async(e:{turn:number;idea:string;results:string[]})=>{say(`Turn ${e.turn}: ${e.idea.slice(0,160)||'(no words)'} — ${e.results.join(' ')}`);};
  const owned=input.creativeHandoff?.intent.direction;
  // Stage H: three ideas, the independent choice, the build in the same conversation, the hero review.
@@ -149,6 +154,7 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
    select:async(text)=>{if(heroReviews<1)return null;try{return readSelection(await call('critic','Choose one of the three ideas.',SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(stageReviewMaterial(staged,'ideas').checks),territoryText(input))}));}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
    onIdeas:async()=>{say('Three ideas for the key frame.');},
    onChosen:async(pick,reason)=>{if(state.ideas?.unreviewed)say(`The three ideas were NOT reviewed: ${reviewReason(state.ideas.unreviewed)}. The first idea is built.`);say(`Chosen: idea ${pick} — ${reason}`);}},
+  onPictureWait:async e=>{say(pictureWaitLine(e.pictures,e.holdMs));},...(o.pictureHoldMs!==undefined?{pictureHoldMs:o.pictureHoldMs}:{}),
   onHero:async e=>{say(e.kind==='started'?(heroMeaning(input)?`Hero frame started. ${heroBriefLine(input)}`:'Hero frame started.'):e.kind==='reviewed'?`Hero frame reviewed: ${e.notes} note${e.notes===1?'':'s'}.`:`Hero frame accepted (${e.by}). Designing the other scenes.`);},
   save:async()=>{},call:designerCall('H'),onTurn:turnLine});
  if(o.heroOnly){const gaps=reviewGaps({expects:{ideas:true,hero:true,end:false},ideas:state.ideas,hero:state.hero});if(gaps.length)say(unreviewedStatus(gaps));

@@ -6,9 +6,10 @@
 import {mkdir,writeFile,readFile,copyFile,rm,mkdtemp,cp} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
-import {brands,benchInput,benchInputV5,benchBrandPack,type BenchBrand} from './brands';
+import {brands,benchInput,benchInputV5,benchBrandPack,benchCatalogue,type BenchBrand} from './brands';
 import {runV5Direction} from './v5-direction';
-import {fileDropPictures,missingBrandFiles,fillBrandFonts,missingBrandFilesMessage} from './export-files';
+import {fileDropPictures,missingBrandFiles,fillBrandFonts,missingBrandFilesMessage,prepareBrandWorkspace} from './export-files';
+import {DEFAULT_MATERIAL_BUDGET} from '../../packages/agents/materials';
 import type {RunContext} from '../../packages/agents/run-context';
 import {createWorkspace,writeResources} from '../../apps/local-runner/director/workspace';
 import {designerTools,provisionalDesign} from '../../apps/local-runner/director/designer-run';
@@ -158,7 +159,7 @@ async function writeV5Summary(out:string,label:Record<string,unknown>,started:nu
  await writeFile(join(out,'timeline.txt'),result.timeline.join('\n')+'\n');
  const hero=result.state.hero?.shots?.[0]?.file;if(hero)await copyFile(hero,join(out,'hero.png')).catch(()=>undefined);
  const first=result.calls.find(c=>c.role==='designer'),renderTurn=result.timeline.findIndex(l=>/^Turn \d+:.*Rendered/.test(l));
- const summary={...label,turns:result.state.turn,complete:result.state.complete,hero:result.state.hero?.acceptedBy,heroReviews:result.state.hero?.reviews,ideas:{picked:result.state.ideas?.picked,rounds:result.state.ideas?.rounds,unreviewed:result.state.ideas?.unreviewed},pictures:result.state.pictures,
+ const summary={...label,turns:result.state.turn,complete:result.state.complete,hero:result.state.hero?.acceptedBy,heroReviews:result.state.hero?.reviews,ideas:{picked:result.state.ideas?.picked,rounds:result.state.ideas?.rounds,unreviewed:result.state.ideas?.unreviewed},pictures:result.state.pictures,pictureWaitSeconds:Math.round((result.state.pictureWaitMs??0)/1000),edits:{applied:result.timeline.join('\n').match(/Changed [^ ]+ \(\d+ edit/g)?.length??0,refusedTurns:result.timeline.filter(l=>/edits? (was|were) not applied/.test(l)).length},designerOutputPerTurn:result.calls.filter(c=>c.role==='designer').map(c=>c.usage?.output??0),
   firstTurnInput:(first?.usage?.input??0)+(first?.usage?.cacheCreation??0)+(first?.usage?.cacheRead??0),firstRenderLine:renderTurn>=0?result.timeline[renderTurn].slice(0,80):null,
   endReview:result.endReview,gaps:result.gaps,status:result.status,seconds:Math.round((Date.now()-started)/1000),apiEquivalentUsd:Math.round(result.apiEquivalentUsd*100)/100,calls:result.calls.map(c=>({role:c.role,stage:c.stage,conversation:c.conversation,model:c.usage?.model,effort:c.usage?.effort,input:(c.usage?.input??0)+(c.usage?.cacheCreation??0),cached:c.usage?.cacheRead,output:c.usage?.output,usd:c.usage?.apiEquivalentUsd}))};
  await writeFile(join(out,'summary.json'),JSON.stringify(summary,null,1));console.log(JSON.stringify({...summary,calls:summary.calls.length,out}));
@@ -187,7 +188,7 @@ async function benchFromExport(folder:string){
  const catalog:CatalogEntry[]=[],pictures=resolve(out,'pictures');await mkdir(pictures,{recursive:true});await writeResources(workspace,input,catalog);
  const started=Date.now();let result,stopped:string|undefined;
  try{result=await runV5Direction({input,folder:workspace,out,brandPack:pack,briefText:brief,designerModel:arg('designer-model','anthropic/claude-opus-5.5'),criticModel:arg('critic-model','google/gemini-4-argon'),maxTurns:Number(arg('turns','24')),heroReviews:Number(arg('reviews','2')),endReview:arg('endreview','1')==='1',heroOnly:arg('hero-only','0')==='1',
-  maxPictures:Number(arg('pictures','4')),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000),catalog,recordRequests:true,materials:context.materials,brandFileEntries:true,
+  maxPictures:Number(arg('pictures','4')),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000),catalog,recordRequests:true,materials:context.materials,brandFileEntries:true,...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
   setup:{bin:arg('bin','claude'),cliVersion:'bench',isolation:{safeMode:true,restricted:true,noSessionPersistence:false,disableSlashCommands:true},sonnet:arg('sonnet','claude-sonnet-5-5'),schemaMode:'cli',visual:true,deviceId:'bench'}});}
  catch(error){stopped=`${error instanceof Error?error.message:error}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}`;console.error('[bench] stopped:',stopped);}
  await writeV5Summary(out,{source:'export',direction:input.directionId.slice(0,8),version:5,designerVersion:Number(input.brief.designerVersion),heroOnly:arg('hero-only','0')==='1',missingBrandFiles:missing.map(m=>m.label),fontsFilled:filled,catalogueEntries:context.materials?.entries.length??0},started,result,stopped);
@@ -196,13 +197,17 @@ async function benchFromExport(folder:string){
  * bench waits for <id>.png or <id>.jpg beside it (made by hand); without it the designer is told the picture failed. */
 async function benchV5(brand:BenchBrand,out:string,o:{maxTurns:number;designerModel:string;criticModel:string;sonnet:string;heroReviews:number;endReview:boolean;maxPictures:number;waitMs:number}){
  process.env.TOGGLE_HOME??=resolve(out,'home');
- const input=benchInputV5(brand),folder=await createWorkspace(resolve(out,'workspace'),input),pub=join(folder,'public'),pictures=resolve(out,'pictures'),catalog:CatalogEntry[]=[];
- for(const f of brand.fonts)await copyFile(f.source,join(pub,f.file));await writeFile(join(pub,'logo.svg'),brand.logoSvg);await mkdir(pictures,{recursive:true});await writeResources(folder,input,catalog);
+ const base=benchInputV5(brand),designerVersion=Number(arg('designer','0')),input=designerVersion?{...base,brief:{...base.brief,designerVersion}} as DirectionInput:base;
+ const folder=await createWorkspace(resolve(out,'workspace'),input),pub=join(folder,'public'),pictures=resolve(out,'pictures'),catalog:CatalogEntry[]=[];
+ try{await prepareBrandWorkspace(brand,pub,resolve(arg('supplied',`artifacts/bench/supplied/${brand.id}`)));}
+ catch(error){console.error(`[bench] stopped before any request:\n${error instanceof Error?error.message:error}`);await writeFile(join(out,'summary.json'),JSON.stringify({brand:brand.id,stopped:'BENCH_SUPPLIED_FILE_MISSING'},null,1));process.exitCode=2;return;}
+ await mkdir(pictures,{recursive:true});await writeResources(folder,input,catalog);
+ const entries=benchCatalogue(brand,pub);
  const started=Date.now();let result,stopped:string|undefined;
- try{result=await runV5Direction({input,folder,out,brandPack:benchBrandPack(brand),designerModel:o.designerModel,criticModel:o.criticModel,maxTurns:o.maxTurns,heroReviews:o.heroReviews,endReview:o.endReview,heroOnly:arg('hero-only','0')==='1',maxPictures:o.maxPictures,buy:fileDropPictures(pictures,pub,folder,input,catalog,o.waitMs),catalog,recordRequests:true,
+ try{result=await runV5Direction({input,folder,out,brandPack:benchBrandPack(brand),designerModel:o.designerModel,criticModel:o.criticModel,maxTurns:o.maxTurns,heroReviews:o.heroReviews,endReview:o.endReview,heroOnly:arg('hero-only','0')==='1',maxPictures:o.maxPictures,buy:fileDropPictures(pictures,pub,folder,input,catalog,o.waitMs),catalog,recordRequests:true,...(entries.length?{materials:{entries,budget:DEFAULT_MATERIAL_BUDGET} as unknown as RunContext['materials']}:{}),...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
   setup:{bin:arg('bin','claude'),cliVersion:'bench',isolation:{safeMode:true,restricted:true,noSessionPersistence:false,disableSlashCommands:true},sonnet:o.sonnet,schemaMode:'cli',visual:true,deviceId:'bench'}});}
  catch(error){stopped=`${error instanceof Error?error.message:error}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}`;console.error('[bench] stopped:',stopped);}
- await writeV5Summary(out,{brand:brand.id,version:5,designerModel:o.designerModel,criticModel:o.criticModel},started,result,stopped);
+ await writeV5Summary(out,{brand:brand.id,version:5,designerVersion:Number(input.brief.designerVersion),heroOnly:arg('hero-only','0')==='1',designerModel:o.designerModel,criticModel:o.criticModel},started,result,stopped);
 }
 
 main().catch(error=>{console.error(error instanceof Error?error.stack:error);process.exitCode=1;});

@@ -7,6 +7,7 @@ import {join} from 'node:path';
 import {loadImage} from '@napi-rs/canvas';
 import {writeResources} from '../../apps/local-runner/director/workspace';
 import type {DirectionInput,CatalogEntry,Resource} from '../../packages/director/types';
+import type {BenchBrand} from './brands';
 
 export type MissingBrandFile={kind:'font'|'logo'|'reference';url:string;label:string};
 const slug=(text:string)=>text.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
@@ -70,4 +71,16 @@ export function fileDropPictures(pictures:string,pub:string,folder:string,input:
   const entry={id:resource.id,url:file,thumbnail:file,width:image.width,height:image.height,sha256:'',mime:file.endsWith('png')?'image/png':'image/jpeg',revisionId:'bench',
    ...(cutImage?{cutout:{url:cutName,sha256:'',width:cutImage.width,height:cutImage.height,box:[0,0,1,1]}}:resource.cutout?{cutoutFailed:'no cutout file was put beside the picture'}:{})} as CatalogEntry;
   catalog.push(entry);await writeResources(folder,input,catalog);return entry;};
+}
+
+/** A bench brand's own files in the draft folder: its fonts, its logo files and the files its client supplied. A
+ * supplied file is a real picture (a product photograph): it is taken from <supplied>/<file> and cannot be invented
+ * here, so the bench stops before any request when it is not there, and says what the file must show. */
+export async function prepareBrandWorkspace(brand:BenchBrand,pub:string,supplied:string):Promise<void>{
+ for(const f of brand.fonts)await copyFile(f.source,join(pub,f.file));
+ await writeFile(join(pub,'logo.svg'),brand.logoSvg);
+ for(const l of brand.logos??[])await writeFile(join(pub,l.file),l.svg);
+ const missing=(brand.supplied??[]).filter(f=>!existsSync(join(supplied,f.file)));
+ if(missing.length)throw new Error(`BENCH_SUPPLIED_FILE_MISSING\n${missing.map(f=>`Put ${f.file} in ${supplied}. It is the client's own file: ${f.brief}`).join('\n')}`);
+ for(const f of brand.supplied??[])await copyFile(join(supplied,f.file),join(pub,f.file));
 }

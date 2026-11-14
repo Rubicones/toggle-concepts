@@ -156,6 +156,7 @@ export type DesignerLoopState={
  /** Live run 2026-11-14: the same build error in a row (three stops the direction with a question), and extra hero
   * turns granted by a retry after such a stop. */
  buildStuck?:{code:string;count:number};heroExtraTurns?:number;
+ /** Plan E5 (version 6): the time hero renders waited for pictures, in ms (shown per run; not a model cost). */pictureWaitMs?:number;
  hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;acceptedBy?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';/** why its review did not run */reviewError?:string;shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
 
 /** Point 4d: the designer's look at a render, as timeline lines. */

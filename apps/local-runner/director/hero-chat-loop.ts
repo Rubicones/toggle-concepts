@@ -5,7 +5,7 @@
 // the hero is accepted, the extension (stage E) continues in the same conversation (runDesigner). Tools are injected,
 // so the loop is tested without paid calls.
 import {heroScene,heroMeaning} from '../../../packages/director/designer';
-import {actionsCorrection,heroTask,parseHeroAnswer,renderNote,stageHFindings,type HeroAnswer} from '../../../packages/director/hero-chat';
+import {PICTURE_HOLD_SECONDS,actionsCorrection,heroTask,parseChatAnswer,heroActionsSchema,usesEdits,applyEdits,renderNote,stageHFindings,type HeroAnswer} from '../../../packages/director/hero-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
 import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
 import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
@@ -19,8 +19,13 @@ export type HeroTurnEvent={turn:number;idea:string;prose:string;files:string[];a
 /** How many turns stage H may use at most: the rest of the allowance is for the other scenes and formats. */
 export const HERO_TURN_SHARE=0.5;
 
+/** Plan E5: the longest a hero render waits for the pictures it asked for. Twice the longest wait measured on the bench
+ * (a picture delivered by hand took 40 to 120 s on 14 November); the time of a picture bought in production is not
+ * measured yet, so this bound is a starting value. */
+export const PICTURE_HOLD_MS=PICTURE_HOLD_SECONDS*1000;
 export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;tools:DesignerTools;call:HeroCall;save:(s:DesignerLoopState)=>Promise<void>;heroReviews?:number;
  conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;
+ /** Plan E5 (version 6): how long a render waits for the pictures asked for (default PICTURE_HOLD_MS), and a call when a wait starts. */pictureHoldMs?:number;onPictureWait?:(e:{pictures:number;holdMs:number})=>Promise<void>;
  /** D4 (version 5): three image ideas before any code; an independent selection picks one (at most one extra round). */
  ideas?:{task:string;select:(ideas:string,round:number)=>Promise<Selection|null>;/** why the selection returned nothing without an error (no review in the quote, its allowance used) */unreviewedReason?:()=>string|undefined;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
@@ -68,10 +73,15 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
   await args.conversation?.accept();
   if(due&&state.materialsDue?.length){state.materialsSeen=[...new Set([...(state.materialsSeen??[]),...state.materialsDue])];state.materialsDue=[];}
   state.transcript.push({from:'agent',text:text.slice(0,2000)});await args.save(state);
-  const answer:HeroAnswer=parseHeroAnswer(text),results:string[]=[],notes:string[]=[];let looked:string|undefined;let stuck:string|null=null;
+  const answer:HeroAnswer=parseChatAnswer(text,heroActionsSchema,{edits:usesEdits(input)}),results:string[]=[],notes:string[]=[];let looked:string|undefined;let stuck:string|null=null;
   try{
    // 1. Files: written whole, then built. A building change is rendered: the app shows it, as in a chat.
    for(const f of answer.files){await tools.write(f.path,f.source);results.push(`Saved ${f.path}.`);}
+   // Plan E4 (version 6): exact edits, applied in order to the files as they now stand; a refused edit is said in one
+   // line and the others still apply.
+   const edited=answer.edits?.length?applyEdits(await tools.files(),answer.edits):null;
+   if(edited){for(const f of edited.changed){await tools.write(f.path,f.source);results.push(`Changed ${f.path} (${f.edits} edit${f.edits===1?'':'s'}).`);}if(edited.refused.length){results.push(`${edited.refused.length} edit${edited.refused.length===1?' was':'s were'} not applied.`);notes.push(edited.refused.join('\n'));}}
+   const changedFiles=answer.files.length+(edited?.changed.length??0);
    const built=await tools.build();
    if(!built.ok){results.push('The code does not build yet.');notes.push(`The code does not build:\n${shortIssue(built.issue)}`);}
    stuck=buildStuck(state,built.ok?null:built.issue);
@@ -93,9 +103,24 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
     notes.push(made.status==='model'?`The 3D model of ${made.id} is ready: draw it with <Scene3D model={resources['${made.id}']} …/>; its picture stays the fallback.`:`No 3D model for ${made.id}: ${made.detail??'it could not be made'}. Keep the picture, or build the object in code.`);
    }
    // 3. The render: after every building change, or when asked.
-   if(built.ok&&(answer.files.length||actions.render)){
+   if(built.ok&&(changedFiles||actions.render)){
     // Version 6 (plan E1): the hero stage makes one frame with the reference words; the longest copy of another
     // hook or language is measured from stage E on, when the designer has been given it.
+    // Plan E5 (version 6): a picture asked for holds this render until it is ready, for a bounded time, so the
+    // designer sees the frame with its picture and no render is spent on a stand-in. The picture's file changes
+    // resources.ts, so the code is built again before the render.
+    if(heroMeaning(input)&&pending.size){
+     const holdMs=args.pictureHoldMs??PICTURE_HOLD_MS,waiting=[...pending.keys()].length,from=now();
+     await args.onPictureWait?.({pictures:waiting,holdMs});
+     let timer:ReturnType<typeof setTimeout>|undefined;
+     await Promise.race([Promise.allSettled([...pending.values()]),new Promise(r=>{timer=setTimeout(r,holdMs);})]);if(timer)clearTimeout(timer);
+     state.pictureWaitMs=(state.pictureWaitMs??0)+(now()-from);
+     const here=arrived.splice(0);
+     for(const p of here)notes.push(p.status==='ready'?`The picture ${p.id} has arrived and is in this render: read resources['${p.id}'].${p.cutout===true?` Its cutout is resources['${p.id}'].cutoutUrl.`:p.cutout===false?` ${p.detail??'The cutout failed; use the rectangle.'}`:''}`:`The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`);
+     if(pending.size)notes.push(`${pending.size===1?'One picture was':`${pending.size} pictures were`} not ready after ${Math.round(holdMs/1000)} s: this render is without ${pending.size===1?'it':'them'}, and ${pending.size===1?'it arrives':'they arrive'} in a later message.`);
+     if(here.some(p=>p.status==='ready')){const again=await tools.build();if(!again.ok)notes.push(`The code does not build with the picture in place:\n${shortIssue(again.issue)}`);}
+     results.push(here.length?`Waited for ${here.length===1?'the picture':`${here.length} pictures`}.`:'The picture was not ready in time.');
+    }
     const views=designerViews(input,hero.sceneId,[hero.format]).filter(v=>!heroMeaning(input)||v.shot),out=await tools.render(views);state.renders[renderKey(hero.sceneId,hero.format)]=(state.renders[renderKey(hero.sceneId,hero.format)]??0)+1;
     const findings=stageHFindings(out.summary.reports.flatMap(r=>r.findings)).sort((a,b)=>Number(b.severity==='hard')-Number(a.severity==='hard'));
     state.lastRender={sceneId:hero.sceneId,findings,views:views.filter(v=>v.shot).flatMap(v=>{const s=out.shots.find(x=>x.key===v.key);return s?[{label:v.label,file:s.file,width:v.props.width,height:v.props.height}]:[];})};
@@ -119,9 +144,9 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
     }
    }
   }catch(error){if(propagateExecutionFailure(error))throw error;stopOnEnvironmentFault(error);notes.push(`This step needs another attempt: ${(error instanceof Error?error.message:'').slice(0,300)}`);}
-  if(!answer.files.length&&!answer.actions&&!answer.actionsError)notes.push('No files and no actions in your answer: write the complete files in fenced code blocks with their paths.');
+  if(!answer.files.length&&!answer.edits?.length&&!answer.actions&&!answer.actionsError)notes.push('No files and no actions in your answer: write the complete files in fenced code blocks with their paths.');
   state.heroNote=notes.filter(Boolean).join('\n\n');state.transcript.push({from:'tool',text:state.heroNote.slice(0,2000)});await args.save(state);
-  await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:answer.files.map(f=>f.path),...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
+  await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:[...new Set([...answer.files.map(f=>f.path),...(answer.edits??[]).map(e=>e.path)])],...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
   // The same build error three times in a row: stop with a question instead of spending the turns on guesses.
   if(stuck){await args.save(state);throw Object.assign(new Error('DESIGNER_BUILD_STUCK'),{detail:`designer: the code failed to build three times in a row with the same error: ${stuck.slice(0,400)}`});}
  }
