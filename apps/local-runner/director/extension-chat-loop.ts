@@ -6,7 +6,7 @@
 import {parseChatAnswer,actionsCorrection} from '../../../packages/director/hero-chat';
 import {extensionActionsSchema,extensionNote,extensionPhase,nextRender,phaseLabels,sceneIdOf,sceneLabel,stageEMechanics,compactionSeed,variationVariants,type ExtensionPhase} from '../../../packages/director/extension-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
-import {propagateExecutionFailure} from '../../../packages/director/execution-failures';
+import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
 import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
 import type {InspectionView} from '../../../packages/director/layout-inspection';
@@ -99,9 +99,9 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
     if(missing.length||scenes.some(s=>!s.sceneId))notes.push(`Not finished: the finish names every scene exactly once (missing ${missing.join(', ')||'none'}).`);
     else{const done=built.ok?await tools.finish():{complete:false as const,issue:'The source does not build yet.'};
      if(done.complete){state.finish={intent:actions.finish.intent,scenes:scenes.map(s=>({sceneId:s.sceneId!,moment:s.moment.slice(0,160),...(s.motion?{motion:s.motion.slice(0,240)}:{}),...(s.sound?{sound:s.sound.slice(0,200)}:{})}))};state.complete=true;results.push('The draft is finished.');}
-     else notes.push(`Not finished yet: ${done.issue.slice(0,1200)}`);}
+     else{stopOnEnvironmentFault(done.issue);notes.push(`Not finished yet: ${done.issue.slice(0,1200)}`);}}
    }
-  }catch(error){if(propagateExecutionFailure(error))throw error;notes.push(`This step needs another attempt: ${(error instanceof Error?error.message:'').slice(0,300)}`);}
+  }catch(error){if(propagateExecutionFailure(error))throw error;stopOnEnvironmentFault(error);notes.push(`This step needs another attempt: ${(error instanceof Error?error.message:'').slice(0,300)}`);}
   if(!answer.files.length&&!answer.actions&&!answer.actionsError)notes.push('No files and no actions in your answer: write the complete files in fenced code blocks with their paths.');
   state.heroNote=notes.filter(Boolean).join('\n\n');state.transcript.push({from:'tool',text:state.heroNote.slice(0,2000)});await args.save(state);
   await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:answer.files.map(f=>f.path),...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});

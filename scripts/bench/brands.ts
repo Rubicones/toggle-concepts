@@ -18,6 +18,9 @@ export type BenchBrand={
  scenes:Scene[];
  /** Mode "client gave the words": the visual idea is the designer's. Mode "propose": this idea came with the hooks. */
  idea?:string;
+ /** Version 5: the territory visual direction chose for this direction (the designer's brief; its way of making is
+  * binding unless the designer says why not). */
+ territory?:{name:string;visualIdea:string;twoSeconds:string;productRole:string;makingTechnique:string;success:string};
 };
 
 const LOCALES=['en-GB','de-DE','tr-TR'],FORMATS=[['square',1080,1080],['vertical',1080,1920],['portrait',1080,1350],['wide',1920,1080]] as const;
@@ -163,6 +166,27 @@ export const brands:BenchBrand[]=[
    {id:'scene-2',notes:'The product as proof: the approval or the payroll run on the phone.',copy:{primary:{'en-GB':['Approve it','from wherever you are.'],'de-DE':['Freigeben,','wo immer Sie sind.'],'tr-TR':['Nerede olursanız olun','onaylayın.']},'hook-1':{'en-GB':['240 salaries.','One confirmation.'],'de-DE':['240 Gehälter.','Eine Bestätigung.'],'tr-TR':['240 maaş.','Tek onay.']}}},
    {id:'scene-3',notes:'The offer and the call to action.',copy:{primary:{'en-GB':['No monthly fee','for the first year'],'de-DE':['Keine Monatsgebühr','im ersten Jahr'],'tr-TR':['İlk yıl','aylık ücret yok']},'hook-1':{'en-GB':['No monthly fee','for the first year'],'de-DE':['Keine Monatsgebühr','im ersten Jahr'],'tr-TR':['İlk yıl','aylık ücret yok']}}},
   ]},
+ // Mirrors the live run of 2026-11-14: a calm premium B2B service whose chosen direction asks for ONE real photographed
+ // object, with all type set in code. The bench checks that the frame is that photograph, not a code-drawn stand-in.
+ {id:'ostrava',name:'Ostrava & Lind',category:'B2B service: document custody and records management for law firms',
+  fonts:[{family:'Lind Serif',file:'lind-serif.ttf',weight:'400',source:'/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf'},{family:'Lind Sans',file:'lind-sans.otf',weight:'500',source:'/usr/share/fonts/opentype/inter/Inter-Medium.otf'},{family:'Lind Sans',file:'lind-sans-semibold.otf',weight:'600',source:'/usr/share/fonts/opentype/inter/Inter-SemiBold.otf'}],
+  logoSvg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 120"><circle cx="56" cy="60" r="40" fill="none" stroke="currentColor" stroke-width="8"/><rect x="52" y="20" width="8" height="80" fill="currentColor"/><text x="120" y="88" font-family="Liberation Serif" font-size="76" fill="currentColor">Ostrava &amp; Lind</text></svg>`,
+  tokens:{'colour.ground':'#F4F1EA','colour.ink':'#1C2321','colour.green':'#2F4A3F','colour.brass':'#A8894F','colour.rule':'#D8D2C4','type.headline':'Lind Serif 400, sentence case, large, quiet, generous leading','type.label':'Lind Sans 600, small, upper case, wide tracking','type.body':'Lind Sans 500','voice.tone':'Quiet, exact, discreet. Speaks to a managing partner as an equal. One plain sentence. No exclamation marks, no superlatives.','graphic.gesture':'One real object on a calm ground, photographed in soft daylight; thin rules; a single brass detail; a lot of warm paper white.','logo.clearSpacePx':28},
+  character:'Temperament: discreet, unhurried, exact. Signature: warm paper-white ground, deep green-black type, one real object photographed in soft daylight, a single brass detail, thin rules. Proportions: 72% paper, 20% ink, 5% green, 3% brass. Speech: one plain sentence to a peer; it never raises its voice. Substance: the firm\'s own files in custody: a sealed archive box with its label, the retrieval within two hours, the audit trail of who opened what.',
+  product:'Ostrava & Lind keeps a law firm\'s closed files in custody and returns any file to the partner\'s desk within two hours, with a record of every hand it passed through.',
+  offer:'A custody review of your archive, free, in two weeks',audience:'Managing partners and practice managers of law firms with 40 to 400 lawyers whose closed files sit in basements and rented units.',
+  hooks:{primary:'the file you cannot find',"hook-1":'who opened it'},
+  cta:{'en-GB':['Book a custody review'],'de-DE':['Verwahrungsprüfung buchen'],'tr-TR':['Saklama incelemesi alın']},
+  scenes:[
+   {id:'scene-1',notes:'The file a partner needs today and nobody can find.',copy:{primary:{'en-GB':['The file is somewhere.','That is not an answer.'],'de-DE':['Die Akte ist irgendwo.','Das ist keine Antwort.'],'tr-TR':['Dosya bir yerlerde.','Bu bir cevap değil.']},'hook-1':{'en-GB':['Who opened it last?','You should know.'],'de-DE':['Wer hatte sie zuletzt?','Das sollten Sie wissen.'],'tr-TR':['En son kim açtı?','Bilmeniz gerekir.']}}},
+   {id:'scene-2',notes:'The service as proof: one sealed archive box, labelled, in custody.',copy:{primary:{'en-GB':['On your desk','within two hours.'],'de-DE':['Auf Ihrem Tisch','in zwei Stunden.'],'tr-TR':['İki saat içinde','masanızda.']},'hook-1':{'en-GB':['Every hand','on record.'],'de-DE':['Jede Hand','dokumentiert.'],'tr-TR':['Her el','kayıt altında.']}}},
+   {id:'scene-3',notes:'The offer and the call to action.',copy:{primary:{'en-GB':['A custody review','free, in two weeks'],'de-DE':['Eine Verwahrungsprüfung','kostenlos, in zwei Wochen'],'tr-TR':['Saklama incelemesi','ücretsiz, iki haftada']},'hook-1':{'en-GB':['A custody review','free, in two weeks'],'de-DE':['Eine Verwahrungsprüfung','kostenlos, in zwei Wochen'],'tr-TR':['Saklama incelemesi','ücretsiz, iki haftada']}}},
+  ],
+  territory:{name:'One box',visualIdea:'One real archive box, sealed and labelled, is the whole picture. It stands for every file the firm has ever closed: found, kept, accounted for. It fits this brand because the service is custody of physical things, and the brand speaks through one quiet, exact object rather than through many.',
+   twoSeconds:'The viewer sees a single sealed box in calm daylight and understands that their files could be this findable.',
+   productRole:'The box is the service made visible: its seal, its label and its brass tag are the proof. Nothing else competes with it.',
+   makingTechnique:'One photograph of one real archive box in soft daylight on a warm paper-white ground, generated as a picture. All type, the logo, rules and the call to action are set in code over and beside the photograph. No interface, no illustration, no code-drawn stand-in for the box.',
+   success:'With the logo covered, a managing partner still reads it as a custody service, and remembers the box.'}},
 ];
 
 /** The draft input the pipeline would hand the designer for this brand (designer blocks, statics, square first). */
@@ -179,3 +203,14 @@ export function benchInput(brand:BenchBrand):DirectionInput{
   brief:{product:brand.product,offer:brand.offer,cta:brand.cta['en-GB'][0],audience:brand.audience,designerVersion:2,squarePreviewVersion:0,pictureRulesVersion:1,finalNotesVersion:1,promptVersion:2,synthesisAllowed:true},
   assets:[],formats,variants,resourceIds:['picture-1','picture-2','picture-3'],variantFacts} as unknown as DirectionInput;
 }
+
+/** Version 5 input (a new shared Local run's designer block): digest and materials on, the territory in the handoff as
+ * visual direction writes it, pictures allowed. */
+export function benchInputV5(brand:BenchBrand):DirectionInput{
+ const base=benchInput(brand),t=brand.territory;
+ return {...base,brief:{...base.brief,designerVersion:5,materialsVersion:1,digestVersion:1,synthesis:'Everything',synthesisAllowed:true},brand:{...base.brand,tokens:{...base.brand.tokens,'brand.character':brand.character}},resourceIds:['picture-1','picture-2','picture-3','picture-4'],
+  creativeHandoff:{version:1,owner:'draft-director',revision:'bench',intent:{goal:brand.offer,audience:brand.audience,adNotes:null,direction:{id:'concept-1',name:t?.name??brand.name,premise:brand.idea??brand.product}},strategy:{promise:brand.product,audience:brand.audience,offer:brand.offer},
+   visual:t?{selected:[{path:'treatments[0]',evidence:{conceptId:'concept-1',name:t.name,visualIdea:t.visualIdea,twoSeconds:t.twoSeconds,productRole:t.productRole,makingTechnique:t.makingTechnique,success:t.success}}]}:{selected:[]},sources:[],referenceAssetIds:[],issues:[],actions:[]}} as unknown as DirectionInput;
+}
+/** The brand pack text a run context holds for a bench brand: its character and its rules. */
+export const benchBrandPack=(brand:BenchBrand)=>`BRAND CHARACTER\n${brand.character}\n\nBRAND RULES\n${Object.entries(brand.tokens).map(([k,v])=>`${k}: ${v}`).join('\n')}`;

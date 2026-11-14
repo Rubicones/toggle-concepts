@@ -44,6 +44,18 @@ process.stdin.on('end',()=>{
  if(scenario==='structured'){const v=JSON.parse(resumedCall&&process.env.FAKE_CLAUDE_STRUCTURED_RESUMED?process.env.FAKE_CLAUDE_STRUCTURED_RESUMED:process.env.FAKE_CLAUDE_STRUCTURED??'{}');
   out({type:'assistant',message:{content:[{type:'tool_use',name:'StructuredOutput',input:v}]}});
   out({type:'result',subtype:'success',is_error:false,result:'A response was prepared.',structured_output:v,usage,num_turns:2,session_id:sessionId,stop_reason:'tool_use',total_cost_usd:0.001});return;}
+ // A scripted conversation (rehearsals): FAKE_CLAUDE_SCRIPT is a JSON file with an array of answers, one per call in
+ // order (a string, or {match,text} picked by the first entry whose `match` occurs in the request); the position is
+ // kept beside it. Each request is recorded under FAKE_CLAUDE_RECORD_DIR as NN.json when set.
+ if(scenario==='script'){const file=process.env.FAKE_CLAUDE_SCRIPT,counter=`${file}.n`;let at=0;try{at=Number(readFileSync(counter,'utf8'))||0;}catch{}
+  const list=JSON.parse(readFileSync(file,'utf8')),all=texts.join('\n'),keyed=list.find(e=>typeof e==='object'&&e.match&&!e.used&&all.includes(e.match));
+  const sequential=list.filter(e=>typeof e==='string'||!e.match),entry=keyed??sequential[Math.min(at,sequential.length-1)],text=typeof entry==='string'?entry:entry.text;
+  if(!keyed)writeFileSync(counter,String(at+1));
+  const calls=`${file}.calls`;let count=0;try{count=Number(readFileSync(calls,'utf8'))||0;}catch{}writeFileSync(calls,String(count+1));
+  if(process.env.FAKE_CLAUDE_RECORD_DIR)writeFileSync(`${process.env.FAKE_CLAUDE_RECORD_DIR}/${String(count+1).padStart(2,'0')}.json`,JSON.stringify({args,system,content:content.map(c=>c.type==='image'?{type:'image',bytes:c.source?.data?.length??0}:c),resumed,sessionId}));
+  const u={input_tokens:4,output_tokens:Math.ceil(text.length/4),cache_creation_input_tokens:Math.ceil(all.length/4),cache_read_input_tokens:resumed?20000:0,cache_creation:{ephemeral_1h_input_tokens:Math.ceil(all.length/4)}};
+  out({type:'assistant',message:{content:[{type:'text',text}],usage:u}});
+  out({type:'result',subtype:'success',is_error:false,result:text,usage:u,num_turns:1,session_id:sessionId,stop_reason:'end_turn',total_cost_usd:0.01*(count+1)});return;}
  // C7 follow-up: a text answer (FAKE_CLAUDE_ANSWER), and another one for a resumed call (FAKE_CLAUDE_ANSWER_RESUMED).
  if(scenario==='text'){const text=resumedCall&&process.env.FAKE_CLAUDE_ANSWER_RESUMED!==undefined?process.env.FAKE_CLAUDE_ANSWER_RESUMED:process.env.FAKE_CLAUDE_ANSWER??'';
   out({type:'assistant',message:{content:[{type:'text',text}],usage}});
