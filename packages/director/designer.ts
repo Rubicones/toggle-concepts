@@ -15,6 +15,11 @@ export const heroFirst=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.
 /** Engine rebuild (designerVersion 3): the draft is built on the neutral engine kit ('./kit'), and one render may show
  * several scenes. Earlier blocks run exactly as before. */
 export const usesEngineKit=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.designerVersion)>=3;
+/** Plan E1 (designerVersion 6): the hero stage gets one scene's meaning. The hero task names what the scene must make
+ * the viewer understand (the script's own words, no longer labelled as what it shows), the hero stage reads a hero-only
+ * digest, and the hero render measures the reference copy only; everything else arrives when stage E opens. Version 5
+ * blocks keep their exact texts. */
+export const heroMeaning=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.designerVersion)>=6;
 /** Chat-shaped plan C3 (brief.materialsVersion 1, engine-kit blocks of shared Local runs): the designer may name up to
  * four catalogue entries per turn; they arrive with the next turn. Earlier blocks keep their exact requests. */
 export const usesMaterials=(input:Pick<DirectionInput,'brief'>)=>usesEngineKit(input)&&Number(input.brief.materialsVersion)===1;

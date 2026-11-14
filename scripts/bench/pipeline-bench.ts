@@ -8,6 +8,8 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {brands,benchInput,benchInputV5,benchBrandPack,type BenchBrand} from './brands';
 import {runV5Direction} from './v5-direction';
+import {fileDropPictures,missingBrandFiles,fillBrandFonts,missingBrandFilesMessage} from './export-files';
+import type {RunContext} from '../../packages/agents/run-context';
 import {createWorkspace,writeResources} from '../../apps/local-runner/director/workspace';
 import {designerTools,provisionalDesign} from '../../apps/local-runner/director/designer-run';
 import {designerViews,screenshotForDesigner,runDesigner,newDesignerState} from '../../apps/local-runner/director/designer-loop';
@@ -30,6 +32,8 @@ async function main(){
  // E0 reproduction: the hero stage (or the whole direction) of a real run, from its export folder. Nothing of the export
  // is copied into the repository; the run folder is read where it is.
  //   node --import tsx scripts/bench/pipeline-bench.ts --from-export=<export folder> [--hero-only=1] [--direction=0]
+ //     [--designer=6] the designer version to run (default: the export's own)  [--fonts=<folder>] font files the export lacks
+ //     [--allow-missing=1] run although brand files are missing (the summary names them)
  const exported=arg('from-export','');if(exported){await benchFromExport(resolve(exported));return;}
  const brand=brands.find(b=>b.id===process.argv[2]);if(!brand)throw new Error(`Brand: ${brands.map(b=>b.id).join(' | ')}`);
  const maxTurns=Number(arg('turns','12')),model=arg('model','claude-sonnet-5-5'),effort=arg('effort','high'),version=Number(arg('version','3'));
@@ -149,19 +153,6 @@ async function main(){
  await rm(dir,{recursive:true,force:true});
 }
 
-/** The picture stand-in of the bench: the request is written to <pictures>/<id>.request.json and the bench waits for
- * <id>.png or <id>.jpg beside it (made by hand); without it the designer is told the picture could not be made. */
-function fileDropPictures(pictures:string,pub:string,folder:string,input:DirectionInput,catalog:CatalogEntry[],waitMs:number){
- return async(resource:Resource)=>{
-  await writeFile(join(pictures,`${resource.id}.request.json`),JSON.stringify({id:resource.id,scene:resource.scene,purpose:resource.purpose,prompt:resource.prompt,aspect:resource.aspect,cutout:!!resource.cutout,mustNotContain:resource.mustNotContain},null,1));
-  console.error(`[bench] picture asked: ${join(pictures,`${resource.id}.request.json`)} — put ${resource.id}.png or .jpg beside it within ${Math.round(waitMs/1000)} s`);
-  const until=Date.now()+waitMs;let file:string|undefined;
-  while(!file&&Date.now()<until){for(const ext of ['png','jpg'])if(await readFile(join(pictures,`${resource.id}.${ext}`)).then(()=>true,()=>false))file=`${resource.id}.${ext}`;if(!file)await new Promise(r=>setTimeout(r,3000));}
-  if(!file)return undefined;
-  const bytes=await readFile(join(pictures,file)),image=await loadImage(bytes);await writeFile(join(pub,file),bytes);
-  const entry={id:resource.id,url:file,thumbnail:file,width:image.width,height:image.height,sha256:'',mime:file.endsWith('png')?'image/png':'image/jpeg',revisionId:'bench',...(resource.cutout?{cutoutFailed:'not available on the bench'}:{})} as CatalogEntry;
-  catalog.push(entry);await writeResources(folder,input,catalog);return entry;};
-}
 async function writeV5Summary(out:string,label:Record<string,unknown>,started:number,result:Awaited<ReturnType<typeof runV5Direction>>|undefined,stopped:string|undefined){
  if(!result){await writeFile(join(out,'summary.json'),JSON.stringify({...label,stopped},null,1));return;}
  await writeFile(join(out,'timeline.txt'),result.timeline.join('\n')+'\n');
@@ -179,18 +170,27 @@ async function benchFromExport(folder:string){
  const read=async(p:string)=>JSON.parse(await readFile(join(folder,p),'utf8'));
  const blocks=await read('database/studio_director_blocks.json') as {snapshot:{inputs:DirectionInput[]}}[],input=structuredClone(blocks.at(-1)!.snapshot.inputs[Number(arg('direction','0'))]);
  if(!input)throw new Error('The export has no direction at that index.');
- const context=await read('device/run-context.json') as {system:string;brief:string},pack=context.system.slice(context.system.indexOf('\n',context.system.indexOf('BRAND PACK'))+1),brief=context.brief.slice(context.brief.indexOf('\n')+1);
- const out=resolve(arg('out','artifacts/bench'),`export-${input.directionId.slice(0,8)}-v5${arg('hero-only','0')==='1'?'-hero':''}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);await mkdir(out,{recursive:true});
+ const context=await read('device/run-context.json') as {system:string;brief:string;materials?:RunContext['materials']},pack=context.system.slice(context.system.indexOf('\n',context.system.indexOf('BRAND PACK'))+1),brief=context.brief.slice(context.brief.indexOf('\n')+1);
+ const out=resolve(arg('out','artifacts/bench'),`export-${input.directionId.slice(0,8)}-v${Number(arg('designer','0'))||5}${arg('hero-only','0')==='1'?'-hero':''}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);await mkdir(out,{recursive:true});
  process.env.TOGGLE_HOME??=resolve(out,'home');
  const workspace=await createWorkspace(resolve(out,'workspace'),input),pub=join(workspace,'public'),source=join(folder,'designer',input.directionId.slice(0,8),'workspace','public');
  await cp(source,pub,{recursive:true}).catch(()=>{throw new Error(`The export has no workspace files at ${source}: export the run on the computer that made the draft.`);});
+ // Brand files: the fonts, logos and references the direction's input names must be in the workspace, or the frame is
+ // not the brand's (a missing font file draws every line in a fallback and the designer spends turns finding out why).
+ // Font files the export lacks: first the app's own font files (public/fixtures; taken only when their bytes are the
+ // stored file's), then the folder given with --fonts.
+ const fontsFrom=arg('fonts',''),filled=[...await fillBrandFonts(input,pub,resolve('public/fixtures')),...(fontsFrom?await fillBrandFonts(input,pub,resolve(fontsFrom)):[])];
+ if(filled.length)console.error(`[bench] font files filled: ${filled.map(f=>`${f.from}${f.exact?'':' (stand-in, not the stored file)'}`).join(', ')}`);
+ const missing=missingBrandFiles(input,pub);
+ if(missing.length&&arg('allow-missing','0')!=='1'){console.error(`[bench] stopped before any request:\n${missingBrandFilesMessage(missing)}`);await writeFile(join(out,'summary.json'),JSON.stringify({source:'export',stopped:'BRAND_FILES_MISSING',missingBrandFiles:missing},null,1));process.exitCode=2;return;}
+ const designerVersion=Number(arg('designer','0'));if(designerVersion)input.brief={...input.brief,designerVersion} as DirectionInput['brief'];
  const catalog:CatalogEntry[]=[],pictures=resolve(out,'pictures');await mkdir(pictures,{recursive:true});await writeResources(workspace,input,catalog);
  const started=Date.now();let result,stopped:string|undefined;
  try{result=await runV5Direction({input,folder:workspace,out,brandPack:pack,briefText:brief,designerModel:arg('designer-model','anthropic/claude-opus-5.5'),criticModel:arg('critic-model','google/gemini-4-argon'),maxTurns:Number(arg('turns','24')),heroReviews:Number(arg('reviews','2')),endReview:arg('endreview','1')==='1',heroOnly:arg('hero-only','0')==='1',
-  maxPictures:Number(arg('pictures','4')),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000),catalog,recordRequests:true,
+  maxPictures:Number(arg('pictures','4')),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000),catalog,recordRequests:true,materials:context.materials,brandFileEntries:true,
   setup:{bin:arg('bin','claude'),cliVersion:'bench',isolation:{safeMode:true,restricted:true,noSessionPersistence:false,disableSlashCommands:true},sonnet:arg('sonnet','claude-sonnet-5-5'),schemaMode:'cli',visual:true,deviceId:'bench'}});}
  catch(error){stopped=`${error instanceof Error?error.message:error}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}`;console.error('[bench] stopped:',stopped);}
- await writeV5Summary(out,{source:'export',direction:input.directionId.slice(0,8),version:5,heroOnly:arg('hero-only','0')==='1'},started,result,stopped);
+ await writeV5Summary(out,{source:'export',direction:input.directionId.slice(0,8),version:5,designerVersion:Number(input.brief.designerVersion),heroOnly:arg('hero-only','0')==='1',missingBrandFiles:missing.map(m=>m.label),fontsFilled:filled,catalogueEntries:context.materials?.entries.length??0},started,result,stopped);
 }
 /** One version 5 direction on the real CLI. Pictures: the request is written to <out>/pictures/<id>.request.json and the
  * bench waits for <id>.png or <id>.jpg beside it (made by hand); without it the designer is told the picture failed. */

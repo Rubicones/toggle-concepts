@@ -4,7 +4,7 @@
 // render and a short plain note. The hero review is a separate request; its notes come back as the next message. When
 // the hero is accepted, the extension (stage E) continues in the same conversation (runDesigner). Tools are injected,
 // so the loop is tested without paid calls.
-import {heroScene} from '../../../packages/director/designer';
+import {heroScene,heroMeaning} from '../../../packages/director/designer';
 import {actionsCorrection,heroTask,parseHeroAnswer,renderNote,stageHFindings,type HeroAnswer} from '../../../packages/director/hero-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
 import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
@@ -34,7 +34,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
    // The ideas turn is a turn of the designer's own conversation: decided and accepted like every other, so the build
    // continues it and reads the ideas it wrote.
    await args.conversation?.decide();
-   const text=await args.call(ideas.rounds===0?`${heroTask(input)}\n\n${args.ideas.task}`:ideasAgain(ideas.notes??[]),[]);
+   const text=await args.call(ideas.rounds===0?`${heroTask(input,{pictures:args.maxPictures})}\n\n${args.ideas.task}`:ideasAgain(ideas.notes??[]),[]);
    await args.conversation?.accept();
    state.turn++;ideas.rounds++;ideas.texts=[...(ideas.texts??[]),text.slice(0,8000)];await args.save(state);
    await args.ideas.onIdeas?.(ideaCards(text),text,ideas.rounds);
@@ -57,7 +57,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
   const last=state.lastRender,shots=last?await Promise.all(last.views.map(async v=>({url:await screenshotForDesigner(v.file,RENDER_LONG_SIDE),label:`${v.label} (rendered)`}))):[];
   // A new or restarted conversation gets the task again, with the files so far and the last note.
   const files=await tools.files(),opening=state.turn===0||!short;
-  const message=[opening?heroTask(input):'',opening&&state.turn>0?`YOUR FILES SO FAR\n${files.map(f=>`\`\`\`tsx ${f.path}\n${f.source}\n\`\`\``).join('\n')}`:'',state.heroNote??'',...pictures,due?.text??''].filter(Boolean).join('\n\n');
+  const message=[opening?heroTask(input,{pictures:args.maxPictures}):'',opening&&state.turn>0?`YOUR FILES SO FAR\n${files.map(f=>`\`\`\`tsx ${f.path}\n${f.source}\n\`\`\``).join('\n')}`:'',state.heroNote??'',...pictures,due?.text??''].filter(Boolean).join('\n\n');
   let text:string;
   try{text=await args.call(message,[...shots,...(due?.images??[])]);}
   catch(error){
@@ -75,7 +75,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
    const built=await tools.build();
    if(!built.ok){results.push('The code does not build yet.');notes.push(`The code does not build:\n${shortIssue(built.issue)}`);}
    stuck=buildStuck(state,built.ok?null:built.issue);
-   if(answer.actionsError){results.push('The actions block could not be read.');notes.push(actionsCorrection(answer.actionsError));}
+   if(answer.actionsError){results.push(answer.actions?'Part of the actions block could not be read.':'The actions block could not be read.');notes.push(answer.actions?`Part of your actions block could not be read (${answer.actionsError}); the rest was carried out.`:actionsCorrection(answer.actionsError));}
    const actions=answer.actions??{};
    // 2. Materials and pictures, inside their budgets; pictures arrive in a later message.
    if(actions.materials?.length){if(!tools.materials)notes.push('Materials are not available in this draft.');else{const asked=await tools.materials.fetch(actions.materials,[...(state.materialsSeen??[]),...(state.materialsDue??[])]);state.materialsDue=[...new Set([...(state.materialsDue??[]),...asked.attached])];notes.push(asked.lines.join('\n'));results.push(...asked.lines);}}
@@ -94,7 +94,9 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
    }
    // 3. The render: after every building change, or when asked.
    if(built.ok&&(answer.files.length||actions.render)){
-    const views=designerViews(input,hero.sceneId,[hero.format]),out=await tools.render(views);state.renders[renderKey(hero.sceneId,hero.format)]=(state.renders[renderKey(hero.sceneId,hero.format)]??0)+1;
+    // Version 6 (plan E1): the hero stage makes one frame with the reference words; the longest copy of another
+    // hook or language is measured from stage E on, when the designer has been given it.
+    const views=designerViews(input,hero.sceneId,[hero.format]).filter(v=>!heroMeaning(input)||v.shot),out=await tools.render(views);state.renders[renderKey(hero.sceneId,hero.format)]=(state.renders[renderKey(hero.sceneId,hero.format)]??0)+1;
     const findings=stageHFindings(out.summary.reports.flatMap(r=>r.findings)).sort((a,b)=>Number(b.severity==='hard')-Number(a.severity==='hard'));
     state.lastRender={sceneId:hero.sceneId,findings,views:views.filter(v=>v.shot).flatMap(v=>{const s=out.shots.find(x=>x.key===v.key);return s?[{label:v.label,file:s.file,width:v.props.width,height:v.props.height}]:[];})};
     hero.shots=state.lastRender.views.map(v=>({label:v.label,file:v.file}));looked=hero.shots[0]?.file;

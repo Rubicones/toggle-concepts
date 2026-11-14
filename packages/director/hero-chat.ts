@@ -5,7 +5,7 @@
 import {z} from 'zod';
 import type {Finding} from './layout-inspection';
 import type {DirectionInput} from './types';
-import {heroScene,usesEngineKit} from './designer';
+import {heroScene,usesEngineKit,heroMeaning} from './designer';
 
 /** Blocks quoted with designerVersion 4: the hero frame is designed as a chat (stage H), then extended (stage E). */
 export const heroChat=(input:Pick<DirectionInput,'brief'>)=>usesEngineKit(input)&&Number(input.brief.designerVersion)>=4;
@@ -21,6 +21,29 @@ export type ChatAnswer<A>={prose:string;files:{path:string;source:string}[];acti
 export type HeroAnswer=ChatAnswer<HeroActions>;
 export const parseHeroAnswer=(text:string):HeroAnswer=>parseChatAnswer(text,heroActionsSchema);
 
+/** Reads an actions block as forgivingly as its meaning allows (bench run of 2026-11-14: a first build answer asked for
+ * its photograph, a render and a material in one block; `materials` held a bare name and the picture an extra `id`, the
+ * whole block was refused and the picture was asked a turn later). A material given as a bare name is that name; keys
+ * the app does not know are dropped; a part that still does not read is reported, and the parts that do are carried out. */
+function readActions<A>(raw:unknown,schema:z.ZodType<A>):{actions:A|null;error?:string}{
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))return {actions:null,error:'block: it must be one JSON object'};
+ const block={...(raw as Record<string,unknown>)};
+ if(Array.isArray(block.materials))block.materials=block.materials.map(m=>typeof m==='string'?{name:m,why:'asked by name'}:m&&typeof m==='object'&&typeof (m as {name?:unknown}).name==='string'&&!(m as {why?:unknown}).why?{...m as object,why:'asked by name'}:m);
+ const strip=(value:unknown,issues:z.core.$ZodIssue[],at:PropertyKey[]):unknown=>{
+  const out=structuredClone(value);
+  for(const issue of issues)if(issue.code==='unrecognized_keys'){let node=out as Record<PropertyKey,unknown>|undefined;for(const key of issue.path.slice(at.length))node=node?.[key] as Record<PropertyKey,unknown>|undefined;if(node&&typeof node==='object')for(const key of (issue as {keys:string[]}).keys)delete (node as Record<string,unknown>)[key];}
+  return out;};
+ const whole=schema.safeParse(block);if(whole.success)return {actions:whole.data};
+ // An unknown key inside a part (an extra field of a picture) is dropped quietly; an unknown part is dropped and said,
+ // because it may be something the designer expected to happen.
+ const unknown=whole.error.issues.filter(i=>i.code==='unrecognized_keys'&&i.path.length===0).flatMap(i=>(i as {keys:string[]}).keys),said=unknown.length?`Unrecognized key${unknown.length===1?'':'s'} ${unknown.map(k=>`"${k}"`).join(', ')}: ignored`:undefined;
+ const cleaned=strip(block,whole.error.issues,[]),second=schema.safeParse(cleaned);if(second.success)return {actions:second.data,...(said?{error:said}:{})};
+ // Part by part: each top-level key on its own, so one unreadable part does not lose the others.
+ const kept:Record<string,unknown>={},problems:string[]=[];
+ for(const [key,value] of Object.entries(cleaned as Record<string,unknown>)){const one=schema.safeParse({[key]:value});if(one.success)kept[key]=value;else problems.push(...one.error.issues.slice(0,2).map(i=>`${i.path.join('.')||key}: ${i.message}`));}
+ const partial=Object.keys(kept).length?schema.safeParse(kept):null;
+ return {actions:partial?.success?partial.data:null,error:[...(said?[said]:[]),...problems.slice(0,3)].join('; ')||'it could not be read'};
+}
 /** Reads a chat answer. Files without a readable path and a malformed actions block are reported, never fatal. */
 export function parseChatAnswer<A>(text:string,schema:z.ZodType<A>):ChatAnswer<A>{
  const fence=/```([^\n`]*)\n([\s\S]*?)```/g,files:{path:string;source:string}[]=[],prose:string[]=[];let last=0,actionsText:string|undefined,m:RegExpExecArray|null;
@@ -38,7 +61,10 @@ export function parseChatAnswer<A>(text:string,schema:z.ZodType<A>):ChatAnswer<A
  }
  prose.push(text.slice(last));
  let actions:A|null=null,actionsError:string|undefined;
- if(actionsText!==undefined){try{actions=schema.parse(JSON.parse(actionsText));}catch(error){actionsError=error instanceof SyntaxError?'it is not valid JSON':error instanceof z.ZodError?error.issues.slice(0,3).map(i=>`${i.path.join('.')||'block'}: ${i.message}`).join('; '):'it could not be read';}}
+ if(actionsText!==undefined){
+  let raw:unknown;try{raw=JSON.parse(actionsText);}catch{actionsError='it is not valid JSON';}
+  if(actionsError===undefined){const read=readActions(raw,schema);actions=read.actions;if(read.error)actionsError=read.error;}
+ }
  return {prose:prose.join('').replace(/\n{3,}/g,'\n\n').trim(),files,actions,...(actionsError?{actionsError}:{}),raw:actionsText!==undefined?{actions:actionsText}:{}};
 }
 /** The one-line correction for a malformed actions block: the files of that answer were applied. */
@@ -56,8 +82,38 @@ export function renderNote(findings:Pick<Finding,'severity'|'detail'|'view'>[],v
   soft.length?`Measured, for you to weigh against your idea (a deliberate choice stays; say so in your prose):\n${soft.slice(0,12).map(f=>`- ${f.detail}`).join('\n')}`:''].filter(Boolean).join('\n\n');
 }
 
+/** The hero scene's brief as data: what it must make the viewer understand (the script's words), what proves it, and its
+ * approved words in the reference copy. Used by the version 6 hero task and by the timeline's "Key frame brief". */
+export function heroBrief(input:DirectionInput){
+ const hero=heroScene(input),index=input.storyboard.findIndex(s=>s.id===hero),scene=input.storyboard[index],reference=input.variants[0];
+ const format=input.formats.find(f=>f.id===reference?.format)??input.formats[0],lines=(reference?input.variantFacts?.[reference.id]?.sceneCopy[hero]:undefined)??scene?.copy??[];
+ return {number:index+1,of:input.storyboard.length,format,locale:reference?.locale,meaning:scene?.visualNotes.replace(/\s+/g,' ').slice(0,400)??'',proof:scene?.proof??'',lines};
+}
+/** The timeline's line when a version 6 hero stage starts. */
+export function heroBriefLine(input:DirectionInput){
+ const b=heroBrief(input);
+ return `Key frame brief: what this scene must say. ${b.meaning}${b.proof?` Proof: ${b.proof}`:''} Words: ${b.lines.length?b.lines.map(l=>`"${l}"`).join(' / '):'none'}`.slice(0,900);
+}
+const HERO_CODE_NOTE=(pictures:string)=>`WHAT YOUR CODE CAN USE
+Frame.tsx default-exports one React component with props {width,height} that draws this frame at exactly that size. From './brand': brand.tokens (the accepted rules as strings), brand.logos (draw one with <Img src={staticFile(logo.url)} data-brand-logo={logo.id}/>), resources (pictures you asked for, by the id the app gives you). The brand's fonts are loaded by family name. './kit' has optional helpers (fitText, measure, contrast); './kit3d' draws a code-built 3D object or scene (ask for the material kit-3d to see how). Any CSS, SVG, masks, blend modes and filters work. Do not write a previewOptions export for this frame: the app lists the variations itself.${pictures}
+
+Answer as you would in a chat: first your idea in prose, then the complete files in fenced code blocks with their paths (\`\`\`tsx Frame.tsx), then, if you need it, one fenced actions block with JSON: {"render":true} to see it, {"pictures":[…]} to ask for pictures (purpose, prompt, aspect, references by file name, cutout), {"materials":[…]} to look at brand materials by name, {"review":true} when the frame is finished. Every change of code is rendered for you.`;
+/** Version 6 (plan E1b): the task names the scene's meaning, its proof and its words; nothing from planning says what
+ * the frame looks like. `pictures` is the approved number of pictures for the direction, when the caller knows it. */
+function heroTaskV6(input:DirectionInput,o:{pictures?:number}){
+ const b=heroBrief(input),p=o.pictures;
+ const pictures=p===undefined?'':p>0?`\n\nPICTURES\nYou may ask for up to ${p} picture${p===1?'':'s'} in this direction, for all its scenes together. A picture takes a minute or more to make and arrives in a later message, not in the next render: ask for the ones this frame needs in the same answer as your first build, and build the frame so the picture takes its place when it arrives.`:'\n\nPICTURES\nNo pictures are approved for this direction: build everything in code and from the supplied files.';
+ return `THE HERO FRAME
+Make Scene ${b.number} of ${b.of} as one finished frame in ${b.format?`${b.format.width}×${b.format.height}`:'the reference format'}. This frame alone, in this one size, with these words; the other scenes, formats and variations come after it is accepted.
+What it must make the viewer understand: ${b.meaning}${b.proof?`\nWhat proves it: ${b.proof}`:''}
+Its approved words${b.locale?` (${b.locale})`:''}, exactly as written, nothing added: ${b.lines.length?b.lines.map(l=>`"${l}"`).join(' / '):'none'}
+What the frame shows is yours to decide.
+
+${HERO_CODE_NOTE(pictures)}`;
+}
 /** The first message of stage H: the task, the hero's words and what the code can use. Scenes by name only. */
-export function heroTask(input:DirectionInput){
+export function heroTask(input:DirectionInput,o:{pictures?:number}={}){
+ if(heroMeaning(input))return heroTaskV6(input,o);
  const hero=heroScene(input),index=input.storyboard.findIndex(s=>s.id===hero),scene=input.storyboard[index],reference=input.variants[0];
  const format=input.formats.find(f=>f.id===reference?.format)??input.formats[0],lines=(reference?input.variantFacts?.[reference.id]?.sceneCopy[hero]:undefined)??scene?.copy??[];
  return `THE HERO FRAME

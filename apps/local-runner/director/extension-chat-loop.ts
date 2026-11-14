@@ -57,7 +57,7 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
    for(const f of answer.files){await tools.write(f.path,f.source);results.push(`Saved ${f.path}.`);}
    const built=await tools.build();if(!built.ok){results.push('The code does not build yet.');notes.push(`The code does not build:\n${shortIssue(built.issue)}`);}
    stuck=buildStuck(state,built.ok?null:built.issue);
-   if(answer.actionsError){results.push('The actions block could not be read.');notes.push(actionsCorrection(answer.actionsError));}
+   if(answer.actionsError){results.push(answer.actions?'Part of the actions block could not be read.':'The actions block could not be read.');notes.push(answer.actions?`Part of your actions block could not be read (${answer.actionsError}); the rest was carried out.`:actionsCorrection(answer.actionsError));}
    if(actions.notes){state.notes=actions.notes;}
    if(actions.materials?.length&&tools.materials){const asked=await tools.materials.fetch(actions.materials,[...(state.materialsSeen??[]),...(state.materialsDue??[])]);state.materialsDue=[...new Set([...(state.materialsDue??[]),...asked.attached])];notes.push(asked.lines.join('\n'));}
    for(const p of actions.pictures??[]){

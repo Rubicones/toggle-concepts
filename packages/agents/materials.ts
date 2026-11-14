@@ -21,7 +21,7 @@ export type MaterialRequest={name:string;why:string};
 export type MaterialUse={role:string;name:string;tokens:number};
 /** A material entry the app can answer with: the pack's catalogue, plus a request's own entries (designer references). */
 export type MaterialEntry=CatalogueEntry&{file?:string};
-export type MaterialAnswer={name:string;why?:string;status:'attached'|'already in this conversation'|'not fetched: budget used'|'not fetched: at most four per request'|'not in the catalogue';
+export type MaterialAnswer={name:string;why?:string;status:'attached'|'already in this conversation'|'not fetched: budget used'|'not fetched: at most four per request'|'not in the catalogue'|'in the catalogue, but its picture could not be read';
  text?:string;picture?:(PictureRef|{file:string;width:number;height:number})&{kind:string};tokens:number};
 
 /** A picture costs about its pixels ÷ 750 at 1024 px on the long side (how the app sends it). */

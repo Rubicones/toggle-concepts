@@ -70,3 +70,25 @@ test('v5 rehearsal: the block\'s limits hold on the bench: the turn cap and the 
  assert.equal(result.state.turn,6,'stops at the approved turns');assert.equal(result.state.complete,false);assert.ok(result.calls.filter(c=>c.role==='critic').length<=5);
  assert.ok(result.timeline.includes('The designer used its approved turns or time before finishing. The draft is shown as it is; continue within a new allowance to finish it.'));
 });
+
+test('v6 rehearsal (plan E1): stage H requests hold one scene\'s meaning and one format; the rest arrives when stage E opens', async()=>{
+ const base=input(),v6={...base,brief:{...base.brief,designerVersion:6}} as ReturnType<typeof input>,heroViews:boolean[][]=[];
+ const shotFile=join(await mkdtemp(join(tmpdir(),'v6-shot-')),'shot.png'),canvas=createCanvas(64,64);canvas.getContext('2d').fillRect(8,8,48,48);await writeFile(shotFile,canvas.toBuffer('image/png'));
+ const tools=(real:DesignerTools):DesignerTools=>{const s=stubbed(shotFile)(real);return {...s,render:async views=>{heroViews.push(views.map(v=>!!v.shot));return s.render(views);}};};
+ const {result,text}=await rehearse('v6',[IDEAS,say('Building idea 1: the photograph of the box.','export default 1;',{pictures:[{purpose:'the sealed archive box',prompt:'One sealed archive box in soft daylight on warm paper white.',aspect:'1:1'}],render:true}),say('Finished.','export default 2;',{review:true}),say('The other scenes.','export default 3;',{finish:{intent:'x'.repeat(90),scenes:scenes()}}),...critics],{input:v6,tools,endReview:false});
+ const designer=result.calls.map((c,i)=>({c,i})).filter(x=>x.c.role==='designer'),stageH=designer.filter(x=>x.c.stage==='design-hero').map(x=>text(x.i)),stageE=designer.filter(x=>x.c.stage==='design-create').map(x=>text(x.i));
+ assert.equal(stageH.length,3);assert.ok(stageE.length>=1);
+ // Stage H: no other format, no variation list, no selected(, no "Shows:" line; the task carries meaning and words.
+ for(const request of stageH){
+  for(const f of v6.formats.filter(x=>x.id!==v6.variants[0].format))assert.ok(!request.includes(`${f.width}×${f.height}`),`${f.id} in stage H`);
+  for(const gone of ['VARIATIONS','selected(','Shows:','Hooks:','REFERENCE COPY'])assert.ok(!request.includes(gone),gone);
+ }
+ for(const part of ['THE HERO SCENE (Scene 1 of 3; the only scene you make now)','THE HERO FRAME\nMake Scene 1 of 3 as one finished frame in 1080×1080. ','What it must make the viewer understand: The file a partner needs today and nobody can find.','Its approved words (en-GB), exactly as written, nothing added: "The file is somewhere." / "That is not an answer."','You may ask for up to ','THE TERRITORY OF THIS DIRECTION (whole;'])assert.ok(stageH[0].includes(part),part);
+ // The hero render measures the reference words only.
+ assert.ok(heroViews.length>=1&&heroViews[0].every(Boolean)&&heroViews[0].length===1,'one view: the reference copy in the reference format');
+ // Stage E opens with what was left out, once, in the same conversation.
+ assert.ok(stageE[0].includes('THE REST OF THE AD (left out while you made the hero frame)')&&stageE[0].includes('vertical · 1080×1920')&&stageE[0].includes('VARIATIONS (all read through selected(props,…) in code)')&&stageE[0].includes('COPY TABLE'));
+ assert.deepEqual(designer.map(x=>x.c.conversation),['new','branched','branched','branched'],'one conversation from the ideas to stage E');
+ assert.ok(result.timeline.some(l=>l.startsWith('Hero frame started. Key frame brief: what this scene must say. The file a partner needs today')));
+ assert.equal(result.state.hero?.acceptedBy,'critic');assert.equal(result.state.complete,true);
+});

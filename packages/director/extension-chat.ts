@@ -7,6 +7,8 @@ import {z} from 'zod';
 import {pictureSchema} from './hero-chat';
 import {designerInstructionsV3} from '../agents/prompts/designer-v1';
 import {copyTable} from './designer-context';
+import {heroMeaning} from './designer';
+import {restAfterHero} from './designer-digest';
 import {THREE_D_MECHANICS} from './three-d';
 import type {Finding} from './layout-inspection';
 import type {DirectionInput,Variant} from './types';
@@ -68,7 +70,7 @@ const section=(name:string)=>{const t=designerInstructionsV3,start=t.indexOf(`${
 export function stageEMechanics(input:DirectionInput){
  const table=copyTable(input),scenes=input.storyboard;
  const copy=Object.entries(table).map(([id,hooks])=>`${sceneLabel(id,input)}:\n${Object.entries(hooks).map(([hook,locales])=>Object.entries(locales).map(([locale,l])=>`  ${hook} · ${locale}: ${l.join(' / ')}`).join('\n')).join('\n')}`).join('\n');
- return `HOW THE DRAFT WORKS FROM NOW ON
+ return `${heroMeaning(input)?`THE REST OF THE AD (left out while you made the hero frame)\n${restAfterHero(input)}\n\n`:''}HOW THE DRAFT WORKS FROM NOW ON
 Scene names and the ids your code and actions use:
 ${scenes.map((s,i)=>`Scene ${i+1} = ${s.id}`).join('\n')}
 Ordered formats: ${input.formats.map(f=>`${f.id} ${f.width}×${f.height}`).join(', ')}.

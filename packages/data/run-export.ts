@@ -92,10 +92,12 @@ export const EXPORT_LAYOUT={
 } as const;
 /** A file name safe on Windows and Linux. */
 export const safeName=(text:string)=>text.replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)||'x';
-/** Which workspace files are worth exporting: source, small reports, renders and pictures up to a size. */
+/** Which workspace files are worth exporting: source, small reports, renders, pictures and the brand's font files up
+ * to a size. Fonts are part of the brand in code: without them a run rebuilt from its export draws every line in a fallback. */
 export function workspaceFileWanted(path:string,bytes:number):boolean{
  if(neverExported(path))return false;
  if(/\.(tsx?|jsx?|json|css|md|txt|svg)$/i.test(path))return bytes<=2_000_000;
  if(/\.(png|jpe?g|webp)$/i.test(path))return bytes<=6_000_000;
+ if(/\.(woff2?|ttf|otf)$/i.test(path))return bytes<=6_000_000;
  return false;
 }

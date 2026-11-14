@@ -12,6 +12,8 @@
 // designer (the territory is given), and the compact brand sheet pictures of a stored brand pack.
 import {mkdir,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
+import {existsSync} from 'node:fs';
+import {referenceEntries,sheetEntries} from '../../apps/local-runner/director/assets';
 import {designerTools,provisionalDesign,finishDesign} from '../../apps/local-runner/director/designer-run';
 import {screenshotForDesigner,newDesignerState,designerViews,RENDER_LONG_SIDE,type DesignerLoopState,type DesignerTools} from '../../apps/local-runner/director/designer-loop';
 import {runHeroChat,HERO_TURN_SHARE} from '../../apps/local-runner/director/hero-chat-loop';
@@ -31,7 +33,8 @@ import {designerPlan,storedSize,continuesOwnConversation,relativeCap,type Plan,t
 import {directorRequestSnapshot,criticAllowanceUsed} from '../../packages/director/admission';
 import {compactDraftRequest,designerRequestCap} from '../../packages/director/request-size';
 import {designerRoleLine,staticRoleInstructions} from '../../packages/director/roles';
-import {STAGE_H_INSTRUCTIONS} from '../../packages/director/hero-chat';
+import {STAGE_H_INSTRUCTIONS,heroBriefLine} from '../../packages/director/hero-chat';
+import {heroMeaning} from '../../packages/director/designer';
 import {reviewRepairMessage} from '../../packages/director/extension-chat';
 import {IDEAS_TASK,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../packages/director/image-ideas';
 import {checksText,stageReviewMaterial,REVIEW_INSTRUCTIONS,HERO_REVIEW_WHAT,END_REVIEW_WHAT,reviewSchemaV2,reviewContextText,readReview,withAllRulings,toDesignerNotes,settleHeroReview,HERO_REVIEW_ROUNDS} from '../../packages/director/critic-review';
@@ -61,6 +64,11 @@ export type V5Options={
  heroOnly?:boolean;
  /** The brief text of the run context, when it comes from a real run (default: the input's product, offer, audience). */
  briefText?:string;
+ /** The run's own material catalogue and budgets (an export's device/run-context.json). Default: no catalogue entries. */
+ materials?:RunContext['materials'];
+ /** Offer the workspace's own brand references, logos and full sheet pages by name, as the worker does when the run
+  * has a compact brand sheet. Files that are not in the workspace are left out. */
+ brandFileEntries?:boolean;
  /** Rehearsals without a browser: replace build and render (everything else stays the production code). */
  tools?:(real:DesignerTools)=>DesignerTools;
 };
@@ -68,13 +76,15 @@ export type V5Call={role:string;stage:string;usage:LocalCallUsage|null;conversat
 export type V5Result={state:DesignerLoopState;context:RunContext;calls:V5Call[];timeline:string[];gaps:string[];status:string;apiEquivalentUsd:number;endReview?:{accepted:boolean;notes:number;rounds:number;skipped?:string}};
 
 /** The run context a new shared Local run freezes (apps/local-runner/local-claude/run-context.ts), for one brand. */
-export function benchRunContext(input:DirectionInput,brandPack:string,briefText?:string):RunContext{
+export function benchRunContext(input:DirectionInput,brandPack:string,briefText?:string,materials?:RunContext['materials']):RunContext{
  return buildRunContext({briefText:briefText??JSON.stringify({product:input.brief.product,offer:input.brief.offer,audience:input.brief.audience,cta:input.brief.cta},null,1),brandPack,packVersion:1,commonSkills:[],
-  materials:{entries:[],budget:DEFAULT_MATERIAL_BUDGET},planningChat:true,schemaInText:true,leanContext:true,stageSkills:buildStageSkills(readSkills(),[]),positive:POSITIVE_DEFAULT,imageOwner:true,critic:true});
+  materials:materials??{entries:[],budget:DEFAULT_MATERIAL_BUDGET},planningChat:true,schemaInText:true,leanContext:true,stageSkills:buildStageSkills(readSkills(),[]),positive:POSITIVE_DEFAULT,imageOwner:true,critic:true});
 }
 
+/** The bench has no object store: a stored catalogue picture is answered as unreadable, never fetched. */
+const noStoredPictures=async():Promise<Buffer>=>{throw new Error('BENCH_NO_STORED_PICTURES');};
 export async function runV5Direction(o:V5Options):Promise<V5Result>{
- const {input,folder}=o,ctx=benchRunContext(input,o.brandPack,o.briefText),staged=ctx.stageSkills!,calls:V5Call[]=[],timeline:string[]=[],say=(line:string)=>{timeline.push(line);};
+ const {input,folder}=o,ctx=benchRunContext(input,o.brandPack,o.briefText,o.materials),staged=ctx.stageSkills!,calls:V5Call[]=[],timeline:string[]=[],say=(line:string)=>{timeline.push(line);};
  const models={designer:{modelId:o.designerModel??'anthropic/claude-opus-5.5',instructions:staticRoleInstructions.director,maxOutputTokens:32000,pricing:PRICING,contextLength:1000000},critic:{modelId:o.criticModel??'anthropic/claude-sonnet-5.5',instructions:staticRoleInstructions.critic,maxOutputTokens:16000,pricing:CRITIC_PRICING,contextLength:1000000}};
  const requests=Math.min(o.maxTurns??DESIGNER_TURNS.requests,DESIGNER_TURNS.requests),maxPictures=o.maxPictures??input.resourceIds.length,heroReviews=o.heroReviews??HERO_REVIEW_ROUNDS;
  // The quote a version 5 block is approved with: 24 designer turns, two end reviews, two hero reviews, one selection.
@@ -116,11 +126,11 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
  };
  const tools:DesignerTools=(o.tools??(t=>t))(designerTools({folder,input,design,preview:async()=>{},deadline:()=>Date.now()+600000,facts:()=>Object.fromEntries(o.catalog.filter(c=>c.image).map(c=>[c.url,c.image])),save:async()=>{},buy:o.buy}));
  // Materials on request: the direction's own planning results and the copy table, by name (C3/C4).
- const references=designerDigestEntries(input),budget=materialBudgetFor('designer',ctx.materials!.budget);
+ const references=[...(o.brandFileEntries?referenceEntries(folder,input):[]),...designerDigestEntries(input),...(o.brandFileEntries?sheetEntries(folder,input):[])].filter(e=>!('file' in e)||existsSync((e as {file:string}).file)),budget=materialBudgetFor('designer',ctx.materials!.budget);
  tools.materials={references:references.map(e=>`- ${e.name} · ${e.kind} · ${e.line}`),
-  fetch:async(asked,seen)=>{const f=await fetchMaterials(ctx,{runId:input.runId,role:'designer',requests:asked,extra:references,seen});const attached=f.plan.filter(p=>p.status==='attached').map(p=>p.name);if(attached.length)say(`The designer looked at: ${attached.join(', ')}.`);
+  fetch:async(asked,seen)=>{const f=await fetchMaterials(ctx,{runId:input.runId,role:'designer',requests:asked,extra:references,seen,read:noStoredPictures});const attached=f.plan.filter(p=>p.status==='attached').map(p=>p.name);if(attached.length)say(`The designer looked at: ${attached.join(', ')}.`);
    return {attached,lines:f.plan.map(p=>p.status==='attached'?`Asked to see ${p.name}; it arrives with the next turn.`:`${p.name}: ${p.status}.`)};},
-  load:names=>loadMaterials(ctx,names,references),left:async()=>budgetLeft('designer',budget,await materialsUsed(input.runId)).count};
+  load:names=>loadMaterials(ctx,names,references,noStoredPictures),left:async()=>budgetLeft('designer',budget,await materialsUsed(input.runId)).count};
  // The hero review (critic@2): the hero checks with evidence, its own earlier rounds as text, a stop by rule.
  const reviewHero:NonNullable<DesignerTools['reviewHero']>=async(round,shots,measured)=>{
   const memory=state.heroMemory??[],material=stageReviewMaterial(staged,'hero'),hard=measured.filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
@@ -129,7 +139,7 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
   state.heroMemory=[...memory,settled.round];return settled.result;};
  if(heroReviews>0)tools.reviewHero=async(...a)=>{try{const r=await reviewHero(...a);if(!r&&state.hero)state.hero.reviewError='UNREADABLE';return r;}catch(error){const code=error instanceof Error?error.message:'REVIEW_FAILED';if(state.hero)state.hero.reviewError=code.slice(0,120);say(`The hero frame was NOT reviewed: ${reviewReason(code)}. It is accepted as it is.`);return undefined;}};
  const working=(stage:'hero'|'extension')=>{const titles=stageSkillTitles(staged,stage);if(titles.length)say(`The designer is working with: ${titles.join(', ')}.`);};
- const designerCall=(stage:'H'|'E')=>async(message:string,images:{url:string;label:string}[])=>call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,stage==='H'?{sceneIds:false}:{})},images.map(i=>({...i,required:true})));
+ const designerCall=(stage:'H'|'E')=>async(message:string,images:{url:string;label:string}[])=>call('designer',message,STAGE_H_INSTRUCTIONS,null,{contextText:designerDigestText(input,stage==='H'?{sceneIds:false,heroOnly:true}:{})},images.map(i=>({...i,required:true})));
  const turnLine=async(e:{turn:number;idea:string;results:string[]})=>{say(`Turn ${e.turn}: ${e.idea.slice(0,160)||'(no words)'} — ${e.results.join(' ')}`);};
  const owned=input.creativeHandoff?.intent.direction;
  // Stage H: three ideas, the independent choice, the build in the same conversation, the hero review.
@@ -139,7 +149,7 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
    select:async(text)=>{if(heroReviews<1)return null;try{return readSelection(await call('critic','Choose one of the three ideas.',SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(stageReviewMaterial(staged,'ideas').checks),territoryText(input))}));}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
    onIdeas:async()=>{say('Three ideas for the key frame.');},
    onChosen:async(pick,reason)=>{if(state.ideas?.unreviewed)say(`The three ideas were NOT reviewed: ${reviewReason(state.ideas.unreviewed)}. The first idea is built.`);say(`Chosen: idea ${pick} — ${reason}`);}},
-  onHero:async e=>{say(e.kind==='started'?'Hero frame started.':e.kind==='reviewed'?`Hero frame reviewed: ${e.notes} note${e.notes===1?'':'s'}.`:`Hero frame accepted (${e.by}). Designing the other scenes.`);},
+  onHero:async e=>{say(e.kind==='started'?(heroMeaning(input)?`Hero frame started. ${heroBriefLine(input)}`:'Hero frame started.'):e.kind==='reviewed'?`Hero frame reviewed: ${e.notes} note${e.notes===1?'':'s'}.`:`Hero frame accepted (${e.by}). Designing the other scenes.`);},
   save:async()=>{},call:designerCall('H'),onTurn:turnLine});
  if(o.heroOnly){const gaps=reviewGaps({expects:{ideas:true,hero:true,end:false},ideas:state.ideas,hero:state.hero});if(gaps.length)say(unreviewedStatus(gaps));
   return {state,context:ctx,calls,timeline,gaps,status:'Hero stage only.',apiEquivalentUsd:usageTotals(calls.flatMap(c=>c.usage?[c.usage]:[])).apiEquivalentUsd};}

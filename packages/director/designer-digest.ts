@@ -6,7 +6,7 @@
 // and formats are named by the ids the draft code uses; supplied files by their names, which the app maps back to ids.
 import {plainText,stageFull} from './digest';
 import {copyTable} from './designer-context';
-import {heroScene,usesMaterials} from './designer';
+import {heroScene,usesMaterials,heroMeaning} from './designer';
 import {squarePreviewOnly,squarePreviewInstructions} from './preview-scope';
 import type {DirectionInput} from './types';
 import type {MaterialEntry} from '../agents/materials';
@@ -35,7 +35,8 @@ export function territoryText(input:Pick<DirectionInput,'creativeHandoff'>):stri
 }
 /** The designer's first-turn input as plain labelled text. Deterministic for the same input. */
 /** C5: stage H (designerVersion 4, hero open) names scenes only ("Scene 1"); ids follow when stage E starts. */
-export function designerDigestText(input:DirectionInput,options:{sceneIds?:boolean}={}):string{
+export function designerDigestText(input:DirectionInput,options:{sceneIds?:boolean;/** version 6, stage H: the hero-only digest (plan E1c) */heroOnly?:boolean}={}):string{
+ if(heroMeaning(input))return options.heroOnly?heroOnlyDigest(input):meaningDigest(input,options.sceneIds!==false);
  const ids=options.sceneIds!==false;
  const h=input.creativeHandoff,intent=h?.intent,reference=input.variants[0],hero=heroScene(input),scenes=input.storyboard;
  const sceneName=(id:string)=>`Scene ${scenes.findIndex(s=>s.id===id)+1}`;
@@ -61,6 +62,73 @@ export function designerDigestText(input:DirectionInput,options:{sceneIds?:boole
   section('BRAND IN CODE (from ./brand)',[`Logos: ${input.brand.logos.map((l,i)=>`brand.logos[${i}] (clear space ${l.clearSpacePx} px)`).join(', ')||'none'}`,`Font families: ${[...new Set(input.brand.fonts.map(f=>f.family))].map(f=>`${f} (${input.brand.fonts.filter(x=>x.family===f).map(x=>x.weight).join(', ')})`).join('; ')}`].join('\n')),
   section('SUPPLIED FILES (refer to them by name)',files.map(f=>`${f.name} · ${f.mime}${required.has(f.id)?' · use it':''}`).join('\n')),
   section('MORE ON REQUEST (ask by name in materials)','stage-strategy, stage-scenario, stage-visual-direction: the full planning results. copy-table: every approved line per scene, hook and language. The brand\'s kit sections and materials are in the material catalogue.'),
+ ].filter(Boolean).join('\n\n');
+}
+
+const brandInCode=(input:DirectionInput)=>section('BRAND IN CODE (from ./brand)',[`Logos: ${input.brand.logos.map((l,i)=>`brand.logos[${i}] (clear space ${l.clearSpacePx} px)`).join(', ')||'none'}`,`Font families: ${[...new Set(input.brand.fonts.map(f=>f.family))].map(f=>`${f} (${input.brand.fonts.filter(x=>x.family===f).map(x=>x.weight).join(', ')})`).join('; ')}`].join('\n'));
+const suppliedFiles=(input:DirectionInput)=>{const required=new Set(input.creativeHandoff?.referenceAssetIds??[]);return section('SUPPLIED FILES (refer to them by name)',assetNames(input).map(f=>`${f.name} · ${f.mime}${required.has(f.id)?' · use it':''}`).join('\n'));};
+const formatLine=(f:DirectionInput['formats'][number],reference:boolean)=>`${f.id} · ${f.width}×${f.height}${reference?' · REFERENCE':''} · smallest text ${f.minTextPx} px · safe area top ${Math.round(f.safe.top)} right ${Math.round(f.safe.right)} bottom ${Math.round(f.safe.bottom)} left ${Math.round(f.safe.left)} px`;
+const directionHead=(input:DirectionInput)=>{const intent=input.creativeHandoff?.intent;return [
+ section(`DIRECTION: ${intent?.direction.name??'this direction'}`,[words(intent?.direction.premise),intent?.direction.world?.length?`World (prop text for products and interfaces, never headlines): ${intent.direction.world.join(' · ')}`:intent?.direction.productData?.length?`Product data: ${intent.direction.productData.join(' · ')}`:''].filter(Boolean).join('\n')),
+ section('CREATIVE FOCUS (the art director\'s own words; the first creative instruction)',intent?.creativeFocus),
+ section('FEELING',intent?.feeling),
+ section('GOAL AND AUDIENCE',[intent?.goal?`Goal: ${words(intent.goal)}`:'',intent?.audience?`Audience: ${words(intent.audience)}`:''].filter(Boolean).join('\n')),
+ section('THE TERRITORY OF THIS DIRECTION (whole; keep to its way of making, or say why you change it)',territoryText(input))];};
+const meaningOf=(s:DirectionInput['storyboard'][number])=>s.visualNotes.replace(/\s+/g,' ').slice(0,400);
+/** Plan E1c (version 6, stage H): the direction, the territory whole, the hero scene's meaning, proof and words, the
+ * reference format only, brand in code, supplied files and materials on request. No other format, no variations, no
+ * other scene's detail (one line names the ad's other moments so the hero knows its place), and no visual direction in
+ * short when the territory is present, because it repeats it. */
+function heroOnlyDigest(input:DirectionInput):string{
+ const h=input.creativeHandoff,reference=input.variants[0],hero=heroScene(input),scenes=input.storyboard,index=scenes.findIndex(s=>s.id===hero),scene=scenes[index];
+ const format=input.formats.find(f=>f.id===reference?.format)??input.formats[0];
+ const lines=(reference?input.variantFacts?.[reference.id]?.sceneCopy[hero]:undefined)??scene?.copy??[];
+ const others=scenes.filter(s=>s.id!==hero).map(s=>`Scene ${scenes.indexOf(s)+1}: ${meaningOf(s).slice(0,90)}`).join(' · ');
+ return [...directionHead(input),
+  territoryText(input)?'':section('VISUAL DIRECTION (in short)',h?.visual?plainText(h.visual,3000,300):''),
+  section(`THE HERO SCENE (Scene ${index+1} of ${scenes.length}; the only scene you make now)`,[`What it must make the viewer understand: ${scene?meaningOf(scene):''}`,scene?.proof?`What proves it: ${scene.proof}`:'',`Its approved words${reference?` (${reference.locale})`:''}, verbatim: ${lines.join(' / ')||'(no words)'}`,others?`The ad's other moments, for its place only: ${others}`:''].filter(Boolean).join('\n')),
+  format?section('FORMAT (the only size you make now)',formatLine(format,false)):'',
+  brandInCode(input),suppliedFiles(input),
+  section('MORE ON REQUEST (ask by name in materials)','stage-strategy, stage-visual-direction: the full planning results. The brand\'s kit sections and materials are in the material catalogue.'),
+ ].filter(Boolean).join('\n\n');
+}
+/** Version 6, everywhere but stage H: the whole digest as in version 5, with each scene's line named for what it is
+ * (what the scene must make the viewer understand), not as what it shows. */
+function meaningDigest(input:DirectionInput,ids:boolean):string{
+ const h=input.creativeHandoff,reference=input.variants[0],hero=heroScene(input),scenes=input.storyboard;
+ const lines=(sceneId:string)=>reference?input.variantFacts?.[reference.id]?.sceneCopy[sceneId]??scenes.find(s=>s.id===sceneId)?.copy??[]:[];
+ const format=input.formats.find(f=>f.id===reference?.format)??input.formats[0];
+ const axes=(k:'locale'|'hook'|'cta'|'length')=>[...new Set(input.variants.map(v=>String(v[k])))].join(', ');
+ const head=directionHead(input);
+ return [head[0],head[1],head[2],section('AD SHAPE',h?.intent?.adShape),head[3],
+  section('STRATEGY (in short)',h?.strategy?plainText(h.strategy,2400,300):''),head[4],
+  section('VISUAL DIRECTION (in short)',h?.visual?plainText(h.visual,3000,300):''),
+  section(ids?'SCENARIO (scene id for focus, render and code; what each scene must make the viewer understand; what proves it)':'SCENARIO (what each scene must make the viewer understand; what proves it)',scenes.map((s,i)=>`Scene ${i+1}${ids?` · id ${s.id}`:''} · ${s.start}–${s.end} s${s.id===hero?' · HERO':''}\n  Must make the viewer understand: ${meaningOf(s)}${s.proof?`\n  Proof: ${s.proof}`:''}`).join('\n')),
+  section('HERO SCENE',`Scene ${scenes.findIndex(s=>s.id===hero)+1}${ids?` (id ${hero})`:''}: design it first, in the reference format.`),
+  section('FORMATS',input.formats.map(f=>formatLine(f,f.id===format?.id)).join('\n')),
+  squarePreviewOnly(input)?section('DRAFT SCOPE',squarePreviewInstructions):'',
+  section(`REFERENCE COPY (${reference?`${reference.locale}, hook ${reference.hook}, call to action ${reference.cta}, ${reference.length} s`:'reference'}; approved words, verbatim)`,scenes.map((s,i)=>`Scene ${i+1}: ${lines(s.id).join(' / ')||'(no words)'}`).join('\n')),
+  section('VARIATIONS (all read through selected(props,…) in code)',`Languages: ${axes('locale')}\nHooks: ${axes('hook')}\nCalls to action: ${axes('cta')}\nLengths: ${axes('length')} s\nThe copy for every hook and language is the catalogue entry copy-table.`),
+  brandInCode(input),suppliedFiles(input),
+  section('MORE ON REQUEST (ask by name in materials)','stage-strategy, stage-scenario, stage-visual-direction: the full planning results. copy-table: every approved line per scene, hook and language. The brand\'s kit sections and materials are in the material catalogue.'),
+ ].filter(Boolean).join('\n\n');
+}
+/** Version 6: what the hero stage left out, said once when stage E opens (the conversation continues, so its context
+ * is not sent again): every scene's meaning and proof, every format, the draft's scope, the reference copy and the
+ * variations. With the hero-only digest this is the whole version 5 digest, in two parts. */
+export function restAfterHero(input:DirectionInput):string{
+ const reference=input.variants[0],hero=heroScene(input),scenes=input.storyboard,h=input.creativeHandoff;
+ const lines=(sceneId:string)=>reference?input.variantFacts?.[reference.id]?.sceneCopy[sceneId]??scenes.find(s=>s.id===sceneId)?.copy??[]:[];
+ const format=input.formats.find(f=>f.id===reference?.format)??input.formats[0];
+ const axes=(k:'locale'|'hook'|'cta'|'length')=>[...new Set(input.variants.map(v=>String(v[k])))].join(', ');
+ return [
+  section('AD SHAPE',h?.intent?.adShape),
+  section('THE WHOLE AD (what each scene must make the viewer understand; what proves it)',scenes.map((s,i)=>`Scene ${i+1} · ${s.start}–${s.end} s${s.id===hero?' · HERO (accepted)':''}\n  Must make the viewer understand: ${meaningOf(s)}${s.proof?`\n  Proof: ${s.proof}`:''}`).join('\n')),
+  section('FORMATS',input.formats.map(f=>formatLine(f,f.id===format?.id)).join('\n')),
+  squarePreviewOnly(input)?section('DRAFT SCOPE',squarePreviewInstructions):'',
+  section(`REFERENCE COPY (${reference?`${reference.locale}, hook ${reference.hook}, call to action ${reference.cta}, ${reference.length} s`:'reference'}; approved words, verbatim)`,scenes.map((s,i)=>`Scene ${i+1}: ${lines(s.id).join(' / ')||'(no words)'}`).join('\n')),
+  section('VARIATIONS (all read through selected(props,…) in code)',`Languages: ${axes('locale')}\nHooks: ${axes('hook')}\nCalls to action: ${axes('cta')}\nLengths: ${axes('length')} s`),
+  section('MORE ON REQUEST (ask by name in materials)','stage-scenario: the full selected scenario.'),
  ].filter(Boolean).join('\n\n');
 }
 

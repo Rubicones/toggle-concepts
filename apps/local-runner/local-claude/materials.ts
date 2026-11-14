@@ -33,7 +33,7 @@ export async function fetchMaterials(ctx:Pick<RunContext,'materials'>,args:{runI
  const plan=planMaterials(args.requests,entries,{role:args.role,budget,used,seen:args.seen}),images:FetchedMaterials['images']=[];
  for(const p of plan){if(p.status!=='attached'||!p.picture)continue;
   try{const jpeg=await materialPicture(p.picture,args.read);images.push({name:p.name,url:`data:image/jpeg;base64,${jpeg.toString('base64')}`,label:materialLabel(p),bytes:jpeg});}
-  catch{Object.assign(p,{status:'not in the catalogue',picture:undefined,tokens:0});}}
+  catch{Object.assign(p,{status:'in the catalogue, but its picture could not be read',picture:undefined,tokens:0});}}
  const fresh=newUses(args.role,plan,used);await record(args.runId,fresh);
  return {plan,text:materialsReply(plan,budgetLeft(args.role,budget,[...used,...fresh])),images};
 }
