@@ -6,7 +6,8 @@ import type {ReviewAnswer} from '../../../packages/director/critic-review';
 let warned=false;
 const warn=(why:string)=>{if(warned)return;warned=true;console.error(`[critic checks] not stored (${why}); apply migration 20261113000700_skill_measurement.sql to measure skills. Runs continue.`);};
 export async function recordCheckAnswers(admin:SupabaseClient,row:{runId:string;directionId:string;stage:'hero'|'extension';round:number;answers:ReviewAnswer[];stop?:string|null}){
- const answers=row.answers.filter(a=>/^[a-z0-9-]{2,60}$/.test(a.skill)&&Number.isInteger(a.n)&&a.n>=1&&a.n<=12);
+ // One row per skill and check: an answer given twice keeps the last (an upsert may not touch a row twice).
+ const answers=[...new Map(row.answers.filter(a=>/^[a-z0-9-]{2,60}$/.test(a.skill)&&Number.isInteger(a.n)&&a.n>=1&&a.n<=12).map(a=>[`${a.skill}|${a.n}`,a] as const)).values()];
  if(!answers.length)return false;
  try{
   const tenant=(await admin.from('studio_runs').select('tenant_id').eq('id',row.runId).maybeSingle()).data?.tenant_id as string|undefined;if(!tenant)return false;

@@ -1,0 +1,618 @@
+{
+ "note": "Recorded by scripts/record-admission-requests.ts (admission audit). The v5 director-block requests as the runner builds them.",
+ "ids": {
+  "run": "11111111-1111-4111-8111-111111111111",
+  "cp": "22222222-2222-4222-8222-222222222222",
+  "block": "33333333-3333-4333-8333-333333333333",
+  "direction": "44444444-4444-4444-8444-444444444444",
+  "iteration": "55555555-5555-4555-8555-555555555555"
+ },
+ "instructions": {
+  "visual-direction": "ROLE: Film & art director of pre-final Hero Styleframes for a motion advertisement. Design rich layers, staging and format adaptations; describe motion choreography for the next stage. Follow the static protocol and approved facts.",
+  "critic": "ROLE: Demanding art director (frozen critic brief)."
+ },
+ "estimate": {
+  "quoteId": "23fb389d48336f62cb1b05a58c886a86b3bc5569e3127b82ee8894caebc78f99",
+  "roles": {
+   "director": {
+    "maxCostMicroUsd": 0,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "timeMs": 0,
+    "requests": 0
+   },
+   "assembler": {
+    "maxCostMicroUsd": 0,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "timeMs": 0,
+    "requests": 0
+   },
+   "critic": {
+    "inputTokens": 256000,
+    "outputTokens": 33500,
+    "timeMs": 180000,
+    "requests": 5,
+    "maxCostMicroUsd": 1397551
+   },
+   "resources": {
+    "maxCostMicroUsd": 80000,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "timeMs": 1200000,
+    "requests": 2
+   },
+   "designer": {
+    "requests": 24,
+    "inputTokens": 960000,
+    "outputTokens": 144000,
+    "timeMs": 3600000,
+    "maxCostMicroUsd": 5544000
+   }
+  },
+  "maxCostMicroUsd": 7021551,
+  "perStillMicroUsd": 40000,
+  "maxStills": 2,
+  "maxCriticRounds": 2,
+  "designerRequestInputCap": 68000,
+  "heroReviews": 2,
+  "ideasSelection": 1
+ },
+ "requests": [
+  {
+   "kind": "designer: ideas turn",
+   "requestKey": "66666666-6666-4666-8666-000000000001",
+   "agentRole": "visual-direction",
+   "model": "anthropic/claude-sonnet-4.5",
+   "prompt": "THE HERO FRAME\nMake Scene 1 of 5 as one finished frame in 1080×1920: Opening Hook\nIts approved words (en-GB), exactly as written, nothing added: \"LOST TRACK OF YOUR BEST TAKE?\"\n\nWHAT YOUR CODE CAN USE\nFrame.tsx default-exports one React component with props {width,height} that draws this frame at exactly that size. From './brand': brand.tokens (the accepted rules as strings), brand.logos (draw one with <Img src={staticFile(logo.url)} data-brand-logo={logo.id}/>), resources (pictures you asked for, by the id the app gives you). The brand's fonts are loaded by family name. './kit' has optional helpers (fitText, measure, contrast); './kit3d' draws a code-built 3D object or scene (ask for the material kit-3d to see how). Any CSS, SVG, masks, blend modes and filters work.\n\nAnswer as you would in a chat: first your idea in prose, then the complete files in fenced code blocks with their paths (```tsx Frame.tsx), then, if you need it, one fenced actions block with JSON: {\"render\":true} to see it, {\"pictures\":[…]} to ask for pictures (purpose, prompt, aspect, references by file name, cutout), {\"materials\":[…]} to look at brand materials by name, {\"review\":true} when the frame is finished. Every change of code is rendered for you.\n\nFIRST, THREE IMAGE IDEAS FOR THE HERO FRAME (no code yet). Work inside the territory of your direction, in three steps, in prose:\n1. Write rough ideas for this frame.\n2. Push each one to be bolder and more distinct from the others.\n3. Give the final three as IDEA 1, IDEA 2 and IDEA 3, each with: what the viewer sees; the turn or surprise; the way of making (photo, rendered 3D, code-built graphics or interface, or a mix); why it stops the scroll for this product.\nKeep the answer short, about 600 to 1,000 tokens. An independent reviewer picks one; you then build it in this conversation.\n\nSKILLS FOR THIS STAGE (ideas and planning)\n\nSKILL ad-idea — An ad is a promise shown\nAn ad earns attention by promising the viewer something they want and showing it is true. Work in this order.\n\nThe promise. One benefit, in the viewer's words, about their situation; a description of the company is not a promise. If the line could be the first slide of a company presentation, it is not a promise yet.\n\nThe tension. What the viewer is stuck with today, shown as a recognisable moment of their own work or life. Name the moment exactly: who, where, doing what, annoyed by what.\n\nThe proof. The product, or its result, visibly doing what the promise says, with believable specifics from confirmed facts. A metaphor may frame the proof; an abstract object standing where the product should be proves nothing and reads as decoration. If the viewer cannot tell what is being sold from the picture and the headline together, the idea has failed, however elegant it looks.\n\nThe turn. Something in the frame the viewer did not expect: an exaggeration of the benefit, a contrast between before and after, a literal reading of a figure of speech, a familiar thing behaving differently, a surprising scale. One turn, carried by the picture and the headline together; the headline should need the picture and the picture the headline.\n\nBoldness is a commitment to one of these moves at full strength, with everything else removed. A careful average of safe choices is the most common failure, and it is invisible in a feed. Choose the version a cautious committee would soften, as long as it stays true to the facts and to the brand's character.\n\nSKILL brand-character — Read the brand as a character\nA brand is a character, and the kit is evidence of it. Before you plan, write or design, read every brand input together: the kit's colours, type and marks, the brand sheet pages, the site and product pictures, the Feel and Look answers, the voice rules, the facts. Then settle, for yourself, five things.\n\n1. Temperament. How this brand behaves in a room: loud or quiet, playful or exact, warm or cool, fast or unhurried. Take it from how its own materials behave, never from its category.\n2. Signature. The two or three things that make its materials recognisable with the logo covered: a colour and how much of the surface it takes, a type voice, a graphic gesture, a way of cropping or framing, a material, a kind of light.\n3. Proportions. Which colour is the ground, which is the voice and which is the accent, in roughly what shares. A brand whose materials live on light grounds does not become dark because dark looks premium, and the reverse. An accent stays an accent.\n4. Speech. How it talks: sentence length, humour, directness, what it would never say.\n5. Substance. What only this brand has to show: its product in use, its interface, its outputs, its people, its numbers.\n\nEvery decision afterwards must be explainable from these five. The test for any frame, line or idea: with the logo covered, would someone who knows the brand name it? If the frame would fit another brand after swapping the logo and one colour, it is not this brand yet. Rules in the kit are limits you may not cross; character is what you build with inside them. When the materials disagree, the brand's own finished work outranks its written rules, and the written rules outrank your taste.\n\nSKILL one-idea — One idea per frame\nBefore you write or build, state the frame's idea in one sentence a viewer could repeat. If you need two sentences, you have two frames, or one idea too many. Every element either makes that sentence clearer or is removed. A second message weakens the first more than it adds.",
+   "snapshot": {
+    "cachePrompt": true,
+    "cacheSessionId": "33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444:designer",
+    "requestInputCap": 68000,
+    "directorIterationId": "55555555-5555-4555-8555-555555555555",
+    "timeoutMs": 1800000,
+    "instructions": "ROLE: Film & art director of pre-final Hero Styleframes for a motion advertisement. Design rich layers, staging and format adaptations; describe motion choreography for the next stage. Follow the static protocol and approved facts.",
+    "roleInstructions": "ROLE: The designer of this ad. You turn its approved idea and words into finished frames in code, one conversation from the hero frame to every scene, format and variation; every visual decision is yours.",
+    "protocolInstructions": "You are the designer of one advertising direction. Right now you make one frame: the hero frame, the moment that proves the promise. Make it the way you would in a conversation with an art director: think, decide, draw, look, refine.\n\nWhat matters, in this order:\n1. It stops the scroll. In the first half second a viewer on a busy feed sees something they did not expect and wants to look closer. A frame that is merely tidy has failed.\n2. It carries one idea. One clear visual thought that makes the line true, specific to this product and this brand. If the frame would still work after swapping the logo for another one, the idea is not there yet.\n3. It belongs to this brand. Read the brand character, the compact sheet and the rules as a character, not a checklist: its temperament, its signature, its proportions of colour, how it speaks. Build with them; never imitate their layout.\n4. It is crafted. Type set with intent: scale, weight, rhythm and contrast that make the words land in order. A composition with a real hierarchy and a real focal point. Space used on purpose. Pictures that look made, not found.\n\nInvent your own visual language for this direction. Do not reach for a familiar arrangement because it is safe; ask what only this idea could look like, then commit to it. Large, cropped, overlapping or unusual can be right when the idea asks for it; say so, and keep the approved words readable.\n\nChoose the way of making on purpose. Every means is open: a photograph, a rendered 3D object or scene, graphics and type built in code, an interface built in code or shown on a device, an infographic made from the product's real figures, gradients and light as surfaces, a collage of cutouts and type, or a mix. Pick it from the idea and the brand's character, never because it is the easiest to build. A physical subject — the product, people, hands, places, materials — is usually a photograph or a rendered object you ask for as a picture: brief it as a precise shot (situation, composition, subject position, camera, light, ground, materials, colour, what is absent), never with adjectives, and never with words, numbers, interfaces or logos inside it. Interfaces, data and diagrams are built in code from the brand's own components and the product's real structure. The product, the logo and the brand's marks are used as supplied, never redrawn.\n\nThe words are the approved ones, exactly, and nothing else is written except text that belongs inside a depicted product or interface.\n\nWork like this. Write your thinking first: the idea, why it is right for this brand and this line, the way of making, and what makes it stop the scroll. Then the complete files. You will see each render with what was measured. Look at it as a viewer would: what is read first, second and third, and what is weakest. Change what serves the idea; a measured observation that your idea deliberately breaks can stay when you say why. When the frame is the best you can make it, ask for its review; the reviewer's notes come back to you, and you decide how to answer them in the work.",
+    "modelId": "anthropic/claude-sonnet-4.5",
+    "maxOutputTokens": 32000,
+    "pricing": {
+     "inputPrice": 0.000003,
+     "outputPrice": 0.000015,
+     "cacheReadPrice": 3e-7,
+     "cacheWritePrice": 0.00000375
+    },
+    "campaignContext": {
+     "checkpointId": "22222222-2222-4222-8222-222222222222"
+    },
+    "contextText": "SCENARIO (what each scene shows; what proves its line)\nScene 1 · 0–1.5 s · HERO\n  Shows: Opening Hook\nScene 2 · 1.5–3 s\n  Shows: Problem Introduction\nScene 3 · 3–4.5 s\n  Shows: Solution - Versioning Visual\nScene 4 · 4.5–6 s\n  Shows: Benefit - No More Manual Bounces\nScene 5 · 6–9 s\n  Shows: Call to Action/Offer\n\nHERO SCENE\nScene 1: design it first, in the reference format.\n\nFORMATS\nvertical · 1080×1920 · REFERENCE · smallest text 32 px · safe area top 192 right 65 bottom 346 left 65 px\nsquare · 1080×1080 · smallest text 32 px · safe area top 54 right 54 bottom 54 left 54 px\nportrait · 1080×1350 · smallest text 32 px · safe area top 68 right 54 bottom 68 left 54 px\nwide · 1920×1080 · smallest text 32 px · safe area top 54 right 96 bottom 54 left 96 px\n\nREFERENCE COPY (en-GB, hook primary, call to action primary, 6 s; approved words, verbatim)\nScene 1: LOST TRACK OF YOUR BEST TAKE?\nScene 2: END THE CHAOS. KEEP EVERY VERSION.\nScene 3: SAVE. REVERT. COMPARE. INSTANTLY.\nScene 4: FOCUS ON THE MUSIC. WE HANDLE THE FILES.\nScene 5: FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.\n\nVARIATIONS (all read through selected(props,…) in code)\nLanguages: en-GB\nHooks: primary, hook-1, hook-2, hook-3\nCalls to action: primary\nLengths: 6, 9, 12, 15 s\nThe copy for every hook and language is the catalogue entry copy-table.\n\nBRAND IN CODE (from ./brand)\nLogos: brand.logos[0] (clear space 0 px), brand.logos[1] (clear space 0 px)\nFont families: Archivo SemiBold (400); Noto Sans (400, 400)\n\nSUPPLIED FILES (refer to them by name)\napp-icon.png · image/png\nScreenshot 2026-10-26 at 01.15.50.png · image/png\nScreenshot 2026-10-26 at 01.15.41.png · image/png\nnano-banana.png · image/png\nnano-banana.png (2) · image/png\nnano-banana.png (3) · image/png\nnano-banana.png (4) · image/png\nnano-banana.png (5) · image/png\nnano-banana.png (6) · image/png\nnano-banana.png (7) · image/png\nnano-banana.png (8) · image/png\nnano-banana.png (9) · image/png\nnano-banana.png (10) · image/png\nnano-banana.png (11) · image/png\nnano-banana.png (12) · image/png\nnano-banana.png (13) · image/png\nnano-banana.png (14) · image/png\n\nMORE ON REQUEST (ask by name in materials)\nstage-strategy, stage-scenario, stage-visual-direction: the full planning results. copy-table: every approved line per scene, hook and language. The brand's kit sections and materials are in the material catalogue.",
+    "budgetScopeId": "budget-step-11111111-1111-4111-8111-111111111111-visual-direction",
+    "stepCapMicroUsd": 20000000,
+    "stream": true,
+    "directorBlockId": "33333333-3333-4333-8333-333333333333",
+    "directorDirectionId": "44444444-4444-4444-8444-444444444444",
+    "directorRole": "designer",
+    "directorInputTokens": 16678,
+    "directorRawInputBound": 13342,
+    "directorVisionCount": 0,
+    "directorCallId": "call-1"
+   }
+  },
+  {
+   "kind": "critic: selection of ideas",
+   "requestKey": "66666666-6666-4666-8666-000000000002",
+   "agentRole": "critic",
+   "model": "anthropic/claude-sonnet-4.5",
+   "prompt": "Choose one of the three ideas.",
+   "snapshot": {
+    "cachePrompt": true,
+    "cacheSessionId": "33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444:critic",
+    "requestInputCap": 65536,
+    "directorIterationId": "55555555-5555-4555-8555-555555555555",
+    "timeoutMs": 1800000,
+    "instructions": "ROLE: Demanding art director (frozen critic brief).",
+    "protocolInstructions": "You review an ad's work as an art director who did not make it. You see the work, the territory, the brand (in the run context), the checks and your own earlier review; the designer's conversation is not yours to see. Here the work is three image ideas for the hero frame, as text: for each idea answer the key questions (one clear idea; fits this brand and territory; stops the scroll for this product) and the checks, then pick the strongest passing idea with a two-sentence reason, or 0 when none passes.",
+    "modelId": "anthropic/claude-sonnet-4.5",
+    "maxOutputTokens": 16000,
+    "pricing": {
+     "inputPrice": 0.000003,
+     "outputPrice": 0.000015,
+     "cacheReadPrice": 3e-7,
+     "cacheWritePrice": 0.00000375
+    },
+    "campaignContext": {
+     "checkpointId": "22222222-2222-4222-8222-222222222222"
+    },
+    "contextText": "THE TERRITORY OF THIS DIRECTION\nSCENARIO (what each scene shows; what proves its line)\nScene 1 · 0–1.5 s · HERO\n  Shows: Opening Hook\nScene 2 · 1.5–3 s\n  Shows: Problem Introduction\nScene 3 · 3–4.5 s\n  Shows: Solution - Versioning Visual\nScene 4 · 4.5–6 s\n  Shows: Benefit - No More Manual Bounces\nScene 5 · 6–9 s\n  Shows: Call to Action/Offer\n\nHERO SCENE\nScene 1: design it first, in the reference format.\n\nFORMATS\nvertical · 1080×1920 · REFERENCE · smallest text 32 px · safe area top 192 right 65 bottom 346 left 65 px\nsquare · 1080×1080 · smallest text 32 px · safe area top 54 right 54 bottom 54 left 54 px\nportrait · 1080×1350 · smallest text 32 px · safe area top 68 right 54 bottom 68 left 54 px\nwide · 1920×1080 · smallest text 32 px · safe area top 54 right 96 bottom 54 left 96 px\n\nREFERENCE COPY (en-GB, hook primary, call to action primary, 6 s; approved words, verbatim)\nScene 1: LOST TRACK OF YOUR BEST TAKE?\nScene 2: END THE CHAOS. KEEP EVERY VERSION.\nScene 3: SAVE. REVERT. COMPARE. INSTANTLY.\nScene 4: FOCUS ON THE MUSIC. WE HANDLE THE FILES.\nScene 5: FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.\n\nVARIATIONS (all read through selected(props,…) in code)\nLanguages: en-GB\nHooks: primary, hook-1, hook-2, hook-3\nCalls to action: primary\nLengths: 6, 9, 12, 15 s\nThe copy for every hook and language is the catalogue entry copy-table.\n\nBRAND IN CODE (from ./brand)\nLogos: brand.logos[0] (clear space 0 px), brand.logos[1] (clear space 0 px)\nFont families: Archivo SemiBold (400); Noto Sans (400, 400)\n\nSUPPLIED FILES (refer to them by name)\napp-icon.png · image/png\nScreenshot 2026-10-26 at 01.15.50.png · image/png\nScreenshot 2026-10-26 at 01.15.41.png · image/png\nnano-banana.png · image/png\nnano-banana.png (2) · image/png\nnano-banana.png (3) · image/png\nnano-banana.png (4) · image/png\nnano-banana.png (5) · image/png\nnano-banana.png (6) · image/png\nnano-banana.png (7) · image/png\nnano-banana.png (8) · image/png\nnano-banana.png (9) · image/png\nnano-banana.png (10) · image/png\nnano-banana.png (11) · image/png\nnano-banana.png (12) · image/png\nnano-banana.png (13) · image/png\nnano-banana.png (14) · image/png\n\nMORE ON REQUEST (ask by name in materials)\nstage-strategy, stage-scenario, stage-visual-direction: the full planning results. copy-table: every approved line per scene, hook and language. The brand's kit sections and materials are in the material catalogue.\n\nTHE THREE IDEAS\n1. A\n2. B\n3. C\n\nTHE CHECKS (answer each by skill and number)\n- ad-idea 1: Does the idea state one benefit in the viewer's own situation?\n- ad-idea 2: Does the idea name the viewer's moment: who, where, doing what?\n- ad-idea 3: Does the idea show the product or its result doing what the promise says?\n- ad-idea 4: Does the idea have one turn the viewer would not expect?\n- brand-character 1: Does the idea use something only this brand has: its product, interface, outputs, people or numbers?\n- one-idea 1: Can each idea be said in one sentence a viewer could repeat?\n- one-idea 2: Does each idea carry a single message?",
+    "budgetScopeId": "budget-step-11111111-1111-4111-8111-111111111111-critic",
+    "stepCapMicroUsd": 5000000,
+    "outputFormat": "json_schema",
+    "responseSchema": {
+     "name": "idea_selection_v1",
+     "schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "ideas": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "additionalProperties": false,
+         "properties": {
+          "idea": {
+           "type": "integer",
+           "enum": [
+            1,
+            2,
+            3
+           ]
+          },
+          "passes": {
+           "type": "boolean"
+          },
+          "why": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "idea",
+          "passes",
+          "why"
+         ]
+        }
+       },
+       "pick": {
+        "type": "integer",
+        "enum": [
+         0,
+         1,
+         2,
+         3
+        ]
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "ideas",
+       "pick",
+       "reason"
+      ]
+     }
+    },
+    "stream": true,
+    "directorBlockId": "33333333-3333-4333-8333-333333333333",
+    "directorDirectionId": "44444444-4444-4444-8444-444444444444",
+    "directorRole": "critic",
+    "directorInputTokens": 7750,
+    "directorRawInputBound": 6200,
+    "directorVisionCount": 0,
+    "directorCallId": "call-2"
+   }
+  },
+  {
+   "kind": "designer: stage H turn",
+   "requestKey": "66666666-6666-4666-8666-000000000003",
+   "agentRole": "visual-direction",
+   "model": "anthropic/claude-sonnet-4.5",
+   "prompt": "The hero frame now.",
+   "snapshot": {
+    "cachePrompt": true,
+    "cacheSessionId": "33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444:designer",
+    "requestInputCap": 68000,
+    "directorIterationId": "55555555-5555-4555-8555-555555555555",
+    "timeoutMs": 1800000,
+    "instructions": "ROLE: Film & art director of pre-final Hero Styleframes for a motion advertisement. Design rich layers, staging and format adaptations; describe motion choreography for the next stage. Follow the static protocol and approved facts.",
+    "roleInstructions": "ROLE: The designer of this ad. You turn its approved idea and words into finished frames in code, one conversation from the hero frame to every scene, format and variation; every visual decision is yours.",
+    "protocolInstructions": "You are the designer of one advertising direction. Right now you make one frame: the hero frame, the moment that proves the promise. Make it the way you would in a conversation with an art director: think, decide, draw, look, refine.\n\nWhat matters, in this order:\n1. It stops the scroll. In the first half second a viewer on a busy feed sees something they did not expect and wants to look closer. A frame that is merely tidy has failed.\n2. It carries one idea. One clear visual thought that makes the line true, specific to this product and this brand. If the frame would still work after swapping the logo for another one, the idea is not there yet.\n3. It belongs to this brand. Read the brand character, the compact sheet and the rules as a character, not a checklist: its temperament, its signature, its proportions of colour, how it speaks. Build with them; never imitate their layout.\n4. It is crafted. Type set with intent: scale, weight, rhythm and contrast that make the words land in order. A composition with a real hierarchy and a real focal point. Space used on purpose. Pictures that look made, not found.\n\nInvent your own visual language for this direction. Do not reach for a familiar arrangement because it is safe; ask what only this idea could look like, then commit to it. Large, cropped, overlapping or unusual can be right when the idea asks for it; say so, and keep the approved words readable.\n\nChoose the way of making on purpose. Every means is open: a photograph, a rendered 3D object or scene, graphics and type built in code, an interface built in code or shown on a device, an infographic made from the product's real figures, gradients and light as surfaces, a collage of cutouts and type, or a mix. Pick it from the idea and the brand's character, never because it is the easiest to build. A physical subject — the product, people, hands, places, materials — is usually a photograph or a rendered object you ask for as a picture: brief it as a precise shot (situation, composition, subject position, camera, light, ground, materials, colour, what is absent), never with adjectives, and never with words, numbers, interfaces or logos inside it. Interfaces, data and diagrams are built in code from the brand's own components and the product's real structure. The product, the logo and the brand's marks are used as supplied, never redrawn.\n\nThe words are the approved ones, exactly, and nothing else is written except text that belongs inside a depicted product or interface.\n\nWork like this. Write your thinking first: the idea, why it is right for this brand and this line, the way of making, and what makes it stop the scroll. Then the complete files. You will see each render with what was measured. Look at it as a viewer would: what is read first, second and third, and what is weakest. Change what serves the idea; a measured observation that your idea deliberately breaks can stay when you say why. When the frame is the best you can make it, ask for its review; the reviewer's notes come back to you, and you decide how to answer them in the work.",
+    "modelId": "anthropic/claude-sonnet-4.5",
+    "maxOutputTokens": 32000,
+    "pricing": {
+     "inputPrice": 0.000003,
+     "outputPrice": 0.000015,
+     "cacheReadPrice": 3e-7,
+     "cacheWritePrice": 0.00000375
+    },
+    "campaignContext": {
+     "checkpointId": "22222222-2222-4222-8222-222222222222"
+    },
+    "contextText": "SCENARIO (what each scene shows; what proves its line)\nScene 1 · 0–1.5 s · HERO\n  Shows: Opening Hook\nScene 2 · 1.5–3 s\n  Shows: Problem Introduction\nScene 3 · 3–4.5 s\n  Shows: Solution - Versioning Visual\nScene 4 · 4.5–6 s\n  Shows: Benefit - No More Manual Bounces\nScene 5 · 6–9 s\n  Shows: Call to Action/Offer\n\nHERO SCENE\nScene 1: design it first, in the reference format.\n\nFORMATS\nvertical · 1080×1920 · REFERENCE · smallest text 32 px · safe area top 192 right 65 bottom 346 left 65 px\nsquare · 1080×1080 · smallest text 32 px · safe area top 54 right 54 bottom 54 left 54 px\nportrait · 1080×1350 · smallest text 32 px · safe area top 68 right 54 bottom 68 left 54 px\nwide · 1920×1080 · smallest text 32 px · safe area top 54 right 96 bottom 54 left 96 px\n\nREFERENCE COPY (en-GB, hook primary, call to action primary, 6 s; approved words, verbatim)\nScene 1: LOST TRACK OF YOUR BEST TAKE?\nScene 2: END THE CHAOS. KEEP EVERY VERSION.\nScene 3: SAVE. REVERT. COMPARE. INSTANTLY.\nScene 4: FOCUS ON THE MUSIC. WE HANDLE THE FILES.\nScene 5: FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.\n\nVARIATIONS (all read through selected(props,…) in code)\nLanguages: en-GB\nHooks: primary, hook-1, hook-2, hook-3\nCalls to action: primary\nLengths: 6, 9, 12, 15 s\nThe copy for every hook and language is the catalogue entry copy-table.\n\nBRAND IN CODE (from ./brand)\nLogos: brand.logos[0] (clear space 0 px), brand.logos[1] (clear space 0 px)\nFont families: Archivo SemiBold (400); Noto Sans (400, 400)\n\nSUPPLIED FILES (refer to them by name)\napp-icon.png · image/png\nScreenshot 2026-10-26 at 01.15.50.png · image/png\nScreenshot 2026-10-26 at 01.15.41.png · image/png\nnano-banana.png · image/png\nnano-banana.png (2) · image/png\nnano-banana.png (3) · image/png\nnano-banana.png (4) · image/png\nnano-banana.png (5) · image/png\nnano-banana.png (6) · image/png\nnano-banana.png (7) · image/png\nnano-banana.png (8) · image/png\nnano-banana.png (9) · image/png\nnano-banana.png (10) · image/png\nnano-banana.png (11) · image/png\nnano-banana.png (12) · image/png\nnano-banana.png (13) · image/png\nnano-banana.png (14) · image/png\n\nMORE ON REQUEST (ask by name in materials)\nstage-strategy, stage-scenario, stage-visual-direction: the full planning results. copy-table: every approved line per scene, hook and language. The brand's kit sections and materials are in the material catalogue.",
+    "budgetScopeId": "budget-step-11111111-1111-4111-8111-111111111111-visual-direction",
+    "stepCapMicroUsd": 20000000,
+    "stream": true,
+    "directorBlockId": "33333333-3333-4333-8333-333333333333",
+    "directorDirectionId": "44444444-4444-4444-8444-444444444444",
+    "directorRole": "designer",
+    "directorInputTokens": 20349,
+    "directorRawInputBound": 16279,
+    "directorVisionCount": 2,
+    "directorCallId": "call-3"
+   }
+  },
+  {
+   "kind": "critic: hero review (critic@2)",
+   "requestKey": "66666666-6666-4666-8666-000000000004",
+   "agentRole": "critic",
+   "model": "anthropic/claude-sonnet-4.5",
+   "prompt": "Review this hero frame.",
+   "snapshot": {
+    "cachePrompt": true,
+    "cacheSessionId": "33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444:critic",
+    "requestInputCap": 65536,
+    "directorIterationId": "55555555-5555-4555-8555-555555555555",
+    "timeoutMs": 1800000,
+    "instructions": "ROLE: Demanding art director (frozen critic brief).",
+    "protocolInstructions": "You review an ad's work as an art director who did not make it. You see the work, the territory, the brand (in the run context), the checks and your own earlier review; the designer's conversation is not yours to see. This is the hero frame, the frame every other scene follows: judge stopping power and the idea first, then craft.\n1. When your earlier review is given, rule on each earlier note first: fixed, open or worse.\n2. Answer every check yes or no, with one line of evidence from the render (s = skill id, n = check number).\n3. Then add new notes. Each names its skill and check, says what to change and why, has a priority (P0 blocks, P1 should, P2 could) and names the view. A note that contradicts an earlier one names it in replaces and says why it no longer holds; otherwise replaces is empty.\naccepted is true when every check passes and no P0 or P1 note is open. Approved words and facts stay as they are.",
+    "modelId": "anthropic/claude-sonnet-4.5",
+    "maxOutputTokens": 16000,
+    "pricing": {
+     "inputPrice": 0.000003,
+     "outputPrice": 0.000015,
+     "cacheReadPrice": 3e-7,
+     "cacheWritePrice": 0.00000375
+    },
+    "campaignContext": {
+     "checkpointId": "22222222-2222-4222-8222-222222222222"
+    },
+    "contextText": "THE TERRITORY\nSCENARIO (what each scene shows; what proves its line)\nScene 1 · 0–1.5 s · HERO\n  Shows: Opening Hook\nScene 2 · 1.5–3 s\n  Shows: Problem Introduction\nScene 3 · 3–4.5 s\n  Shows: Solution - Versioning Visual\nScene 4 · 4.5–6 s\n  Shows: Benefit - No More Manual Bounces\nScene 5 · 6–9 s\n  Shows: Call to Action/Offer\n\nHERO SCENE\nScene 1: design it first, in the reference format.\n\nFORMATS\nvertical · 1080×1920 · REFERENCE · smallest text 32 px · safe area top 192 right 65 bottom 346 left 65 px\nsquare · 1080×1080 · smallest text 32 px · safe area top 54 right 54 bottom 54 left 54 px\nportrait · 1080×1350 · smallest text 32 px · safe area top 68 right 54 bottom 68 left 54 px\nwide · 1920×1080 · smallest text 32 px · safe area top 54 right 96 bottom 54 left 96 px\n\nREFERENCE COPY (en-GB, hook primary, call to action primary, 6 s; approved words, verbatim)\nScene 1: LOST TRACK OF YOUR BEST TAKE?\nScene 2: END THE CHAOS. KEEP EVERY VERSION.\nScene 3: SAVE. REVERT. COMPARE. INSTANTLY.\nScene 4: FOCUS ON THE MUSIC. WE HANDLE THE FILES.\nScene 5: FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.\n\nVARIATIONS (all read through selected(props,…) in code)\nLanguages: en-GB\nHooks: primary, hook-1, hook-2, hook-3\nCalls to action: primary\nLengths: 6, 9, 12, 15 s\nThe copy for every hook and language is the catalogue entry copy-table.\n\nBRAND IN CODE (from ./brand)\nLogos: brand.logos[0] (clear space 0 px), brand.logos[1] (clear space 0 px)\nFont families: Archivo SemiBold (400); Noto Sans (400, 400)\n\nSUPPLIED FILES (refer to them by name)\napp-icon.png · image/png\nScreenshot 2026-10-26 at 01.15.50.png · image/png\nScreenshot 2026-10-26 at 01.15.41.png · image/png\nnano-banana.png · image/png\nnano-banana.png (2) · image/png\nnano-banana.png (3) · image/png\nnano-banana.png (4) · image/png\nnano-banana.png (5) · image/png\nnano-banana.png (6) · image/png\nnano-banana.png (7) · image/png\nnano-banana.png (8) · image/png\nnano-banana.png (9) · image/png\nnano-banana.png (10) · image/png\nnano-banana.png (11) · image/png\nnano-banana.png (12) · image/png\nnano-banana.png (13) · image/png\nnano-banana.png (14) · image/png\n\nMORE ON REQUEST (ask by name in materials)\nstage-strategy, stage-scenario, stage-visual-direction: the full planning results. copy-table: every approved line per scene, hook and language. The brand's kit sections and materials are in the material catalogue.\n\nTHE CHECKS (answer each by skill and number)\n- ad-idea 1: Can a stranger tell what is sold from the picture and the headline together?\n- brand-character 1: Can someone who knows the brand name it with the logo covered?\n- brand-character 2: Are the brand's ground, voice and accent colours used in the brand's own proportions?\n- brand-character 3: Is the accent colour limited to a small share of the frame?\n- final-check 1: Can a stranger say what is sold, and to whom, from the picture and the headline in two seconds?\n- final-check 2: Can you name one dominant element that is neither empty space nor decoration?\n- final-check 3: Does the picture show the product, its result or the viewer's moment?\n- final-check 4: Is the mark on a suitable ground with its clear space?\n- frame-composition 1: Does the frame use one structure: a subject with the headline, the headline as the subject, or a split?\n- frame-composition 2: Do the headline and the subject touch, overlap, align or point at each other?\n- frame-composition 3: Does the frame show two or three large shapes with clear value differences when you squint?\n- one-idea 1: Does every element in the frame serve the frame's one idea?\n- picture-brief 1: Does each generated picture show something code cannot draw: the product in use, a person, a real material or place?\n- picture-brief 2: Is every generated picture free of words, numbers and logos?\n- picture-brief 3: Does the picture leave a calm area where the headline and the mark sit?\n- picture-brief 4: Is the picture's subject clear of the edges, so every format can crop it?\n- reading-order 1: Is one element read first by its size, contrast or position?\n- reading-order 2: Is there one element read second that explains the first?\n- reading-order 3: Is the call to action read last?\n- reading-order 4: Is every other element smaller or lower in contrast than the first?\n- revise-with-reason 1: Is the render free of earlier notes that you now rule open or worse?\n- revise-with-reason 2: Is the render free of checks that passed in your earlier review and fail now?\n- revise-with-reason 3: Is the render free of a new problem caused by the fix for another note?\n- stopping-power 1: Does one element have far more area, contrast or colour than any other?\n- stopping-power 2: Is the dominant element concrete: a person, a hand, the product or a readable result?\n- stopping-power 3: Do the dominant element and the headline separate from the ground at thumbnail size?\n- stopping-power 4: Do the subject and the headline together cover most of the frame?\n- type-as-voice 1: Does each headline line end where a person would pause for breath?\n- type-as-voice 2: Is the headline free of hyphenated words and of a last line of one short word?\n- type-as-voice 3: Are there at most three text sizes, each visibly larger than the next?\n- type-as-voice 4: Is all type on a ground that keeps it readable at phone size?\n- type-as-voice 5: Is the call to action set apart from the other text by its shape, colour or position?\n- default-look 1: Is the dominant element something concrete from this product or the named moment?\n- default-look 2: Is the frame free of glows, blurs and gradients used to make flat shapes look finished?\n- default-look 3: Does the headline have its place in the composition without a box added around it?\n- default-look 4: Does every interface in the frame show believable content rather than empty cards?\n\nSIGNS OF FAILURE\nad-idea: The headline describes the company, not a benefit to the viewer.\nAn abstract object stands where the product or its result should be.\nNothing in the frame is unexpected; every choice is the safe average.\nbrand-character: The frame would fit another brand after swapping the logo and one colour.\nThe ground is dark where the brand's own materials are light, or the reverse.\nThe accent colour covers the frame instead of marking one point.\nfinal-check: A stranger needs the brief to say what is sold.\nNo single element stands out at thumbnail size.\nThe frame meets every kit rule and still could be anyone's ad.\nframe-composition: Elements of two structures share one frame.\nThe headline and the subject float apart, as if assembled by accident.\nDepth comes from glows and shadows laid over flat shapes.\none-idea: The frame or the idea needs two sentences to explain.\nA second message competes with the first.\npicture-brief: A generic object or an empty scene stands where the subject should be.\nSeveral small pictures where one large picture would do.\nLettering or a mark appears inside a generated picture.\nreading-order: Two elements of similar size and contrast compete for first.\nThe order depends on colour alone.\nrevise-with-reason: A fix for one part changed the whole frame.\nA finding that was fixed has come back elsewhere.\nstopping-power: At thumbnail size no element is larger or stronger than the rest.\nSmall type sits in a large calm field.\nEverything is centred, level and evenly spaced when calm is not the idea.\ntype-as-voice: A line ends on an article, a preposition or a lone short word.\nLetters touch.\nType sits over the subject's key area or in a tinted box added late.\ndefault-look: When nothing in a frame was decided from the brand and the idea, the result drifts to a recognisable default. Treat each of these as a sign the decision was skipped, and replace it with a choice made from the brand's character and the promise.\n\n- A dark or grey empty space with a soft spotlight, standing in for a subject.\n- Glowing, glassy or softly shadowed rounded panels arranged in a row or a grid.\n- A plinth, podium, shelf or stage holding an abstract or generic object.\n- A smooth generic object whose only link to the product is a figure of speech.\n- Gradients, blurs and glows used to make flat shapes look finished.\n- A headline placed in a box because nothing else gave it a place.\n- Everything centred, evenly spaced and the same size.\n- The brand's accent colour used as a thin line or edge on an otherwise brandless frame.\n- An interface drawn as empty cards with no believable content.\n- A picture that shows the category in general and nothing of this product.\n- Colours, materials or moods taken from what seems premium instead of from the brand's own materials.\n\nFinding one of these is not a matter of taste: it means the frame says nothing about this product for this viewer. Go back to the promise and the proof and ask what should be standing there. Usually the answer is the product working, a person in the named moment, or the headline itself at full scale in the brand's voice. Empty space is allowed only when it makes the one dominant element stronger.",
+    "budgetScopeId": "budget-step-11111111-1111-4111-8111-111111111111-critic",
+    "stepCapMicroUsd": 5000000,
+    "outputFormat": "json_schema",
+    "responseSchema": {
+     "name": "critic_review_v2",
+     "schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "rulings": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "additionalProperties": false,
+         "properties": {
+          "note": {
+           "type": "string"
+          },
+          "ruling": {
+           "type": "string",
+           "enum": [
+            "fixed",
+            "open",
+            "worse"
+           ]
+          }
+         },
+         "required": [
+          "note",
+          "ruling"
+         ]
+        }
+       },
+       "checks": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "additionalProperties": false,
+         "properties": {
+          "s": {
+           "type": "string"
+          },
+          "n": {
+           "type": "integer"
+          },
+          "ok": {
+           "type": "boolean"
+          },
+          "e": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "s",
+          "n",
+          "ok",
+          "e"
+         ]
+        }
+       },
+       "notes": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "additionalProperties": false,
+         "properties": {
+          "s": {
+           "type": "string"
+          },
+          "n": {
+           "type": "integer"
+          },
+          "priority": {
+           "type": "string",
+           "enum": [
+            "P0",
+            "P1",
+            "P2"
+           ]
+          },
+          "view": {
+           "type": "string"
+          },
+          "problem": {
+           "type": "string"
+          },
+          "fix": {
+           "type": "string"
+          },
+          "replaces": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "s",
+          "n",
+          "priority",
+          "view",
+          "problem",
+          "fix",
+          "replaces"
+         ]
+        }
+       },
+       "accepted": {
+        "type": "boolean"
+       },
+       "summary": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "rulings",
+       "checks",
+       "notes",
+       "accepted",
+       "summary"
+      ]
+     }
+    },
+    "stream": true,
+    "directorBlockId": "33333333-3333-4333-8333-333333333333",
+    "directorDirectionId": "44444444-4444-4444-8444-444444444444",
+    "directorRole": "critic",
+    "directorInputTokens": 21755,
+    "directorRawInputBound": 17404,
+    "directorVisionCount": 1,
+    "directorCallId": "call-4"
+   }
+  },
+  {
+   "kind": "designer: stage E turn",
+   "requestKey": "66666666-6666-4666-8666-000000000005",
+   "agentRole": "visual-direction",
+   "model": "anthropic/claude-sonnet-4.5",
+   "prompt": "The next scenes.",
+   "snapshot": {
+    "cachePrompt": true,
+    "cacheSessionId": "33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444:designer",
+    "requestInputCap": 68000,
+    "directorIterationId": "55555555-5555-4555-8555-555555555555",
+    "timeoutMs": 1800000,
+    "instructions": "ROLE: Film & art director of pre-final Hero Styleframes for a motion advertisement. Design rich layers, staging and format adaptations; describe motion choreography for the next stage. Follow the static protocol and approved facts.",
+    "roleInstructions": "ROLE: The designer of this ad. You turn its approved idea and words into finished frames in code, one conversation from the hero frame to every scene, format and variation; every visual decision is yours.",
+    "protocolInstructions": "You are the designer of one advertising direction. Right now you make one frame: the hero frame, the moment that proves the promise. Make it the way you would in a conversation with an art director: think, decide, draw, look, refine.\n\nWhat matters, in this order:\n1. It stops the scroll. In the first half second a viewer on a busy feed sees something they did not expect and wants to look closer. A frame that is merely tidy has failed.\n2. It carries one idea. One clear visual thought that makes the line true, specific to this product and this brand. If the frame would still work after swapping the logo for another one, the idea is not there yet.\n3. It belongs to this brand. Read the brand character, the compact sheet and the rules as a character, not a checklist: its temperament, its signature, its proportions of colour, how it speaks. Build with them; never imitate their layout.\n4. It is crafted. Type set with intent: scale, weight, rhythm and contrast that make the words land in order. A composition with a real hierarchy and a real focal point. Space used on purpose. Pictures that look made, not found.\n\nInvent your own visual language for this direction. Do not reach for a familiar arrangement because it is safe; ask what only this idea could look like, then commit to it. Large, cropped, overlapping or unusual can be right when the idea asks for it; say so, and keep the approved words readable.\n\nChoose the way of making on purpose. Every means is open: a photograph, a rendered 3D object or scene, graphics and type built in code, an interface built in code or shown on a device, an infographic made from the product's real figures, gradients and light as surfaces, a collage of cutouts and type, or a mix. Pick it from the idea and the brand's character, never because it is the easiest to build. A physical subject — the product, people, hands, places, materials — is usually a photograph or a rendered object you ask for as a picture: brief it as a precise shot (situation, composition, subject position, camera, light, ground, materials, colour, what is absent), never with adjectives, and never with words, numbers, interfaces or logos inside it. Interfaces, data and diagrams are built in code from the brand's own components and the product's real structure. The product, the logo and the brand's marks are used as supplied, never redrawn.\n\nThe words are the approved ones, exactly, and nothing else is written except text that belongs inside a depicted product or interface.\n\nWork like this. Write your thinking first: the idea, why it is right for this brand and this line, the way of making, and what makes it stop the scroll. Then the complete files. You will see each render with what was measured. Look at it as a viewer would: what is read first, second and third, and what is weakest. Change what serves the idea; a measured observation that your idea deliberately breaks can stay when you say why. When the frame is the best you can make it, ask for its review; the reviewer's notes come back to you, and you decide how to answer them in the work.",
+    "modelId": "anthropic/claude-sonnet-4.5",
+    "maxOutputTokens": 32000,
+    "pricing": {
+     "inputPrice": 0.000003,
+     "outputPrice": 0.000015,
+     "cacheReadPrice": 3e-7,
+     "cacheWritePrice": 0.00000375
+    },
+    "campaignContext": {
+     "checkpointId": "22222222-2222-4222-8222-222222222222"
+    },
+    "contextText": "SCENARIO (scene id for focus, render and code; what it shows; what proves its line)\nScene 1 · id f0175d7f-163d-4e99-ae8e-66011730fa11 · 0–1.5 s · HERO\n  Shows: Opening Hook\nScene 2 · id c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b · 1.5–3 s\n  Shows: Problem Introduction\nScene 3 · id 6ebb2ddb-a720-4316-aef9-2e183a7d6d1d · 3–4.5 s\n  Shows: Solution - Versioning Visual\nScene 4 · id 3848f442-c894-45fe-a298-0dc6a442f54f · 4.5–6 s\n  Shows: Benefit - No More Manual Bounces\nScene 5 · id c929bcbb-08f5-4c13-a3f8-fc254fa5d14e · 6–9 s\n  Shows: Call to Action/Offer\n\nHERO SCENE\nScene 1 (id f0175d7f-163d-4e99-ae8e-66011730fa11): design it first, in the reference format.\n\nFORMATS\nvertical · 1080×1920 · REFERENCE · smallest text 32 px · safe area top 192 right 65 bottom 346 left 65 px\nsquare · 1080×1080 · smallest text 32 px · safe area top 54 right 54 bottom 54 left 54 px\nportrait · 1080×1350 · smallest text 32 px · safe area top 68 right 54 bottom 68 left 54 px\nwide · 1920×1080 · smallest text 32 px · safe area top 54 right 96 bottom 54 left 96 px\n\nREFERENCE COPY (en-GB, hook primary, call to action primary, 6 s; approved words, verbatim)\nScene 1: LOST TRACK OF YOUR BEST TAKE?\nScene 2: END THE CHAOS. KEEP EVERY VERSION.\nScene 3: SAVE. REVERT. COMPARE. INSTANTLY.\nScene 4: FOCUS ON THE MUSIC. WE HANDLE THE FILES.\nScene 5: FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.\n\nVARIATIONS (all read through selected(props,…) in code)\nLanguages: en-GB\nHooks: primary, hook-1, hook-2, hook-3\nCalls to action: primary\nLengths: 6, 9, 12, 15 s\nThe copy for every hook and language is the catalogue entry copy-table.\n\nBRAND IN CODE (from ./brand)\nLogos: brand.logos[0] (clear space 0 px), brand.logos[1] (clear space 0 px)\nFont families: Archivo SemiBold (400); Noto Sans (400, 400)\n\nSUPPLIED FILES (refer to them by name)\napp-icon.png · image/png\nScreenshot 2026-10-26 at 01.15.50.png · image/png\nScreenshot 2026-10-26 at 01.15.41.png · image/png\nnano-banana.png · image/png\nnano-banana.png (2) · image/png\nnano-banana.png (3) · image/png\nnano-banana.png (4) · image/png\nnano-banana.png (5) · image/png\nnano-banana.png (6) · image/png\nnano-banana.png (7) · image/png\nnano-banana.png (8) · image/png\nnano-banana.png (9) · image/png\nnano-banana.png (10) · image/png\nnano-banana.png (11) · image/png\nnano-banana.png (12) · image/png\nnano-banana.png (13) · image/png\nnano-banana.png (14) · image/png\n\nMORE ON REQUEST (ask by name in materials)\nstage-strategy, stage-scenario, stage-visual-direction: the full planning results. copy-table: every approved line per scene, hook and language. The brand's kit sections and materials are in the material catalogue.",
+    "budgetScopeId": "budget-step-11111111-1111-4111-8111-111111111111-visual-direction",
+    "stepCapMicroUsd": 20000000,
+    "stream": true,
+    "directorBlockId": "33333333-3333-4333-8333-333333333333",
+    "directorDirectionId": "44444444-4444-4444-8444-444444444444",
+    "directorRole": "designer",
+    "directorInputTokens": 25983,
+    "directorRawInputBound": 20786,
+    "directorVisionCount": 3,
+    "directorCallId": "call-5"
+   }
+  },
+  {
+   "kind": "critic: end review (critic@2)",
+   "requestKey": "66666666-6666-4666-8666-000000000006",
+   "agentRole": "critic",
+   "model": "anthropic/claude-sonnet-4.5",
+   "prompt": "Review these rendered views of the draft.",
+   "snapshot": {
+    "cachePrompt": true,
+    "cacheSessionId": "33333333-3333-4333-8333-333333333333:44444444-4444-4444-8444-444444444444:critic",
+    "requestInputCap": 65536,
+    "directorIterationId": "55555555-5555-4555-8555-555555555555",
+    "timeoutMs": 1800000,
+    "instructions": "ROLE: Demanding art director (frozen critic brief).",
+    "protocolInstructions": "You review an ad's work as an art director who did not make it. You see the work, the territory, the brand (in the run context), the checks and your own earlier review; the designer's conversation is not yours to see. These are the finished scenes and formats of the draft: judge whether the idea holds in every view, then craft.\n1. When your earlier review is given, rule on each earlier note first: fixed, open or worse.\n2. Answer every check yes or no, with one line of evidence from the render (s = skill id, n = check number).\n3. Then add new notes. Each names its skill and check, says what to change and why, has a priority (P0 blocks, P1 should, P2 could) and names the view. A note that contradicts an earlier one names it in replaces and says why it no longer holds; otherwise replaces is empty.\naccepted is true when every check passes and no P0 or P1 note is open. Approved words and facts stay as they are.",
+    "modelId": "anthropic/claude-sonnet-4.5",
+    "maxOutputTokens": 16000,
+    "pricing": {
+     "inputPrice": 0.000003,
+     "outputPrice": 0.000015,
+     "cacheReadPrice": 3e-7,
+     "cacheWritePrice": 0.00000375
+    },
+    "campaignContext": {
+     "checkpointId": "22222222-2222-4222-8222-222222222222"
+    },
+    "contextText": "THE TERRITORY\nSCENARIO (scene id for focus, render and code; what it shows; what proves its line)\nScene 1 · id f0175d7f-163d-4e99-ae8e-66011730fa11 · 0–1.5 s · HERO\n  Shows: Opening Hook\nScene 2 · id c2e7aef0-0e0c-4cac-a5c3-2ea2e9356d5b · 1.5–3 s\n  Shows: Problem Introduction\nScene 3 · id 6ebb2ddb-a720-4316-aef9-2e183a7d6d1d · 3–4.5 s\n  Shows: Solution - Versioning Visual\nScene 4 · id 3848f442-c894-45fe-a298-0dc6a442f54f · 4.5–6 s\n  Shows: Benefit - No More Manual Bounces\nScene 5 · id c929bcbb-08f5-4c13-a3f8-fc254fa5d14e · 6–9 s\n  Shows: Call to Action/Offer\n\nHERO SCENE\nScene 1 (id f0175d7f-163d-4e99-ae8e-66011730fa11): design it first, in the reference format.\n\nFORMATS\nvertical · 1080×1920 · REFERENCE · smallest text 32 px · safe area top 192 right 65 bottom 346 left 65 px\nsquare · 1080×1080 · smallest text 32 px · safe area top 54 right 54 bottom 54 left 54 px\nportrait · 1080×1350 · smallest text 32 px · safe area top 68 right 54 bottom 68 left 54 px\nwide · 1920×1080 · smallest text 32 px · safe area top 54 right 96 bottom 54 left 96 px\n\nREFERENCE COPY (en-GB, hook primary, call to action primary, 6 s; approved words, verbatim)\nScene 1: LOST TRACK OF YOUR BEST TAKE?\nScene 2: END THE CHAOS. KEEP EVERY VERSION.\nScene 3: SAVE. REVERT. COMPARE. INSTANTLY.\nScene 4: FOCUS ON THE MUSIC. WE HANDLE THE FILES.\nScene 5: FREE 1ST MONTH BAND-PLAN THIS MONTH. SIGN UP.\n\nVARIATIONS (all read through selected(props,…) in code)\nLanguages: en-GB\nHooks: primary, hook-1, hook-2, hook-3\nCalls to action: primary\nLengths: 6, 9, 12, 15 s\nThe copy for every hook and language is the catalogue entry copy-table.\n\nBRAND IN CODE (from ./brand)\nLogos: brand.logos[0] (clear space 0 px), brand.logos[1] (clear space 0 px)\nFont families: Archivo SemiBold (400); Noto Sans (400, 400)\n\nSUPPLIED FILES (refer to them by name)\napp-icon.png · image/png\nScreenshot 2026-10-26 at 01.15.50.png · image/png\nScreenshot 2026-10-26 at 01.15.41.png · image/png\nnano-banana.png · image/png\nnano-banana.png (2) · image/png\nnano-banana.png (3) · image/png\nnano-banana.png (4) · image/png\nnano-banana.png (5) · image/png\nnano-banana.png (6) · image/png\nnano-banana.png (7) · image/png\nnano-banana.png (8) · image/png\nnano-banana.png (9) · image/png\nnano-banana.png (10) · image/png\nnano-banana.png (11) · image/png\nnano-banana.png (12) · image/png\nnano-banana.png (13) · image/png\nnano-banana.png (14) · image/png\n\nMORE ON REQUEST (ask by name in materials)\nstage-strategy, stage-scenario, stage-visual-direction: the full planning results. copy-table: every approved line per scene, hook and language. The brand's kit sections and materials are in the material catalogue.\n\nTHE CHECKS (answer each by skill and number)\n- ad-idea 1: Can a stranger tell what is sold from the picture and the headline together?\n- brand-character 1: Can someone who knows the brand name it with the logo covered?\n- brand-character 2: Are the brand's ground, voice and accent colours used in the brand's own proportions?\n- brand-character 3: Is the accent colour limited to a small share of the frame?\n- final-check 1: Can a stranger say what is sold, and to whom, from the picture and the headline in two seconds?\n- final-check 2: Can you name one dominant element that is neither empty space nor decoration?\n- final-check 3: Does the picture show the product, its result or the viewer's moment?\n- final-check 4: Is the mark on a suitable ground with its clear space?\n- frame-composition 1: Does the frame use one structure: a subject with the headline, the headline as the subject, or a split?\n- frame-composition 2: Do the headline and the subject touch, overlap, align or point at each other?\n- frame-composition 3: Is each format recomposed with its own crop, scale or order rather than shrunk?\n- frame-composition 4: Does the frame show two or three large shapes with clear value differences when you squint?\n- layout-craft 1: Are margins, gaps and type sizes visibly multiples of one unit in every format?\n- layout-craft 2: Does every element sit on one of a few shared edges or axes?\n- layout-craft 3: Are every word and the mark inside the safe area in each format?\n- layout-craft 4: Is the subject of every picture still visible after each format's crop?\n- motion-intent 1: Does each scene's key frame show its subject and its words without any motion?\n- motion-intent 2: Is the subject or the first line visible in the first frame of the first scene?\n- motion-intent 3: Do the offer and the call to action appear in the last scene?\n- one-idea 1: Does every element in the frame serve the frame's one idea?\n- picture-brief 1: Does each generated picture show something code cannot draw: the product in use, a person, a real material or place?\n- picture-brief 2: Is every generated picture free of words, numbers and logos?\n- picture-brief 3: Does the picture leave a calm area where the headline and the mark sit?\n- picture-brief 4: Is the picture's subject clear of the edges, so every format can crop it?\n- reading-order 1: Is one element read first by its size, contrast or position?\n- reading-order 2: Is there one element read second that explains the first?\n- reading-order 3: Is the call to action read last?\n- reading-order 4: Is every other element smaller or lower in contrast than the first?\n- revise-with-reason 1: Is the render free of earlier notes that you now rule open or worse?\n- revise-with-reason 2: Is the render free of checks that passed in your earlier review and fail now?\n- revise-with-reason 3: Is the render free of a new problem caused by the fix for another note?\n- stopping-power 1: Does one element have far more area, contrast or colour than any other?\n- stopping-power 2: Is the dominant element concrete: a person, a hand, the product or a readable result?\n- stopping-power 3: Do the dominant element and the headline separate from the ground at thumbnail size?\n- stopping-power 4: Do the subject and the headline together cover most of the frame?\n- type-as-voice 1: Does each headline line end where a person would pause for breath?\n- type-as-voice 2: Is the headline free of hyphenated words and of a last line of one short word?\n- type-as-voice 3: Are there at most three text sizes, each visibly larger than the next?\n- type-as-voice 4: Is all type on a ground that keeps it readable at phone size?\n- type-as-voice 5: Is the call to action set apart from the other text by its shape, colour or position?\n- variation-engine 1: Does the longest headline fit the narrowest format without clipping?\n- variation-engine 2: Does the shortest headline fill its area without a large empty gap?\n- variation-engine 3: Do all formats share one structure, with sizes set by the frame?\n- variation-engine 4: Is every word on the canvas from the approved copy?\n- default-look 1: Is the dominant element something concrete from this product or the named moment?\n- default-look 2: Is the frame free of glows, blurs and gradients used to make flat shapes look finished?\n- default-look 3: Does the headline have its place in the composition without a box added around it?\n- default-look 4: Does every interface in the frame show believable content rather than empty cards?\n\nSIGNS OF FAILURE\nad-idea: The headline describes the company, not a benefit to the viewer.\nAn abstract object stands where the product or its result should be.\nNothing in the frame is unexpected; every choice is the safe average.\nbrand-character: The frame would fit another brand after swapping the logo and one colour.\nThe ground is dark where the brand's own materials are light, or the reverse.\nThe accent colour covers the frame instead of marking one point.\nfinal-check: A stranger needs the brief to say what is sold.\nNo single element stands out at thumbnail size.\nThe frame meets every kit rule and still could be anyone's ad.\nframe-composition: Elements of two structures share one frame.\nThe headline and the subject float apart, as if assembled by accident.\nDepth comes from glows and shadows laid over flat shapes.\nlayout-craft: An element is almost aligned with another.\nEqual gaps everywhere hide which things belong together.\nSomething touches a frame edge by accident.\nmotion-intent: The first scene opens on an empty or nearly empty frame.\nA key frame says nothing without the motion planned for it.\none-idea: The frame or the idea needs two sentences to explain.\nA second message competes with the first.\npicture-brief: A generic object or an empty scene stands where the subject should be.\nSeveral small pictures where one large picture would do.\nLettering or a mark appears inside a generated picture.\nreading-order: Two elements of similar size and contrast compete for first.\nThe order depends on colour alone.\nrevise-with-reason: A fix for one part changed the whole frame.\nA finding that was fixed has come back elsewhere.\nstopping-power: At thumbnail size no element is larger or stronger than the rest.\nSmall type sits in a large calm field.\nEverything is centred, level and evenly spaced when calm is not the idea.\ntype-as-voice: A line ends on an article, a preposition or a lone short word.\nLetters touch.\nType sits over the subject's key area or in a tinted box added late.\nvariation-engine: A layout works only for the reference copy.\nText shrinks below a legible size instead of the composition changing.\nOne variation has a different structure for no reason.\ndefault-look: When nothing in a frame was decided from the brand and the idea, the result drifts to a recognisable default. Treat each of these as a sign the decision was skipped, and replace it with a choice made from the brand's character and the promise.\n\n- A dark or grey empty space with a soft spotlight, standing in for a subject.\n- Glowing, glassy or softly shadowed rounded panels arranged in a row or a grid.\n- A plinth, podium, shelf or stage holding an abstract or generic object.\n- A smooth generic object whose only link to the product is a figure of speech.\n- Gradients, blurs and glows used to make flat shapes look finished.\n- A headline placed in a box because nothing else gave it a place.\n- Everything centred, evenly spaced and the same size.\n- The brand's accent colour used as a thin line or edge on an otherwise brandless frame.\n- An interface drawn as empty cards with no believable content.\n- A picture that shows the category in general and nothing of this product.\n- Colours, materials or moods taken from what seems premium instead of from the brand's own materials.\n\nFinding one of these is not a matter of taste: it means the frame says nothing about this product for this viewer. Go back to the promise and the proof and ask what should be standing there. Usually the answer is the product working, a person in the named moment, or the headline itself at full scale in the brand's voice. Empty space is allowed only when it makes the one dominant element stronger.",
+    "budgetScopeId": "budget-step-11111111-1111-4111-8111-111111111111-critic",
+    "stepCapMicroUsd": 5000000,
+    "outputFormat": "json_schema",
+    "responseSchema": {
+     "name": "critic_review_v2",
+     "schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "rulings": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "additionalProperties": false,
+         "properties": {
+          "note": {
+           "type": "string"
+          },
+          "ruling": {
+           "type": "string",
+           "enum": [
+            "fixed",
+            "open",
+            "worse"
+           ]
+          }
+         },
+         "required": [
+          "note",
+          "ruling"
+         ]
+        }
+       },
+       "checks": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "additionalProperties": false,
+         "properties": {
+          "s": {
+           "type": "string"
+          },
+          "n": {
+           "type": "integer"
+          },
+          "ok": {
+           "type": "boolean"
+          },
+          "e": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "s",
+          "n",
+          "ok",
+          "e"
+         ]
+        }
+       },
+       "notes": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "additionalProperties": false,
+         "properties": {
+          "s": {
+           "type": "string"
+          },
+          "n": {
+           "type": "integer"
+          },
+          "priority": {
+           "type": "string",
+           "enum": [
+            "P0",
+            "P1",
+            "P2"
+           ]
+          },
+          "view": {
+           "type": "string"
+          },
+          "problem": {
+           "type": "string"
+          },
+          "fix": {
+           "type": "string"
+          },
+          "replaces": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "s",
+          "n",
+          "priority",
+          "view",
+          "problem",
+          "fix",
+          "replaces"
+         ]
+        }
+       },
+       "accepted": {
+        "type": "boolean"
+       },
+       "summary": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "rulings",
+       "checks",
+       "notes",
+       "accepted",
+       "summary"
+      ]
+     }
+    },
+    "stream": true,
+    "directorBlockId": "33333333-3333-4333-8333-333333333333",
+    "directorDirectionId": "44444444-4444-4444-8444-444444444444",
+    "directorRole": "critic",
+    "directorInputTokens": 61032,
+    "directorRawInputBound": 48825,
+    "directorVisionCount": 8,
+    "directorCallId": "call-6"
+   }
+  }
+ ],
+ "model3d": {
+  "model": "tripo/P2-20260801",
+  "instructions": "ROLE: 3D resource producer (frozen)",
+  "price": 1100000
+ },
+ "modelStep": {
+  "kind": "model3d: 3D model of a picture",
+  "requestKey": "66666666-6666-4666-8666-999999999999",
+  "agentRole": "model3d",
+  "model": "tripo/P2-20260801",
+  "prompt": "Image to 3D model of r1",
+  "reservation": 1100000,
+  "snapshot": {
+   "directorBlockId": "33333333-3333-4333-8333-333333333333",
+   "directorDirectionId": "44444444-4444-4444-8444-444444444444",
+   "directorRole": "model",
+   "directorIterationId": "55555555-5555-4555-8555-555555555555",
+   "directorResourceId": "r1",
+   "instructions": "ROLE: 3D resource producer (frozen)",
+   "stepCapMicroUsd": 4400000,
+   "budgetScopeId": "budget-step-11111111-1111-4111-8111-111111111111-model3d",
+   "campaignContext": {
+    "mode": "director_model",
+    "checkpointId": "22222222-2222-4222-8222-222222222222"
+   },
+   "pricing": {
+    "provider": "tripo",
+    "model": "P2-20260801",
+    "credits": 110,
+    "usdPerCredit": 0.01
+   }
+  }
+ }
+}

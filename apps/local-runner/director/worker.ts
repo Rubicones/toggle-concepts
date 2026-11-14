@@ -10,7 +10,7 @@ import {designDirection} from './design';
 import {directorTask,directorRequestOutputLimit,hasCutOffAnswer} from '../../../packages/director/design-attempts';
 import {wrapStaticFrames} from './static-wrap';
 import {compactStaticCriticRequest,packCriticImages} from './static-evidence';
-import {compactDraftRequest,draftRequestCap,designerRequestCap} from '../../../packages/director/request-size';
+import {compactDraftRequest} from '../../../packages/director/request-size';
 import {applyLiveControls,beginLiveRevision,type LiveControl} from '../../../packages/director/live-controls';
 import {staticStillTools as staticTools} from './static-tools';
 import {assembleStatic,staticSourceContext} from './static-assembler';
@@ -29,7 +29,8 @@ import {reviewRepairMessage} from '../../../packages/director/extension-chat';
 import {creatorStageText,stageSkillTitles} from '../../../packages/agents/stage-skills';
 import {forkFromDirection} from '../../../packages/agents/local-session';
 import {usesImageIdeas,IDEAS_TASK,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext} from '../../../packages/director/image-ideas';
-import {designerRoleLine,frozenAdmissionProblem} from '../../../packages/director/roles';
+import {designerRoleLine} from '../../../packages/director/roles';
+import {directorAdmissionProblem,directorRequestSnapshot,criticAllowanceUsed} from '../../../packages/director/admission';
 import {screenshotForDesigner,RENDER_LONG_SIDE} from './designer-loop';
 import {recordCheckAnswers} from './critic-checks';
 import {checksText,stageReviewMaterial,REVIEW_INSTRUCTIONS,HERO_REVIEW_WHAT,END_REVIEW_WHAT,reviewSchemaV2,reviewContextText,readReview,withAllRulings,toDesignerNotes,settleHeroReview,HERO_REVIEW_ROUNDS} from '../../../packages/director/critic-review';
@@ -51,7 +52,8 @@ import {directorPrompt,staticDirectorPrompt,imageMethodInstructions,staticDirect
 import {staticDesignResponseFor,hasAudio} from '../../../packages/director/contract';
 import {assemblerInstructions,assemblerProviderSchema} from '../../../packages/agents/prompts/assembler-v1';
 import {readDesign} from '../../../packages/director/contract';
-import {localCallUsage,usageLine} from '../../../packages/agents/local-usage';
+import {localCallUsage,usageLine,LOCAL_TEXT_RESERVATION_MICRO_USD} from '../../../packages/agents/local-usage';
+import {textRequestQuote} from '../../../packages/agents/text-quote';
 import {skillRoleOf} from '../../../packages/agents/skill-files';
 import {stageOf} from '../../../packages/agents/stage-effort';
 import {designerPlan,conversationTokens,conversationLabel,storedSize,continuesOwnConversation,relativeCap,type Plan,type StoredPoint} from '../../../packages/agents/local-session';
@@ -74,7 +76,6 @@ import {shareLiveSource} from './live-share';
 import {sandboxTool} from './sandbox';
 import {ensureDirectorToolchain} from './toolchain';
 import {compactTranscript,assemblerContext} from '../../../packages/director/transcript';
-import {providerJsonSchema} from '../../../packages/director/provider-schema';
 import {questionForFailure} from '../../../packages/director/questions';
 import {continueWithoutReapproval} from '../../../packages/director/auto-continue';
 import {autoContinuationMessage} from '../../../packages/director/budget-policy';
@@ -143,6 +144,10 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
   try{await controls();}catch(error){if(!(error instanceof Error&&error.message==='DIRECTOR_LIVE_WRAP_UP'))throw error;}
   if(input.stage!=='draft'&&state.wrapUp&&['assembled','critic'].includes(state.phase??'')){const iteration=checked(await admin.from('studio_director_iterations').select('*').eq('id',input.iterationId).single());if(iteration)await publishDirectorReference(iteration as SealedIteration,input,block.campaign_id);state.phase='complete';await save('done');return;}
   if(state.wrapUp&&!state.design)throw new Error('WRAP_UP_NOTHING_TO_SHOW');
+  // For the admission check: the run's C1 checkpoint (read once) and a role's cumulative spending in this run.
+  let checkpointRead:Promise<string|null>|undefined;
+  const runCheckpoint=()=>checkpointRead??=(async()=>((checked(await admin.from('studio_c1_checkpoints').select('id').eq('run_id',input.runId).maybeSingle()) as {id:string}|null)?.id??null))();
+  const roleSpent=async(agentRole:string)=>((checked(await admin.from('studio_agent_steps').select('status,cost_micro_usd,reserve_micro_usd').eq('run_id',input.runId).eq('role',agentRole))??[]) as {status:string;cost_micro_usd:number|null;reserve_micro_usd:number}[]).reduce((n,r)=>n+(['reserved','running'].includes(r.status)||r.cost_micro_usd===null||r.cost_micro_usd<0||r.cost_micro_usd>r.reserve_micro_usd?r.reserve_micro_usd:r.cost_micro_usd),0);
   const callOnce=async(role:Exclude<Role,'resources'>|'designer',prompt:string,protocolInstructions:string,responseSchema:{name:string;schema:Record<string,unknown>}|null,context:unknown,identity:unknown,images:{url:string;label:string}[]=[])=>{
    await controls();
    // The designer (point 4) runs on the visual-direction agent and model; its allowance, clock, cache and receipts are its own.
@@ -167,18 +172,23 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     const maximum=config.modelMaxOutputTokens??(await modelCatalog()).find(model=>model.id===config.modelId)?.maxOutput;if(!maximum)throw new Error('MODEL_UNAVAILABLE');
     outputLimit=directorRequestOutputLimit({configured:config.maxOutputTokens,modelMaximum:maximum,agentMaximum:agent.max_output_tokens,approvedRequests:estimate.roles.director.requests,feedback:state.directorFeedback??[]});
    }
-   let base:import('../../../packages/agents/text-provider').TextSnapshot&{directorIterationId:string;modelId:string;budgetScopeId:string;stepCapMicroUsd:number}={...(input.stage==='draft'?{cachePrompt:true,cacheSessionId:`${block.id}:${input.directionId}:${role}`,requestInputCap:role==='designer'&&estimate.designerRequestInputCap?Math.min(estimate.designerRequestInputCap,designerRequestCap(config.contextLength,outputLimit)):draftRequestCap(config.contextLength,outputLimit)}:{}),directorIterationId:input.iterationId,timeoutMs:input.stage==='draft'?1800000:Math.min(1800000,remainingMs),instructions:config.instructions,...(roleLine?{roleInstructions:roleLine}:{}),protocolInstructions,modelId:config.modelId,maxOutputTokens:outputLimit,pricing:config.pricing,...(typeof (context as {contextText?:unknown})?.contextText==='string'?{campaignContext:{checkpointId:snapshot.checkpointId},contextText:(context as {contextText:string}).contextText}:{campaignContext:{checkpointId:snapshot.checkpointId,...context as object}}),budgetScopeId:`budget-step-${input.runId}-${roleNames[modelRole]}`,stepCapMicroUsd:agent.step_cap_micro_usd,...(responseSchema?{outputFormat:'json_schema',responseSchema:{name:responseSchema.name,schema:providerJsonSchema(responseSchema.schema) as Record<string,unknown>}}:{}),stream:true};
+   let base=directorRequestSnapshot({draft:input.stage==='draft',blockId:block.id,directionId:input.directionId,iterationId:input.iterationId,runId:input.runId,role,agentRole:roleNames[modelRole],designerRequestInputCap:estimate.designerRequestInputCap,config,outputLimit,remainingMs,roleLine,protocolInstructions,context,checkpointId:snapshot.checkpointId,stepCapMicroUsd:agent.step_cap_micro_usd,responseSchema});
    // First reuse the exact frozen request on restart; allowance accounting must not change its identity.
    if(input.stage==='draft'&&!prior){const policy=await admin.rpc('studio_draft_request_policy_version');if(policy.error||policy.data!=='draft-size@2')throw Object.assign(new Error('DRAFT_SIZE_SCHEMA_REQUIRED'),{detail:'Apply migration 058, then retry within the approved allowance. No request was sent.'});}
-   if(input.stage==='draft'&&!prior){try{const availableInput=await directorInputAllowance(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,role,snapshot:base});const compacted=role==='critic'?await compactStaticCriticRequest(prompt,base,images):compactDraftRequest(prompt,base,images,base.requestInputCap,availableInput,{fullCap:role==='designer'});prompt=compacted.prompt;images=compacted.images;base={...base,...compacted.snapshot};if(compacted.compaction.actions.length)await events.emit(`compact:${id}`,{stepId:`compact:${id}`,kind:'compaction',status:'done',costMicroUsd:0,message:'This request was compacted to stay within its size limit.',detail:compacted.compaction});}catch(error){
+   if(input.stage==='draft'&&!prior){try{const availableInput=await directorInputAllowance(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,role,snapshot:base});// A text-only critic request (D4's selection of ideas) has no render to pack: it is sized like any text request.
+    const compacted=role==='critic'&&images.length?await compactStaticCriticRequest(prompt,base,images):compactDraftRequest(prompt,base,images,base.requestInputCap,availableInput,{fullCap:role==='designer'});prompt=compacted.prompt;images=compacted.images;base={...base,...compacted.snapshot};if(compacted.compaction.actions.length)await events.emit(`compact:${id}`,{stepId:`compact:${id}`,kind:'compaction',status:'done',costMicroUsd:0,message:'This request was compacted to stay within its size limit.',detail:compacted.compaction});}catch(error){
     // Name the role whose input allowance is used, so the stop can be continued like any other allowance stop.
     if(error instanceof Error&&error.message==='ROLE_ALLOWANCE_EXHAUSTED'){const d=(error as Error&{detail?:string}).detail??'';if(!d.startsWith(`${role}:`))Object.assign(error,{detail:`${role}: ${d}`});}
     await events.emit(`compact:${id}:failed`,{stepId:`compact:${id}`,kind:'compaction',status:'failed',costMicroUsd:0,message:error instanceof Error&&error.message==='ROLE_ALLOWANCE_EXHAUSTED'?'The required request does not fit the remaining billed-token allowance. No request was sent.':'The required material exceeds this request’s size limit. No request was sent.',detail:(error as {compaction?:unknown}).compaction});throw error;}}
    if(prior)images=prior.config_snapshot.visionPacking==='all-formats'?await packCriticImages(images,prior.config_snapshot.directorVisionCount??images.length):images.slice(0,prior.config_snapshot.directorVisionCount??images.length);
    const admitted=prior?{snapshot:prior.config_snapshot,remainingMicroUsd:allowance.maxCostMicroUsd}:await directorTextConfig(admin,{runId:input.runId,blockId:block.id,directionId:input.directionId,role,snapshot:base,prompt,visionCount:images.length});
    const cfg={...admitted.snapshot,directorCallId:id};
-   // The same frozen-config rule the database applies on admission, checked first so the stop names its cause.
-   if(!prior){const problem=frozenAdmissionProblem(cfg,agent);if(problem)throw Object.assign(new Error('CHECKPOINT_CONFIG_MISMATCH'),{detail:`${role}: ${problem} No request was sent.`});}
+   // The database's admission rules for this request (packages/director/admission.ts), checked first so that a
+   // mismatch stops with its plain reason and nothing is sent.
+   if(!prior&&'used' in admitted){const localText=execution.mode==='local_claude',reservation=localText?LOCAL_TEXT_RESERVATION_MICRO_USD:textRequestQuote(prompt,cfg,'',images.length).reservationMicroUsd;
+    const problem=directorAdmissionProblem({runId:input.runId,agentRole:roleNames[modelRole],model:config.modelId,reservation,snapshot:cfg,agent,checkpointId:await runCheckpoint(),localText,...(localText?{}:{roleSpent:await roleSpent(roleNames[modelRole])}),
+     block:{draft:input.stage==='draft',designerRequestInputCap:estimate.designerRequestInputCap,allowance:admitted.allowance,used:admitted.used,approved:true}});
+    if(problem)throw Object.assign(new Error(problem.code),{detail:`${role}: ${problem.detail} No request was sent.`});}
    // Use an advertised effort level: supporting reasoning does not mean it can be disabled. Frozen receipts retain their exact settings.
    // Role effort (brief.effortVersion 1): every draft role asks for the role's level (designer, director, coder and critic
    // are creative: high). Earlier blocks keep the exact earlier rule, which set only the coder's level.
@@ -407,7 +417,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      return readLiveCritique(text);}:undefined;
     // A hero review that cannot run (provider error, unreadable answer) must not stop the designer: the hero is
     // accepted without it and the end review still runs. Control and lease failures still stop the block.
-    if(tools.reviewHero){const review=tools.reviewHero;tools.reviewHero=async(...args)=>{try{return await review(...args);}catch(error){if(propagateExecutionFailure(error))throw error;console.error('[designer] hero review failed:',error instanceof Error?error.message:error);return undefined;}};}
+    if(tools.reviewHero){const review=tools.reviewHero;tools.reviewHero=async(...args)=>{try{return await review(...args);}catch(error){if(propagateExecutionFailure(error)&&!criticAllowanceUsed(error))throw error;console.error('[designer] hero review failed:',error instanceof Error?error.message:error);return undefined;}};}
     const heroStep=(kind:string)=>`designer:${state.iteration??1}:hero:${kind}:${loop.hero?.reviews??0}`,formatLabel=(id:string)=>{const f=input.formats.find(x=>x.id===id);if(!f)return id;const g=(a:number,b:number):number=>b?g(b,a%b):a,d=g(f.width,f.height);return `${f.width/d}:${f.height/d}`;};
     const conversation=execution.mode==='local_claude'&&execution.context_mode==='shared'?{continuing:designerConversation.continuing,decide:designerConversation.decide,lost:designerConversation.lost,accept:designerConversation.accept}:undefined;
     const onHero=async(event:Parameters<NonNullable<Parameters<typeof runDesigner>[0]['onHero']>>[0])=>{const where=`scene ${sceneNumber(event.sceneId)} in ${formatLabel(event.format)}`;await events.emit(heroStep(event.kind),{stepId:heroStep(event.kind),kind:'designer',status:'done',costMicroUsd:0,message:event.kind==='started'?`Hero frame: ${where}.`:event.kind==='reviewed'?`Hero frame reviewed: ${event.notes} note${event.notes===1?'':'s'}.`:`Hero frame accepted${event.by==='reviews-used'?' after its reviews':event.by==='turns-used'?' when its turns were used, without a review':event.by==='no-progress'?' when its review stopped making progress (open points listed)':event.by==='no-critic'?' (no creative review in this quote)':event.by==='review-failed'?' without its review (the review could not run)':''}. Designing the other scenes.`,detail:{hero:event}},event.looked);};
@@ -420,7 +430,8 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
      // D4 (version 5): three image ideas, an independent selection (the critic role), then the build, in this conversation.
      const owned=input.creativeHandoff?.intent.direction,ideasArgs=usesImageIdeas(input)?{ideas:{task:(owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:'')+IDEAS_TASK+(staged?`\n\n${creatorStageText(staged,'ideas')}`:''),
       select:async(text:string,round:number)=>{if(!snapshot.models.critic?.vision||estimate.roles.critic.requests-(loop.hero?.reviews??0)-(round-1)<1)return null;
-       return readSelection((await call('critic','Choose one of the three ideas.',SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(stageReviewMaterial(staged,'ideas').checks))},{review:'ideas',round},[])).text);},
+       // A selection its critic allowance cannot hold falls back to the first idea, as when it cannot run at all.
+       try{return readSelection((await call('critic','Choose one of the three ideas.',SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(stageReviewMaterial(staged,'ideas').checks))},{review:'ideas',round},[])).text);}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
       onIdeas:async(cards:string[],_text:string,round:number)=>{const step=`ideas:${state.iteration??1}:${round}`;await events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:'Three ideas for the key frame.',detail:{ideas:cards}});},
       onChosen:async(pick:number,reason:string)=>{const step=`ideas:${state.iteration??1}:chosen`;await events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:`Chosen: idea ${pick} — ${reason}`,detail:{pick}});await events.emit(`${step}:building`,{stepId:`${step}:building`,kind:'designer',status:'running',costMicroUsd:0,message:'Building the chosen idea.'});}}}:{};
      await runHeroChat({...ideasArgs,input,state:loop,maxTurns:Math.ceil(Math.min(maxTurns,allowance.requests)*HERO_TURN_SHARE),maxPictures:estimate.maxStills,timeMs:allowance.timeMs,tools,heroReviews:heroCritic,onHero,

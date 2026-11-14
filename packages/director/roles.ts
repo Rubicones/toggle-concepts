@@ -17,14 +17,6 @@ export const DESIGNER_ROLE_V4='ROLE: The designer of this ad. You turn its appro
 export function designerRoleLine(a:{role:string;heroChat:boolean;prior:boolean;mode:string|null|undefined;contextMode:string|null|undefined;stageSkills:boolean}):string|undefined{
  return a.role==='designer'&&a.heroChat&&!a.prior&&a.mode==='local_claude'&&a.contextMode==='shared'&&a.stageSkills?DESIGNER_ROLE_V4:undefined;
 }
-/** The frozen-config rule of app_private.reserve_step_before_creative, in the part the runner can see: a request is
- * admitted only with its agent's frozen instructions and a step cap within the agent's (CHECKPOINT_CONFIG_MISMATCH).
- * Returns the problem in plain words, or null. */
-export function frozenAdmissionProblem(snapshot:{instructions?:unknown;stepCapMicroUsd?:unknown},agent:{role:string;instructions:string;step_cap_micro_usd:number}):string|null{
- if(snapshot.instructions!==agent.instructions)return `the request's instructions differ from the frozen ${agent.role} agent's.`;
- const cap=Number(snapshot.stepCapMicroUsd);if(!Number.isFinite(cap)||cap<1||cap>agent.step_cap_micro_usd)return `the request's step cap is outside the frozen ${agent.role} agent's.`;
- return null;
-}
 export const staticOutputCaps={director:12000,assembler:8000,critic:8000} as const;
 /** Role effort (brief.effortVersion 1): thinking counts toward the output limit, so draft roles at high effort get room
  * for both the thinking and the answer. Earlier blocks keep staticOutputCaps. */

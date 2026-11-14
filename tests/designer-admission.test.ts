@@ -14,7 +14,10 @@ import {DEFAULT_MATERIAL_BUDGET} from '../packages/agents/materials';
 import {POSITIVE_DEFAULT} from '../packages/agents/positive-instructions';
 import {textRequestQuote} from '../packages/agents/text-quote';
 import {cliTextTransport} from '../apps/local-runner/local-claude/transport';
-import {DESIGNER_ROLE_V4,designerRoleLine,frozenAdmissionProblem,staticRoleInstructions} from '../packages/director/roles';
+import {DESIGNER_ROLE_V4,designerRoleLine,staticRoleInstructions} from '../packages/director/roles';
+import {directorAdmissionProblem} from '../packages/director/admission';
+/** The config part of the admission rule (no block fields): instructions, model and step cap. */
+const frozenAdmissionProblem=(snapshot:Record<string,unknown>,a:typeof agent)=>directorAdmissionProblem({runId:'r',agentRole:a.role,model:a.model_id,reservation:1,snapshot,agent:a,checkpointId:null,localText:true})?.detail??null;
 import {fakeSetup,fixture} from './local-chat-shaped.test';
 
 const skills=readSkills(),{common,byRole}=splitSkills(skills,[]);
@@ -38,7 +41,7 @@ test('Designer admission: the database rule is mirrored, and the old designer sn
  for(const change of [{role:'critic'},{heroChat:false},{prior:true},{mode:'openrouter'},{contextMode:'fresh'},{stageSkills:false}])assert.equal(designerRoleLine({...designerArgs,...change}),undefined,JSON.stringify(change));
  const worker=readFileSync('apps/local-runner/director/worker.ts','utf8');
  assert.ok(!/instructions:DESIGNER_ROLE_V4/.test(worker),'the worker never puts the role line in the admitted instructions');
- assert.match(worker,/instructions:config\.instructions,\.\.\.\(roleLine\?\{roleInstructions:roleLine\}:\{\}\)/);assert.match(worker,/frozenAdmissionProblem\(cfg,agent\)/);
+ assert.match(readFileSync('packages/director/admission.ts','utf8'),/instructions:a\.config\.instructions,\.\.\.\(a\.roleLine\?\{roleInstructions:a\.roleLine\}:\{\}\)/);assert.match(worker,/directorAdmissionProblem\(\{runId:input\.runId,agentRole:roleNames\[modelRole\]/);
 });
 
 test('Designer admission: the Local request sends exactly what D1 sent (the role line), and is quoted on it', async()=>{

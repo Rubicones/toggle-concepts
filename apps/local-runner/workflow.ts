@@ -9,7 +9,8 @@ import {compileCreativeClaim} from './creative-compile';
 import {prepareCreativeOutput,creativeTransportUpstream,type CreativeInputs} from '../../packages/creative/protocol';
 import {loadCreativeVision} from '../../packages/creative/vision.local';
 import type {CreativeStage} from '../../packages/agents/prompts/creative-v1';
-import {textRequestQuote,retryOutputLimit,requireRequestAllowance} from '../../packages/agents/text-quote';
+import {textRequestQuote,requireRequestAllowance} from '../../packages/agents/text-quote';
+import {planningRequestSnapshot} from '../../packages/director/admission';
 import {preparePreviewProposal,PREVIEW_PROTOCOL,type PreviewInputs} from '../../packages/contracts/preview-proposal';
 import {planningTransportTask,PLANNING_RETRY_FEEDBACK,type LocalizationVariant} from '../../packages/contracts/localization';
 import {agentResponseSchema,prepareAgentOutput,outputDiagnostic,planningEnvelopeSchema,envelopeRoleInstruction,scriptProofFor} from '../../packages/contracts/agent-output';
@@ -130,7 +131,7 @@ async function execute(claim:Claim){
   const modelId:string=reserved?.status==="reserved"&&reserved.model_id?reserved.model_id:agent.model_id;
   const model=(await modelCatalog()).find(m=>m.id===modelId);
   if(!model||model.outputModalities.length!==1||model.outputModalities[0]!=="text")throw new Error("MODEL_UNAVAILABLE");
-  const snapshot:Snapshot={...job.payload.snapshot,upstream,pricing:model,stepCapMicroUsd:agent.step_cap_micro_usd,maxOutputTokens:retryOutputLimit((job.payload.snapshot as unknown as {previewProtocol?:string}).previewProtocol,job.payload.snapshot.maxOutputTokens,agent.max_output_tokens,model.maxOutput),
+  const snapshot:Snapshot={...planningRequestSnapshot(job.payload.snapshot,upstream,model,agent),
    // Role effort: runs frozen at ROLE_EFFORT_VERSION or later ask for the role's level; earlier runs keep the exact earlier rule.
    ...(usesRoleEffort(job.payload.snapshot.instructions)?roleReasoning(job.role,model,execution.mode):{disableReasoning:model.id==="google/gemini-2.5-flash"})};
   const creative=job.payload.creativeInputs?{input:job.payload.creativeInputs,stage:(job.payload.snapshot as unknown as {creativeStage:Exclude<CreativeStage,'compile'>}).creativeStage}:null;

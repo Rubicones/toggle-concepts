@@ -80,9 +80,11 @@ test('C8b: without a key, or past the approved count, no request is made and the
 
 test('C8b: the ledger reserves through studio_reserve_step with the run\'s model3d role, inside the approved count and price', async()=>{
  const rpcs:{name:string;args:Record<string,unknown>}[]=[],tables:Record<string,unknown>={studio_agent_steps:[{config_snapshot:{directorResourceId:'other'}}],
-  studio_runs:{id:'run',config_snapshot:[{role:'model3d',model_id:'tripo/P2-20260801',instructions:'3D role',max_output_tokens:2400,step_cap_micro_usd:5000000}]},studio_c1_checkpoints:{id:'cp'}};
+  studio_runs:{id:'run',config_snapshot:[{role:'model3d',model_id:'tripo/P2-20260801',instructions:'3D role',max_output_tokens:2400,step_cap_micro_usd:5000000}]},studio_c1_checkpoints:{id:'cp'},
+  // Admission audit: the block's own model3d allowance (its approved count and price) is read before reserving.
+  studio_director_blocks:{status:'running',estimates:{dir:{roles:{model3d:{maxCostMicroUsd:2200000,inputTokens:0,outputTokens:0,timeMs:600000,requests:2}}}}}};
  const chain=(table:string)=>{const result={data:tables[table]??[],error:null},c:Record<string,unknown>={};for(const m of ['select','eq','in','not','order','limit'])c[m]=()=>c;c.single=c.maybeSingle=async()=>result;c.then=(f:(v:unknown)=>unknown)=>Promise.resolve(result).then(f);return c;};
- const admin={from:chain,rpc:async(name:string,args:Record<string,unknown>)=>{rpcs.push({name,args});return {data:name==='studio_reserve_step'?{id:'step-1',status:'reserved'}:null,error:null};}} as unknown as Parameters<typeof directorModelLedger>[0];
+ const admin={from:chain,rpc:async(name:string,args:Record<string,unknown>)=>{rpcs.push({name,args});return {data:name==='studio_reserve_step'?{id:'step-1',status:'reserved'}:name==='studio_director_model_steps_version'?'director-model-steps@1':null,error:null};}} as unknown as Parameters<typeof directorModelLedger>[0];
  const base={runId:'run',blockId:'block',directionId:'dir',iterationId:'it',resourceId:'picture',requestId:modelRequestId('run','block','picture','a'.repeat(64),TRIPO_DEFAULT_MODEL),perModelMicroUsd:1100000,settings};
  assert.deepEqual(await directorModelLedger(admin,{...base,maxModels:2}).reserve(1100000),{stepId:'step-1',status:'reserved'});
  const r=rpcs.find(x=>x.name==='studio_reserve_step')!;assert.equal(rpcs.filter(x=>x.name==='studio_reserve_step').length,1);assert.equal(r.name,'studio_reserve_step');assert.equal(r.args.agent_role,'model3d');assert.equal(r.args.model,'tripo/P2-20260801');assert.equal(r.args.reservation,1100000);

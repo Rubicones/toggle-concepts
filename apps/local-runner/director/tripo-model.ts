@@ -11,6 +11,8 @@ import {TRIPO_BASE_URL,TRIPO_POLL_MS,TRIPO_WAIT_MS,MODELS_NOT_SET_UP,readCreated
 import {pictureType} from '../../../packages/agents/comparison';
 import {effectiveRunAgents} from '../../../packages/data/run-limits';
 import type {AgentSetting} from '../../../packages/contracts/shared';
+import {directorAdmissionProblem} from '../../../packages/director/admission';
+import {freeRejection,type RoleAllowance} from '../../../packages/director/money';
 
 export type TripoHttp=(url:string,init:{method:string;headers:Record<string,string>;body?:FormData|string})=>Promise<{ok:boolean;status:number;json():Promise<unknown>;arrayBuffer():Promise<ArrayBuffer>}>;
 export type ModelLedger={
@@ -70,6 +72,11 @@ export function modelRequestId(runId:string,blockId:string,resourceId:string,pic
  return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;
 }
 
+/** The snapshot of a designer block's 3D model step, as studio_reserve_step admits it (the run's model3d agent). */
+export function modelStepSnapshot(c:{runId:string;blockId:string;directionId:string;iterationId:string;resourceId:string;settings:TripoSettings},agent:{instructions:string;step_cap_micro_usd:number},checkpointId:string|null){
+ return {directorBlockId:c.blockId,directorDirectionId:c.directionId,directorRole:'model',directorIterationId:c.iterationId,directorResourceId:c.resourceId,instructions:agent.instructions,stepCapMicroUsd:agent.step_cap_micro_usd,
+  budgetScopeId:checkpointId?`budget-step-${c.runId}-model3d`:null,campaignContext:{mode:'director_model',checkpointId},pricing:{provider:'tripo',model:c.settings.model,credits:c.settings.credits,usdPerCredit:c.settings.usdPerCredit}};
+}
 /** The ledger of a designer block's models: the run's frozen model3d role (model, instructions, caps), the block's
  * approved count and price. Uses the same reservation and settlement functions as every other paid step. */
 export function directorModelLedger(admin:SupabaseClient,c:{runId:string;blockId:string;directionId:string;iterationId:string;resourceId:string;requestId:string;maxModels:number;perModelMicroUsd:number;settings:TripoSettings}):ModelLedger{
@@ -84,8 +91,19 @@ export function directorModelLedger(admin:SupabaseClient,c:{runId:string;blockId
    const agent=(await effectiveRunAgents(admin,run)).find(a=>a.role==='model3d');
    if(!agent||agent.model_id!==tripoAgentModel(c.settings.model))throw new Error(`the run's 3D model role is not set to ${tripoAgentModel(c.settings.model)} in Models & agents`);
    const cp=(await admin.from('studio_c1_checkpoints').select('id').eq('run_id',c.runId).maybeSingle()).data as {id:string}|null;
-   const snapshot={directorBlockId:c.blockId,directorDirectionId:c.directionId,directorRole:'model',directorIterationId:c.iterationId,directorResourceId:c.resourceId,instructions:agent.instructions,stepCapMicroUsd:agent.step_cap_micro_usd,
-    budgetScopeId:cp?`budget-step-${c.runId}-model3d`:null,campaignContext:{mode:'director_model',checkpointId:cp?.id??null},pricing:{provider:'tripo',model:c.settings.model,credits:c.settings.credits,usdPerCredit:c.settings.usdPerCredit}};
+   const snapshot=modelStepSnapshot(c,agent,cp?.id??null);
+   // The database's admission rules for this step, read first (packages/director/admission.ts): a refusal is named
+   // in plain words and nothing is bought.
+   const version=await admin.rpc('studio_director_model_steps_version');
+   if(version.error||version.data!=='director-model-steps@1')throw new Error('the database does not admit 3D model steps yet: apply migration 20261114000100_director_model_steps.sql');
+   const block=(await admin.from('studio_director_blocks').select('status,estimates:snapshot->estimates').eq('id',c.blockId).single()).data as {status:string;estimates:Record<string,{roles:Record<string,RoleAllowance|undefined>}>}|null;
+   const rows=((await admin.from('studio_agent_steps').select('status,cost_micro_usd,reserve_micro_usd,usage,config_snapshot').eq('run_id',c.runId).eq('role','model3d')).data??[]) as {status:string;cost_micro_usd:number|null;reserve_micro_usd:number;usage:unknown;config_snapshot:{directorBlockId?:string;directorDirectionId?:string;directorRole?:string}}[];
+   const mine=rows.filter(r=>r.config_snapshot?.directorBlockId===c.blockId&&r.config_snapshot?.directorDirectionId===c.directionId&&r.config_snapshot?.directorRole==='model');
+   const problem=directorAdmissionProblem({runId:c.runId,agentRole:'model3d',model:agent.model_id,reservation:price,snapshot,agent,checkpointId:cp?.id??null,localText:false,
+    roleSpent:rows.reduce((n,r)=>n+(['reserved','running'].includes(r.status)||r.cost_micro_usd===null||r.cost_micro_usd<0||r.cost_micro_usd>r.reserve_micro_usd?r.reserve_micro_usd:r.cost_micro_usd),0),
+    block:{draft:true,allowance:block?.estimates?.[c.directionId]?.roles?.model3d,approved:['queued','running','review'].includes(block?.status??''),
+     used:{spent:mine.reduce((n,r)=>n+(['reserved','running','unknown'].includes(r.status)||r.cost_micro_usd===null?r.reserve_micro_usd:r.cost_micro_usd),0),inputs:0,outputs:0,requests:mine.filter(r=>!freeRejection(r)).length}}});
+   if(problem)throw new Error(`${problem.detail.replace(/\.$/,'')} (${problem.code})`);
    const step=await rpc('studio_reserve_step',{target_run:c.runId,request_key:c.requestId,agent_role:'model3d',model:agent.model_id,prompt_text:`Image to 3D model of ${c.resourceId}`,snapshot,reservation:price}) as {id:string;status:string};
    return {stepId:step.id,status:step.status};
   },

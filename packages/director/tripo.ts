@@ -60,3 +60,14 @@ const KNOWN:Record<number,string>={1002:'the Tripo key was not accepted',1004:'a
 export function tripoError(e:Envelope<unknown>|null|undefined){const code=typeof e?.code==='number'?e.code:undefined;return code!==undefined&&KNOWN[code]?`${KNOWN[code]} (code ${code})`:e?.message?String(e.message).slice(0,160):'Tripo did not answer as documented';}
 /** The words the designer and the timeline see. */
 export const MODELS_NOT_SET_UP='3D models are not set up on this computer (no Tripo key), so the picture is used instead.';
+
+/** C8 follow-up: a version 4 designer block may make up to two 3D models (Tripo, image to 3D) of pictures it has, when
+ * pictures may be generated, a Tripo key is set and the run's 3D model role uses it. Otherwise the quote is unchanged. */
+export function modelsFor(input:{brief:{designerVersion?:unknown;synthesisAllowed?:unknown};resourceIds:string[]},agents:{role:string;model_id:string|null;step_cap_micro_usd?:number}[],directions=1,env:Record<string,string|undefined>=process.env){
+ const tripo=tripoSettings(env),role=agents.find(a=>a.role==='model3d');
+ if(Number(input.brief.designerVersion)<4||input.brief.synthesisAllowed!==true||!tripo.apiKey||role?.model_id!==tripoAgentModel(tripo.model)||!input.resourceIds.length)return null;
+ // Admission audit: a model step is also held to the model3d agent's cap for the whole run (studio_reserve_step), so
+ // the quote approves only as many models as that cap can pay for across the run's directions.
+ const per=tripoPriceMicroUsd(tripo),count=Math.min(2,input.resourceIds.length,Math.floor((role.step_cap_micro_usd??0)/per/Math.max(1,directions)));
+ return count>0?{models:{count,perModelMicroUsd:per}}:null;
+}
