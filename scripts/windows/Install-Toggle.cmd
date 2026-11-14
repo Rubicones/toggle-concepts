@@ -105,6 +105,14 @@ echo Updating the studio database...
 wsl.exe -d Ubuntu-24.04 -u root --exec bash -lc "PATH=/root/toggle/tools/node-v22.22.0-linux-x64/bin:/usr/local/bin:/usr/bin:/bin; cd ~/toggle/toggle-concepts && if [ /mnt/c/toggle/.env.local -nt .env.local ]; then tr -d '\r' < /mnt/c/toggle/.env.local > .env.local.new && grep -v -E '^(DIRECTOR_)?CHROME_PATH=' .env.local.new > .env.local.tmp && grep -E '^CHROME_PATH=' .env.local >> .env.local.tmp; mv .env.local.tmp .env.local; rm -f .env.local.new; chmod 600 .env.local; echo Using the settings from C:\\toggle\\.env.local; fi; npm run -s data:deploy && echo && echo The database is up to date."
 pause
 "@ | Set-Content -Encoding ASCII (Join-Path $Launchers 'Update-Database.cmd')
+@"
+@echo off
+rem Exports the most recent run (or the run whose id you pass) for diagnosis into C:\toggle\exports: one folder and
+rem one zip to send. It only reads; keys and settings are never exported. Drag nothing here: just double-click.
+echo Exporting the last run...
+wsl.exe -d Ubuntu-24.04 -u root --exec bash -lc "PATH=/root/toggle/tools/node-v22.22.0-linux-x64/bin:/usr/local/bin:/usr/bin:/bin; cd ~/toggle/toggle-concepts && mkdir -p /mnt/c/toggle/exports && node --import tsx scripts/export-run.ts %* --out /mnt/c/toggle/exports"
+pause
+"@ | Set-Content -Encoding ASCII (Join-Path $Launchers 'Export-Last-Run.cmd')
 # A desktop shortcut to start the studio.
 $shell = New-Object -ComObject WScript.Shell; $link = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Toggle Studio.lnk'))
 $link.TargetPath = Join-Path $Launchers 'Start-Studio.cmd'; $link.WorkingDirectory = $Launchers; $link.Save()

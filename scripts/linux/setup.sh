@@ -119,7 +119,7 @@ fi
 # time the installer runs.
 if [ -n "${ENV_SOURCE:-}" ] && [ -d "$(dirname "$ENV_SOURCE")" ] && [ -d "$REPO/scripts/windows" ]; then
   LAUNCHERS="$(dirname "$ENV_SOURCE")"
-  for f in Install-Toggle.cmd Update-Database.cmd; do
+  for f in Install-Toggle.cmd Update-Database.cmd Export-Last-Run.cmd; do
     if [ -f "$REPO/scripts/windows/$f" ] && ! cmp -s "$REPO/scripts/windows/$f" "$LAUNCHERS/$f"; then
       cp "$REPO/scripts/windows/$f" "$LAUNCHERS/$f.new" && mv "$LAUNCHERS/$f.new" "$LAUNCHERS/$f" && [ "$f" = Install-Toggle.cmd ] && INSTALLER_UPDATED=1
     fi
