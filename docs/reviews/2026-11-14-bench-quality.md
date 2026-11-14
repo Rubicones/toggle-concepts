@@ -122,7 +122,7 @@ Three turns went on the logo. Two renders (turns 2 and 7) showed a frame whose p
 
 **Why "all checks passed" on a frame the owner rejects.** The 36 checks ask whether a fault is absent. Almost all can be answered yes by a tidy, average frame. The reviewer also answers yes with a reservation in its own evidence ("implied", "though", "acceptable", "not applicable and passes"). And the second review is anchored on the first: three of its checks ask only whether its earlier notes were followed.
 
-**Proposed changes, ranked by expected effect.** Items 1 to 5 are wording and are the owner's to approve; none is implemented. Items 6 to 8 are mechanical and are implemented, behind version 6.
+**Proposed changes, ranked by expected effect.** Items 6 to 8 are mechanical and were implemented first. Items 1 to 5 and the last turn were then implemented for version 6 as critic@3, to be tried in run 3; their final wording, which differs from the first proposals below, is in `docs/reviews/2026-11-14-critic-3.md` for the owner to approve.
 
 1. **The reviewer passes only what is true without reservation.** *Hero review instructions.* Before: no such sentence. After, added:
    > Answer a check with yes only when it is plainly true of this frame as a stranger sees it. If your evidence needs "implied", "though", "acceptable" or "not applicable", the answer is no. Accept the frame only if you would present it to the client as it is. A frame that passes every check and that you would not present is not accepted: say what is missing.
@@ -143,7 +143,7 @@ Three turns went on the logo. Two renders (turns 2 and 7) showed a frame whose p
 7. **Implemented: logo and brand-picture facts**, so the turns go to the frame.
 8. **Implemented: the picture hold**, so every render shows the frame with its picture.
 
-A further mechanical change is proposed and **not** implemented, because it changes what "accepted" means and spends a turn: when the reviewer accepts with notes and turns remain, give the designer one last turn for them.
+A further mechanical change, implemented with critic@3: when the review ends with points open and a turn remains, the designer gets one last turn for them, with no further review.
 
 ### Two more bench cases
 
@@ -177,7 +177,7 @@ node --import tsx scripts/bench/pipeline-bench.ts \
   --hero-only=1 --designer=6 --fonts=artifacts/bench/fonts
 ```
 
-It is the command of run 2. What differs is in the code: measured logo and brand-picture lines, exact edits, the picture hold, and the thumbnail for the reviewer. In the summary read `designerOutputPerTurn`, `edits`, `pictureWaitSeconds` and the turns.
+It is the command of run 2. What differs is in the code: measured logo and brand-picture lines, exact edits, the picture hold, the thumbnail for the reviewer, and critic@3. In the summary read `designerOutputPerTurn`, `edits`, `pictureWaitSeconds` and the turns; in the timeline read how each review ended and whether a last turn followed.
 
 ### What a good bench frame does and does not promise about a live run
 

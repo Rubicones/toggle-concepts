@@ -65,8 +65,8 @@ export function withAllRulings(r:ReviewRound,memory:ReviewRound[]):ReviewRound{
 export type StopReason='all-pass'|'no-progress'|'rounds';
 /** The stop rules of the hero review: every check passes and no hard finding (and, with no checks written, accepted);
  * a round that fixes none of the earlier notes; the last round. */
-export function reviewStop(r:ReviewRound,args:{hardOpen:number;maxRounds?:number}):StopReason|null{
- if(args.hardOpen===0&&r.answers.every(a=>a.ok)&&(r.answers.length>0||r.accepted)&&!r.notes.some(n=>n.priority!=='P2'))return 'all-pass';
+export function reviewStop(r:ReviewRound,args:{hardOpen:number;maxRounds?:number;/** critic@3: the reviewer must also accept the frame */mustAccept?:boolean}):StopReason|null{
+ if(args.hardOpen===0&&r.answers.every(a=>a.ok)&&(r.answers.length>0||r.accepted)&&!r.notes.some(n=>n.priority!=='P2')&&(!args.mustAccept||r.accepted))return 'all-pass';
  if(r.rulings.length&&!r.rulings.some(x=>x.ruling==='fixed'))return 'no-progress';
  if(r.round>=(args.maxRounds??HERO_REVIEW_ROUNDS))return 'rounds';
  return null;
@@ -80,8 +80,8 @@ export const openPointsNote=(points:string[])=>points.length?`OPEN POINTS FROM T
 /** The round in the shape the loops use (notes for the designer). */
 export const toDesignerNotes=(r:ReviewRound)=>r.notes.map(n=>({recipient:'director',priority:n.priority,view:n.view,problem:`${n.skill}, check ${n.check}: ${n.problem}`,fix:n.fix}));
 /** One hero review round settled: read, every earlier note ruled, the stop rule applied; the loop's result shape. */
-export function settleHeroReview(text:string|null|undefined,round:number,memory:ReviewRound[],hardOpen:number,maxRounds=HERO_REVIEW_ROUNDS){
+export function settleHeroReview(text:string|null|undefined,round:number,memory:ReviewRound[],hardOpen:number,maxRounds=HERO_REVIEW_ROUNDS,strict?:(r:ReviewRound)=>ReviewRound){
  const read=readReview(text,round);if(!read)return null;
- const r=withAllRulings(read,memory),stop=reviewStop(r,{hardOpen,maxRounds});
+ const ruled=withAllRulings(read,memory),r=strict?strict(ruled):ruled,stop=reviewStop(r,{hardOpen,maxRounds,mustAccept:!!strict});
  return {round:r,result:{accepted:r.accepted,notes:toDesignerNotes(r),checks:r.answers.map(a=>({label:`${a.skill} ${a.n}`,ok:a.ok})),rulings:r.rulings,...(stop?{stop,open:stop==='all-pass'?[]:openPoints(r,memory)}:{})}};
 }

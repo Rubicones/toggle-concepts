@@ -151,6 +151,6 @@ test('I: the direction\'s way of making reaches the designer whole and the revie
  assert.ok(!designerDigestText(input(4),{sceneIds:false}).includes('THE TERRITORY OF THIS DIRECTION'),'version 4 digests are unchanged');
  const note=wayOfMakingNote(territoryText(i));assert.match(note,/^WHAT THE DIRECTION ASKED FOR\n[\s\S]*Way of making: Generated photographic stills[\s\S]*a photograph asked for, the frame drawn in code[\s\S]*P1 note\.$/);
  assert.match(selectionContext('T',IDEAS,'CHECKS',territoryText(i)),/THE TERRITORY OF THIS DIRECTION\nT\n\nWHAT THE DIRECTION ASKED FOR\n/);assert.equal(selectionContext('T','I','C'),'THE TERRITORY OF THIS DIRECTION\nT\n\nTHE THREE IDEAS\nI\n\nC');
- const worker=readFileSync('apps/local-runner/director/worker.ts','utf8');assert.equal(worker.match(/work:wayOfMakingNote\(territoryText\(input\)\)/g)?.length,2,'hero review and end review');
+ const worker=readFileSync('apps/local-runner/director/worker.ts','utf8');assert.equal(worker.match(/wayOfMakingNote\(territoryText\(input\)\)/g)?.length,2,'hero review and end review');
  assert.equal(run.pictures,0);assert.equal(run.maxStills,4,'no picture was asked for although four were allowed');
 });

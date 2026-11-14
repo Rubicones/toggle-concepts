@@ -5,6 +5,7 @@
 // the hero is accepted, the extension (stage E) continues in the same conversation (runDesigner). Tools are injected,
 // so the loop is tested without paid calls.
 import {heroScene,heroMeaning} from '../../../packages/director/designer';
+import {usesQuality,reasonOnly,lastTurnNote,NOTES_INSIDE_THE_IDEA} from '../../../packages/director/quality';
 import {PICTURE_HOLD_SECONDS,actionsCorrection,heroTask,parseChatAnswer,heroActionsSchema,usesEdits,applyEdits,renderNote,stageHFindings,type HeroAnswer} from '../../../packages/director/hero-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
 import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
@@ -46,7 +47,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
    // A selection that cannot run is recorded with its reason (it is said on the timeline and on the draft).
    let selectError='NO_REVIEW_IN_QUOTE';
    const chosen=await args.ideas.select(text,ideas.rounds).catch(error=>{if(propagateExecutionFailure(error))throw error;selectError=error instanceof Error?error.message.slice(0,120):'UNREADABLE';return null;});
-   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=chosen.reason;state.heroNote=chosenMessage(chosen.pick,chosen.reason,'reviewer',text);}
+   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=usesQuality(input)?reasonOnly(chosen.reason):chosen.reason;state.heroNote=chosenMessage(chosen.pick,ideas.reason,'reviewer',text);}
    else if(!chosen||ideas.rounds>=MAX_IDEA_ROUNDS){ideas.picked=1;if(!chosen)ideas.unreviewed=args.ideas.unreviewedReason?.()??selectError;ideas.reason=!chosen?'The selection could not run, so the first idea is built.':'No idea passed after the extra round, so the first idea is built.';state.heroNote=chosenMessage(1,ideas.reason,'fallback',text);}
    else ideas.notes=chosen.notes;
    await args.save(state);
@@ -73,7 +74,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
   await args.conversation?.accept();
   if(due&&state.materialsDue?.length){state.materialsSeen=[...new Set([...(state.materialsSeen??[]),...state.materialsDue])];state.materialsDue=[];}
   state.transcript.push({from:'agent',text:text.slice(0,2000)});await args.save(state);
-  const answer:HeroAnswer=parseChatAnswer(text,heroActionsSchema,{edits:usesEdits(input)}),results:string[]=[],notes:string[]=[];let looked:string|undefined;let stuck:string|null=null;
+  const answer:HeroAnswer=parseChatAnswer(text,heroActionsSchema,{edits:usesEdits(input)}),results:string[]=[],notes:string[]=[];const lastTurn=hero.lastTurn;let looked:string|undefined;let stuck:string|null=null;
   try{
    // 1. Files: written whole, then built. A building change is rendered: the app shows it, as in a chat.
    for(const f of answer.files){await tools.write(f.path,f.source);results.push(`Saved ${f.path}.`);}
@@ -127,8 +128,11 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
     hero.shots=state.lastRender.views.map(v=>({label:v.label,file:v.file}));looked=hero.shots[0]?.file;
     notes.push(renderNote(findings,state.lastRender.views.length));results.push(`Rendered: ${findings.filter(f=>f.severity==='hard').length} to fix, ${findings.filter(f=>f.severity!=='hard').length} observations.`);
    }
+   // critic@3: this was the last turn after the review. The frame is accepted as it now stands; a turn whose code does
+   // not build gets one more turn to repair it, then the frame is accepted as the turn cap accepts it.
+   if(lastTurn){lastTurn.turns++;if(built.ok||lastTurn.turns>=2||state.turn>=args.maxTurns){await accept(lastTurn.by);delete hero.lastTurn;results.push('The hero frame is accepted.');}else notes.push('This was the last turn and the code does not build: repair only that; the frame is accepted after the next turn.');}
    // 4. The review: idea and craft first, then what must be fixed. Its notes are the next message.
-   if(actions.review){
+   else if(actions.review){
     if(!hero.shots?.length)notes.push('Render the frame before asking for its review.');
     else if(pending.size){await Promise.all(pending.values());notes.push('The pictures you asked for have arrived (see below): use them, then ask for the review again.');}
     else if(hero.reviews>=(args.heroReviews??0)||!tools.reviewHero){await accept(tools.reviewHero&&(args.heroReviews??0)>0?'reviews-used':'no-critic');results.push('The hero frame is accepted.');}
@@ -138,9 +142,14 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
      if(!review){await accept('review-failed');results.push('The review could not run; the hero frame is accepted.');}
      else{await args.onHero?.({kind:'reviewed',sceneId:hero.sceneId,format:hero.format,notes:review.notes.length,looked:hero.shots[0]?.file,...(review.checks?{review:{checks:review.checks,rulings:review.rulings??[],...(review.stop?{stop:review.stop}:{})}}:{})});
       // D5: a stop by rule ends the hero review; what stays open goes to the AD and into stage E as notes.
-      if(review.stop){notes.push(openPointsNote(review.open??[]));await accept(review.stop==='all-pass'?'critic':review.stop==='no-progress'?'no-progress':'reviews-used');results.push(review.stop==='all-pass'?'Review finished: all checks passed.':review.stop==='no-progress'?'Stopped: no further progress — open points listed.':'Review finished after its rounds — open points listed.');}
+      // critic@3 (version 6): a review that ends with points still open gives the designer one last turn for them,
+      // with no further review; the frame is accepted after that turn.
+      const points=usesQuality(input)?[...new Set([...(review.open??[]),...review.notes.map(n=>`${n.problem} Wanted: ${n.fix}`)])]:[];
+      const by=review.stop?(review.stop==='all-pass'?'critic':review.stop==='no-progress'?'no-progress':'reviews-used'):review.accepted||!review.notes.length?'critic':hero.reviews>=(args.heroReviews??0)?'reviews-used':null;
+      if(by&&points.length&&state.turn<args.maxTurns){hero.lastTurn={by,turns:0};notes.push(lastTurnNote(points));results.push(`Review finished: ${points.length} point${points.length===1?'':'s'} for one last turn.`);}
+      else if(review.stop){notes.push(openPointsNote(review.open??[]));await accept(review.stop==='all-pass'?'critic':review.stop==='no-progress'?'no-progress':'reviews-used');results.push(review.stop==='all-pass'?'Review finished: all checks passed.':review.stop==='no-progress'?'Stopped: no further progress — open points listed.':'Review finished after its rounds — open points listed.');}
       else if(review.accepted||!review.notes.length){await accept('critic');results.push('The review accepted the hero frame.');}
-      else{notes.push(`The reviewer's notes on your hero frame:\n${review.notes.map(n=>`- [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}\n${hero.reviews>=(args.heroReviews??0)?'Apply what you agree with; the next review request accepts the frame.':'Apply what you agree with, then ask for the review again.'}`);results.push(`Review: ${review.notes.length} note${review.notes.length===1?'':'s'}.`);}}
+      else{notes.push(`The reviewer's notes on your hero frame:\n${review.notes.map(n=>`- [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}\n${usesQuality(input)?`${NOTES_INSIDE_THE_IDEA} Then ask for the review again.`:hero.reviews>=(args.heroReviews??0)?'Apply what you agree with; the next review request accepts the frame.':'Apply what you agree with, then ask for the review again.'}`);results.push(`Review: ${review.notes.length} note${review.notes.length===1?'':'s'}.`);}}
     }
    }
   }catch(error){if(propagateExecutionFailure(error))throw error;stopOnEnvironmentFault(error);notes.push(`This step needs another attempt: ${(error instanceof Error?error.message:'').slice(0,300)}`);}

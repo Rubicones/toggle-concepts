@@ -10,6 +10,7 @@
 // worker's lease, ledger and admission (allowances, the database's own rules), the timeline table and its event rows,
 // the picture purchase through OpenRouter (the bench's `buy` stands in), 3D models, the planning chain before the
 // designer (the territory is given), and the compact brand sheet pictures of a stored brand pack.
+import {usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3} from '../../packages/director/quality';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {existsSync} from 'node:fs';
@@ -136,9 +137,9 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
   load:names=>loadMaterials(ctx,names,references,noStoredPictures),left:async()=>budgetLeft('designer',budget,await materialsUsed(input.runId)).count};
  // The hero review (critic@2): the hero checks with evidence, its own earlier rounds as text, a stop by rule.
  const reviewHero:NonNullable<DesignerTools['reviewHero']>=async(round,shots,measured)=>{
-  const memory=state.heroMemory??[],material=stageReviewMaterial(staged,'hero'),hard=measured.filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
-  const text=await call('critic','Review this hero frame.',REVIEW_INSTRUCTIONS(HERO_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input,{sceneIds:false}),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard,memory})},[...(shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame now, at full size'}]:[]),...(shots[0]&&heroMeaning(input)?[{url:await screenshotForDesigner(shots[0].file,HERO_THUMBNAIL_SIDE),label:HERO_THUMBNAIL_LABEL}]:[])]);
-  const settled=settleHeroReview(text,round,memory,hard.length,Math.min(HERO_REVIEW_ROUNDS,heroReviews));if(!settled)return undefined;
+  const memory=state.heroMemory??[],quality=usesQuality(input),chosen=quality?chosenIdeaNote(state.ideas):'',material=reviewMaterialFor(input,staged,'hero',{chosenIdea:!!chosen}),hard=measured.filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
+  const text=await call('critic','Review this hero frame.',quality?HERO_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(HERO_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input,{sceneIds:false}),...(territoryText(input)||chosen?{work:[territoryText(input)?wayOfMakingNote(territoryText(input)):'',chosen].filter(Boolean).join('\n\n')}:{}),checks:material.checks,signs:material.signs,hard,memory})},[...(shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame now, at full size'}]:[]),...(shots[0]&&heroMeaning(input)?[{url:await screenshotForDesigner(shots[0].file,HERO_THUMBNAIL_SIDE),label:HERO_THUMBNAIL_LABEL}]:[])]);
+  const settled=settleHeroReview(text,round,memory,hard.length,Math.min(HERO_REVIEW_ROUNDS,heroReviews),quality?strictRound:undefined);if(!settled)return undefined;
   state.heroMemory=[...memory,settled.round];return settled.result;};
  if(heroReviews>0)tools.reviewHero=async(...a)=>{try{const r=await reviewHero(...a);if(!r&&state.hero)state.hero.reviewError='UNREADABLE';return r;}catch(error){const code=error instanceof Error?error.message:'REVIEW_FAILED';if(state.hero)state.hero.reviewError=code.slice(0,120);say(`The hero frame was NOT reviewed: ${reviewReason(code)}. It is accepted as it is.`);return undefined;}};
  const working=(stage:'hero'|'extension')=>{const titles=stageSkillTitles(staged,stage);if(titles.length)say(`The designer is working with: ${titles.join(', ')}.`);};
@@ -151,7 +152,7 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
  working('hero');
  await runHeroChat({input,state,maxTurns:Math.min(requests,Math.ceil(requests*HERO_TURN_SHARE)+(state.heroExtraTurns??0)),maxPictures,timeMs:3600000,tools,heroReviews,conversation,
   ideas:{task:`${owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:''}${IDEAS_TASK}\n\n${creatorStageText(staged,'ideas')}`,unreviewedReason:()=>heroReviews>0?undefined:'NO_REVIEW_IN_QUOTE',
-   select:async(text)=>{if(heroReviews<1)return null;try{return readSelection(await call('critic','Choose one of the three ideas.',SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(stageReviewMaterial(staged,'ideas').checks),territoryText(input))}));}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
+   select:async(text)=>{if(heroReviews<1)return null;try{return readSelection(await call('critic','Choose one of the three ideas.',usesQuality(input)?SELECTION_INSTRUCTIONS_V3:SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(reviewMaterialFor(input,staged,'ideas').checks),territoryText(input))}));}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
    onIdeas:async()=>{say('Three ideas for the key frame.');},
    onChosen:async(pick,reason)=>{if(state.ideas?.unreviewed)say(`The three ideas were NOT reviewed: ${reviewReason(state.ideas.unreviewed)}. The first idea is built.`);say(`Chosen: idea ${pick} — ${reason}`);}},
   onPictureWait:async e=>{say(pictureWaitLine(e.pictures,e.holdMs));},...(o.pictureHoldMs!==undefined?{pictureHoldMs:o.pictureHoldMs}:{}),
