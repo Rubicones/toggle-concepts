@@ -9,6 +9,7 @@ import {unloadedFiles} from '../../../packages/director/layout-inspection';
 import {usesQuality,reasonOnly,lastTurnNote,NOTES_INSIDE_THE_IDEA} from '../../../packages/director/quality';
 import {PICTURE_HOLD_SECONDS,actionsCorrection,heroTask,parseChatAnswer,heroActionsSchema,usesEdits,applyEdits,renderNote,stageHFindings,type HeroAnswer} from '../../../packages/director/hero-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
+import {recordPictureFailure,noFurtherPictureNote,KEEP_THE_WAY_OF_MAKING,type PictureFailure} from '../../../packages/director/picture-failure';
 import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
 import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
@@ -27,12 +28,19 @@ export const HERO_TURN_SHARE=0.5;
 export const PICTURE_HOLD_MS=PICTURE_HOLD_SECONDS*1000;
 export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;tools:DesignerTools;call:HeroCall;save:(s:DesignerLoopState)=>Promise<void>;heroReviews?:number;
  conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;
+ /** A picture that could not be bought: said on the timeline at once (version 6). */onPictureFailed?:(e:{id:string;failure:PictureFailure})=>Promise<void>;
  /** Plan E5 (version 6): how long a render waits for the pictures asked for (default PICTURE_HOLD_MS), and a call when a wait starts. */pictureHoldMs?:number;onPictureWait?:(e:{pictures:number;holdMs:number})=>Promise<void>;
  /** D4 (version 5): three image ideas before any code; an independent selection picks one (at most one extra round). */
  ideas?:{task:string;select:(ideas:string,round:number)=>Promise<Selection|null>;/** why the selection returned nothing without an error (no review in the quote, its allowance used) */unreviewedReason?:()=>string|undefined;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  if(!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
  const hero=state.hero,pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];
+ // Version 6: a failed purchase is said with its plain reason and, once, with how many pictures can still be had.
+ const failed=async(p:PictureResult)=>{if(!heroMeaning(input))return `The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`;const said=recordPictureFailure(state,p,args.maxPictures);await args.save(state);await args.onPictureFailed?.({id:p.id,failure:said.failure});return said.note;};
+ const noMore=()=>state.picturesBlocked||state.pictures>=args.maxPictures?` You can get no further picture in this draft. ${KEEP_THE_WAY_OF_MAKING}`:'';
+ // Version 6: which bought or supplied pictures the frame's code draws (read from the source), so a turn after a review
+ // that drops every picture is told once that the way of making stays.
+ const drawn=async()=>{const text=(await tools.files()).map(f=>f.source).join('\n');return [...new Set([...text.matchAll(/resources\[['"]([^'"]+)['"]\]/g)].map(m=>m[1]))];};
  const accept=async(by:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed')=>{hero.state='accepted';hero.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:hero.sceneId,format:hero.format,by});};
  // D4: the ideas turns open stage H (the first carries the task); the choice is the next message, then the build.
  if(args.ideas&&!state.ideas?.picked){
@@ -58,7 +66,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
  let missingRetried=false;
  while(hero.state!=='accepted'&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   // What arrived since the last answer; a continued conversation holds everything earlier.
-  const pictures=arrived.splice(0).map(p=>p.status==='ready'?`The picture ${p.id} has arrived: read resources['${p.id}'].`:`The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`);
+  const pictures:string[]=[];for(const p of arrived.splice(0))pictures.push(p.status==='ready'?`The picture ${p.id} has arrived: read resources['${p.id}'].`:await failed(p));
   const short=args.conversation?await args.conversation.decide():state.turn>0;
   const due=tools.materials&&state.materialsDue?.length?await tools.materials.load(state.materialsDue):null;
   const last=state.lastRender,shots=last?await Promise.all(last.views.map(async v=>({url:await screenshotForDesigner(v.file,RENDER_LONG_SIDE),label:`${v.label} (rendered)`}))):[];
@@ -92,10 +100,11 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
    // 2. Materials and pictures, inside their budgets; pictures arrive in a later message.
    if(actions.materials?.length){if(!tools.materials)notes.push('Materials are not available in this draft.');else{const asked=await tools.materials.fetch(actions.materials,[...(state.materialsSeen??[]),...(state.materialsDue??[])]);state.materialsDue=[...new Set([...(state.materialsDue??[]),...asked.attached])];notes.push(asked.lines.join('\n'));results.push(...asked.lines);}}
    for(const p of actions.pictures??[]){
+    if(heroMeaning(input)&&state.picturesBlocked){notes.push(noFurtherPictureNote(state.picturesBlocked));results.push('No picture: none can be bought.');break;}
     if(state.pictures>=args.maxPictures){notes.push('The approved number of pictures is used: build the rest in code or with the pictures you have.');break;}
     state.pictures++;await args.save(state);const id=input.resourceIds[state.pictures-1],key=`${state.turn}:${state.pictures}`;
     const picture={purpose:p.purpose,scene:hero.sceneId,prompt:p.prompt,aspect:p.aspect,referenceAssetIds:resolveAssetReferences(p.references??[],input),mustNotContain:p.mustNotContain??[],...(p.cutout?{cutout:true}:{}),...(p.proxyFor?{proxyFor:p.proxyFor}:{}),...(p.becomes&&p.proxyFor?{becomes:p.becomes}:{})};
-    pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const,detail:(error instanceof Error?error.message:'').slice(0,200)};arrived.push(r);pending.delete(key);return r;}));
+    pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const,detail:(error instanceof Error?error.message:'').slice(0,200),code:(error instanceof Error?error.message:'').slice(0,200)};arrived.push(r);pending.delete(key);return r;}));
     notes.push(`Asked for a picture (${p.purpose.slice(0,80)}): it will be resources['${id}'] and arrives in a later message.`);results.push('Asked for a picture.');
    }
    // C8 follow-up: a 3D model of a picture it already has, when code cannot build that object; the picture stays the fallback.
@@ -104,6 +113,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
     const made=await tools.requestModel(m);results.push(made.status==='model'?'Made a 3D model.':'No 3D model.');
     notes.push(made.status==='model'?`The 3D model of ${made.id} is ready: draw it with <Scene3D model={resources['${made.id}']} …/>; its picture stays the fallback.`:`No 3D model for ${made.id}: ${made.detail??'it could not be made'}. Keep the picture, or build the object in code.`);
    }
+   if(heroMeaning(input)&&changedFiles&&built.ok&&hero.reviewedWith?.length&&!hero.makingNoted&&!(await drawn()).length){hero.makingNoted=true;notes.push(`The frame the reviewer saw drew ${hero.reviewedWith.length===1?'a picture':'pictures'} (${hero.reviewedWith.join(', ')}); this code draws none. The way of making stays through a review: put the picture back and solve the notes around it, or say in one sentence why the frame cannot keep it.`);results.push('The pictures were dropped after a review: told to keep the way of making.');}
    // 3. The render: after every building change, or when asked.
    if(built.ok&&(changedFiles||actions.render)){
     // Version 6 (plan E1): the hero stage makes one frame with the reference words; the longest copy of another
@@ -118,10 +128,10 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
      await Promise.race([Promise.allSettled([...pending.values()]),new Promise(r=>{timer=setTimeout(r,holdMs);})]);if(timer)clearTimeout(timer);
      state.pictureWaitMs=(state.pictureWaitMs??0)+(now()-from);
      const here=arrived.splice(0);
-     for(const p of here)notes.push(p.status==='ready'?`The picture ${p.id} has arrived and is in this render: read resources['${p.id}'].${p.cutout===true?` Its cutout is resources['${p.id}'].cutoutUrl.`:p.cutout===false?` ${p.detail??'The cutout failed; use the rectangle.'}`:''}`:`The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`);
+     for(const p of here)notes.push(p.status==='ready'?`The picture ${p.id} has arrived and is in this render: read resources['${p.id}'].${p.cutout===true?` Its cutout is resources['${p.id}'].cutoutUrl.`:p.cutout===false?` ${p.detail??'The cutout failed; use the rectangle.'}`:''}`:await failed(p));
      if(pending.size)notes.push(`${pending.size===1?'One picture was':`${pending.size} pictures were`} not ready after ${Math.round(holdMs/1000)} s: this render is without ${pending.size===1?'it':'them'}, and ${pending.size===1?'it arrives':'they arrive'} in a later message.`);
      if(here.some(p=>p.status==='ready')){const again=await tools.build();if(!again.ok)notes.push(`The code does not build with the picture in place:\n${shortIssue(again.issue)}`);}
-     results.push(here.length?`Waited for ${here.length===1?'the picture':`${here.length} pictures`}.`:'The picture was not ready in time.');
+     results.push(here.length?`Waited for ${here.length===1?'the picture':`${here.length} pictures`}.`:'The picture was not ready in time.');if(here.some(p=>p.status!=='ready'))results.push('A picture could not be bought.');
     }
     const views=designerViews(input,hero.sceneId,[hero.format]).filter(v=>!heroMeaning(input)||v.shot),out=await tools.render(views);state.renders[renderKey(hero.sceneId,hero.format)]=(state.renders[renderKey(hero.sceneId,hero.format)]??0)+1;
     const findings=stageHFindings(out.summary.reports.flatMap(r=>r.findings)).sort((a,b)=>Number(b.severity==='hard')-Number(a.severity==='hard'));
@@ -146,6 +156,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
     else if(hero.reviews>=(args.heroReviews??0)||!tools.reviewHero){await accept(tools.reviewHero&&(args.heroReviews??0)>0?'reviews-used':'no-critic');results.push('The hero frame is accepted.');}
     else{
      const findings=(state.lastRender?.findings??[]).map(f=>({view:f.view,severity:f.severity,detail:f.detail}));
+     if(heroMeaning(input))hero.reviewedWith=await drawn();
      const review=await tools.reviewHero(hero.reviews+1,hero.shots,findings);hero.reviews++;await args.save(state);
      if(!review){await accept('review-failed');results.push('The review could not run; the hero frame is accepted.');}
      else{await args.onHero?.({kind:'reviewed',sceneId:hero.sceneId,format:hero.format,notes:review.notes.length,looked:hero.shots[0]?.file,...(review.checks?{review:{checks:review.checks,rulings:review.rulings??[],...(review.stop?{stop:review.stop}:{})}}:{})});
@@ -154,10 +165,10 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
       // with no further review; the frame is accepted after that turn.
       const points=usesQuality(input)?[...new Set([...(review.open??[]),...review.notes.map(n=>`${n.problem} Wanted: ${n.fix}`)])]:[];
       const by=review.stop?(review.stop==='all-pass'?'critic':review.stop==='no-progress'?'no-progress':'reviews-used'):review.accepted||!review.notes.length?'critic':hero.reviews>=(args.heroReviews??0)?'reviews-used':null;
-      if(by&&points.length&&state.turn<args.maxTurns){hero.lastTurn={by,turns:0};notes.push(lastTurnNote(points));results.push(`Review finished: ${points.length} point${points.length===1?'':'s'} for one last turn.`);}
+      if(by&&points.length&&state.turn<args.maxTurns){hero.lastTurn={by,turns:0};notes.push(lastTurnNote(points)+noMore());results.push(`Review finished: ${points.length} point${points.length===1?'':'s'} for one last turn.`);}
       else if(review.stop){notes.push(openPointsNote(review.open??[]));await accept(review.stop==='all-pass'?'critic':review.stop==='no-progress'?'no-progress':'reviews-used');results.push(review.stop==='all-pass'?'Review finished: all checks passed.':review.stop==='no-progress'?'Stopped: no further progress — open points listed.':'Review finished after its rounds — open points listed.');}
       else if(review.accepted||!review.notes.length){await accept('critic');results.push('The review accepted the hero frame.');}
-      else{notes.push(`The reviewer's notes on your hero frame:\n${review.notes.map(n=>`- [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}\n${usesQuality(input)?`${NOTES_INSIDE_THE_IDEA} Then ask for the review again.`:hero.reviews>=(args.heroReviews??0)?'Apply what you agree with; the next review request accepts the frame.':'Apply what you agree with, then ask for the review again.'}`);results.push(`Review: ${review.notes.length} note${review.notes.length===1?'':'s'}.`);}}
+      else{notes.push(`The reviewer's notes on your hero frame:\n${review.notes.map(n=>`- [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}\n${usesQuality(input)?`${NOTES_INSIDE_THE_IDEA}${noMore()} Then ask for the review again.`:hero.reviews>=(args.heroReviews??0)?'Apply what you agree with; the next review request accepts the frame.':'Apply what you agree with, then ask for the review again.'}`);results.push(`Review: ${review.notes.length} note${review.notes.length===1?'':'s'}.`);}}
     }
    }
   }catch(error){if(propagateExecutionFailure(error))throw error;stopOnEnvironmentFault(error);notes.push(`This step needs another attempt: ${(error instanceof Error?error.message:'').slice(0,300)}`);}

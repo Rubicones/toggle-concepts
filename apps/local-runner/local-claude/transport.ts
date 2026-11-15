@@ -226,16 +226,22 @@ export function cliTextTransport(setup:LocalCliSetup,options:{signal?:AbortSigna
    let schemaCheck:LocalTextDetails['schemaCheck'];
    const settle=async(schema:Record<string,unknown>)=>{
     if(!textSchema||r.outcome!=='succeeded'||leak||finishOf(r.stopReason)!=='stop')return;
-    const check=(text:string|null|undefined):{value:unknown}|{issues:string[]}=>{const read=readJsonAnswer(text);if('error' in read)return {issues:[`answer: ${jsonProblem(text)}`]};const issues=schemaIssues(read.value,schema);return issues.length?{issues}:{value:read.value};};
+    const check=(text:string|null|undefined):{value:unknown;completed?:true}|{issues:string[]}=>{const read=readJsonAnswer(text);if('error' in read)return {issues:[`answer: ${jsonProblem(text)}`]};const issues=schemaIssues(read.value,schema);return issues.length?{issues}:{value:read.value,...(read.completed?{completed:true as const}:{})};};
     let c=check(r.text);
     // Up to two repair turns in the same conversation, each naming exactly what is wrong: far cheaper than the workflow
     // running the whole request again.
     for(let turn=0;turn<2&&'issues' in c&&r.init?.sessionId;turn++){const found=c.issues;r=mergeCalls(r,await again(r.init.sessionId,[{type:'text',text:repairText(found)}]));schemaCheck={repaired:true,issues:[...(schemaCheck?.issues??[]),...found]};
      if(r.outcome!=='succeeded'||leak||finishOf(r.stopReason)!=='stop')return;c=check(r.text);}
-    if('value' in c){r={...r,structured:c.value};return;}
+    // An answer accepted after its closing brackets were completed or trimmed is passed on as the corrected text: the
+    // workflow reads the text again, strictly (live run of 15 November: two critic answers with one brace too many were
+    // accepted here, refused there, and each whole request ran again).
+    if('value' in c){r={...r,structured:c.value,...(c.completed?{text:JSON.stringify(c.value)}:{})};return;}
     schemaCheck={repaired:!!schemaCheck,issues:c.issues};r={...r,outcome:'failed',failure:'INVALID_OUTPUT_SCHEMA'};
    };
    if(answerSchema)await settle(answerSchema);
+   // Every role whose answer is one JSON object (also those whose format this transport does not check): closing
+   // brackets missing or doubled at the very end are corrected in the text itself, because the workflow reads it strictly.
+   if(r.outcome==='succeeded'&&typeof r.text==='string'&&r.text.trimStart().startsWith('{')){const read=readJsonAnswer(r.text);if('value' in read&&read.completed)r={...r,text:JSON.stringify(read.value)};}
    // C3: the answer, or one round of materials and then the answer in the same conversation.
    let materials:LocalTextDetails['materials'];
    if(materialsOn&&r.outcome==='succeeded'&&!leak){

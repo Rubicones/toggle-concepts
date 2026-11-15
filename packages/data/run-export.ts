@@ -72,7 +72,7 @@ export function requestsCsv(rows:ReturnType<typeof requestComposition>[]):string
 /** The frozen run context without its pictures' bytes: the texts, versions and flags, and each picture's size. */
 export function slimRunContext(ctx:Record<string,unknown>|null){
  if(!ctx)return null;const images=Array.isArray(ctx.images)?(ctx.images as Record<string,unknown>[]).map(i=>Object.fromEntries(Object.entries(i).map(([k,v])=>[k,typeof v==='string'&&v.length>2000?`[${Math.floor(v.length*3/4)} bytes]`:v]))):undefined;
- const flags=Object.fromEntries(['version','base','sha256','tokens','holds','planningChat','schemaInText','instructionsVersion','imageOwner','criticVersion','withoutSkill','stageEffort'].filter(k=>k in ctx).map(k=>[k,ctx[k]]));
+ const flags=Object.fromEntries(['version','base','sha256','tokens','holds','planningChat','schemaInText','instructionsVersion','imageOwner','oneMind','criticVersion','reviewChecks','criticMode','leanContext','withoutSkill','stageEffort'].filter(k=>k in ctx).map(k=>[k,ctx[k]]));
  return redactValue({flags,system:ctx.system,brief:ctx.brief,stageSkills:ctx.stageSkills,roleSkills:ctx.roleSkills,materials:ctx.materials,...(images?{images}:{})});
 }
 /** The export's layout: every file it may write, so the owner and the reader know where to look. */

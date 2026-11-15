@@ -21,6 +21,7 @@ import {measureLogos,logoFactLines,referenceFactLines,suppliedFactLines} from '.
 import {designerTools,provisionalDesign,finishDesign} from '../../apps/local-runner/director/designer-run';
 import {screenshotForDesigner,newDesignerState,designerViews,RENDER_LONG_SIDE,type DesignerLoopState,type DesignerTools} from '../../apps/local-runner/director/designer-loop';
 import {runHeroChat,HERO_TURN_SHARE} from '../../apps/local-runner/director/hero-chat-loop';
+import {pictureFailureLine,NO_FURTHER_PICTURE_REVIEWER,type PictureFailure} from '../../packages/director/picture-failure';
 import {runExtensionChat} from '../../apps/local-runner/director/extension-chat-loop';
 import {cliTextTransport,type LocalCliSetup,type LocalTextReceipt} from '../../apps/local-runner/local-claude/transport';
 import {fetchMaterials,loadMaterials,materialsUsed} from '../../apps/local-runner/local-claude/materials';
@@ -145,9 +146,12 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
    return {attached,lines:f.plan.map(p=>p.status==='attached'?`Asked to see ${p.name}; it arrives with the next turn.`:`${p.name}: ${p.status}.`)};},
   load:names=>loadMaterials(ctx,names,references,noStoredPictures),left:async()=>budgetLeft('designer',budget,await materialsUsed(input.runId)).count};
  // The hero review (critic@2): the hero checks with evidence, its own earlier rounds as text, a stop by rule.
+ // As the worker: every review made when no further picture can be had is told so (version 6).
+ const noPicture=()=>usesQuality(input)&&(state.picturesBlocked||state.pictures>=maxPictures)?NO_FURTHER_PICTURE_REVIEWER:'';
+ const onPictureFailed=async(e:{id:string;failure:PictureFailure})=>{say(pictureFailureLine(e.failure));};
  const reviewHero:NonNullable<DesignerTools['reviewHero']>=async(round,shots,measured)=>{
   const memory=state.heroMemory??[],quality=usesQuality(input),chosen=quality?chosenIdeaNote(state.ideas):'',material=reviewMaterialFor(input,staged,'hero',{chosenIdea:!!chosen}),hard=measured.filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
-  const text=await call('critic','Review this hero frame.',quality?HERO_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(HERO_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input,{sceneIds:false}),...(territoryText(input)||chosen?{work:[territoryText(input)?wayOfMakingNote(territoryText(input)):'',chosen].filter(Boolean).join('\n\n')}:{}),checks:material.checks,signs:material.signs,hard,memory})},[...(shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame now, at full size'}]:[]),...(shots[0]&&heroMeaning(input)?[{url:await screenshotForDesigner(shots[0].file,HERO_THUMBNAIL_SIDE),label:HERO_THUMBNAIL_LABEL}]:[])]);
+  const text=await call('critic','Review this hero frame.',quality?HERO_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(HERO_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input,{sceneIds:false}),...(territoryText(input)||chosen||noPicture()?{work:[territoryText(input)?wayOfMakingNote(territoryText(input)):'',chosen,noPicture()].filter(Boolean).join('\n\n')}:{}),checks:material.checks,signs:material.signs,hard,memory})},[...(shots[0]?[{url:await screenshotForDesigner(shots[0].file,RENDER_LONG_SIDE),label:'The hero frame now, at full size'}]:[]),...(shots[0]&&heroMeaning(input)?[{url:await screenshotForDesigner(shots[0].file,HERO_THUMBNAIL_SIDE),label:HERO_THUMBNAIL_LABEL}]:[])]);
   const settled=settleHeroReview(text,round,memory,hard.length,Math.min(HERO_REVIEW_ROUNDS,heroReviews),quality?strictRound:undefined);if(!settled)return undefined;
   state.heroMemory=[...memory,settled.round];return settled.result;};
  if(heroReviews>0)tools.reviewHero=async(...a)=>{try{const r=await reviewHero(...a);if(!r&&state.hero)state.hero.reviewError='UNREADABLE';return r;}catch(error){const code=error instanceof Error?error.message:'REVIEW_FAILED';if(state.hero)state.hero.reviewError=code.slice(0,120);say(`The hero frame was NOT reviewed: ${reviewReason(code)}. It is accepted as it is.`);return undefined;}};
@@ -165,14 +169,14 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
    select:async(text)=>{if(heroReviews<1)return null;try{return readSelection(await call('critic','Choose one of the three ideas.',usesQuality(input)?SELECTION_INSTRUCTIONS_V3:SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(reviewMaterialFor(input,staged,'ideas').checks),territoryText(input))}));}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
    onIdeas:async()=>{say('Three ideas for the key frame.');},
    onChosen:async(pick,reason)=>{if(state.ideas?.unreviewed)say(`The three ideas were NOT reviewed: ${reviewReason(state.ideas.unreviewed)}. The first idea is built.`);say(`Chosen: idea ${pick} — ${reason}`);}}}),
-  onPictureWait:async e=>{say(pictureWaitLine(e.pictures,e.holdMs));},...(o.pictureHoldMs!==undefined?{pictureHoldMs:o.pictureHoldMs}:{}),
+  onPictureFailed,onPictureWait:async e=>{say(pictureWaitLine(e.pictures,e.holdMs));},...(o.pictureHoldMs!==undefined?{pictureHoldMs:o.pictureHoldMs}:{}),
   onHero:async e=>{say(e.kind==='started'?(heroMeaning(input)?`Hero frame started. ${heroBriefLine(input)}`:'Hero frame started.'):e.kind==='reviewed'?`Hero frame reviewed: ${e.notes} note${e.notes===1?'':'s'}.`:`Hero frame accepted (${e.by}). Designing the other scenes.`);},
   save:async()=>{},call:designerCall('H'),onTurn:turnLine});
  if(o.heroOnly){const gaps=reviewGaps({expects:{ideas:true,hero:true,end:false},ideas:state.ideas,hero:state.hero});if(gaps.length)say(unreviewedStatus(gaps));
   return {state,context:ctx,calls,timeline,gaps,status:'Hero stage only.',apiEquivalentUsd:usageTotals(calls.flatMap(c=>c.usage?[c.usage]:[])).apiEquivalentUsd};}
  // Stage E: the same conversation continues with the other scenes, the formats and the variations.
  working('extension');
- const extend=()=>runExtensionChat({input,state,maxTurns:requests,maxPictures,timeMs:3600000,tools,skills:creatorStageText(staged,'extension'),conversation,save:async()=>{},onPhase:async(_p,label)=>{say(`${label}.`);},call:designerCall('E'),onTurn:turnLine});
+ const extend=()=>runExtensionChat({onPictureFailed,input,state,maxTurns:requests,maxPictures,timeMs:3600000,tools,skills:creatorStageText(staged,'extension'),conversation,save:async()=>{},onPhase:async(_p,label)=>{say(`${label}.`);},call:designerCall('E'),onTurn:turnLine});
  await extend();
  if(!state.complete)say('The designer used its approved turns or time before finishing. The draft is shown as it is; continue within a new allowance to finish it.');
  // The end review (critic@2) with one repair round, as the worker's live review does for a designer block.
@@ -186,7 +190,7 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
      hard.push(...r.summary.reports.flatMap(x=>x.findings).filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`));
      for(const shot of r.shots.slice(0,2))shots.push({url:await screenshotForDesigner(shot.file,768),label:`Scene ${input.storyboard.indexOf(scene)+1} · ${views.find(v=>v.key===shot.key)?.label??''}`});}
     const material=stageReviewMaterial(staged,'extension'),memory=state.endMemory??[];
-    const text=await call('critic','Review these rendered views of the draft.',usesQuality(input)?END_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard:hard.slice(0,20),memory})},shots);
+    const text=await call('critic','Review these rendered views of the draft.',usesQuality(input)?END_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),...(territoryText(input)||noPicture()?{work:[territoryText(input)?wayOfMakingNote(territoryText(input)):'',noPicture()].filter(Boolean).join('\n\n')}:{}),checks:material.checks,signs:material.signs,hard:hard.slice(0,20),memory})},shots);
     const read=readReview(text,round);if(!read){end.skipped='UNREADABLE';say('The creative review could not run; the draft is delivered with the measured findings only.');break;}
     const r=withAllRulings(read,memory);state.endMemory=[...memory,r];end.rounds=round;end.accepted=r.accepted;end.notes=r.notes.length;
     say(r.accepted?'The creative review accepted the current views.':`The creative review returned ${r.notes.length} note${r.notes.length===1?'':'s'}.`);

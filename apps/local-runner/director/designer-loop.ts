@@ -18,7 +18,7 @@ export const DESIGNER_REVISIONS_PER_SCENE=3;
 export type {DesignerLoopState} from '../../../packages/director/designer';
 import type {DesignerLoopState} from '../../../packages/director/designer';
 export const newDesignerState=(now=Date.now()):DesignerLoopState=>({turn:0,startedAt:now,complete:false,pictures:0,transcript:[],renders:{}});
-export type PictureResult={id:string;status:'ready'|'failed'|'refused';detail?:string;cutout?:boolean};
+export type PictureResult={id:string;status:'ready'|'failed'|'refused';detail?:string;cutout?:boolean;/** the failure's technical code (PROVIDER_402, …) */code?:string};
 export type DesignerTools={
  /** Authored files only (no generated modules). */
  files:()=>Promise<{path:string;source:string}[]>;

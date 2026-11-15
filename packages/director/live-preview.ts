@@ -9,6 +9,8 @@ export type LivePreview={squareOnly?:boolean;status:'waiting'|'ready'|'updating'
  finalNotes?:import('./final-notes').FinalVersionNote[];
  /** The reviews that did not run for this draft, in plain words; the draft is then never called ready as if checked. */
  reviewGaps?:string[];
+ /** Pictures that could not be bought for this draft, each with its plain reason. */
+ pictureProblems?:string[];
  /** C8: what the final adds to the draft's code-built 3D scenes ("This object turns in 3D."). */
  finalAdds?:string[];
  /** A designer block (point 4): one owner receives every note. */

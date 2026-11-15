@@ -36,3 +36,6 @@ export function autoContinuationMessage(role:string,costMicroUsd:number){
  const who=({director:'The director',assembler:'The layout coder',critic:'The review agent',designer:'The designer'} as Record<string,string>)[role]??'This step';
  return `${who} used its allowance and continues: budget re-approval is off for this local preview. Added up to $${(costMicroUsd/1e6).toFixed(2)} to the run limit; actual use is still counted. You can stop the run at any time.`;
 }
+/** Live run of 15 November: "This request was compacted" was said six times when nothing had been cut (28 units of
+ * 36,273). The line now says what happened: how much was cut, or that the request is only large. */
+export const compactionLine=(c:{before?:number;after?:number;cap?:number})=>{const before=Number(c.before??0),after=Number(c.after??0),cut=before-after;return cut>before*0.01?`This request was shortened to stay within its size limit: ${cut.toLocaleString('en-US')} of ${before.toLocaleString('en-US')} units were left out (see the detail for what).`:`This request is large (${after.toLocaleString('en-US')} of ${Number(c.cap??0).toLocaleString('en-US')} units allowed); nothing was left out.`;};

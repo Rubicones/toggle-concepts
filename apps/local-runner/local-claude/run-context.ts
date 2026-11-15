@@ -4,7 +4,7 @@
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {buildRunContext,type RunContext,type Skill} from '../../../packages/agents/run-context';
+import {buildRunContext,advisoryCriticFor,type RunContext,type Skill} from '../../../packages/agents/run-context';
 import {toggleHome} from './device';
 import {brandPackText} from '../../../packages/brand/brand-pack';
 import {storedPackText} from '../../../packages/brand/brand-pack-contents';
@@ -51,7 +51,7 @@ export async function loadRunContext(admin:SupabaseClient,runId:string,extras:()
   // C9: contexts frozen from now on let the planning chain read the earlier stages in short; C7 follow-up: their
   // planning roles send the answer format as text, so every role reads the same cached prefix.
   const {materialBudget,...rest}=await extras();
-  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...rest,materials:{entries:stored.catalogue,budget:{...DEFAULT_MATERIAL_BUDGET,...materialBudget}},planningChat:true,schemaInText:true,leanContext:true,...(rest.stageSkills?{stageSkills:rest.stageSkills}:{}),positive:POSITIVE_DEFAULT,imageOwner:process.env.STUDIO_DESIGNER_VERSION!=='4',oneMind:process.env.STUDIO_DESIGNER_VERSION==='6',advisoryCritic:process.env.STUDIO_CRITIC_MODE==='advisory',critic:true}));
+  return freezeRunContext(runId,buildRunContext({briefText:c1.data.brief_text,brandPack:storedPackText(stored,brand.data.canonical_text),packVersion:stored.version,packImages,...rest,materials:{entries:stored.catalogue,budget:{...DEFAULT_MATERIAL_BUDGET,...materialBudget}},planningChat:true,schemaInText:true,leanContext:true,...(rest.stageSkills?{stageSkills:rest.stageSkills}:{}),positive:POSITIVE_DEFAULT,imageOwner:process.env.STUDIO_DESIGNER_VERSION!=='4',oneMind:process.env.STUDIO_DESIGNER_VERSION==='6',advisoryCritic:advisoryCriticFor(process.env),critic:true}));
  }
  // C2: contexts frozen from now on carry the brand pack instead of the raw revision; frozen ones keep theirs.
  const brandPack=brandPackText(brand.data.canonical_text);

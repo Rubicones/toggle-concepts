@@ -20,7 +20,16 @@ Keep the answer short, about 600 to 1,000 tokens. An independent reviewer picks 
  * range rule, not a look: it asks that one of three be a whole scene when the direction allows a photograph. */
 export const IDEAS_RANGE='Make the three differ in kind, not in detail: in what is shown, in how close the viewer is to it, and in how much of the frame it takes. When the direction allows a photograph, at least one idea is a whole scene, a place or a moment with the subject in it, and not the subject alone on a plain ground.';
 export const IDEAS_TASK_V6=IDEAS_TASK.replace('2. Push each one to be bolder and more distinct from the others.',`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE}`);
-export const ideasTaskFor=(input:{brief:{designerVersion?:unknown}})=>Number(input.brief.designerVersion)>=6?IDEAS_TASK_V6:IDEAS_TASK;
+/** Version 6, only when the brand has no picture of its product or its work that the frame may show (live run of
+ * 15 November: a service brand with no cleared work; every idea became "the ad shows itself", a blank plate carrying the
+ * headline). A rule about what the subject may be, not a look. For the owner to approve. */
+export const IDEAS_WITHOUT_PRODUCT_PICTURE='This brand has no picture of its product or its work that the frame may show. Do not put an empty stand-in in its place (a blank plate, an empty frame, a placeholder screen), and do not make the ad itself the subject. Each idea shows one of these instead, and the three do not all choose the same one: the viewer\'s situation before the product (the problem as it looks in their day); the result the product leaves (what is different afterwards, as a thing or a moment a stranger can see); or a made scene that stands for the promise (a place, an object or an action that reads as the promise with no product in it).';
+/** Whether the frame may show the product or its work as a picture: a supplied picture, a kit picture the art director
+ * marked "Use this", or an interface the brand supplied (which code can build). */
+export function hasShowablePicture(input:{assets?:{url:string}[];brand?:{references?:{url?:string;use?:boolean}[];interface?:unknown[]}}):boolean{
+ return (input.assets??[]).some(a=>/\.(png|jpe?g|webp)$/i.test(a.url))||(input.brand?.references??[]).some(r=>r.use===true)||(input.brand?.interface??[]).length>0;
+}
+export const ideasTaskFor=(input:{brief:{designerVersion?:unknown};assets?:{url:string}[];brand?:{references?:{url?:string;use?:boolean}[];interface?:unknown[]}})=>Number(input.brief.designerVersion)>=6?(hasShowablePicture(input)?IDEAS_TASK_V6:IDEAS_TASK_V6.replace(IDEAS_RANGE,`${IDEAS_RANGE} ${IDEAS_WITHOUT_PRODUCT_PICTURE}`)):IDEAS_TASK;
 export const ideasAgain=(notes:string[])=>`None of the three ideas passes the key checks:\n${notes.map(n=>`- ${n}`).join('\n')}\nWrite three new ideas the same way (IDEA 1, IDEA 2, IDEA 3), bolder and closer to the territory. This is the last ideas round.`;
 /** The chosen idea in the designer's own words (the whole of its IDEA n section); when the sections cannot be told
  * apart, the whole ideas answer, so the build never starts without the idea's text. */

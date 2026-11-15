@@ -109,6 +109,12 @@ test('broken words and a logo that disappears on its ground are objective findin
  assert.equal(code('LOGO_LOW_CONTRAST')[0]?.severity,'hard');
  const light=analyzeView({...raw,logos:[{...raw.logos[0],ink:0.9}]},ctx(i));assert.ok(!light.some(f=>f.code==='LOGO_LOW_CONTRAST'),'a light logo on black reads');
  const unknown=analyzeView({...raw,logos:[{id:'logo0',box:box(800,40,200,80)}]},ctx(i));assert.ok(!unknown.some(f=>f.code==='LOGO_LOW_CONTRAST'),'no measurement, no finding');
+ // Live run of 15 November: a white mark on a gradient tile was measured against the page's white behind the tile
+ // (1.0:1, hard) and three turns went on it. A gradient or picture ground has no one colour, so nothing is claimed.
+ const white=[{id:'logo0',box:box(800,40,200,80),ink:0.95,background:'rgb(255, 255, 255)',overImage:null}];
+ assert.equal(analyzeView({...raw,logos:white},ctx(i)).filter(f=>f.code==='LOGO_LOW_CONTRAST').length,1,'white on solid white is a finding');
+ assert.ok(!analyzeView({...raw,logos:[{...white[0],background:null,complexGround:true}]},ctx(i)).some(f=>f.code==='LOGO_LOW_CONTRAST'),'white on a gradient tile is not measured against the page');
+ assert.ok(!analyzeView({...raw,logos:[{...white[0],complexGround:true}]},ctx(i)).some(f=>f.code==='LOGO_LOW_CONTRAST'));
 });
 
 test('the browser probe measures a real compiled Frame offline and screenshots only the critic views',async t=>{

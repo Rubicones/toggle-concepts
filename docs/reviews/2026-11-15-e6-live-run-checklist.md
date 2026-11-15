@@ -15,6 +15,29 @@ Plain steps for the run that closes the plan (`docs/plans/2026-11-14-one-mind-he
 
 ## 2. Summary of Changes
 
+### Before the next run (added after live run 2, see `2026-11-15-live-run-2-fixes.md`)
+
+- **Add credit to the picture provider account (OpenRouter).** Run 2's second picture was refused for payment. The price message now warns when the account's credit does not cover the pictures; if it warns, add credit before approving.
+- **What to look at in the run:**
+  - If a picture fails, the timeline and the draft panel say `A picture could not be bought: …` with the reason.
+  - The brand's marks listed as "use it" appear in the frame, with no broken-image box.
+  - After the key frame's review there is one last turn and no second review; after the end review its notes are listed and no rewrite follows unless a note is blocking.
+  - The frame keeps its subject and its way of making from the first accepted render to the end.
+  - No turn is spent on a logo-contrast finding for a mark on a gradient.
+- **Bench commands that replay this run's key-frame stage from the export** (I do not run them; `<run2>` is the unpacked export folder, never copied into the repository):
+
+```bash
+# with pictures: put each picture beside its request file when asked
+node --import tsx scripts/bench/pipeline-bench.ts --from-export=<run2> --designer=6 --hero-only=1 --pictures=4 --wait=900
+# with a simulated payment refusal after the first picture
+node --import tsx scripts/bench/pipeline-bench.ts --from-export=<run2> --designer=6 --hero-only=1 --pictures=4 --wait=900 --refuse-pictures-after=1
+# the earlier full review rounds, for comparison
+node --import tsx scripts/bench/pipeline-bench.ts --from-export=<run2> --designer=6 --hero-only=1 --pictures=4 --wait=900 --full-critic=1
+```
+
+  Add `--dry=1` to any of them to check the setup without a model request (checked: no brand file missing, 13 drawable brand pictures, one hero review).
+
+
 ### Step 1. The settings file
 
 Open `C:\toggle\.env.local` in Notepad and add one line at the end. Save.
@@ -24,7 +47,7 @@ STUDIO_DESIGNER_VERSION=6
 ```
 
 - This one line switches both halves: the studio (which creates the designer's work as version 6) and the runner (which freezes the run for one-request visual direction and the continued conversation). Both read it from this file: the installer copies `C:\toggle\.env.local` into the studio, the studio starts with it, and the studio starts the runner with the same settings.
-- **Do not add** `STUDIO_CRITIC_MODE` for this run. The reviewer then works as the plan has it: it chooses the idea, reviews the key frame up to twice, and reviews the finished draft up to twice. (If you later want the lighter reviewer proposed on 15 November, the line is `STUDIO_CRITIC_MODE=advisory`. It takes effect for runs started after it is set.)
+- **Do not add** `STUDIO_CRITIC_MODE`. Since live run 2, version 6 uses the lighter reviewer by default: it chooses the idea, reviews the key frame once (its notes go to one last turn) and reviews the finished draft once (its notes are kept for you; only a blocking note is repaired). To get the earlier rounds back, add `STUDIO_CRITIC_MODE=full`. Either takes effect for runs started after it is set.
 - To go back to version 5: delete the line and repeat step 2.
 
 ### Step 2. Update and restart

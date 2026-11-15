@@ -15,7 +15,7 @@ import {digest} from '@/packages/director/money';
 import type {BlockSnapshot,WorkState} from '@/packages/director/state';
 import type {CatalogEntry,DirectionInput} from '@/packages/director/types';
 import type {Design} from '@/packages/director/contract';
-import {previewMaterialAllowed} from '@/packages/director/material-memory';
+import {previewMaterialAllowed,drawableReferenceUrls} from '@/packages/director/material-memory';
 import {liveResourceBindings} from '@/packages/director/resources';
 import {finalVersionNotes} from '@/packages/director/final-notes';
 import type {LiveAsset,LivePreview,LiveOptions} from '@/packages/director/live-preview';
@@ -75,7 +75,8 @@ function assets(ctx:Context){
  for(const file of ctx.catalog)if(file.cutout)rows.set(file.cutout.url,{name:file.cutout.url,mime:'image/png',sha256:file.cutout.sha256,objectKey:file.cutout.objectKey});
  // C8: a generated 3D model next to its picture (version 4 drafts); the picture stays the fallback.
  for(const file of ctx.catalog)if(file.model)rows.set(file.model.url,{name:file.model.url,mime:'model/gltf-binary',sha256:file.model.sha256});
- return [...rows.values()].filter(file=>previewMaterialAllowed(ctx.design?.materialMemory??ctx.input.materialMemory,file.name));
+ const drawable=drawableReferenceUrls(ctx.input);
+ return [...rows.values()].filter(file=>previewMaterialAllowed(ctx.design?.materialMemory??ctx.input.materialMemory,file.name,drawable));
 }
 type Bundle={revision:string;options:LiveOptions;legacy:boolean};const builds=new Map<string,Promise<Bundle>>();
 export async function liveDirectorPreview(campaignId:string,directionId:string,iterationId?:string):Promise<LivePreview>{
@@ -95,7 +96,7 @@ export async function liveDirectorPreview(campaignId:string,directionId:string,i
  const formats=usesDesigner(ctx.input)?designedFormats(ctx.input.formats,(ctx.design?.keyFrames??[]).map(k=>k.sceneId),ctx.designer?.renders??{},ctx.designer?.findings??[],ctx.designer?.hero):[];
  // Point 3d: a designer draft with a hero frame opens on the hero scene in the hero format.
  const hero=ctx.designer?.hero,heroFormat=ctx.input.brief.squarePreviewVersion===1?ctx.input.formats[0]:hero?ctx.input.formats.find(f=>f.id===hero.format):undefined,heroSceneId=hero&&(options.scenes.includes(hero.sceneId)||!options.scenes.length)?hero.sceneId:undefined;
- return {squareOnly:ctx.input.brief.squarePreviewVersion===1,status:message?'updating':'ready',message,revision:info!.revision,assetRevision:identity.assetRevision,review,...(finalNotes.length?{finalNotes}:{}),...(ctx.design?.finalAdds?.length?{finalAdds:ctx.design.finalAdds}:{}),...(ctx.design?.reviewGaps?.length?{reviewGaps:ctx.design.reviewGaps}:{}),...(usesDesigner(ctx.input)?{designer:true,formats}:{}),...(ctx.measured?{fontChecks:fontFindingLines(ctx.measured)}:{}),assets:pictures,resources,options,construction:ctx.construction??await draftConstruction(ctx.folder,ctx.input),legacy:info!.legacy,variants:ctx.input.variants,scenes,defaultProps:{format:heroFormat?liveFormat(heroFormat.width,heroFormat.height):info!.legacy?reference.format:'square',width:heroFormat?.width??(info!.legacy?legacyFormat?.width??1080:1080),height:heroFormat?.height??(info!.legacy?legacyFormat?.height??1080:1080),locale:reference.locale,hook:reference.hook,cta:reference.cta,length:reference.length,sceneId:heroSceneId??options.scenes[0]??scene?.sceneId??ctx.input.storyboard[0].id,moment:scene?.moments[0]?.id??'key-frame'}};
+ return {squareOnly:ctx.input.brief.squarePreviewVersion===1,status:message?'updating':'ready',message,revision:info!.revision,assetRevision:identity.assetRevision,review,...(finalNotes.length?{finalNotes}:{}),...(ctx.design?.finalAdds?.length?{finalAdds:ctx.design.finalAdds}:{}),...(ctx.design?.reviewGaps?.length?{reviewGaps:ctx.design.reviewGaps}:{}),...(ctx.design?.pictureProblems?.length?{pictureProblems:ctx.design.pictureProblems}:{}),...(usesDesigner(ctx.input)?{designer:true,formats}:{}),...(ctx.measured?{fontChecks:fontFindingLines(ctx.measured)}:{}),assets:pictures,resources,options,construction:ctx.construction??await draftConstruction(ctx.folder,ctx.input),legacy:info!.legacy,variants:ctx.input.variants,scenes,defaultProps:{format:heroFormat?liveFormat(heroFormat.width,heroFormat.height):info!.legacy?reference.format:'square',width:heroFormat?.width??(info!.legacy?legacyFormat?.width??1080:1080),height:heroFormat?.height??(info!.legacy?legacyFormat?.height??1080:1080),locale:reference.locale,hook:reference.hook,cta:reference.cta,length:reference.length,sceneId:heroSceneId??options.scenes[0]??scene?.sceneId??ctx.input.storyboard[0].id,moment:scene?.moments[0]?.id??'key-frame'}};
 }
 export async function liveDirectorArtifact(campaignId:string,directionId:string,args:{iterationId?:string;revision?:string;name?:string;kind:'bundle'|'asset'|'source'}){
  const ctx=await context(campaignId,directionId,args.iterationId);

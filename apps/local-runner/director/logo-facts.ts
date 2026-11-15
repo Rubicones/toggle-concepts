@@ -6,6 +6,7 @@
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {createCanvas,loadImage} from '@napi-rs/canvas';
+import {drawableReferences} from '../../../packages/director/material-memory';
 import type {DirectionInput} from '../../../packages/director/types';
 
 export type LogoFact={index:number;id:string;url:string;/** the catalogue name of the same material, when there is one */name?:string;
@@ -59,11 +60,13 @@ export function logoFactLines(facts:LogoFact[],input:Pick<DirectionInput,'brand'
  * said by the catalogue entry of the same material, when there is one; the size and ground are measured. */
 export async function referenceFactLines(folder:string,input:Pick<DirectionInput,'brand'>,catalogue:{name:string;kind?:string;line?:string;materialId?:string}[]=[]):Promise<string[]>{
  const out:string[]=[],marks=new Set<string>();
+ // Only what the renderer will serve is offered as drawable (packages/director/material-memory.ts).
+ const drawable=new Set(drawableReferences(input).map(r=>r.id));
  for(const [i,r] of input.brand.references.entries()){
   if(!/\.(png|jpe?g|webp|svg)$/i.test(r.url)||input.brand.logos.some(l=>l.url===r.url))continue;
   const entry=catalogue.find(e=>e.materialId===r.id),isLogo=/\blogo\b/i.test(entry?.kind??'');
   let f:Awaited<ReturnType<typeof measureLogo>>|undefined;try{f=await measureLogo(await readFile(resolve(folder,'public',r.url)),r.url);}catch{f=undefined;}
-  if(isLogo){
+  if(isLogo&&drawable.has(r.id)){
    // A mark of the brand that is not among the logos in code (a lockup, a symbol, a glossy or shaded version of the mark):
    // it is the brand's own device and is drawn as supplied. The same drawing in a second file format is listed once
    // (bench run of 15 November: the brand's one glossy object was in the kit and never reached the designer).
@@ -72,7 +75,7 @@ export async function referenceFactLines(folder:string,input:Pick<DirectionInput
   }
   const measured=f?`${f.width}×${f.height} · ${f.transparent?`transparent ground, drawing ${f.ink} (${tone(f.inkLightness)})`:`its own ground ${f.ground}`}`:'not measured';
   // A picture the art director marked "Use this" may be drawn by draft code, by its url; the others are evidence.
-  const use=/\(use this\)/i.test(entry?.kind??'');
+  const use=drawable.has(r.id);
   out.push([entry?.name??`brand.references[${i}]`,entry?.kind?.replace(/\s*\(use this\)/i,''),entry?.line?.replace(/\s+/g,' ').slice(0,70),measured,...(use?[`url '${r.url}'`,'use it']:[])].filter(Boolean).join(' · '));
  }
  return out;

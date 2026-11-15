@@ -97,3 +97,11 @@ test('C7b: materials still work as one round; the designer, the critic and earli
  for(const role of ROLES)assert.ok(usesSchemaInText(ctx,role)&&TEXT_SCHEMA_ROLES.has(role));
  for(const role of ['designer','critic','director','brand-kit'])assert.ok(!usesSchemaInText(ctx,role),role);
 });
+
+test('live run of 15 November: an answer with one closing brace too many is passed on as corrected text, not refused by the workflow', async()=>{
+ process.env.TOGGLE_HOME=await mkdtemp(join(tmpdir(),'c7b-home3-'));
+ for(const role of ['critic','strategy']){
+  const good=envelope(role),r=await call(role,ctxFor(true),{FAKE_CLAUDE_ANSWER:role==='critic'?good+'}':JSON.stringify({requestMaterials:[],answer:JSON.parse(good)})+'}'});
+  assert.equal(r.outcome,'succeeded',role);assert.deepEqual(JSON.parse(r.text!),JSON.parse(good),`${role}: the text the workflow reads parses strictly`);assert.equal(r.local?.schemaCheck,undefined,'no repair turn was needed');
+ }
+});

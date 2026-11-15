@@ -70,9 +70,18 @@ export function parseChatAnswer<A>(text:string,schema:z.ZodType<A>,options:{/** 
  let actions:A|null=null,actionsError:string|undefined;
  if(actionsText!==undefined){
   let raw:unknown;try{raw=JSON.parse(actionsText);}catch{actionsError='it is not valid JSON';}
+  // Version 6: a finish description over its length is shortened by the app (live run of 15 November: a scene moment
+  // of more than 200 characters cost a whole turn). These are the designer's own descriptions, not approved copy.
+  if(actionsError===undefined&&options.edits)raw=fitFinish(raw);
   if(actionsError===undefined){const read=readActions(raw,schema);actions=read.actions;if(read.error)actionsError=read.error;}
  }
  return {prose:prose.join('').replace(/\n{3,}/g,'\n\n').trim(),files,...(options.edits?{edits}:{}),actions,...(actionsError?{actionsError}:{}),raw:actionsText!==undefined?{actions:actionsText}:{}};
+}
+const clipWords=(v:unknown,max:number)=>{if(typeof v!=='string'||v.length<=max)return v;const cut=v.slice(0,max-1),at=cut.lastIndexOf(' ');return `${(at>max*0.6?cut.slice(0,at):cut).trimEnd()}…`;};
+/** The finish block's descriptions inside their lengths (moment 200, motion 240, sound 200, intent 4000). */
+export function fitFinish(raw:unknown):unknown{
+ const finish=(raw as {finish?:{intent?:unknown;scenes?:unknown}}|null)?.finish;if(!finish||typeof finish!=='object'||!Array.isArray(finish.scenes))return raw;
+ return {...(raw as object),finish:{...finish,intent:clipWords(finish.intent,4000),scenes:finish.scenes.map(x=>x&&typeof x==='object'?{...x,...('moment' in x?{moment:clipWords((x as {moment:unknown}).moment,200)}:{}),...('motion' in x?{motion:clipWords((x as {motion:unknown}).motion,240)}:{}),...('sound' in x?{sound:clipWords((x as {sound:unknown}).sound,200)}:{})}:x)}};
 }
 /** Plan E4 (designerVersion 6): later answers send exact edits instead of whole files. */
 export const usesEdits=(input:Pick<DirectionInput,'brief'>)=>heroMeaning(input);

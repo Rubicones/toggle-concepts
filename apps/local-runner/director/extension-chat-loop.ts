@@ -6,6 +6,8 @@
 import {parseChatAnswer,actionsCorrection,usesEdits,applyEdits} from '../../../packages/director/hero-chat';
 import {extensionActionsSchema,extensionNote,extensionPhase,nextRender,phaseLabels,sceneIdOf,sceneLabel,stageEMechanics,compactionSeed,variationVariants,type ExtensionPhase} from '../../../packages/director/extension-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
+import {heroMeaning} from '../../../packages/director/designer';
+import {recordPictureFailure,noFurtherPictureNote,type PictureFailure} from '../../../packages/director/picture-failure';
 import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
 import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
@@ -26,12 +28,16 @@ export function extensionViews(input:DirectionInput,sceneIds:string[],formats:st
 
 export async function runExtensionChat(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;tools:DesignerTools;call:HeroCall;save:(s:DesignerLoopState)=>Promise<void>;
  conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;onPhase?:(phase:ExtensionPhase,label:string)=>Promise<void>;now?:()=>number;
+ onPictureFailed?:(e:{id:string;failure:PictureFailure})=>Promise<void>;
  /** D1: this stage's skill message (principles), sent once with the mechanics when stage E opens. */skills?:string}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,mechanics=stageEMechanics(input);
  const pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];let missingRetried=false;
  let phase=extensionPhase(input,state.renders);if(state.extensionPhase!==phase){state.extensionPhase=phase;await args.save(state);await args.onPhase?.(phase,phaseLabels[phase]);}
  while(!state.complete&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
-  const pictures=arrived.splice(0).map(p=>p.status==='ready'?`The picture ${p.id} has arrived: read resources['${p.id}'].`:`The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`);
+  const pictures:string[]=[];for(const p of arrived.splice(0)){if(p.status==='ready'){pictures.push(`The picture ${p.id} has arrived: read resources['${p.id}'].`);continue;}
+   // Version 6: the plain reason and, once, how many pictures can still be had.
+   if(!heroMeaning(input)){pictures.push(`The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`);continue;}
+   const said=recordPictureFailure(state,p,args.maxPictures);await args.save(state);await args.onPictureFailed?.({id:p.id,failure:said.failure});pictures.push(said.note);}
   const continued=args.conversation?await args.conversation.decide():true;
   const due=tools.materials&&state.materialsDue?.length?await tools.materials.load(state.materialsDue):null;
   const files=await tools.files(),last=state.lastRender;
@@ -66,10 +72,11 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
    if(actions.notes){state.notes=actions.notes;}
    if(actions.materials?.length&&tools.materials){const asked=await tools.materials.fetch(actions.materials,[...(state.materialsSeen??[]),...(state.materialsDue??[])]);state.materialsDue=[...new Set([...(state.materialsDue??[]),...asked.attached])];notes.push(asked.lines.join('\n'));}
    for(const p of actions.pictures??[]){
+    if(heroMeaning(input)&&state.picturesBlocked){notes.push(noFurtherPictureNote(state.picturesBlocked));break;}
     if(state.pictures>=args.maxPictures){notes.push('The approved number of pictures is used: build the rest in code or with the pictures you have.');break;}
     state.pictures++;await args.save(state);const id=input.resourceIds[state.pictures-1],key=`${state.turn}:${state.pictures}`;
     const picture={purpose:p.purpose,scene:input.storyboard[0].id,prompt:p.prompt,aspect:p.aspect,referenceAssetIds:resolveAssetReferences(p.references??[],input),mustNotContain:p.mustNotContain??[],...(p.cutout?{cutout:true}:{}),...(p.proxyFor?{proxyFor:p.proxyFor}:{}),...(p.becomes&&p.proxyFor?{becomes:p.becomes}:{})};
-    pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const};arrived.push(r);pending.delete(key);return r;}));
+    pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const,...(heroMeaning(input)?{code:(error instanceof Error?error.message:'').slice(0,200)}:{})};arrived.push(r);pending.delete(key);return r;}));
     notes.push(`Asked for a picture (${p.purpose.slice(0,80)}): it will be resources['${id}'] and arrives in a later message.`);
    }
    // C8 follow-up: a 3D model of a picture it already has, when code cannot build that object; the picture stays the fallback.

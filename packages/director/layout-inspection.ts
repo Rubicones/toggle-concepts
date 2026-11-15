@@ -20,7 +20,7 @@ export type RawImage={src:string;box:Box;naturalWidth:number;naturalHeight:numbe
 export type RawObject3D={box:Box;drawn:[number,number,number,number]|null;luma:number[];error?:string};
 export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];objects3d?:RawObject3D[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[];/** The largest bands of plain ground in the rendered picture (views with a screenshot). */plain?:import('./plain-band').PlainBands};
 /** ink: alpha-weighted relative luminance of the logo's own pixels; background/overImage: what it sits on. */
-export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null};
+export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null;/** the nearest ground is a gradient or a background picture: its colour is not known */complexGround?:boolean};
 export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED'|'IMAGE_NOT_LOADED'|'EMPTY_BAND';
 export type Finding={code:FindingCode;severity:'hard'|'soft';view:string;detail:string;box?:Box};
 export type ViewReport={view:string;label:string;findings:Finding[];texts:number;images:number};
@@ -129,9 +129,13 @@ export function collectLayout(size:{width:number;height:number}):RawView{
   try{const c=document.createElement('canvas'),w=Math.min(96,img.naturalWidth),h=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));c.width=w;c.height=h;const g=c.getContext('2d');if(!g)return null;g.drawImage(img,0,0,w,h);const d=g.getImageData(0,0,w,h).data;let sum=0,weight=0;
    for(let i=0;i<d.length;i+=4){const a=d[i+3]/255;if(a<0.5)continue;sum+=a*(0.2126*linear(d[i])+0.7152*linear(d[i+1])+0.0722*linear(d[i+2]));weight+=a;}return weight?sum/weight:null;}catch{return null;}};
  const logos=Array.from(document.querySelectorAll('[data-brand-logo]')).filter(e=>visible(e)>=0.9).map(e=>{const r=e.getBoundingClientRect();let background:string|null=null;
-  for(let p:Element|null=e.parentElement;p&&p!==document.documentElement&&!background;p=p.parentElement){const s=getComputedStyle(p);if(alpha(s.backgroundColor)>=0.95)background=s.backgroundColor;}
+  // The nearest ground: a solid colour, or a gradient or picture set as a background. Behind a gradient the solid
+  // colour further out is not what the logo sits on (live run of 15 November: a white mark on a navy gradient tile was
+  // measured against the page's white, 1.0:1, and three turns went on it), so no colour is reported for it.
+  let complexGround=false;
+  for(let p:Element|null=e.parentElement;p&&p!==document.documentElement&&!background&&!complexGround;p=p.parentElement){const s=getComputedStyle(p);if(s.backgroundImage&&s.backgroundImage!=='none')complexGround=true;else if(alpha(s.backgroundColor)>=0.95)background=s.backgroundColor;}
   const cx=r.left+r.width/2,cy=r.top+r.height/2,under=images.filter(i=>!i.logo&&i.box.x<=cx&&i.box.x+i.box.width>=cx&&i.box.y<=cy&&i.box.y+i.box.height>=cy).at(-1);
-  return {id:e.getAttribute('data-brand-logo')??'',box:box(r),ink:ink(e),background,overImage:under?under.src:null};});
+  return {id:e.getAttribute('data-brand-logo')??'',box:box(r),ink:ink(e),background,overImage:under?under.src:null,...(complexGround?{complexGround:true}:{})};});
  const fontsFailed=[...new Set(faces.filter(f=>f.status==='error').map(f=>norm(f.family)))];
  // C8: code-built 3D scenes (./kit3d): read the one rendered frame back (the canvas keeps its drawing buffer).
  const objects3d=Array.from(document.querySelectorAll('canvas[data-scene3d]')).filter(c=>visible(c)>=0.5).map(c=>{const canvas=c as HTMLCanvasElement,b=box(canvas.getBoundingClientRect());
@@ -211,7 +215,7 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
   // Measured against what the logo actually sits on: a measured picture cell, else the nearest solid background.
   const image=logo.overImage?raw.images.find(i=>i.src===logo.overImage):undefined,f=logo.overImage?ctx.facts[logo.overImage]:undefined,rect=image&&visibleSourceRect(image);let ground:number|null=null;
   if(image&&f&&rect){const cx=rect[0]+(logo.box.x+logo.box.width/2-image.box.x)/image.box.width*(rect[2]-rect[0]),cy=rect[1]+(logo.box.y+logo.box.height/2-image.box.y)/image.box.height*(rect[3]-rect[1]);ground=Math.pow(f.luma[Math.min(2,Math.max(0,Math.floor(cy*3)))*3+Math.min(2,Math.max(0,Math.floor(cx*3)))],2.2);}
-  else if(!logo.overImage&&logo.background){const bg=rgb(logo.background);if(bg)ground=luminance(bg);}
+  else if(!logo.overImage&&!logo.complexGround&&logo.background){const bg=rgb(logo.background);if(bg)ground=luminance(bg);}
   if(ground!==null){const ratio=contrastRatio(logo.ink,ground);if(ratio<2)add('LOGO_LOW_CONTRAST',logo.overImage?'soft':'hard',`The logo barely shows on its background (${ratio.toFixed(1)}:1); use a logo version or ground it reads on.`,logo.box);}
  }
  if(ctx.input.brand.logos.some(l=>l.url)&&!raw.logos.length)add('LOGO_MISSING','soft','No brand logo is visible in this view.');

@@ -52,6 +52,9 @@ export type RunContext={version:1;base:string;system:string;brief:string;sha256:
  criticMode?:string;
  /** D5: the critic with shared checks, memory and bounded rounds (contexts frozen from D5 on). */
  criticVersion?:string;
+ /** Version 6 contexts: the review's checks and texts are critic@3 (packages/director/quality.ts) on the critic@2
+  * request shape. A label for the export; it changes no request. */
+ reviewChecks?:string;
  /** D6: an ablation run: the one skill left out of every stage (STUDIO_WITHOUT_SKILL when the context froze). */
  withoutSkill?:string};
 
@@ -72,6 +75,11 @@ const parse=(text:string)=>{try{return JSON.parse(text);}catch{return text;}};
 /** The run context from the approved brief and brand (canonical texts), with the common skills. */
 export const ONE_MIND_VERSION='one-mind@1';
 export const ADVISORY_CRITIC='advisory@1';
+/** Whether a context frozen now carries the advisory reviewer. Live run of 15 November (and the bench before it): the
+ * full review rounds made the frame worse twice and did not converge, so version 6 freezes the advisory mode unless
+ * STUDIO_CRITIC_MODE=full; earlier versions freeze it only when asked (STUDIO_CRITIC_MODE=advisory). A departure from
+ * plan D5, for the owner and the plan's author to confirm. */
+export const advisoryCriticFor=(env:Record<string,string|undefined>)=>env.STUDIO_CRITIC_MODE==='advisory'||env.STUDIO_DESIGNER_VERSION==='6'&&env.STUDIO_CRITIC_MODE!=='full';
 export function buildRunContext(args:{briefText:string;brandText?:string|null;/** C2: the brand pack replaces the raw brand text */brandPack?:string|null;commonSkills?:Skill[];roleSkills?:Record<string,Skill[]>;stageEffort?:Record<string,string>;
  /** C2 (second part): a stored pack version and its pictures, already at their fixed sizes and in their fixed order. */packVersion?:number;packImages?:PackImage[];
  /** C3: the pack's catalogue entries and the frozen per-role material budgets. */materials?:{entries:CatalogueEntry[];budget:Record<string,MaterialBudget>};
@@ -91,7 +99,7 @@ export function buildRunContext(args:{briefText:string;brandText?:string|null;/*
  // Contexts without stored pack pictures keep the exact earlier digest.
  const sha256=createHash('sha256').update(system+'\n\u0000\n'+brief+(images.length?'\n\u0000\n'+images.map(i=>i.sha256).join(','):'')).digest('hex');
  const pack=args.brandPack&&args.packVersion?{pack:{version:args.packVersion,tokens:Math.ceil(Buffer.byteLength(args.brandPack,'utf8')/4)+images.reduce((n,i)=>n+Math.ceil(i.width*i.height/750),0),images:images.length},...(images.length?{images}:{})}:{};
- return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(!staged&&args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{}),...(args.leanContext?{leanContext:'lean-context@1'}:{}),...(staged?{stageSkills:staged}:{}),...(positive?{instructionsVersion:POSITIVE_VERSION}:{}),...(args.imageOwner?{imageOwner:'image-owner@1'}:{}),...(args.imageOwner&&args.oneMind?{oneMind:ONE_MIND_VERSION}:{}),...(args.critic?{criticVersion:'critic@2'}:{}),...(args.critic&&args.advisoryCritic?{criticMode:ADVISORY_CRITIC}:{}),...(args.withoutSkill?{withoutSkill:args.withoutSkill}:{})}:{})};
+ return {version:1,base:SHARED_BASE_VERSION,system,brief,sha256,tokens:Math.ceil(Buffer.byteLength(system+brief,'utf8')/4),holds:{brief:true,brand:!!(args.brandPack||args.brandText),skills:skills.map(s=>s.id),...(args.brandPack?{brandPack:true}:{})},...(!staged&&args.roleSkills&&Object.keys(args.roleSkills).length?{roleSkills:args.roleSkills}:{}),...(args.stageEffort&&Object.keys(args.stageEffort).length?{stageEffort:args.stageEffort}:{}),...pack,...(args.brandPack&&args.packVersion&&args.materials?{materials:{version:MATERIALS_VERSION,...args.materials},...(args.planningChat?{planningChat:PLANNING_CHAT_VERSION}:{}),...(args.schemaInText?{schemaInText:SCHEMA_IN_TEXT_VERSION}:{}),...(args.leanContext?{leanContext:'lean-context@1'}:{}),...(staged?{stageSkills:staged}:{}),...(positive?{instructionsVersion:POSITIVE_VERSION}:{}),...(args.imageOwner?{imageOwner:'image-owner@1'}:{}),...(args.imageOwner&&args.oneMind?{oneMind:ONE_MIND_VERSION}:{}),...(args.critic?{criticVersion:'critic@2'}:{}),...(args.critic&&args.imageOwner&&args.oneMind?{reviewChecks:'critic@3'}:{}),...(args.critic&&args.advisoryCritic?{criticMode:ADVISORY_CRITIC}:{}),...(args.withoutSkill?{withoutSkill:args.withoutSkill}:{})}:{})};
 }
 
 /** C2 (second part): the pack's pictures as request parts (label, then picture), the same bytes for every role. */

@@ -57,10 +57,12 @@ export const deliverLongSide=(input:Pick<DirectionInput,'formats'>)=>{const need
  * <id>.png or <id>.jpg beside it (made by hand); without it the designer is told the picture could not be made. When
  * the request asks for a cutout, <id>.cutout.png beside the picture is the cutout (put it there first, or within the
  * grace time after the picture); without it the designer is told the cutout failed, as the pipeline would. */
-export function fileDropPictures(pictures:string,pub:string,folder:string,input:DirectionInput,catalog:CatalogEntry[],waitMs:number,o:{cutoutGraceMs?:number;pollMs?:number;say?:(line:string)=>void}={}){
+export function fileDropPictures(pictures:string,pub:string,folder:string,input:DirectionInput,catalog:CatalogEntry[],waitMs:number,o:{cutoutGraceMs?:number;pollMs?:number;say?:(line:string)=>void;/** simulate the picture provider refusing payment: every request after this many is refused as in the live run of 15 November */refuseAfter?:number}={}){
  const poll=o.pollMs??3000,say=o.say??(line=>console.error(line)),has=(file:string)=>existsSync(join(pictures,file)),sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
  const longSide=deliverLongSide(input);
+ let asked=0;
  return async(resource:Resource)=>{
+  if(o.refuseAfter!==undefined&&asked++>=o.refuseAfter){say(`[bench] picture ${resource.id} refused (simulated payment refusal)`);throw new Error('CREATIVE_IMAGE_FAILED:PROVIDER_402');}
   await writeFile(join(pictures,`${resource.id}.request.json`),JSON.stringify({id:resource.id,scene:resource.scene,purpose:resource.purpose,prompt:resource.prompt,aspect:resource.aspect,cutout:!!resource.cutout,mustNotContain:resource.mustNotContain,
    // A picture may fill the largest ordered format, so it is delivered at least that large (craft audit of 15 November:
    // 1,024 px pictures were drawn up to 1.22× and looked soft; the reference sheets' pictures were 2,048 px).

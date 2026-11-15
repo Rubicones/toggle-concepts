@@ -15,6 +15,7 @@ import {inspectLivePreview} from '../apps/local-runner/director/live-inspect';
 import {analyzeView,unloadedFiles,type RawView,type InspectionView} from '../packages/director/layout-inspection';
 import {suppliedFactLines,referenceFactLines} from '../apps/local-runner/director/logo-facts';
 import {assetNames} from '../packages/director/asset-names';
+import {createMaterialMemory,drawableReferenceUrls,markUsableReferences,previewMaterialAllowed} from '../packages/director/material-memory';
 import {designerDigestText} from '../packages/director/designer-digest';
 import {heroTask,STAGE_H_HARD,stageHFindings} from '../packages/director/hero-chat';
 import {questionForFailure} from '../packages/director/questions';
@@ -69,10 +70,32 @@ test('run 4: a supplied photograph, a generated picture, the logo and the brand 
   const headline=good.raw.texts.find(x=>x.text.includes('The last pot'));assert.equal(headline?.font?.family,'Brask Serif');assert.ok(!headline?.font?.fallback&&!headline?.font?.weightMissing);
   // Owner's decision of 15 November: a kit picture (a brand reference) may be drawn by draft code, by the same pattern.
   await writeFile(join(pub,'kit-pot.png'),png(300,300,x=>{x.fillStyle='#2F8F4E';x.beginPath();x.arc(150,150,140,0,Math.PI*2);x.fill();}));
-  const kitInput={...input,brand:{...input.brand,references:[{id:'kit-1',url:'kit-pot.png'}]}} as DirectionInput;await writeFile(join(folder,'input.json'),JSON.stringify(kitInput));
+  const kitInput={...input,brand:{...input.brand,references:[{id:'kit-1',url:'kit-pot.png',use:true}]}} as DirectionInput;await writeFile(join(folder,'input.json'),JSON.stringify(kitInput));
   const kitLines=await referenceFactLines(folder,kitInput,[{name:'pot-green',kind:'product photograph (Use this)',line:'The green pot.',materialId:'kit-1'}]);
   assert.equal(kitLines[0],"pot-green · product photograph · The green pot. · 300×300 · transparent ground, drawing #2F8F4E (mid) · url 'kit-pot.png' · use it");
   const kit=await render(frame("'kit-pot.png'"));assert.deepEqual(kit.findings.filter(f=>f.code==='IMAGE_NOT_LOADED'),[]);assert.ok(near(kit.at(540,594),[0x2F,0x8F,0x4E]),`the kit picture drew: ${kit.at(540,594)}`);
+  // Live run of 15 November: the production input carries a material memory that marks every brand reference as a source
+  // reference only, and the renderer left those files out, so no "use it" picture loaded (the bench input has no
+  // material memory, which is why the test above passed). Here the input is built as the studio builds it: a mark of
+  // the brand (kit role logo, SVG), a photograph marked "Use this" (PNG) and a picture that is evidence only.
+  await writeFile(join(pub,'mark.svg'),'<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#7A3FD0"/></svg>');
+  await writeFile(join(pub,'evidence.png'),png(300,300,x=>{x.fillStyle='#111111';x.fillRect(0,0,300,300);}));
+  const live={...input,brief:{...input.brief,referenceReconstructionAllowed:true},brand:markUsableReferences({...input.brand,references:[{id:'m-mark',url:'mark.svg'},{id:'m-photo',url:'kit-pot.png'},{id:'m-evidence',url:'evidence.png'}],rawKit:{materials:[{id:'m-mark',filename:'symbol.svg',mime:'image/svg+xml',role:'logo'},{id:'m-photo',filename:'pot.png',mime:'image/png',role:'photo'},{id:'m-evidence',filename:'shelf.png',mime:'image/png',role:'photo'}]}},['m-photo'])} as DirectionInput;
+  live.materialMemory=createMaterialMemory(live);assert.equal(live.materialMemory.reconstruction.allowed,true);
+  assert.equal(live.materialMemory.materials.find(m=>m.url==='mark.svg')?.referenceOnly,true,'the production memory marks a brand reference as a source only');
+  assert.deepEqual(drawableReferenceUrls(live),['mark.svg','kit-pot.png']);
+  assert.ok(!previewMaterialAllowed(live.materialMemory,'mark.svg'),'the defect: without the drawable list the mark is not served');
+  assert.ok(previewMaterialAllowed(live.materialMemory,'mark.svg',drawableReferenceUrls(live))&&!previewMaterialAllowed(live.materialMemory,'evidence.png',drawableReferenceUrls(live)));
+  await writeFile(join(folder,'input.json'),JSON.stringify(live));
+  const liveLines=await referenceFactLines(folder,live,[{name:'symbol',kind:'logo',materialId:'m-mark'},{name:'pot',kind:'photo (Use this)',materialId:'m-photo'},{name:'shelf',kind:'photo',materialId:'m-evidence'}]);
+  assert.deepEqual(liveLines.map(l=>l.endsWith('use it')),[true,true,false],'only what the renderer serves is offered as drawable');
+  const svg=await render(frame("'mark.svg'"));assert.deepEqual(svg.findings.filter(f=>f.code==='IMAGE_NOT_LOADED'),[]);assert.ok(near(svg.at(540,594),[0x7A,0x3F,0xD0]),`the brand mark (SVG) drew: ${svg.at(540,594)}`);
+  const photo=await render(frame("'kit-pot.png'"));assert.deepEqual(photo.findings.filter(f=>f.code==='IMAGE_NOT_LOADED'),[]);assert.ok(near(photo.at(540,594),[0x2F,0x8F,0x4E]),`the "Use this" photograph (PNG) drew: ${photo.at(540,594)}`);
+  const evidence=await render(frame("'evidence.png'"));assert.equal(evidence.findings.filter(f=>f.code==='IMAGE_NOT_LOADED').length,1,'a picture that is evidence only is not served, and that is reported');
+  await writeFile(join(folder,'input.json'),JSON.stringify(kitInput));
+  // The logo on a gradient tile inside a solid page: the browser reports that its ground has no one colour.
+  const tiled=await render(frame("'kit-pot.png'").replace("<Img src={staticFile(brand.logos[0].url)} data-brand-logo={brand.logos[0].id} style={{position:'absolute',left:60,bottom:60,width:210}}/>","<div style={{position:'absolute',left:40,bottom:40,padding:20,backgroundImage:'linear-gradient(#10243F,#3A6FB0)'}}><Img src={staticFile(brand.logos[0].url)} data-brand-logo={brand.logos[0].id} style={{width:210}}/></div>"));
+  assert.equal(tiled.raw.logos[0]?.complexGround,true);assert.ok(!tiled.raw.logos[0]?.background);assert.ok(!tiled.findings.some(f=>f.code==='LOGO_LOW_CONTRAST'));assert.ok(!good.raw.logos[0]?.complexGround);
   // A picture that does not load (a guessed path): a hard finding
   // that names the file, on the first render.
   const bad=await render(frame("'not-a-file.png'")),unloaded=bad.findings.filter(f=>f.code==='IMAGE_NOT_LOADED');

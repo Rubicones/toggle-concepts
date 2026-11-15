@@ -8,7 +8,7 @@ export type BrandKit = {
  tokens:Record<string,string|number>;fonts:{family:string;url:string;weight?:string;style?:string}[];
  logos:{id:string;url:string;clearSpacePx:number;required?:boolean;/** Same drawing with currentColor resolved: for dark and for light grounds. */variants?:{onDark:string;onLight:string}}[];
  rules:{allowedFonts:string[];forbiddenColours:string[];minimumContrast:number;logoRequired?:boolean};
- rawKit?:unknown;copy:Record<string,Record<string,string>>;facts:Record<string,string>;references:{id:string;url:string}[];
+ rawKit?:unknown;copy:Record<string,Record<string,string>>;facts:Record<string,string>;references:{id:string;url:string;/** a kit picture the art director marked "Use this": draft code may draw it */use?:boolean}[];
  /** The product's UI kit parts and screenshots: evidence for interface mockups built in code, never image references. */
  interface?:{id:string;url:string;role:'uikit'|'screenshot'}[];
  /** Brand sheet pages for the live critic (blocks with brief.brandSheetVersion 1): pinned files, sent as cached images. */

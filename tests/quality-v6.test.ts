@@ -112,7 +112,7 @@ test('critic@3: a review that ends with points open gives one last turn, with no
 test('critic@3: notes come with the rule to solve them inside the chosen idea; version 5 keeps its sentence', async()=>{
  const open={accepted:false,notes:[{...note,priority:'P1'}],checks:[],rulings:[]};
  const v6=await drive(6,[say('The idea.','export default 1;',{review:true}),say('Fixed.','export default 2;')],[open]);
- assert.match(v6.sent[1],/The reviewer's notes on your hero frame:\n- \[P1\] hero: .*\nEach note names a problem; the answer is yours\. Solve it inside the chosen idea, which stays\. When a note cannot be solved inside the idea, say so and why, and leave the idea as it is\. Then ask for the review again\./);
+ assert.match(v6.sent[1],/The reviewer's notes on your hero frame:\n- \[P1\] hero: .*\nEach note names a problem; the answer is yours\. Solve it inside the chosen idea, which stays\. When a note cannot be solved inside the idea, say so and why, and leave the idea as it is\. The frame's main subject and its way of making stay: answer no note by removing the subject or by making the frame another way\.(?: You can get no further picture in this draft\. [^\n]*?)? Then ask for the review again\./);
  const v5=await drive(5,[say('The idea.','export default 1;',{review:true}),say('Fixed.','export default 2;')],[open]);
  assert.match(v5.sent[1],/Apply what you agree with, then ask for the review again\./);assert.ok(!v5.sent[1].includes('inside the chosen idea'));
 });
@@ -137,7 +137,7 @@ test('version 6: the ideas differ in kind; the kit\'s other marks reach the desi
  const shaded=(()=>{const c=createCanvas(280,100),x=c.getContext('2d');for(let i=0;i<7;i++){x.fillStyle=`rgb(${250-i*22},${130-i*12},${20+i*6})`;x.fillRect(20+i*34,20,34,60);}return c.toBuffer('image/png');})();
  const flat=(()=>{const c=createCanvas(280,100),x=c.getContext('2d');x.fillStyle='#0C2B3F';x.fillRect(20,20,240,60);return c.toBuffer('image/png');})();
  await writeFile(join(folder,'public','ring.png'),shaded);await writeFile(join(folder,'public','lockup.png'),flat);await writeFile(join(folder,'public','lockup2.png'),flat);await writeFile(join(folder,'public','main.png'),flat);
- const brand={brand:{logos:[{id:'l0',url:'main.png',clearSpacePx:0}],references:[{id:'r1',url:'ring.png'},{id:'r2',url:'lockup.png'},{id:'r3',url:'lockup2.png'},{id:'r4',url:'main.png'}]}} as never;
+ const brand={brand:{logos:[{id:'l0',url:'main.png',clearSpacePx:0}],references:[{id:'r1',url:'ring.png'},{id:'r2',url:'lockup.png'},{id:'r3',url:'lockup2.png'},{id:'r4',url:'main.png'}],rawKit:{materials:[{id:'r1',role:'logo'},{id:'r2',role:'logo'},{id:'r3',role:'logo'}]}}} as never;
  const lines=await referenceFactLines(folder,brand,[{name:'mark-gloss',kind:'logo',materialId:'r1'},{name:'lockup-navy',kind:'logo',materialId:'r2'},{name:'lockup-navy-2',kind:'logo',materialId:'r3'},{name:'main',kind:'logo',materialId:'r4'}]);
  assert.equal(lines.length,2,'the same drawing in a second file and the logo already in code are not repeated');
  assert.match(lines[0],/^mark-gloss · a mark of the brand · drawing #[0-9A-F]{6} \((mid|light|dark)\), \d colours \(shaded, not flat\) · transparent ground · 2\.8:1 wide · reads on .* · url 'ring\.png' · use it$/);

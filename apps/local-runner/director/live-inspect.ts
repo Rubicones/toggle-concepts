@@ -8,7 +8,7 @@ import {chromium} from '@playwright/test';
 import {liveSource} from './live-bundle';
 import {livePreviewDocument} from '../../../packages/director/live-preview';
 import {collectLayout,type InspectionView,type RawView} from '../../../packages/director/layout-inspection';
-import {previewMaterialAllowed} from '../../../packages/director/material-memory';
+import {previewMaterialAllowed,drawableReferenceUrls} from '../../../packages/director/material-memory';
 import type {DirectionInput} from '../../../packages/director/types';
 
 const mimes:Record<string,string>={'.glb':'model/gltf-binary','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf'};
@@ -21,11 +21,12 @@ export async function inspectLivePreview(folder:string,views:InspectionView[]){
  const {revision}=await liveSource(folder),cache=resolve(folder,'.reports','live',revision);
  const script=await readFile(resolve(cache,'preview.js'),'utf8'),css=await readFile(resolve(cache,'preview.css'),'utf8').catch(()=>'');
  const resourcesSource=await readFile(resolve(folder,'resources.ts'),'utf8'),resources=JSON.parse(resourcesSource.slice(resourcesSource.indexOf('>=')+2).trim().replace(/;\s*$/,''));
+ const drawable=drawableReferenceUrls(input);
  const names=new Set<string>([...input.brand.fonts.map(f=>f.url),...input.brand.logos.flatMap(l=>[l.url,...(l.variants?[l.variants.onDark,l.variants.onLight]:[])]),...input.assets.map(a=>a.url),
   // The brand's own pictures (owner's decision of 15 November: a kit picture marked "Use this" may be drawn by draft
   // code). The page preview already serves them; a picture that is a source reference only stays out by the filter below.
   ...input.brand.references.map(r=>r.url),// A cutout is its own file next to the picture: without it the designer and the reviewer saw a broken image.
-  ...Object.values(resources as Record<string,{url:string;cutoutUrl?:string;modelUrl?:string}>).flatMap(r=>[r.url,r.cutoutUrl,r.modelUrl])].filter((n):n is string=>!!n&&previewMaterialAllowed(input.materialMemory,n)));
+  ...Object.values(resources as Record<string,{url:string;cutoutUrl?:string;modelUrl?:string}>).flatMap(r=>[r.url,r.cutoutUrl,r.modelUrl])].filter((n):n is string=>!!n&&previewMaterialAllowed(input.materialMemory,n,drawable)));
  const assets:Record<string,string>={};
  for(const name of names){const bytes=await readFile(resolve(folder,'public',name)).catch(()=>undefined);if(bytes)assets[name]=`data:${mimes[extname(name).toLowerCase()]??'application/octet-stream'};base64,${bytes.toString('base64')}`;}
  const out=resolve(folder,'.reports','inspect',revision);await mkdir(out,{recursive:true});
