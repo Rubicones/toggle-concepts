@@ -25,7 +25,10 @@ export type Resource = {id:string;kind:'still'|'3d-still';proxy?:boolean;proxyFo
  /** Image methods; `source`/`sha256` fields are pinned by the application before the request, never by the model. */
  sketch?:{shapes:{role:'subject'|'object'|'horizon'|'copy'|'light';box:number[];tone:'light'|'mid'|'dark'}[];sha256?:string};
  edit?:{from:string;instruction:string;region?:number[];source?:DerivedSource};
- extend?:{from:string;place?:number[];instruction?:string;source?:DerivedSource;canvasSha256?:string}};
+ extend?:{from:string;place?:number[];instruction?:string;source?:DerivedSource;canvasSha256?:string};
+ /** Version 6: the brand's own files this picture takes as references (a mark, a kit picture marked "Use this"); the
+  * application pins each as a picture and its hash before the request. */
+ brandRefs?:{url:string;sha256?:string}[]};
 export type CatalogEntry = {id:string;url:string;thumbnail:string;width:number;height:number;sha256:string;mime:string;revisionId:string;renderSha256?:string;proxy?:boolean;proxyFor?:'video'|'3d';image?:import('./image-facts').ImageFacts;
  /** The same picture with its background removed (transparent PNG cropped to the subject), or why that failed. */
  cutout?:Cutout;cutoutFailed?:string;

@@ -28,7 +28,8 @@ export type DesignerTools={
  /** Measures the views in the browser; shots are JPEG files. */
  render:(views:InspectionView[])=>Promise<{summary:InspectionSummary;shots:{key:string;file:string}[]}>;
  /** Records the picture in the work state, then buys it inside the approved count (admission decides). */
- requestImage:(picture:DesignerPicture)=>Promise<PictureResult>;
+ requestImage:(picture:DesignerPicture&{/** version 6: urls of the brand's own files to take as references */brandRefs?:string[]})=>Promise<PictureResult>;
+ /** Version 6: the brand files a picture may name as references (url, place in brand.ts, catalogue name). */brandNames?:import('../../../packages/director/picture-references').BrandName[];
  /** C8 follow-up (version 4): a 3D model of a picture it already has (Tripo), inside the approved count; the picture stays the fallback. */
  requestModel?:(model:{picture:string;why:string})=>Promise<{id:string;status:'model'|'picture';detail?:string}>;
  /** After a restart: recorded pictures whose result never reached the designer. `settle` returns the saved entry or

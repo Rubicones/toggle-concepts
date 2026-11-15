@@ -11,3 +11,6 @@ export function attemptIssuable(n:number,earlier:({status:string;error_code:stri
  if(n>=PROVIDER_ATTEMPTS+MAX_LOCAL_PREFLIGHT)return false;
  return earlier.slice(0,n).filter(localPreflightFailure).length>=n-(PROVIDER_ATTEMPTS-1);
 }
+
+/** A still that failed on this computer before anything reached the provider may be tried once more at once. */
+export const retryPreflight=(error:unknown)=>error instanceof Error&&/^CREATIVE_IMAGE_FAILED:(IMAGE_PREFLIGHT_FAILED|CATALOG_UNAVAILABLE)$/.test(error.message);

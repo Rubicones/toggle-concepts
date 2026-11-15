@@ -2,6 +2,7 @@
 // chat: prose first (the idea, why it fits this brand and line, the way of making, what stops the scroll), then whole
 // files in fenced code blocks with their paths, then at most one fenced `actions` block. The app answers like a person
 // in a chat: the render, a short plain note of what it measured (observations), and what has arrived. Pure functions.
+import {PICTURE_REFERENCES_DESIGNER} from './picture-references';
 import {z} from 'zod';
 import type {Finding} from './layout-inspection';
 import type {DirectionInput} from './types';
@@ -177,6 +178,7 @@ What the frame shows is yours to decide.
 
 ${BRAND_DEVICES_DESIGNER}
 ${DEVICE_USE_DESIGNER}
+${PICTURE_REFERENCES_DESIGNER}
 
 ${HERO_CODE_NOTE(pictures)}`;
 }

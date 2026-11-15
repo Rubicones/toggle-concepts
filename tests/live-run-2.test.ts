@@ -19,7 +19,8 @@ import {compactionLine} from '../packages/director/budget-policy';
 import {IDEAS_TASK,IDEAS_TASK_V6,IDEAS_WITHOUT_PRODUCT_PICTURE,hasShowablePicture,ideasTaskFor} from '../packages/director/image-ideas';
 import {markUsableReferences,drawableReferenceUrls} from '../packages/director/material-memory';
 import {questionForFailure} from '../packages/director/questions';
-import {recoveryActions} from '../packages/director/ad-flow';
+import {recoveryActions,directionStatus,designerStage} from '../packages/director/ad-flow';
+import {recoveredPictureLine} from '../packages/director/picture-failure';
 import {readFileSync} from 'node:fs';
 import {accountLines,buyTestPicture,conclusion,keyFromEnvFile,priceLines,providerMaximumUsd,readCredits,readKey,testPictureRequest} from '../packages/data/picture-provider-check';
 import {imageRequest,type ImageQuote} from '../packages/agents/image-provider';
@@ -29,7 +30,13 @@ import {QUALITY_CHECKS,reviewMaterialFor} from '../packages/director/quality';
 import {stageEMechanics,SCENES_OWN_COMPOSITION} from '../packages/director/extension-chat';
 import {frameShares} from '../packages/director/layout-inspection';
 import {flatShare} from '../packages/director/plain-band';
-import type {DirectionInput} from '../packages/director/types';
+import {brandReferenceNames,splitPictureReferences,referenceRefusal,PICTURE_REFERENCES_DESIGNER} from '../packages/director/picture-references';
+import {pinBrandReference,derivedReferences} from '../apps/local-runner/director/image-methods';
+import {resourceRequest} from '../packages/director/resources';
+import {retryPreflight} from '../packages/creative/still-attempts';
+import {schemaIssues} from '../packages/agents/schema-in-text';
+import {mkdir} from 'node:fs/promises';
+import type {DirectionInput,Resource} from '../packages/director/types';
 
 const input=(version=6)=>{const i=structuredClone((recovery as {input:unknown}).input) as DirectionInput;i.brief={...i.brief,designerVersion:version,materialsVersion:1,digestVersion:1};i.resourceIds=['picture-1','picture-2','picture-3','picture-4'];return i;};
 const say=(prose:string,source:string|null,actions?:unknown)=>`${prose}${source?`\n\n\`\`\`tsx Frame.tsx\n${source}\n\`\`\``:''}${actions?`\n\n\`\`\`actions\n${JSON.stringify(actions)}\n\`\`\``:''}`;
@@ -38,15 +45,16 @@ const REFUSED='CREATIVE_IMAGE_FAILED:PROVIDER_402',SAID='This request needs more
 /** Drives the hero chat with scripted answers; the second picture bought is refused for payment, as in the run. */
 async function drive(answers:string[],o:{version?:number;refuseFrom?:number;review?:()=>unknown;maxPictures?:number;/** the owner's answer to a payment stop */onStop?:'decline'|'retry'}={}){
  const dir=await mkdtemp(join(tmpdir(),'live2-')),shot=join(dir,'shot.png'),c=createCanvas(32,32);await writeFile(shot,c.toBuffer('image/png'));
+ const pictures:{brandRefs?:string[];referenceAssetIds:string[]}[]=[];
  const files=new Map<string,string>(),sent:string[]=[],failed:{id:string;failure:PictureFailure}[]=[],reviewed:number[]=[],state=newDesignerState();let asked=0;
  const tools:DesignerTools={files:async()=>[...files].map(([path,source])=>({path,source})),write:async(p,s)=>{files.set(p,s);},build:async()=>({ok:true as const}),
   render:async views=>({summary:{version:1 as const,revision:'r',views:views.length,hard:0,soft:0,reports:[{view:views[0].key,findings:[]}]} as never,shots:views.filter(v=>v.shot).map(v=>({key:v.key,file:shot}))}),
-  requestImage:async()=>{asked++;if(asked>=(o.refuseFrom??2)&&!(o.onStop==='retry'&&stops.length))throw Object.assign(new Error(REFUSED),{detail:`The image provider refused this still (PROVIDER_402); nothing was charged. Provider says: ${SAID}`});return {id:`picture-${asked}`,status:'ready' as const};},finish:async()=>({complete:true as const}),
+  requestImage:async picture=>{pictures.push(picture as never);asked++;if(asked>=(o.refuseFrom??2)&&!(o.onStop==='retry'&&stops.length))throw Object.assign(new Error(REFUSED),{detail:`The image provider refused this still (PROVIDER_402); nothing was charged. Provider says: ${SAID}`});return {id:`picture-${asked}`,status:'ready' as const};},finish:async()=>({complete:true as const}),
   reviewHero:async round=>{reviewed.push(round);return (o.review?.()??{accepted:false,notes:[{priority:'P1',view:'square',problem:'The room is too dark to read.',fix:'The viewer reads the room at a glance.'}],checks:[],rulings:[]}) as never;}};
  const stops:(Error&{detail?:string})[]=[];
  for(let again=true;again;){again=false;await runHeroChat({input:input(o.version??6),state,maxTurns:answers.length,maxPictures:o.maxPictures??4,timeMs:600000,tools,heroReviews:2,pictureHoldMs:50,save:async()=>{},onPictureFailed:async e=>{failed.push(e);},
   call:async message=>{sent.push(message);return answers[sent.length-1]??say('Nothing more.',null,{});}}).catch((error:Error&{detail?:string})=>{if(error.message!==PICTURE_PAYMENT_REFUSED)return;stops.push(error);if(o.onStop&&stops.length<3){if(o.onStop==='decline')state.picturesDeclined=true;again=true;}});}
- return {sent,failed,state,asked:()=>asked,reviewed,stops};
+ return {sent,failed,state,asked:()=>asked,reviewed,stops,pictures};
 }
 
 test('2a: a picture refused for payment is said in plain words, with what the owner must do, and blocks further buying', ()=>{
@@ -249,4 +257,51 @@ test('live run 4: the frame\'s shares are measured and said as numbers; scenes g
  const hero=reviewMaterialFor(input(6),undefined,'hero').checks.map(c=>c.question);
  assert.ok(hero.includes('Does every large area of the frame do work for the idea: it shows the subject, carries words, or is space the idea needs?'));
  for(const text of [DEVICES_IN_USE_LABEL,DEVICE_USE_DESIGNER,SCENES_OWN_COMPOSITION,...QUALITY_CHECKS.map(c=>c.question)])assert.doesNotMatch(text,/\b(left|right|top|bottom|centre|center|grid|column|ring|orange)\b/i,text);
+});
+
+test('live run 5: a picture may take the brand\'s own files as references; one that cannot be issued is named and not counted', async()=>{
+ const i=input(),logo=i.brand.logos[0].url;
+ const withKit={...i,brand:{...i.brand,references:[{id:'m1',url:'ring.png'},{id:'m2',url:'evidence.png'}],rawKit:{materials:[{id:'m1',role:'logo'}]}}} as DirectionInput;
+ const names=brandReferenceNames(withKit,[{name:'ring-gloss',materialId:'m1'},{name:'shelf',materialId:'m2'}]);
+ assert.deepEqual(names.filter(n=>n.url==='ring.png').map(n=>n.name),['ring.png','brand.references[0]','ring-gloss']);assert.ok(!names.some(n=>n.url==='evidence.png'),'a picture that is evidence only cannot be a reference');
+ assert.deepEqual(splitPictureReferences(['ring-gloss','ring.png'],withKit,names),{assetIds:[],brandUrls:['ring.png'],problems:[]});
+ assert.deepEqual(splitPictureReferences(['shelf'],withKit,names).problems,['"shelf" is not a file a picture may take as a reference']);
+ assert.match(splitPictureReferences([logo,'ring.png','brand.logos[0]','a','b'],withKit,names).problems.join(' '),/"a" is not a file.*"b" is not a file/);
+ assert.ok(heroTask(input(6)).includes(PICTURE_REFERENCES_DESIGNER)&&!heroTask(input(5)).includes(PICTURE_REFERENCES_DESIGNER));
+ // The loop: a named brand file reaches the purchase; an unknown name is answered and costs no picture.
+ const run=await drive([say('The object in a room.','export default 1;',{pictures:[{...picture('the object in a room'),references:['made-up.png']},{...picture('the object in a room'),references:[logo]}]}),say('Done.',null,{render:true})],{refuseFrom:99});
+ assert.equal(run.asked(),1);assert.equal(run.state.pictures,1,'the refused request is not counted');assert.deepEqual(run.pictures[0].brandRefs,[logo]);assert.deepEqual(run.pictures[0].referenceAssetIds,[]);
+ assert.ok(run.sent[1].includes(referenceRefusal('the object in a room',['"made-up.png" is not a file a picture may take as a reference'])),run.sent[1]);
+ // The request: the pinned file travels as an application-made reference and is part of the request's identity.
+ const folder=await mkdtemp(join(tmpdir(),'refs-'));await mkdir(join(folder,'public'));
+ await writeFile(join(folder,'public','ring.svg'),'<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="1500"><circle cx="1500" cy="750" r="600" fill="#F28C28"/></svg>');
+ const pinned=await pinBrandReference(folder,'ring.svg'),again=await pinBrandReference(folder,'ring.svg');assert.equal(pinned.sha256,again.sha256);assert.match(pinned.sha256,/^[a-f0-9]{64}$/);
+ const v6=input(6),resource:Resource={id:v6.resourceIds[0],kind:'still',resolution:'low',proxy:false,purpose:'p',scene:v6.storyboard[0].id,prompt:'A room.',aspect:'1:1',referenceAssetIds:[],mustNotContain:[]};
+ const plain=resourceRequest(resource,v6,50000),withRef=resourceRequest({...resource,brandRefs:[pinned]},v6,50000);
+ assert.deepEqual(plain.derivedPlan,[]);assert.deepEqual(withRef.derivedPlan,[{kind:'brand',sha256:pinned.sha256}]);assert.notEqual(withRef.key,plain.key);
+ assert.throws(()=>resourceRequest({...resource,brandRefs:[{url:'ring.svg'}]},v6,50000),/BRAND_REFERENCE_NOT_PINNED/);
+ const puts:string[]=[],sent=await derivedReferences(folder,{...resource,brandRefs:[pinned]},async key=>{puts.push(key);});
+ assert.deepEqual(sent.map(d=>[d.sha256,d.mime,d.width,d.height]),[[pinned.sha256,'image/png',1024,512]]);assert.deepEqual(puts,[`staging/director-derived/${pinned.sha256}.png`]);
+});
+
+test('live run 5: a failure before anything was sent is tried once more; a format correction names what is wrong', ()=>{
+ assert.equal(retryPreflight(new Error('CREATIVE_IMAGE_FAILED:IMAGE_PREFLIGHT_FAILED')),true);assert.equal(retryPreflight(new Error('CREATIVE_IMAGE_FAILED:PROVIDER_402')),false);assert.equal(retryPreflight(new Error('CREATIVE_IMAGE_PENDING')),false);
+ // The run's case: an answer that is either a question or a deliverable; the deliverable had one field missing and
+ // the whole correction read "fits none of the allowed shapes", twice.
+ const schema={type:'object',required:['answer'],properties:{answer:{anyOf:[{type:'null'},{type:'object',additionalProperties:false,required:['question'],properties:{question:{type:'string'}}},{type:'object',additionalProperties:false,required:['role','territories'],properties:{role:{type:'string',enum:['visual-direction']},territories:{type:'array',minItems:1,items:{type:'object',required:['name','making'],properties:{name:{type:'string'},making:{type:'string'}}}}}}]}}} as never;
+ const issues=schemaIssues({answer:{role:'visual-direction',territories:[{name:'A'}]}},schema);
+ assert.ok(issues.length>=1&&issues.every(i=>!i.includes('fits none')),issues.join(' | '));assert.ok(issues.some(i=>/territories\.0/.test(i)&&/making/.test(i)),issues.join(' | '));
+ assert.deepEqual(schemaIssues({answer:null},schema),[]);assert.deepEqual(schemaIssues({answer:{question:'Which?'}},schema),[]);
+ assert.deepEqual(schemaIssues({answer:7},schema),['answer.answer: fits none of the allowed shapes']);
+});
+
+test('live run 5: the draft says what state it is in, and a picture the draft went on without is a note', ()=>{
+ const d=(extra:object)=>({id:'d',variants:[],question:null,...extra}) as never;
+ assert.equal(directionStatus(d({status:'running',progress:{phase:'designer',turns:3,log:[],stage:'key frame'}})),'Working: key frame');
+ assert.equal(directionStatus(d({status:'running',progress:{phase:'designer',turns:9,log:[],stage:'other scenes'}})),'Working: other scenes');
+ assert.equal(directionStatus(d({status:'done'})),'Finished: saved for your review');
+ assert.equal(directionStatus(d({status:'review',question:{question:'The picture provider refused payment for a picture of the key frame, so this direction stopped. Nothing was charged.'}})),'Stopped: The picture provider refused payment for a picture of the key frame, so this direction stopped.');
+ assert.equal(designerStage({phase:'designer',designer:{hero:{state:'designing'}}}),'key frame');assert.equal(designerStage({phase:'designer',designer:{hero:{state:'accepted'}}}),'other scenes');
+ assert.equal(designerStage({phase:'designer',designer:{complete:true,hero:{state:'accepted'}}}),'review');assert.equal(designerStage({phase:'critic',designer:{hero:{state:'accepted'}}}),'review');
+ assert.equal(recoveredPictureLine(pictureFailure('CREATIVE_IMAGE_FAILED:IMAGE_PREFLIGHT_FAILED')),'One picture could not be made (the picture could not be made); the designer went on without it.');
 });

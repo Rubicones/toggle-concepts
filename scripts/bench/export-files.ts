@@ -64,6 +64,8 @@ export function fileDropPictures(pictures:string,pub:string,folder:string,input:
  return async(resource:Resource)=>{
   if(o.refuseAfter!==undefined&&asked++>=o.refuseAfter){say(`[bench] picture ${resource.id} refused (simulated payment refusal)`);throw new Error('CREATIVE_IMAGE_FAILED:PROVIDER_402');}
   await writeFile(join(pictures,`${resource.id}.request.json`),JSON.stringify({id:resource.id,scene:resource.scene,purpose:resource.purpose,prompt:resource.prompt,aspect:resource.aspect,cutout:!!resource.cutout,mustNotContain:resource.mustNotContain,
+   // The pictures this one takes as references, each with the path of its file here: pass them to the generator.
+   references:[...resource.referenceAssetIds.flatMap(id=>{const a=input.assets.find(x=>x.id===id);return a?[{kind:'supplied file',name:a.url,file:join(pub,a.url)}]:[];}),...(resource.brandRefs??[]).map(b=>({kind:'brand file',name:b.url,file:join(pub,b.url)}))],
    // A picture may fill the largest ordered format, so it is delivered at least that large (craft audit of 15 November:
    // 1,024 px pictures were drawn up to 1.22× and looked soft; the reference sheets' pictures were 2,048 px).
    deliver:{longSide,note:`Deliver the picture at least ${longSide} px on its long side (upscale it if the generator makes it smaller); its cutout at the same size.`}},null,1));

@@ -6,6 +6,7 @@
 import {parseChatAnswer,actionsCorrection,usesEdits,applyEdits} from '../../../packages/director/hero-chat';
 import {extensionActionsSchema,extensionNote,extensionPhase,nextRender,phaseLabels,sceneIdOf,sceneLabel,stageEMechanics,compactionSeed,variationVariants,type ExtensionPhase} from '../../../packages/director/extension-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
+import {splitPictureReferences,brandReferenceNames,referenceRefusal} from '../../../packages/director/picture-references';
 import {heroMeaning} from '../../../packages/director/designer';
 import {recordPictureFailure,noFurtherPictureNote,type PictureFailure} from '../../../packages/director/picture-failure';
 import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
@@ -74,8 +75,12 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
    for(const p of actions.pictures??[]){
     if(heroMeaning(input)&&state.picturesBlocked){notes.push(noFurtherPictureNote(state.picturesBlocked));break;}
     if(state.pictures>=args.maxPictures){notes.push('The approved number of pictures is used: build the rest in code or with the pictures you have.');break;}
+    // Version 6: references may be supplied files or the brand's own drawable files; one that cannot be issued is named
+    // with its reason and the picture is not counted.
+    const split=heroMeaning(input)?splitPictureReferences(p.references??[],input,tools.brandNames??brandReferenceNames(input)):null;
+    if(split?.problems.length){notes.push(referenceRefusal(p.purpose,split.problems));continue;}
     state.pictures++;await args.save(state);const id=input.resourceIds[state.pictures-1],key=`${state.turn}:${state.pictures}`;
-    const picture={purpose:p.purpose,scene:input.storyboard[0].id,prompt:p.prompt,aspect:p.aspect,referenceAssetIds:resolveAssetReferences(p.references??[],input),mustNotContain:p.mustNotContain??[],...(p.cutout?{cutout:true}:{}),...(p.proxyFor?{proxyFor:p.proxyFor}:{}),...(p.becomes&&p.proxyFor?{becomes:p.becomes}:{})};
+    const picture={purpose:p.purpose,scene:input.storyboard[0].id,prompt:p.prompt,aspect:p.aspect,...(split?.brandUrls.length?{brandRefs:split.brandUrls}:{}),referenceAssetIds:split?split.assetIds:resolveAssetReferences(p.references??[],input),mustNotContain:p.mustNotContain??[],...(p.cutout?{cutout:true}:{}),...(p.proxyFor?{proxyFor:p.proxyFor}:{}),...(p.becomes&&p.proxyFor?{becomes:p.becomes}:{})};
     pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const,...(heroMeaning(input)?{code:(error instanceof Error?error.message:'').slice(0,200)}:{})};arrived.push(r);pending.delete(key);return r;}));
     notes.push(`Asked for a picture (${p.purpose.slice(0,80)}): it will be resources['${id}'] and arrives in a later message.`);
    }

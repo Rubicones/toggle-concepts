@@ -22,7 +22,13 @@ const fits=(v:unknown,t:string)=>t==='number'?typeof v==='number':typeOf(v)===t;
  */
 export function schemaIssues(value:unknown,schema:Schema,path='answer',out:string[]=[],limit=12):string[]{
  if(out.length>=limit)return out;
- if(schema.anyOf){if(!schema.anyOf.some(s=>!schemaIssues(value,s,path,[],1).length))out.push(`${path}: fits none of the allowed shapes`);return out;}
+ if(schema.anyOf){
+  if(schema.anyOf.some(s=>!schemaIssues(value,s,path,[],1).length))return out;
+  // Live run 5: "fits none of the allowed shapes" was sent twice as the whole correction and the same answer came back
+  // twice. The shape the value is nearest to (the fewest breaks, among shapes of its own type) is named with its breaks.
+  const near=schema.anyOf.map(s=>schemaIssues(value,s,path,[],6)).filter(i=>!(i.length===1&&/: must be (object|array|string|number|integer|boolean|null)( or \w+)*$/.test(i[0]))).sort((a,b)=>a.length-b.length)[0];
+  if(near?.length)for(const issue of near.slice(0,Math.max(1,limit-out.length)))out.push(issue);else out.push(`${path}: fits none of the allowed shapes`);
+  return out;}
  const types=schema.type===undefined?[]:Array.isArray(schema.type)?schema.type:[schema.type];
  if(types.length&&!types.some(t=>fits(value,t))){out.push(`${path}: must be ${types.join(' or ')}`);return out;}
  if(schema.enum&&!schema.enum.some(e=>e===value)){out.push(`${path}: must be one of ${schema.enum.map(e=>JSON.stringify(e)).join(', ')}`);return out;}

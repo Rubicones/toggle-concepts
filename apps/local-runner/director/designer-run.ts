@@ -1,5 +1,6 @@
 // Designer blocks in the worker (designer pipeline plan, point 4e): the real tools behind the designer loop, the
 // provisional design the preview and admission read while it works, and the finished design it leaves behind.
+import {pinBrandReference} from './image-methods';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {sandboxTool} from './sandbox';
@@ -47,6 +48,8 @@ export function designerTools(args:{folder:string;input:DirectionInput;design:De
   },
   requestImage:async(picture):Promise<PictureResult>=>{
    const resource=pictureResource(picture,input,design.resources.map(r=>r.id));
+   // Version 6: the brand's own files named as references are pinned as pictures before the request is built.
+   if(picture.brandRefs?.length)resource.brandRefs=await Promise.all(picture.brandRefs.map(url=>pinBrandReference(folder,url)));
    design.resources.push(resource);await args.save();
    return settle(resource);
   },

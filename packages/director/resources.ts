@@ -16,8 +16,12 @@ export function resourceRequest(resource:Resource,input:DirectionInput,perStillM
  const base=resourcePrompt(resource)+(reconstruct?'\nCreate a fresh polished still from the attached identity reference, not an enlarged screenshot or a screenshot panel. Preserve the observed product shape, interface content and approved details; do not invent unseen features, copy, claims or people. Omit baked-in video/advertising overlays.':'');
  const plain=resource.cutout&&input.brief.pictureRulesVersion===1?base+'\n'+CUTOUT_BRIEF:base;
  const method=imageMethod(resource,input,plain);
- const prompt=method?.prompt??plain,key=method?digest({protocol:'director-image-method@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refs.map(ref=>ref.sha256),method:method.identity}):independentResourceBindings(input)?digest({protocol:'director-image@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refs.map(ref=>ref.sha256)}):digest({protocol:'director@1',directionId:input.directionId,resource,refs,...(reconstruct?{reconstructionPrompt:prompt}:{})});
- return {key,prompt,references:[...(method?.source?[method.source.revisionId]:[]),...resource.referenceAssetIds],derivedPlan:method?.derived??[],purpose:resource.purpose,aspectRatio:aspect,resolution:'draft' as const,maxCostMicroUsd:perStillMicroUsd};
+ // Version 6: the brand's own files as references. Each must be pinned (its hash) before a request can be built.
+ const brand=(resource.brandRefs??[]).map(b=>{if(!b.sha256)throw new Error('BRAND_REFERENCE_NOT_PINNED');return b.sha256;});
+ if(refs.length+brand.length+(method?.derived.length??0)+(method?.source?1:0)>3)throw new Error('IMAGE_REFERENCE_LIMIT');
+ const refShas=[...refs.map(ref=>ref.sha256),...brand];
+ const prompt=method?.prompt??plain,key=method?digest({protocol:'director-image-method@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refShas,method:method.identity}):independentResourceBindings(input)?digest({protocol:'director-image@1',directionId:input.directionId,prompt,aspect,resolution:'draft',references:refShas}):digest({protocol:'director@1',directionId:input.directionId,resource,refs,...(reconstruct?{reconstructionPrompt:prompt}:{})});
+ return {key,prompt,references:[...(method?.source?[method.source.revisionId]:[]),...resource.referenceAssetIds],derivedPlan:[...(method?.derived??[]),...brand.map(sha256=>({kind:'brand' as const,sha256}))] as {kind:'sketch'|'canvas'|'brand';sha256:string}[],purpose:resource.purpose,aspectRatio:aspect,resolution:'draft' as const,maxCostMicroUsd:perStillMicroUsd};
 }
 /**
  * Checks a design answer's resource before the application has pinned its image-method hashes (the worker pins them

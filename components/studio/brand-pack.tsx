@@ -41,6 +41,7 @@ export function BrandPackPanel({ campaignId }: { campaignId: string }) {
       <header className={styles.sheetHead}>
         <div>
           <h3 id="brand-pack-title">What every agent sees about this brand</h3>
+          {data.book.pagesHeld > 0 && <p role="status"><strong>{pack && data.book.pages.length ? `Brand book read: ${data.book.pages.length} page${data.book.pages.length === 1 ? "" : "s"}, ${data.book.pages.filter((p) => p.inUse).length} in use.` : `Brand book not read yet (${data.book.pagesHeld} page${data.book.pagesHeld === 1 ? "" : "s"}).`}</strong></p>}
           <p className={styles.source}>
             Every agent of a run starts from the same short brand pack: the brand character below, a compact brand sheet (logo, colours, type,
             signature pictures and interface on a few pages) and a list of the other materials it can ask for. What you marked “Use this” comes

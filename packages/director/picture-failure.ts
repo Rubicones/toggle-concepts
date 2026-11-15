@@ -97,3 +97,6 @@ export function pictureCreditFirstLine(credit:PictureCredit,pictures:number,perP
  if(short)return (credit.source==='key'?short.replace('The picture provider account has','This key\'s limit at the picture provider leaves'):short)+' ';
  return credit.source==='account'?'':'Picture credit could not be checked: if the picture provider account is short of credit, pictures will be refused and you will be asked. ';
 }
+
+/** For the timeline, when the draft went on: a note, not an error (live run 5). */
+export const recoveredPictureLine=(f:PictureFailure)=>`One picture could not be made (${f.reason}); the designer went on without it.`;
