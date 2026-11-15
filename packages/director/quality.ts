@@ -92,5 +92,8 @@ export function strictRound(r:ReviewRound):ReviewRound{
 }
 /** What the designer reads with the reviewer's notes (critic@3). */
 export const NOTES_INSIDE_THE_IDEA:string='Each note names a problem; the answer is yours. Solve it inside the chosen idea, which stays. When a note cannot be solved inside the idea, say so and why, and leave the idea as it is. '+SUBJECT_AND_MAKING_STAY;
+/** Bench run 14: twelve points in the one last turn and the designer rebuilt the frame as another arrangement than the
+ * chosen idea's, with no review after it. */
+export const STRUCTURE_STAYS='The frame keeps what the chosen idea says it is made of and how the idea arranges it. A point that would need another arrangement stays open: name it in one line and leave the frame as the idea has it.';
 /** The one last turn after the review has finished with notes (critic@3): bounded, with no further review. */
-export const lastTurnNote=(points:string[])=>`THE REVIEW IS FINISHED. The hero frame is accepted after this turn; there is no further review. This is one last turn for what stays open:\n${points.map(p=>`- ${p}`).join('\n')}\n${NOTES_INSIDE_THE_IDEA} Change only what these points need.`;
+export const lastTurnNote=(points:string[])=>`THE REVIEW IS FINISHED. The hero frame is accepted after this turn; there is no further review. This is one last turn for what stays open:\n${points.map(p=>`- ${p}`).join('\n')}\n${NOTES_INSIDE_THE_IDEA} Change only what these points need. ${STRUCTURE_STAYS}`;

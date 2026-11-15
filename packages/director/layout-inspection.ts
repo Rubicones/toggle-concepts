@@ -155,6 +155,7 @@ function rgb(color:string){const m=/rgba?\(([^)]+)\)/.exec(color);if(!m)return n
 function luminance(c:number[]){const f=(v:number)=>{v/=255;return v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4;};return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);}
 export function contrastRatio(a:number,b:number){const [hi,lo]=a>b?[a,b]:[b,a];return (hi+0.05)/(lo+0.05);}
 const overlap=(a:Box,b:Box)=>Math.max(0,Math.min(a.x+a.width,b.x+b.width)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.y+a.height,b.y+b.height)-Math.max(a.y,b.y));
+const place=(b:Box)=>`x ${Math.round(b.x)}–${Math.round(b.x+b.width)}, y ${Math.round(b.y)}–${Math.round(b.y+b.height)}`;
 const quote=(s:string)=>`“${s.length>60?s.slice(0,57)+'…':s}”`;
 
 /** Visible part of a picture's source as fractions [x0,y0,x1,y1] for cover/contain fits; null when unknown. */
@@ -207,7 +208,7 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
    else if(t.font.weightMissing)add('FONT_WEIGHT_MISSING','soft',`Weight ${t.font.weight} of ${t.font.family} is not in the brand files, so the browser imitates it: ${quote(t.text)}. Available: ${brandFontWeights(family)}.`,t.box);}
   for(const word of t.mixedFontWords??[])add('FONT_MIXED_IN_WORD','hard',`Letters of one word come from two fonts (the brand font lacks some of them): set the whole line in one font that has every letter: ${quote(word)} in ${quote(t.text)}`,t.box);
   for(const word of t.brokenWords??[])add('WORD_BROKEN',approvedText?'hard':'soft',`A word is split across two lines: ${quote(word)} in ${quote(t.text)}`,t.box);
-  for(const logo of raw.logos)if(overlap(t.box,logo.box)>0.1*Math.min(t.box.width*t.box.height,logo.box.width*logo.box.height))add('TEXT_OVER_LOGO','hard',`Text overlaps the logo: ${quote(t.text)}`,{x:Math.min(t.box.x,logo.box.x),y:Math.min(t.box.y,logo.box.y),width:Math.max(t.box.x+t.box.width,logo.box.x+logo.box.width)-Math.min(t.box.x,logo.box.x),height:Math.max(t.box.y+t.box.height,logo.box.y+logo.box.height)-Math.min(t.box.y,logo.box.y)});
+  for(const logo of raw.logos)if(overlap(t.box,logo.box)>0.1*Math.min(t.box.width*t.box.height,logo.box.width*logo.box.height))add('TEXT_OVER_LOGO','hard',`Text overlaps the logo: ${quote(t.text)} (the text's box: ${place(t.box)}; the logo's box: ${place(logo.box)})`,{x:Math.min(t.box.x,logo.box.x),y:Math.min(t.box.y,logo.box.y),width:Math.max(t.box.x+t.box.width,logo.box.x+logo.box.width)-Math.min(t.box.x,logo.box.x),height:Math.max(t.box.y+t.box.height,logo.box.y+logo.box.height)-Math.min(t.box.y,logo.box.y)});
  }
  for(let i=0;i<raw.texts.length;i++)for(let j=i+1;j<raw.texts.length;j++){const a=raw.texts[i],b=raw.texts[j];if(a.element===b.element)continue;
   const area=overlap(a.box,b.box),smaller=Math.min(a.box.width*a.box.height,b.box.width*b.box.height);if(smaller>0&&area>0.2*smaller)add('TEXT_OVERLAP','hard',`Text overlaps other text: ${quote(a.text)} and ${quote(b.text)}`,{x:Math.min(a.box.x,b.box.x),y:Math.min(a.box.y,b.box.y),width:Math.max(a.box.x+a.box.width,b.box.x+b.box.width)-Math.min(a.box.x,b.box.x),height:Math.max(a.box.y+a.box.height,b.box.y+b.box.height)-Math.min(a.box.y,b.box.y)});}

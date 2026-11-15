@@ -4,6 +4,7 @@
 // LIVE: every run spends the signed-in Claude subscription. Never part of `npm test`; run it by hand:
 //   node --import tsx scripts/bench/pipeline-bench.ts <brand> [--turns=12] [--model=claude-sonnet-5-5] [--effort=high] [--version=3]
 import {mkdir,writeFile,readFile,copyFile,rm,mkdtemp,cp} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {brands,benchInput,benchInputV5,benchBrandPack,benchCatalogue,type BenchBrand} from './brands';
@@ -201,11 +202,17 @@ async function writeV5Summary(out:string,label:Record<string,unknown>,started:nu
 /** A real run's designer direction, rebuilt from its export: the block's own input (planning outputs, copy, brand in
  * code), its brand pack and brief from the frozen run context, and the workspace's public files. The compact brand
  * sheet pictures are not in an export (bytes are never exported), so the run context here has the pack text only. */
+/** The compact brand sheet as the run froze it: the export keeps each picture's facts in run-context.json and its bytes by hash. */
+async function exportedPackImages(folder:string,images:unknown){
+ const out:NonNullable<RunContext['images']>=[];
+ for(const i of Array.isArray(images)?images as NonNullable<RunContext['images']>:[]){const file=join(folder,'device','pictures',`${String(i.sha256).replace(/[^a-f0-9]/g,'')}.jpg`);if(existsSync(file))out.push({...i,dataBase64:(await readFile(file)).toString('base64')});}
+ return out;
+}
 async function benchFromExport(folder:string){
  const read=async(p:string)=>JSON.parse(await readFile(join(folder,p),'utf8'));
  const blocks=await read('database/studio_director_blocks.json') as {snapshot:{inputs:DirectionInput[]}}[],input=structuredClone(blocks.at(-1)!.snapshot.inputs[Number(arg('direction','0'))]);
  if(!input)throw new Error('The export has no direction at that index.');
- const context=await read('device/run-context.json') as {system:string;brief:string;materials?:RunContext['materials']},pack=context.system.slice(context.system.indexOf('\n',context.system.indexOf('BRAND PACK'))+1),brief=context.brief.slice(context.brief.indexOf('\n')+1);
+ const context=await read('device/run-context.json') as {system:string;brief:string;materials?:RunContext['materials'];images?:unknown},pack=context.system.slice(context.system.indexOf('\n',context.system.indexOf('BRAND PACK'))+1),brief=context.brief.slice(context.brief.indexOf('\n')+1);
  const out=resolve(arg('out','artifacts/bench'),`export-${input.directionId.slice(0,8)}-${arg('chat-baseline','0')==='1'?'chat':`v${Number(arg('designer','0'))||5}`}${arg('hero-only','0')==='1'?'-hero':''}${ablationName}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);await mkdir(out,{recursive:true});
  process.env.TOGGLE_HOME??=resolve(out,'home');
  const workspace=await createWorkspace(resolve(out,'workspace'),input),pub=join(workspace,'public'),source=join(folder,'designer',input.directionId.slice(0,8),'workspace','public');
@@ -227,7 +234,7 @@ async function benchFromExport(folder:string){
  if(arg('chat-baseline','0')==='1'){const summary=await runChatBaseline({input,folder:workspace,out,facts:{brand:brandFactsFromPack(pack)},designerModel:arg('designer-model','anthropic/claude-opus-5.5'),sonnet:arg('sonnet','claude-sonnet-5-5'),bin:arg('bin','claude'),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000,refusal)});console.log(JSON.stringify({...summary,perTurn:undefined,out}));return;}
  const started=Date.now();let result,stopped:string|undefined;
  try{result=await runV5Direction({input,folder:workspace,out,brandPack:pack,briefText:brief,designerModel:arg('designer-model','anthropic/claude-opus-5.5'),criticModel:arg('critic-model','google/gemini-4-argon'),maxTurns:Number(arg('turns','24')),heroReviews:noCritic?0:advisory?1:Number(arg('reviews','2')),endReview:!noCritic&&arg('endreview','1')==='1',heroOnly:arg('hero-only','0')==='1',...ablation,
-  maxPictures:Number(arg('pictures','4')),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000,refusal),catalog,recordRequests:true,materials:context.materials,brandFileEntries:true,...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
+  maxPictures:Number(arg('pictures','4')),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000,refusal),catalog,recordRequests:true,materials:context.materials,brandFileEntries:true,...(existsSync(join(folder,'device','pictures'))?{storedPictures:join(folder,'device','pictures'),packImages:await exportedPackImages(folder,context.images)}:{}),...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
   setup:{bin:arg('bin','claude'),cliVersion:'bench',isolation:{safeMode:true,restricted:true,noSessionPersistence:false,disableSlashCommands:true},sonnet:arg('sonnet','claude-sonnet-5-5'),schemaMode:'cli',visual:true,deviceId:'bench'}});}
  catch(error){stopped=`${error instanceof Error?error.message:error}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}`;console.error('[bench] stopped:',stopped);}
  await writeV5Summary(out,{source:'export',direction:input.directionId.slice(0,8),version:5,designerVersion:Number(input.brief.designerVersion),heroOnly:arg('hero-only','0')==='1',missingBrandFiles:missing.map(m=>m.label),fontsFilled:filled,catalogueEntries:context.materials?.entries.length??0},started,result,stopped);

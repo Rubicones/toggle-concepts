@@ -13,7 +13,7 @@
 import {designerContext} from '../../packages/director/designer-context';
 import {assetNames} from '../../packages/director/asset-names';
 import {usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3,END_REVIEW_INSTRUCTIONS_V3} from '../../packages/director/quality';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {existsSync} from 'node:fs';
 import {referenceEntries,sheetEntries} from '../../apps/local-runner/director/assets';
@@ -74,6 +74,10 @@ export type V5Options={
  /** Offer the workspace's own brand references, logos and full sheet pages by name, as the worker does when the run
   * has a compact brand sheet. Files that are not in the workspace are left out. */
  brandFileEntries?:boolean;
+ /** An export's device/pictures folder: the catalogue's stored pictures by hash. */
+ storedPictures?:string;
+ /** The frozen context's compact brand sheet pictures (an export's device/pictures). */
+ packImages?:RunContext['images'];
  /** Plan E5 (version 6): how long a hero render waits for its pictures (default: the production bound). */
  pictureHoldMs?:number;
  /** Ablation switches of the bench (one addition off at a time). noIdeas: no ideas turn and no selection, the designer
@@ -90,15 +94,19 @@ export type V5Call={role:string;stage:string;usage:LocalCallUsage|null;conversat
 export type V5Result={state:DesignerLoopState;context:RunContext;calls:V5Call[];timeline:string[];gaps:string[];status:string;apiEquivalentUsd:number;endReview?:{accepted:boolean;notes:number;rounds:number;skipped?:string;/** an advisory review's notes, not sent to the designer */open?:string[]}};
 
 /** The run context a new shared Local run freezes (apps/local-runner/local-claude/run-context.ts), for one brand. */
-export function benchRunContext(input:DirectionInput,brandPack:string,briefText?:string,materials?:RunContext['materials']):RunContext{
- return buildRunContext({briefText:briefText??JSON.stringify({product:input.brief.product,offer:input.brief.offer,audience:input.brief.audience,cta:input.brief.cta},null,1),brandPack,packVersion:1,commonSkills:[],
+export function benchRunContext(input:DirectionInput,brandPack:string,briefText?:string,materials?:RunContext['materials'],packImages?:RunContext['images']):RunContext{
+ return buildRunContext({briefText:briefText??JSON.stringify({product:input.brief.product,offer:input.brief.offer,audience:input.brief.audience,cta:input.brief.cta},null,1),brandPack,packVersion:1,commonSkills:[],...(packImages?.length?{packImages}:{}),
   materials:materials??{entries:[],budget:DEFAULT_MATERIAL_BUDGET},planningChat:true,schemaInText:true,leanContext:true,stageSkills:buildStageSkills(readSkills(),[]),positive:POSITIVE_DEFAULT,imageOwner:true,critic:true});
 }
 
-/** The bench has no object store: a stored catalogue picture is answered as unreadable, never fetched. */
-const noStoredPictures=async():Promise<Buffer>=>{throw new Error('BENCH_NO_STORED_PICTURES');};
+/** The bench has no object store: a stored catalogue picture is read from an export's device/pictures (by hash) when
+ * the export has it, and is answered as unreadable otherwise. */
+const exportedPictures=(dir:string|undefined,ctx:RunContext)=>async(objectKey:string):Promise<Buffer>=>{
+ const sha=ctx.materials?.entries.find(e=>e.picture?.objectKey===objectKey)?.picture?.sha256;if(!dir||!sha)throw new Error('BENCH_NO_STORED_PICTURES');
+ return readFile(join(dir,sha.replace(/[^a-f0-9]/g,'')));
+};
 export async function runV5Direction(o:V5Options):Promise<V5Result>{
- const {input,folder}=o,ctx=benchRunContext(input,o.brandPack,o.briefText,o.materials),staged=ctx.stageSkills!,calls:V5Call[]=[],timeline:string[]=[],say=(line:string)=>{timeline.push(line);};
+ const {input,folder}=o,ctx=benchRunContext(input,o.brandPack,o.briefText,o.materials,o.packImages),staged=ctx.stageSkills!,calls:V5Call[]=[],timeline:string[]=[],say=(line:string)=>{timeline.push(line);};
  const models={designer:{modelId:o.designerModel??'anthropic/claude-opus-5.5',instructions:staticRoleInstructions.director,maxOutputTokens:32000,pricing:PRICING,contextLength:1000000},critic:{modelId:o.criticModel??'anthropic/claude-sonnet-5.5',instructions:staticRoleInstructions.critic,maxOutputTokens:16000,pricing:CRITIC_PRICING,contextLength:1000000}};
  const requests=Math.min(o.maxTurns??DESIGNER_TURNS.requests,DESIGNER_TURNS.requests),maxPictures=o.maxPictures??input.resourceIds.length,heroReviews=o.heroReviews??HERO_REVIEW_ROUNDS;
  // The quote a version 5 block is approved with: 24 designer turns, two end reviews, two hero reviews, one selection.
@@ -142,9 +150,9 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
  // Materials on request: the direction's own planning results and the copy table, by name (C3/C4).
  const references=[...(o.brandFileEntries?referenceEntries(folder,input):[]),...designerDigestEntries(input),...(o.brandFileEntries?sheetEntries(folder,input):[])].filter(e=>!('file' in e)||existsSync((e as {file:string}).file)),budget=materialBudgetFor('designer',ctx.materials!.budget);
  tools.materials={references:references.map(e=>`- ${e.name} · ${e.kind} · ${e.line}`),
-  fetch:async(asked,seen)=>{const f=await fetchMaterials(ctx,{runId:input.runId,role:'designer',requests:asked,extra:references,seen,read:noStoredPictures});const attached=f.plan.filter(p=>p.status==='attached').map(p=>p.name);if(attached.length)say(`The designer looked at: ${attached.join(', ')}.`);
+  fetch:async(asked,seen)=>{const f=await fetchMaterials(ctx,{runId:input.runId,role:'designer',requests:asked,extra:references,seen,read:exportedPictures(o.storedPictures,ctx)});const attached=f.plan.filter(p=>p.status==='attached').map(p=>p.name);if(attached.length)say(`The designer looked at: ${attached.join(', ')}.`);
    return {attached,lines:f.plan.map(p=>p.status==='attached'?`Asked to see ${p.name}; it arrives with the next turn.`:`${p.name}: ${p.status}.`)};},
-  load:names=>loadMaterials(ctx,names,references,noStoredPictures),left:async()=>budgetLeft('designer',budget,await materialsUsed(input.runId)).count};
+  load:names=>loadMaterials(ctx,names,references,exportedPictures(o.storedPictures,ctx)),left:async()=>budgetLeft('designer',budget,await materialsUsed(input.runId)).count};
  // The hero review (critic@2): the hero checks with evidence, its own earlier rounds as text, a stop by rule.
  // As the worker: every review made when no further picture can be had is told so (version 6).
  const noPicture=()=>usesQuality(input)&&(state.picturesBlocked||state.pictures>=maxPictures)?NO_FURTHER_PICTURE_REVIEWER:'';
@@ -196,7 +204,11 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
     say(r.accepted?'The creative review accepted the current views.':`The creative review returned ${r.notes.length} note${r.notes.length===1?'':'s'}.`);
     const notes=toDesignerNotes(r);
     // An advisory end review (a bench switch): its notes are listed for the art director and no repair round follows.
-    if(o.endRepair===false){end.open=notes.map(x=>`[${x.priority}] ${x.view}: ${x.problem}`);for(const line of end.open)say(`Review note (advisory): ${line.slice(0,300)}`);break;}
+    if(o.endRepair===false){
+     // As the studio does it: P2 notes are kept for the art director; P0 and P1 notes get one repair turn, with no review after it.
+     const act=notes.filter(x=>x.priority!=='P2');end.open=notes.filter(x=>x.priority==='P2').map(x=>`[${x.priority}] ${x.view}: ${x.problem}`);for(const line of end.open)say(`Review note (advisory): ${line.slice(0,300)}`);
+     if(act.length&&state.turn<requests){say(`One repair turn for ${act.length} review note${act.length===1?'':'s'}.`);state.complete=false;delete state.finish;state.heroNote=reviewRepairMessage({kind:'critic',round,note:act.map((x,i)=>`${i+1}. [${x.priority}] ${x.view}: ${x.problem} Wanted: ${x.fix}`).join('\n')});await extend();}
+     break;}
     if(r.accepted||!notes.length||round===2||state.turn>=requests)break;
     state.complete=false;delete state.finish;state.heroNote=reviewRepairMessage({kind:'critic',round,note:notes.map((x,i)=>`${i+1}. [${x.priority}] ${x.view}: ${x.problem} Wanted: ${x.fix}`).join('\n')});await extend();
    }catch(error){end.skipped=error instanceof Error?error.message.slice(0,200):'CRITIC_FAILED';say('The creative review could not run; the draft is delivered with the measured findings only.');break;}

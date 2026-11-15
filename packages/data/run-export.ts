@@ -84,6 +84,7 @@ export const EXPORT_LAYOUT={
  'database/<table>.json':'the run\'s rows of each table (redacted)',
  'steps/<n>-<role>-<id>.json':'one request: snapshot (redacted), prompt, output, usage',
  'device/run-context.json':'the frozen run context: system text, brief, stage skills, versions and flags (no picture bytes)',
+ 'device/pictures/<sha256>':'the pictures the agents could see: the compact brand sheet and the catalogue pictures (brand book pages, signature pictures)',
  'device/sessions/<session>.jsonl':'the Local Claude conversation transcripts found on this computer (pictures removed)',
  'device/requests/<n>-<role>.json':'the complete request as it was sent (pictures by hash, no bytes), when its record is on this computer',
  'device/materials.jsonl':'which materials each role asked for',

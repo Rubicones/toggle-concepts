@@ -3,6 +3,7 @@
 // every text is redacted (packages/data/run-export.ts). Usage:
 //   node --import tsx scripts/export-run.ts [run-id] [--out <folder>]
 import {mkdir,readFile,writeFile,readdir,stat,copyFile} from 'node:fs/promises';
+import {storedPicture} from '../apps/local-runner/local-claude/pack-images';
 import {existsSync} from 'node:fs';
 import {join,resolve,relative,dirname} from 'node:path';
 import {homedir} from 'node:os';
@@ -59,6 +60,15 @@ async function main(){
  // 2. This computer: the frozen run context, what each role asked for, and the conversations.
  let context:Row|null=null;try{context=JSON.parse(await readFile(join(toggleHome(),'local-claude','run-context',`${runId}.json`),'utf8')) as Row;}catch{notes.push('device/run-context.json: no frozen run context for this run on this computer');}
  if(context)await write(folder,'device/run-context.json',slimRunContext(context));
+ // The pictures the run's agents saw: the compact brand sheet of the frozen context and the catalogue's pictures (brand
+ // book pages, signature pictures), by hash. Without them a rehearsal of this run on another computer works blind.
+ if(context){
+  const dir=join(folder,'device','pictures');await mkdir(dir,{recursive:true});let saved=0,missed=0;
+  for(const i of Array.isArray(context.images)?context.images as {sha256?:string;dataBase64?:string}[]:[])if(i.sha256&&i.dataBase64){await writeFile(join(dir,`${safeName(i.sha256)}.jpg`),Buffer.from(i.dataBase64,'base64'));saved++;}
+  const entries=((context.materials as {entries?:{picture?:{objectKey?:string;sha256?:string}}[]}|undefined)?.entries??[]).filter(e=>e.picture?.objectKey&&e.picture.sha256);
+  for(const e of entries){const target=join(dir,safeName(e.picture!.sha256!));if(existsSync(target))continue;try{await writeFile(target,await storedPicture(e.picture!.objectKey!));saved++;}catch{missed++;}}
+  notes.push(`device/pictures: ${saved} picture${saved===1?'':'s'} the agents could see${missed?`; ${missed} could not be read from storage`:''}`);
+ }
  try{await write(folder,'device/materials.jsonl',redactText(await readFile(join(toggleHome(),'local-claude','materials',`${runId.replace(/[^a-zA-Z0-9-]/g,'')}.jsonl`),'utf8')));}catch{/* none asked for */}
  // The complete requests as sent (the runner's own records; pictures are stored apart by hash and are not copied).
  let records=0;for(const [i,c] of composition.entries()){const path=typeof c.local.recordPath==='string'?c.local.recordPath:null;if(!path||neverExported(path)||!existsSync(path))continue;

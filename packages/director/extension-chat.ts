@@ -58,10 +58,12 @@ export function variationVariants(input:Pick<DirectionInput,'variants'>,language
 }
 
 /** The full hard set, per format and language, grouped by problem so the designer fixes the rule, not each case. */
-export function extensionNote(findings:Pick<Finding,'code'|'severity'|'detail'|'view'>[],shots:number){
- const group=(list:typeof findings)=>{const by=new Map<string,{detail:string;views:Set<string>}>();for(const f of list){const g=by.get(f.code)??{detail:f.detail,views:new Set<string>()};g.views.add(f.view);by.set(f.code,g);}return [...by.values()];};
+export function extensionNote(findings:Pick<Finding,'code'|'severity'|'detail'|'view'>[],shots:number,labels?:Map<string,string>){
+ // One line per problem as measured (the same code with other words is another problem: bench run 14, where a finding
+ // in an unseen copy variant was listed under the first one's words and by the views' internal ids).
+ const group=(list:typeof findings)=>{const by=new Map<string,{detail:string;views:Set<string>}>();for(const f of list){const key=`${f.code}|${f.detail}`,g=by.get(key)??{detail:f.detail,views:new Set<string>()};g.views.add(labels?.get(f.view)??f.view);by.set(key,g);}return [...by.values()];};
  const hard=group(findings.filter(f=>f.severity==='hard')),soft=group(findings.filter(f=>f.severity!=='hard'));
- const line=(g:{detail:string;views:Set<string>})=>`- ${g.detail}${g.views.size>1?` (in ${g.views.size} views: ${[...g.views].slice(0,4).join('; ')}${g.views.size>4?'; …':''})`:''}`;
+ const line=(g:{detail:string;views:Set<string>})=>`- ${g.detail}${g.views.size>1?` (in ${g.views.size} views: ${[...g.views].slice(0,4).join('; ')}${g.views.size>4?'; …':''})`:labels?` (in ${[...g.views][0]})`:''}`;
  return [`Here is the render (${shots} view${shots===1?'':'s'} attached).`,hard.length?`Must fix — change the rule that causes each one, not each case:\n${hard.slice(0,10).map(line).join('\n')}`:'Nothing must be fixed.',soft.length?`Also measured:\n${soft.slice(0,8).map(line).join('\n')}`:''].filter(Boolean).join('\n\n');
 }
 

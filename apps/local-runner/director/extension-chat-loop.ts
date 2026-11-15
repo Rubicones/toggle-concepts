@@ -20,7 +20,7 @@ import {liveFormat} from '../../../packages/director/live-preview';
 /** Views for a render: the reference copy and the longest copy per scene and format; in the variations phase one per
  * language and hook as well. Screenshots for the reference copy only, at most six. */
 export function extensionViews(input:DirectionInput,sceneIds:string[],formats:string[],phase:ExtensionPhase,languages?:string[]):InspectionView[]{
- const views=sceneIds.flatMap(id=>designerViews(input,id,formats).map(v=>({...v,label:`${sceneLabel(id,input)} · ${v.label}`})));
+ const views=sceneIds.flatMap(id=>designerViews(input,id,formats).map(v=>({...v,shot:true,label:`${sceneLabel(id,input)} · ${v.label}${v.group==='longest'?' (the longest copy)':''}`})));
  if(phase!=='variations')return views;
  const extra=variationVariants(input,languages).slice(1).flatMap(v=>sceneIds.flatMap(id=>formats.map(fid=>{const f=input.formats.find(x=>x.id===fid);if(!f)return null;
   return {key:`${v.id}|${f.id}|${id}`,label:`${sceneLabel(id,input)} · ${f.id} · ${v.locale}/${v.hook}/${v.cta}/${v.length}s`,variantId:v.id,ordered:true,shot:true,group:'reference' as const,props:{format:liveFormat(f.width,f.height),locale:v.locale,hook:v.hook,cta:v.cta,length:v.length,width:f.width,height:f.height,sceneId:id,moment:'key-frame'}} as InspectionView;}))).filter((v):v is InspectionView=>!!v);
@@ -102,8 +102,9 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
      const views=extensionViews(input,open,formats,phase,asked.languages),out=await tools.render(views);
      for(const id of open)for(const f of formats)state.renders[renderKey(id,f)]=(state.renders[renderKey(id,f)]??0)+1;
      const findings=out.summary.reports.flatMap(r=>r.findings).sort((a,b)=>Number(b.severity==='hard')-Number(a.severity==='hard'));
-     state.lastRender={sceneId:open[0],findings,views:views.filter(v=>v.shot).slice(0,6).flatMap(v=>{const s=out.shots.find(x=>x.key===v.key);return s?[{label:v.label,file:s.file,width:v.props.width,height:v.props.height}]:[];})};
-     looked=state.lastRender.views[0]?.file;notes.push(extensionNote(findings,state.lastRender.views.length));results.push(`Rendered ${open.map(id=>sceneLabel(id,input)).join(', ')} in ${formats.join(', ')}: ${out.summary.hard} to fix.`);
+     const hardViews=new Set(findings.filter(f=>f.severity==='hard').map(f=>f.view));
+     state.lastRender={sceneId:open[0],findings,views:views.filter(v=>v.shot&&(v.group!=='longest'||hardViews.has(v.key))).sort((a,b)=>Number(hardViews.has(b.key))-Number(hardViews.has(a.key))).slice(0,6).flatMap(v=>{const s=out.shots.find(x=>x.key===v.key);return s?[{label:v.label,file:s.file,width:v.props.width,height:v.props.height}]:[];})};
+     looked=state.lastRender.views[0]?.file;notes.push(extensionNote(findings,state.lastRender.views.length,new Map(views.map(v=>[v.key,v.label]))));results.push(`Rendered ${open.map(id=>sceneLabel(id,input)).join(', ')} in ${formats.join(', ')}: ${out.summary.hard} to fix.`);
     }
    }
    // The phase moves on when its renders are done; the next note says what comes now.
