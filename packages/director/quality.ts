@@ -49,6 +49,11 @@ export const BRAND_DEVICES_REVIEWER='A finish, a material, a gradient, a shape o
 export const SUBJECT_AND_MAKING_REVIEWER='The frame\'s main subject and its way of making stay through a review: a photographed frame stays photographed, a frame built in code stays built in code. No note asks to remove the subject or to make the frame another way; when the subject or the way of making is itself the problem, say so in one note for the art director and ask the designer for nothing about it.';
 /** Version 6, what the designer reads with every set of review notes. */
 export const SUBJECT_AND_MAKING_STAY='The frame\'s main subject and its way of making stay: answer no note by removing the subject or by making the frame another way.';
+/** Version 6, the end review (live run 3: it asked that the element carrying the chosen idea's turn be removed in every
+ * scene, and the designer removed it). */
+export const IDEA_TURN_REVIEWER='The element that carries the turn of the chosen idea (given under THE CHOSEN IDEA) stays in the work: no note asks to remove or replace it. When that element is itself the problem, say so in one note for the art director and ask the designer for nothing about it.';
+/** Version 6, what the designer reads with the end review's notes. */
+export const IDEA_TURN_STAYS='The element that carries the turn of your chosen idea stays as well: when a note asks for it to go, keep it and say that the note stays open.';
 /** The hero review's instructions in critic@3. */
 export const HERO_REVIEW_INSTRUCTIONS_V3=`${CRITIC_BASE} This is the hero frame, the frame every other scene follows: judge stopping power and the idea first, then craft. You see it at full size and at thumbnail size.
 1. When your earlier review is given, rule on each earlier note first: fixed, open or worse.
@@ -60,7 +65,7 @@ accepted is true when every check passes, no P0 or P1 note is open, and you woul
 /** The selection's instructions in critic@3: the reason explains the choice and carries no advice on building it. */
 export const SELECTION_INSTRUCTIONS_V3=`${CRITIC_BASE} ${SELECTION_WHAT} The reason says only why this idea is the strongest of the three. It gives no advice on how to build it: no position, no added element, no arrangement and no change to the idea. ${BRAND_DEVICES_REVIEWER}`;
 /** The end review in version 6: the critic@2 text with the brand's own devices said once. */
-export const END_REVIEW_INSTRUCTIONS_V3=`${REVIEW_INSTRUCTIONS(END_REVIEW_WHAT)}\n${BRAND_DEVICES_REVIEWER}\n${SUBJECT_AND_MAKING_REVIEWER}`;
+export const END_REVIEW_INSTRUCTIONS_V3=`${REVIEW_INSTRUCTIONS(END_REVIEW_WHAT)}\n${BRAND_DEVICES_REVIEWER}\n${SUBJECT_AND_MAKING_REVIEWER}\n${IDEA_TURN_REVIEWER}`;
 /** The chosen idea in the designer's own words, for the hero review (critic@3). */
 export function chosenIdeaNote(ideas:{picked?:number;texts?:string[]}|undefined):string{
  const text=ideas?.picked&&ideas.texts?.length?ideaText(ideas.texts.at(-1)!,ideas.picked).slice(0,1600):'';

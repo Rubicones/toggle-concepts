@@ -3,8 +3,10 @@ import {pictureFailureLine,NO_FURTHER_PICTURE_REVIEWER,KEEP_THE_WAY_OF_MAKING,ty
 /** Version 6: what every review reads when no further picture can be had (the count is used, or buying is blocked). */
 const noPictureLeftFor=(input:Parameters<typeof usesQuality>[0],loop:{pictures:number;picturesBlocked?:string}|undefined,max:number)=>usesQuality(input)&&loop&&(loop.picturesBlocked||loop.pictures>=max)?NO_FURTHER_PICTURE_REVIEWER:'';
 const unblocked=new Set<string>();
+/** Version 6: the end review reads the chosen idea, as the hero review does. */
+const endChosen=(input:Parameters<typeof usesQuality>[0],loop:{ideas?:Parameters<typeof chosenIdeaNote>[0]}|undefined)=>usesQuality(input)?chosenIdeaNote(loop?.ideas):'';
 import {assetNames} from '../../../packages/director/asset-names';
-import {SUBJECT_AND_MAKING_STAY,usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3,END_REVIEW_INSTRUCTIONS_V3} from '../../../packages/director/quality';
+import {SUBJECT_AND_MAKING_STAY,IDEA_TURN_STAYS,usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3,END_REVIEW_INSTRUCTIONS_V3} from '../../../packages/director/quality';
 import {transientExecutionFailure,propagateExecutionFailure,localTemporaryStop,LOCAL_RECOVERY_LIMIT} from '../../../packages/director/execution-failures';
 import {recoverUnsubmittedClock} from '../../../packages/director/working-clock';
 import {withCreativeHandoff} from '../../../packages/director/creative-handoff';
@@ -351,7 +353,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
       loop.lastRender={sceneId:picked[0]?.props.sceneId??input.storyboard[0].id,findings:findings(views!.summary).filter(f=>f.severity==='hard'),views:picked.flatMap(v=>{const shot=raw.views.find(r=>r.key===v.key)?.shot;return shot?[{label:v.label,file:shot,width:v.props.width,height:v.props.height}]:[];})};
      }else{
       loop.transcript.push({from:'tool',text:JSON.stringify({review:kind,round,note:note.slice(0,3000),ask:'Fix this in the views it names, render to check, then finish again.'})});
-      if(heroChat(input))loop.heroNote=reviewRepairMessage({kind,round,note})+(kind==='critic'&&usesQuality(input)?`\n\n${SUBJECT_AND_MAKING_STAY}${noPictureLeftFor(input,loop,estimate.maxStills)?` You can get no further picture in this draft. ${KEEP_THE_WAY_OF_MAKING}`:''}`:'');
+      if(heroChat(input))loop.heroNote=reviewRepairMessage({kind,round,note})+(kind==='critic'&&usesQuality(input)?`\n\n${SUBJECT_AND_MAKING_STAY} ${IDEA_TURN_STAYS}${noPictureLeftFor(input,loop,estimate.maxStills)?` You can get no further picture in this draft. ${KEEP_THE_WAY_OF_MAKING}`:''}`:'');
       if(views?.shots.length)loop.lastRender={sceneId:views.shots[0].sceneId??input.storyboard[0].id,findings:findings(views.summary),views:views.shots.slice(0,4).map(v=>({label:v.label,file:v.file,width:v.width??0,height:v.height??0}))};
      }
      // Version 3: a repair round may render again (the revision counts start over) and has room to look after fixing.
@@ -368,7 +370,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
       // D5 (critic@2): the end review uses the same request shape with the extension checks and its own memory.
       const ctx2=heroChat(input)&&execution.mode==='local_claude'&&execution.context_mode==='shared'?await sharedContextFor(admin,execution,input.runId)?.():null;
       if(ctx2?.criticVersion){const loopNow=state.designer as DesignerLoopState,memory=loopNow?.endMemory??[],material=stageReviewMaterial(ctx2.stageSkills,'extension'),hard=findings(views.summary).filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
-       const text=(await call('critic','Review these rendered views of the draft.',usesQuality(input)?END_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),...(territoryText(input)||noPictureLeftFor(input,loopNow,estimate.maxStills)?{work:[territoryText(input)?wayOfMakingNote(territoryText(input)):'',noPictureLeftFor(input,loopNow,estimate.maxStills)].filter(Boolean).join('\n\n')}:{}),checks:material.checks,signs:material.signs,hard,memory})},{review:'live',round,critic:2},await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:criticCrops(6)}))).text;
+       const text=(await call('critic','Review these rendered views of the draft.',usesQuality(input)?END_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),...(territoryText(input)||endChosen(input,loopNow)||noPictureLeftFor(input,loopNow,estimate.maxStills)?{work:[territoryText(input)?wayOfMakingNote(territoryText(input)):'',endChosen(input,loopNow),noPictureLeftFor(input,loopNow,estimate.maxStills)].filter(Boolean).join('\n\n')}:{}),checks:material.checks,signs:material.signs,hard,memory})},{review:'live',round,critic:2},await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:criticCrops(6)}))).text;
        const read=readReview(text,round);if(!read)return text;const r=withAllRulings(read,memory);if(loopNow){loopNow.endMemory=[...memory,r];await save();}void recordCheckAnswers(admin,{runId:input.runId,directionId:input.directionId,stage:'extension',round,answers:r.answers});
        return JSON.stringify({accepted:r.accepted,summary:(JSON.parse(text) as {summary?:string}).summary?.slice(0,1200)||'Reviewed.',notes:toDesignerNotes(r).slice(0,10)});}
       return (await call('critic','Review these rendered views of the live draft and the measurements.',liveCriticInstructionsFor(input.brief),liveCriticSchema,context,{review:'live',round},[...await brandSheetImages(folder,input),...await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:criticCrops(6)})])).text;}:undefined,selfReview:usesDesigner(input)?false:coderSees,
@@ -388,7 +390,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
    const onPictureFailed=async(e:{id:string;failure:PictureFailure})=>{const step=`picture:${e.id}:not-bought`;await events.emit(step,{stepId:step,kind:'picture',status:'failed',costMicroUsd:0,message:pictureFailureLine(e.failure),detail:{code:e.failure.code,blocks:e.failure.blocks}}).catch(()=>undefined);};
    const designerRun=async(maxTurns:number)=>{
     // A draft started again may buy pictures again (the owner may have added credit): the block is per worker start.
-    if(state.designer?.picturesBlocked&&!unblocked.has(input.iterationId))delete state.designer.picturesBlocked;unblocked.add(input.iterationId);
+    if(state.designer?.picturesBlocked&&!state.designer.picturesDeclined&&!unblocked.has(input.iterationId))delete state.designer.picturesBlocked;unblocked.add(input.iterationId);
     const loop:DesignerLoopState=state.designer??=newDesignerState(),allowance=designerAllowance(),started=()=>((state.roleStartedAt??{}) as Record<string,number>).designer??Date.now();
     // A designer picture with a blocking sketch needs the same preparation as the director's: the sketch is rasterised
     // and its hash pinned before the request is built (IMAGE_METHOD_SKETCH_REQUIRED otherwise).

@@ -18,6 +18,7 @@ Plain steps for the run that closes the plan (`docs/plans/2026-11-14-one-mind-he
 ### Before the next run (added after live run 2, see `2026-11-15-live-run-2-fixes.md`)
 
 - **Add credit to the picture provider account (OpenRouter).** Run 2's second picture was refused for payment. The price message now warns when the account's credit does not cover the pictures; if it warns, add credit before approving.
+- **Check the pictures first (added after live run 3).** Run the installer once, then double-click `C:\toggle\Check-Pictures.cmd`. It shows the last four characters of the key the studio uses, what the provider says about that key and its account, and offers to buy one test picture. Have at least a few dollars of credit: the provider may hold back about $1 for one picture before drawing it. If a picture is refused for payment during the run, the direction now stops and asks you: "I added credit — try the picture again" or "Continue without pictures".
 - **What to look at in the run:**
   - If a picture fails, the timeline and the draft panel say `A picture could not be bought: …` with the reason.
   - The brand's marks listed as "use it" appear in the frame, with no broken-image box.

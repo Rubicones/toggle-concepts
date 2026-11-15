@@ -3,12 +3,12 @@
 // a code, guessed, asked no more, and after the next review gave up the photograph it had and rebuilt the frame in
 // code. Here: one plain reason per failure, whether any further picture can be had at all, and the one sentence the
 // designer, the reviewer and the art director read. Pure; no brand, no model.
-export type PictureFailure={/** the technical code, for the detail */code:string;/** why, in plain words */reason:string;
+export type PictureFailure={/** the technical code, for the detail */code:string;/** the provider refused payment: the owner is asked before the draft goes on (live run 3) */payment?:boolean;/** why, in plain words */reason:string;
  /** no further picture can be bought in this draft until a person changes something outside it */blocks:boolean;
  /** what the owner of the studio must do, when someone must */owner?:string};
 
 const RULES:[RegExp,Omit<PictureFailure,'code'>][]=[
- [/PROVIDER_402/,{reason:'the picture provider refused payment: its account has too little credit for this picture',blocks:true,owner:'Add credit to the picture provider account (OpenRouter), then continue; nothing was charged for this picture.'}],
+ [/PROVIDER_402/,{reason:'the picture provider refused payment: its account has too little credit for this picture',blocks:true,payment:true,owner:'Add credit to the picture provider account (OpenRouter), then continue; nothing was charged for this picture.'}],
  [/PROVIDER_40[13]|PROVIDER_NOT_CONFIGURED/,{reason:'the picture provider did not accept this studio\'s key',blocks:true,owner:'Check the picture provider key (OPENROUTER_API_KEY) on this computer, then continue.'}],
  [/RUN_CAP_REACHED/,{reason:'the run\'s budget is used up',blocks:true,owner:'Raise the run cap in the run limits, then continue.'}],
  [/STEP_CAP_REACHED/,{reason:'the picture role\'s budget for this run is used up',blocks:true,owner:'Raise the image agent cap in the run limits, then continue.'}],
@@ -42,9 +42,9 @@ export const noFurtherPictureNote=(reason?:string)=>`No picture was asked for: y
 /** Version 6, every review made when no further picture can be had (the count is used or buying is blocked). */
 export const NO_FURTHER_PICTURE_REVIEWER='NO FURTHER PICTURE\nNo further picture can be made or bought for this draft. Judge the pictures in the frame as they are. A note may ask only for what code can change; where a problem can only be solved by a new or re-made picture, say so in one note, marked as open for the art director, and ask for nothing else about it.';
 /** Records a failed purchase with the designer's state and returns what is said about it. */
-export function recordPictureFailure(state:{pictures:number;pictureFailures?:{id:string;code:string;reason:string;owner?:string}[];picturesBlocked?:string},p:{id:string;code?:string;detail?:string},max:number){
+export function recordPictureFailure(state:{pictures:number;pictureFailures?:{id:string;code:string;reason:string;owner?:string;said?:string}[];picturesBlocked?:string},p:{id:string;code?:string;detail?:string;said?:string},max:number){
  const failure=pictureFailure(p.code??p.detail,p.detail);
- (state.pictureFailures??=[]).push({id:p.id,code:failure.code,reason:failure.reason,...(failure.owner?{owner:failure.owner}:{})});
+ (state.pictureFailures??=[]).push({id:p.id,code:failure.code,reason:failure.reason,...(failure.owner?{owner:failure.owner}:{}),...(p.said?{said:p.said.slice(0,300)}:{})});
  if(failure.blocks)state.picturesBlocked=failure.reason;
  return {failure,note:pictureFailureNote(p.id,failure,picturesLeft(max,state.pictures,!!state.picturesBlocked))};
 }
@@ -65,4 +65,35 @@ export function pictureCreditNote(creditMicroUsd:number|null,pictures:number,per
  const need=pictures*perPictureMicroUsd;if(creditMicroUsd>=need)return '';
  const can=Math.max(0,Math.floor(creditMicroUsd/perPictureMicroUsd));
  return ' The picture provider account has '+usd(creditMicroUsd)+' of credit: enough for '+(can===0?'no picture':can===1?'1 picture':can+' pictures')+' of the '+pictures+' this draft may ask for (up to '+usd(need)+'). Add credit to the provider account before approving, or the other pictures will be refused.';
+}
+
+/** Live run 3: the first picture was refused for payment and the whole draft was then drawn as stand-ins in code. A
+ * payment refusal in the hero stage now stops the direction with a question for the owner, before any further turn. */
+export const PICTURE_PAYMENT_REFUSED='PICTURE_PAYMENT_REFUSED';
+/** The provider's own sentence from a failed purchase's detail ("… Provider says: …"). */
+export const providerSentence=(detail:string|undefined|null)=>{const m=/Provider says:\s*([\s\S]+)$/.exec(String(detail??''));return (m?m[1]:'').replace(/\s+/g,' ').trim().slice(0,300);};
+/** After the owner's answer: what the designer reads when the draft goes on. */
+export const picturesAgainNote=(id:string,left:number)=>`The picture ${id} was not bought: the picture provider refused payment. Pictures can be bought again now: ask for it again if the idea needs it. You can still get ${left===1?'1 picture':`${left} pictures`}.`;
+
+/** Live run 3: the pre-check said nothing and the first picture was refused. The account endpoint (/credits) may refuse
+ * an ordinary key; the key's own endpoint (/key) answers any key with that key's limit, when it has one. Both are free
+ * account requests. `account`: the account's remaining credit; `key`: the remaining limit of this key (the account may
+ * hold less); `unknown`: neither could be read. */
+export type PictureCredit={source:'account'|'key'|'unknown';microUsd:number|null};
+export async function pictureProviderCredit(key:string|undefined,fetcher:typeof fetch=fetch):Promise<PictureCredit>{
+ if(!key)return {source:'unknown',microUsd:null};
+ const read=async(path:string)=>{try{const r=await fetcher('https://openrouter.ai/api/v1/'+path,{headers:{Authorization:'Bearer '+key},signal:AbortSignal.timeout(4000)});return r.ok?(await r.json() as {data?:Record<string,unknown>}).data??null:null;}catch{return null;}};
+ const num=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)?v:typeof v==='string'&&v.trim()!==''&&Number.isFinite(Number(v))?Number(v):null;
+ const account=await read('credits'),total=num(account?.total_credits),used=num(account?.total_usage);
+ if(total!==null&&used!==null)return {source:'account',microUsd:Math.round((total-used)*1e6)};
+ const own=await read('key'),left=num(own?.limit_remaining);
+ return left!==null?{source:'key',microUsd:Math.round(left*1e6)}:{source:'unknown',microUsd:null};
+}
+/** The first line of the price message about picture credit; empty when the account's credit is known to cover the
+ * pictures. A key's limit that covers them does not prove the account does, so that is said as not checked. */
+export function pictureCreditFirstLine(credit:PictureCredit,pictures:number,perPictureMicroUsd:number):string{
+ if(pictures<1||perPictureMicroUsd<=0)return '';
+ const short=credit.microUsd!==null?pictureCreditNote(credit.microUsd,pictures,perPictureMicroUsd).trim():'';
+ if(short)return (credit.source==='key'?short.replace('The picture provider account has','This key\'s limit at the picture provider leaves'):short)+' ';
+ return credit.source==='account'?'':'Picture credit could not be checked: if the picture provider account is short of credit, pictures will be refused and you will be asked. ';
 }

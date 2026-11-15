@@ -9,7 +9,7 @@ import {unloadedFiles} from '../../../packages/director/layout-inspection';
 import {usesQuality,reasonOnly,lastTurnNote,NOTES_INSIDE_THE_IDEA} from '../../../packages/director/quality';
 import {PICTURE_HOLD_SECONDS,actionsCorrection,heroTask,parseChatAnswer,heroActionsSchema,usesEdits,applyEdits,renderNote,stageHFindings,type HeroAnswer} from '../../../packages/director/hero-chat';
 import {resolveAssetReferences} from '../../../packages/director/asset-names';
-import {recordPictureFailure,noFurtherPictureNote,KEEP_THE_WAY_OF_MAKING,type PictureFailure} from '../../../packages/director/picture-failure';
+import {recordPictureFailure,noFurtherPictureNote,KEEP_THE_WAY_OF_MAKING,PICTURE_PAYMENT_REFUSED,providerSentence,picturesAgainNote,pictureFailureNote,pictureFailure,picturesLeft,type PictureFailure} from '../../../packages/director/picture-failure';
 import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
 import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
@@ -34,9 +34,13 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
  ideas?:{task:string;select:(ideas:string,round:number)=>Promise<Selection|null>;/** why the selection returned nothing without an error (no review in the quote, its allowance used) */unreviewedReason?:()=>string|undefined;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  if(!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
+ let paymentStop:string|null=null;const stopForPayment=async()=>{if(!paymentStop)return;await args.save(state);throw Object.assign(new Error(PICTURE_PAYMENT_REFUSED),{detail:paymentStop});};
  const hero=state.hero,pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];
  // Version 6: a failed purchase is said with its plain reason and, once, with how many pictures can still be had.
- const failed=async(p:PictureResult)=>{if(!heroMeaning(input))return `The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`;const said=recordPictureFailure(state,p,args.maxPictures);await args.save(state);await args.onPictureFailed?.({id:p.id,failure:said.failure});return said.note;};
+ const failed=async(p:PictureResult)=>{if(!heroMeaning(input))return `The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`;const said=recordPictureFailure(state,p,args.maxPictures);if(said.failure.payment&&!state.picturesDeclined){state.paymentStopped=p.id;paymentStop=`designer: the picture ${p.id} was refused for payment (${said.failure.code}).${p.said?` Provider says: ${p.said}`:''}`;}await args.save(state);await args.onPictureFailed?.({id:p.id,failure:said.failure});return said.note;};
+ // The owner answered a payment stop: buying is tried again, or the draft goes on without pictures.
+ if(state.paymentStopped&&heroMeaning(input)){const id=state.paymentStopped;delete state.paymentStopped;if(!state.picturesDeclined)delete state.picturesBlocked;
+  state.heroNote=[state.heroNote??'',state.picturesDeclined?pictureFailureNote(id,pictureFailure('PROVIDER_402'),0):picturesAgainNote(id,picturesLeft(args.maxPictures,state.pictures,false))].filter(Boolean).join('\n\n');await args.save(state);}
  const noMore=()=>state.picturesBlocked||state.pictures>=args.maxPictures?` You can get no further picture in this draft. ${KEEP_THE_WAY_OF_MAKING}`:'';
  // Version 6: which bought or supplied pictures the frame's code draws (read from the source), so a turn after a review
  // that drops every picture is told once that the way of making stays.
@@ -67,6 +71,8 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
  while(hero.state!=='accepted'&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   // What arrived since the last answer; a continued conversation holds everything earlier.
   const pictures:string[]=[];for(const p of arrived.splice(0))pictures.push(p.status==='ready'?`The picture ${p.id} has arrived: read resources['${p.id}'].`:await failed(p));
+  if(paymentStop){const kept=pictures.filter(n=>!n.includes('could not be bought'));if(kept.length)state.heroNote=[state.heroNote??'',...kept].filter(Boolean).join('\n\n');}
+  await stopForPayment();
   const short=args.conversation?await args.conversation.decide():state.turn>0;
   const due=tools.materials&&state.materialsDue?.length?await tools.materials.load(state.materialsDue):null;
   const last=state.lastRender,shots=last?await Promise.all(last.views.map(async v=>({url:await screenshotForDesigner(v.file,RENDER_LONG_SIDE),label:`${v.label} (rendered)`}))):[];
@@ -104,7 +110,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
     if(state.pictures>=args.maxPictures){notes.push('The approved number of pictures is used: build the rest in code or with the pictures you have.');break;}
     state.pictures++;await args.save(state);const id=input.resourceIds[state.pictures-1],key=`${state.turn}:${state.pictures}`;
     const picture={purpose:p.purpose,scene:hero.sceneId,prompt:p.prompt,aspect:p.aspect,referenceAssetIds:resolveAssetReferences(p.references??[],input),mustNotContain:p.mustNotContain??[],...(p.cutout?{cutout:true}:{}),...(p.proxyFor?{proxyFor:p.proxyFor}:{}),...(p.becomes&&p.proxyFor?{becomes:p.becomes}:{})};
-    pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const,detail:(error instanceof Error?error.message:'').slice(0,200),code:(error instanceof Error?error.message:'').slice(0,200)};arrived.push(r);pending.delete(key);return r;}));
+    pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const,detail:(error instanceof Error?error.message:'').slice(0,200),code:(error instanceof Error?error.message:'').slice(0,200),said:providerSentence((error as {detail?:string}|null)?.detail)};arrived.push(r);pending.delete(key);return r;}));
     notes.push(`Asked for a picture (${p.purpose.slice(0,80)}): it will be resources['${id}'] and arrives in a later message.`);results.push('Asked for a picture.');
    }
    // C8 follow-up: a 3D model of a picture it already has, when code cannot build that object; the picture stays the fallback.
@@ -176,6 +182,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
   state.heroNote=notes.filter(Boolean).join('\n\n');state.transcript.push({from:'tool',text:state.heroNote.slice(0,2000)});await args.save(state);
   await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:[...new Set([...answer.files.map(f=>f.path),...(answer.edits??[]).map(e=>e.path)])],...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
   // The same build error three times in a row: stop with a question instead of spending the turns on guesses.
+  if(paymentStop){state.heroNote=notes.filter(n=>!n.includes('could not be bought')).join('\n\n');}await stopForPayment();
   if(pictureStop){await args.save(state);throw Object.assign(new Error('DRAFT_PICTURE_NOT_LOADED'),{detail:pictureStop});}
   if(stuck){await args.save(state);throw Object.assign(new Error('DESIGNER_BUILD_STUCK'),{detail:`designer: the code failed to build three times in a row with the same error: ${stuck.slice(0,400)}`});}
  }

@@ -20,6 +20,7 @@ export function recoveryActions(question:ADQuestion,options:{requestSizeRequoteA
  const requestSizeRequoteAvailable=options.requestSizeRequoteAvailable===true&&question.technical?.split(':')[0]==='DRAFT_REQUEST_SIZE_CAP';
  const newRun=/^(FROZEN_MODEL_REQUIRED|LEGACY_DRAFT_READ_ONLY|VISION_MODEL_REQUIRED)(:|$)/.test(question.technical??'');
  const databaseTimeout=question.reason==='execution'&&/canceling statement due to (?:statement|lock) timeout/i.test(question.technical??'');
+ if(question.technical?.startsWith('PICTURE_PAYMENT_REFUSED'))return {extend:false,actions:question.options,sourceTooLarge:false,newRun:false,requestSizeRequoteAvailable:false};
  const actions=question.options.filter(option=>option.action!=='review'&&option.action!=='wrap-up'&&!(option.action==='resume'&&(exhausted||newRun||question.technical?.startsWith('PROMPT_TOO_LONG')))&&!(option.action==='quote-revision'&&(exhausted||databaseTimeout||question.technical?.startsWith('DRAFT_REQUEST_SIZE_CAP')&&!requestSizeRequoteAvailable)));
  return {extend:!!exhausted&&question.reason==='budget',actions:actions.map(option=>({...option,label:option.action==='quote-revision'?'Review a continuation price':option.action==='resume'?(sourceTooLarge?'Retry compacted request · within allowance':question.reason==='receipt'?'Open receipt recovery':'Retry within approved allowance'):option.label})),sourceTooLarge,newRun,requestSizeRequoteAvailable};
 }

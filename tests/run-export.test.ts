@@ -42,5 +42,5 @@ test('Export: the layout is documented, names are safe, and the launcher is inst
  const launcher=readFileSync('scripts/windows/Export-Last-Run.cmd','utf8'),installer=readFileSync('scripts/windows/Install-Toggle.cmd','utf8');
  assert.match(launcher,/node --import tsx scripts\/export-run\.ts %\* --out \/mnt\/c\/toggle\/exports/);
  const line=launcher.split(/\r?\n/).find(l=>l.startsWith('wsl.exe'))!;assert.ok(installer.includes(line),'the installer writes the same launcher');assert.ok(installer.includes("'Export-Last-Run.cmd'"));
- assert.match(readFileSync('scripts/linux/setup.sh','utf8'),/for f in Install-Toggle\.cmd Update-Database\.cmd Export-Last-Run\.cmd; do/);
+ assert.match(readFileSync('scripts/linux/setup.sh','utf8'),/for f in Install-Toggle\.cmd Update-Database\.cmd Export-Last-Run\.cmd Check-Pictures\.cmd; do/);
 });
