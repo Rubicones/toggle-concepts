@@ -1,5 +1,7 @@
 // Runs inside the sandboxed tool child: mounts the compiled live preview in an offline headless browser, reads DOM
 // geometry for each requested view and screenshots only the few views marked for the critic.
+import {createCanvas,loadImage} from '@napi-rs/canvas';
+import {plainBands} from '../../../packages/director/plain-band';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {chromium} from '@playwright/test';
@@ -19,7 +21,10 @@ export async function inspectLivePreview(folder:string,views:InspectionView[]){
  const {revision}=await liveSource(folder),cache=resolve(folder,'.reports','live',revision);
  const script=await readFile(resolve(cache,'preview.js'),'utf8'),css=await readFile(resolve(cache,'preview.css'),'utf8').catch(()=>'');
  const resourcesSource=await readFile(resolve(folder,'resources.ts'),'utf8'),resources=JSON.parse(resourcesSource.slice(resourcesSource.indexOf('>=')+2).trim().replace(/;\s*$/,''));
- const names=new Set<string>([...input.brand.fonts.map(f=>f.url),...input.brand.logos.flatMap(l=>[l.url,...(l.variants?[l.variants.onDark,l.variants.onLight]:[])]),...input.assets.map(a=>a.url),// A cutout is its own file next to the picture: without it the designer and the reviewer saw a broken image.
+ const names=new Set<string>([...input.brand.fonts.map(f=>f.url),...input.brand.logos.flatMap(l=>[l.url,...(l.variants?[l.variants.onDark,l.variants.onLight]:[])]),...input.assets.map(a=>a.url),
+  // The brand's own pictures (owner's decision of 15 November: a kit picture marked "Use this" may be drawn by draft
+  // code). The page preview already serves them; a picture that is a source reference only stays out by the filter below.
+  ...input.brand.references.map(r=>r.url),// A cutout is its own file next to the picture: without it the designer and the reviewer saw a broken image.
   ...Object.values(resources as Record<string,{url:string;cutoutUrl?:string;modelUrl?:string}>).flatMap(r=>[r.url,r.cutoutUrl,r.modelUrl])].filter((n):n is string=>!!n&&previewMaterialAllowed(input.materialMemory,n)));
  const assets:Record<string,string>={};
  for(const name of names){const bytes=await readFile(resolve(folder,'public',name)).catch(()=>undefined);if(bytes)assets[name]=`data:${mimes[extname(name).toLowerCase()]??'application/octet-stream'};base64,${bytes.toString('base64')}`;}
@@ -54,6 +59,8 @@ export async function inspectLivePreview(folder:string,views:InspectionView[]){
     if(outcome.type==='preview-error'){results.push({key:view.key,error:outcome.message||'This view could not be built.'});continue;}
     const raw=await page.evaluate(collectLayout,{width:view.props.width,height:view.props.height});
     let shot:string|undefined;if(view.shot){shot=resolve(out,`view-${results.length}.jpg`);await page.screenshot({path:shot,type:'jpeg',quality:82});}
+    // The picture itself is read for bands of plain ground (elements alone do not show an empty part of the canvas).
+    if(shot){try{const image=await loadImage(await readFile(shot)),w=108,h=Math.max(1,Math.round(image.height*w/image.width)),canvas=createCanvas(w,h),ctx=canvas.getContext('2d');ctx.drawImage(image,0,0,w,h);raw.plain=plainBands({width:w,height:h,data:ctx.getImageData(0,0,w,h).data});}catch{/* without it the other measurements stand */}}
     results.push({key:view.key,raw,...(shot?{shot}:{})});
    }catch(error){results.push({key:view.key,error:(error instanceof Error?error.message:'Inspection failed').slice(0,300)});}
   }

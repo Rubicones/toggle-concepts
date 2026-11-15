@@ -51,14 +51,20 @@ export function missingBrandFilesMessage(missing:MissingBrandFile[]):string{
   'To run all the same, add --allow-missing=1; the summary then says which files were missing.'].filter(Boolean).join('\n');
 }
 
+/** The size a bench picture is delivered at: the largest side of any ordered format, rounded up to a common size. */
+export const deliverLongSide=(input:Pick<DirectionInput,'formats'>)=>{const need=Math.max(1024,...input.formats.flatMap(f=>[f.width,f.height]));return need<=1024?1024:need<=2048?2048:4096;};
 /** The picture stand-in of the bench: the request is written to <pictures>/<id>.request.json and the bench waits for
  * <id>.png or <id>.jpg beside it (made by hand); without it the designer is told the picture could not be made. When
  * the request asks for a cutout, <id>.cutout.png beside the picture is the cutout (put it there first, or within the
  * grace time after the picture); without it the designer is told the cutout failed, as the pipeline would. */
 export function fileDropPictures(pictures:string,pub:string,folder:string,input:DirectionInput,catalog:CatalogEntry[],waitMs:number,o:{cutoutGraceMs?:number;pollMs?:number;say?:(line:string)=>void}={}){
  const poll=o.pollMs??3000,say=o.say??(line=>console.error(line)),has=(file:string)=>existsSync(join(pictures,file)),sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
+ const longSide=deliverLongSide(input);
  return async(resource:Resource)=>{
-  await writeFile(join(pictures,`${resource.id}.request.json`),JSON.stringify({id:resource.id,scene:resource.scene,purpose:resource.purpose,prompt:resource.prompt,aspect:resource.aspect,cutout:!!resource.cutout,mustNotContain:resource.mustNotContain},null,1));
+  await writeFile(join(pictures,`${resource.id}.request.json`),JSON.stringify({id:resource.id,scene:resource.scene,purpose:resource.purpose,prompt:resource.prompt,aspect:resource.aspect,cutout:!!resource.cutout,mustNotContain:resource.mustNotContain,
+   // A picture may fill the largest ordered format, so it is delivered at least that large (craft audit of 15 November:
+   // 1,024 px pictures were drawn up to 1.22× and looked soft; the reference sheets' pictures were 2,048 px).
+   deliver:{longSide,note:`Deliver the picture at least ${longSide} px on its long side (upscale it if the generator makes it smaller); its cutout at the same size.`}},null,1));
   say(`[bench] picture asked: ${join(pictures,`${resource.id}.request.json`)} — put ${resource.id}.png or .jpg beside it within ${Math.round(waitMs/1000)} s${resource.cutout?`; a cutout is asked: put ${resource.id}.cutout.png there BEFORE the picture`:''}`);
   const until=Date.now()+waitMs;let file:string|undefined;
   while(!file&&Date.now()<until){file=['png','jpg'].map(ext=>`${resource.id}.${ext}`).find(has);if(!file)await sleep(poll);}
@@ -66,6 +72,7 @@ export function fileDropPictures(pictures:string,pub:string,folder:string,input:
   const cutName=`${resource.id}.cutout.png`;
   if(resource.cutout){const grace=Date.now()+(o.cutoutGraceMs??30000);while(!has(cutName)&&Date.now()<grace)await sleep(poll);}
   const bytes=await readFile(join(pictures,file)),image=await loadImage(bytes);await writeFile(join(pub,file),bytes);
+  if(Math.max(image.width,image.height)<longSide)say(`[bench] ${file} is ${image.width}×${image.height}: smaller than the ${longSide} px asked for; it will be reported as soft wherever it is drawn larger than its pixels.`);
   const cut=resource.cutout&&has(cutName)?await readFile(join(pictures,cutName)):undefined,cutImage=cut?await loadImage(cut):undefined;
   if(cut)await writeFile(join(pub,cutName),cut);
   const entry={id:resource.id,url:file,thumbnail:file,width:image.width,height:image.height,sha256:'',mime:file.endsWith('png')?'image/png':'image/jpeg',revisionId:'bench',

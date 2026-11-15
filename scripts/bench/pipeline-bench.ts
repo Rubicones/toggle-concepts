@@ -8,7 +8,13 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {brands,benchInput,benchInputV5,benchBrandPack,benchCatalogue,type BenchBrand} from './brands';
 import {runV5Direction} from './v5-direction';
-import {runChatBaseline,brandFactsFromPack} from './chat-baseline';
+import {runChatBaseline,brandFactsFromPack,chatBaselineMessage} from './chat-baseline';
+import {measureLogos,logoFactLines,referenceFactLines,suppliedFactLines} from '../../apps/local-runner/director/logo-facts';
+import {assetNames} from '../../packages/director/asset-names';
+import {designerDigestText} from '../../packages/director/designer-digest';
+import {heroTask} from '../../packages/director/hero-chat';
+import {buildStageSkills,creatorStageText} from '../../packages/agents/stage-skills';
+import {reviewMaterialFor} from '../../packages/director/quality';
 import {fileDropPictures,missingBrandFiles,fillBrandFonts,missingBrandFilesMessage,prepareBrandWorkspace} from './export-files';
 import {DEFAULT_MATERIAL_BUDGET} from '../../packages/agents/materials';
 import type {RunContext} from '../../packages/agents/run-context';
@@ -33,8 +39,11 @@ const arg=(name:string,fallback:string)=>process.argv.find(a=>a.startsWith(`--${
 //   --no-critic=1   no selection of ideas (the first idea is built), no hero review, no end review
 //   --no-ideas=1    no ideas turn and no selection: the designer builds straight from the hero task
 //   --v3-context=1  the designer reads the version 3 brief (the whole input as JSON) instead of the planning-shaped digest
-const noCritic=arg('no-critic','0')==='1',ablation={...(arg('no-ideas','0')==='1'?{noIdeas:true}:{}),...(arg('v3-context','0')==='1'?{v3Context:true}:{})};
-const ablationName=`${noCritic?'-nocritic':''}${arg('no-ideas','0')==='1'?'-noideas':''}${arg('v3-context','0')==='1'?'-v3context':''}`;
+//   --advisory-critic=1  the reviewer chooses the idea, reviews the hero once (its notes go to one last turn) and reviews
+//                         the finished draft once; the end review's notes are listed and no repair round follows
+const advisory=arg('advisory-critic','0')==='1';
+const noCritic=arg('no-critic','0')==='1',ablation={...(advisory?{endRepair:false}:{}),...(arg('no-ideas','0')==='1'?{noIdeas:true}:{}),...(arg('v3-context','0')==='1'?{v3Context:true}:{})};
+const ablationName=`${noCritic?'-nocritic':''}${advisory?'-advisory':''}${arg('no-ideas','0')==='1'?'-noideas':''}${arg('v3-context','0')==='1'?'-v3context':''}`;
 
 async function main(){
  // E0 reproduction: the hero stage (or the whole direction) of a real run, from its export folder. Nothing of the export
@@ -42,7 +51,10 @@ async function main(){
  //   node --import tsx scripts/bench/pipeline-bench.ts --from-export=<export folder> [--hero-only=1] [--direction=0]
  //     [--designer=6] the designer version to run (default: the export's own)  [--fonts=<folder>] font files the export lacks
  //     [--allow-missing=1] run although brand files are missing (the summary names them)
- const exported=arg('from-export','');if(exported){await benchFromExport(resolve(exported));return;}
+ const exported=arg('from-export','');
+ // Propose mode writes new lines for a bench brand; an export's words are its run's approved copy and are never rewritten.
+ if(exported&&arg('propose','0')==='1')throw new Error('--propose=1 cannot run on an export: the export holds the run\'s approved words, and propose mode writes new ones. Use it with a bench brand.');
+ if(exported){await benchFromExport(resolve(exported));return;}
  const brand=brands.find(b=>b.id===process.argv[2]);if(!brand)throw new Error(`Brand: ${brands.map(b=>b.id).join(' | ')}`);
  const maxTurns=Number(arg('turns','12')),model=arg('model','claude-sonnet-5-5'),effort=arg('effort','high'),version=Number(arg('version','3'));
  // D6: --without-skill=<id> runs the same brief without exactly one skill (designer and critic), for a blind pair.
@@ -161,6 +173,17 @@ async function main(){
  await rm(dir,{recursive:true,force:true});
 }
 
+/** --dry=1: everything up to the first request, and nothing sent. Sets up the workspace, checks the brand's files,
+ * builds what the first request would hold and prints its sizes, so a command can be checked before a live run. */
+async function dryRun(input:DirectionInput,folder:string,facts:{brand:string;pack:string;materials:{name:string;kind?:string;line?:string;materialId?:string}[];brandName?:string},out:string){
+ const chat=arg('chat-baseline','0')==='1',missing=missingBrandFiles(input,join(folder,'public'));
+ const logoLines=logoFactLines(await measureLogos(folder,input,facts.materials),input),referenceLines=await referenceFactLines(folder,input,facts.materials),suppliedFacts=await suppliedFactLines(folder,input,assetNames(input));
+ const staged=buildStageSkills(readSkills(),[]),digest=designerDigestText(input,{sceneIds:false,heroOnly:true,logoLines,referenceLines,suppliedFacts}),task=heroTask(input,{pictures:Number(arg('pictures','4'))});
+ const message=chatBaselineMessage(input,{brand:facts.brand,brandName:facts.brandName},{logos:input.brand.logos.map(l=>l.url),supplied:assetNames(input).map(n=>input.assets.find(a=>a.id===n.id)!.url)});
+ const report={dry:true,mode:chat?'chat-baseline':'pipeline',designerVersion:Number(input.brief.designerVersion),switches:{noCritic,advisory,...ablation},out,missingBrandFiles:missing.map(m=>m.label),logos:logoLines.length,brandPictures:referenceLines.length,drawableBrandPictures:referenceLines.filter(l=>/· use it$/.test(l)).length,suppliedFiles:Object.keys(suppliedFacts).length,
+  ...(chat?{firstMessageCharacters:message.length}:{brandPackCharacters:facts.pack.length,digestCharacters:digest.length,heroTaskCharacters:task.length,heroSkillsCharacters:creatorStageText(staged,'hero').length,heroChecks:reviewMaterialFor(input,staged,'hero',{chosenIdea:arg('no-ideas','0')!=='1'}).checks.length,ideasTurn:arg('no-ideas','0')!=='1',heroReviews:noCritic?0:advisory?1:Number(arg('reviews','2'))})};
+ await writeFile(join(out,'dry.json'),JSON.stringify(report,null,1));console.log(JSON.stringify(report));
+}
 async function writeV5Summary(out:string,label:Record<string,unknown>,started:number,result:Awaited<ReturnType<typeof runV5Direction>>|undefined,stopped:string|undefined){
  if(!result){await writeFile(join(out,'summary.json'),JSON.stringify({...label,stopped},null,1));return;}
  await writeFile(join(out,'timeline.txt'),result.timeline.join('\n')+'\n');
@@ -193,10 +216,11 @@ async function benchFromExport(folder:string){
  if(missing.length&&arg('allow-missing','0')!=='1'){console.error(`[bench] stopped before any request:\n${missingBrandFilesMessage(missing)}`);await writeFile(join(out,'summary.json'),JSON.stringify({source:'export',stopped:'BRAND_FILES_MISSING',missingBrandFiles:missing},null,1));process.exitCode=2;return;}
  const designerVersion=Number(arg('designer','0'));if(designerVersion)input.brief={...input.brief,designerVersion} as DirectionInput['brief'];
  const catalog:CatalogEntry[]=[],pictures=resolve(out,'pictures');await mkdir(pictures,{recursive:true});await writeResources(workspace,input,catalog);
+ if(arg('dry','0')==='1'){await dryRun(input,workspace,{brand:brandFactsFromPack(pack),pack,materials:context.materials?.entries??[]},out);return;}
  // The chat baseline: one plain conversation on the designer's model instead of the pipeline (scripts/bench/chat-baseline.ts).
  if(arg('chat-baseline','0')==='1'){const summary=await runChatBaseline({input,folder:workspace,out,facts:{brand:brandFactsFromPack(pack)},designerModel:arg('designer-model','anthropic/claude-opus-5.5'),sonnet:arg('sonnet','claude-sonnet-5-5'),bin:arg('bin','claude'),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000)});console.log(JSON.stringify({...summary,perTurn:undefined,out}));return;}
  const started=Date.now();let result,stopped:string|undefined;
- try{result=await runV5Direction({input,folder:workspace,out,brandPack:pack,briefText:brief,designerModel:arg('designer-model','anthropic/claude-opus-5.5'),criticModel:arg('critic-model','google/gemini-4-argon'),maxTurns:Number(arg('turns','24')),heroReviews:noCritic?0:Number(arg('reviews','2')),endReview:!noCritic&&arg('endreview','1')==='1',heroOnly:arg('hero-only','0')==='1',...ablation,
+ try{result=await runV5Direction({input,folder:workspace,out,brandPack:pack,briefText:brief,designerModel:arg('designer-model','anthropic/claude-opus-5.5'),criticModel:arg('critic-model','google/gemini-4-argon'),maxTurns:Number(arg('turns','24')),heroReviews:noCritic?0:advisory?1:Number(arg('reviews','2')),endReview:!noCritic&&arg('endreview','1')==='1',heroOnly:arg('hero-only','0')==='1',...ablation,
   maxPictures:Number(arg('pictures','4')),buy:fileDropPictures(pictures,pub,workspace,input,catalog,Number(arg('wait','900'))*1000),catalog,recordRequests:true,materials:context.materials,brandFileEntries:true,...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
   setup:{bin:arg('bin','claude'),cliVersion:'bench',isolation:{safeMode:true,restricted:true,noSessionPersistence:false,disableSlashCommands:true},sonnet:arg('sonnet','claude-sonnet-5-5'),schemaMode:'cli',visual:true,deviceId:'bench'}});}
  catch(error){stopped=`${error instanceof Error?error.message:error}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}`;console.error('[bench] stopped:',stopped);}
@@ -212,9 +236,10 @@ async function benchV5(brand:BenchBrand,out:string,o:{maxTurns:number;designerMo
  catch(error){console.error(`[bench] stopped before any request:\n${error instanceof Error?error.message:error}`);await writeFile(join(out,'summary.json'),JSON.stringify({brand:brand.id,stopped:'BENCH_SUPPLIED_FILE_MISSING'},null,1));process.exitCode=2;return;}
  await mkdir(pictures,{recursive:true});await writeResources(folder,input,catalog);
  const entries=benchCatalogue(brand,pub);
+ if(arg('dry','0')==='1'){await dryRun(input,folder,{brand:benchBrandPack(brand),pack:benchBrandPack(brand),materials:entries,brandName:brand.name},out);return;}
  if(arg('chat-baseline','0')==='1'){const summary=await runChatBaseline({input,folder,out,facts:{brand:benchBrandPack(brand),brandName:brand.name},designerModel:o.designerModel,sonnet:o.sonnet,bin:arg('bin','claude'),buy:fileDropPictures(pictures,pub,folder,input,catalog,o.waitMs)});console.log(JSON.stringify({...summary,perTurn:undefined,brand:brand.id,out}));return;}
  const started=Date.now();let result,stopped:string|undefined;
- try{result=await runV5Direction({input,folder,out,brandPack:benchBrandPack(brand),designerModel:o.designerModel,criticModel:o.criticModel,maxTurns:o.maxTurns,heroReviews:noCritic?0:o.heroReviews,endReview:!noCritic&&o.endReview,...ablation,heroOnly:arg('hero-only','0')==='1',maxPictures:o.maxPictures,buy:fileDropPictures(pictures,pub,folder,input,catalog,o.waitMs),catalog,recordRequests:true,...(entries.length?{materials:{entries,budget:DEFAULT_MATERIAL_BUDGET} as unknown as RunContext['materials']}:{}),...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
+ try{result=await runV5Direction({input,folder,out,brandPack:benchBrandPack(brand),designerModel:o.designerModel,criticModel:o.criticModel,maxTurns:o.maxTurns,heroReviews:noCritic?0:advisory?1:o.heroReviews,endReview:!noCritic&&o.endReview,...ablation,heroOnly:arg('hero-only','0')==='1',maxPictures:o.maxPictures,buy:fileDropPictures(pictures,pub,folder,input,catalog,o.waitMs),catalog,recordRequests:true,...(entries.length?{materials:{entries,budget:DEFAULT_MATERIAL_BUDGET} as unknown as RunContext['materials']}:{}),...(arg('hold','')?{pictureHoldMs:Number(arg('hold','180'))*1000}:{}),
   setup:{bin:arg('bin','claude'),cliVersion:'bench',isolation:{safeMode:true,restricted:true,noSessionPersistence:false,disableSlashCommands:true},sonnet:o.sonnet,schemaMode:'cli',visual:true,deviceId:'bench'}});}
  catch(error){stopped=`${error instanceof Error?error.message:error}${(error as {detail?:string})?.detail?`: ${(error as {detail?:string}).detail}`:''}`;console.error('[bench] stopped:',stopped);}
  await writeV5Summary(out,{brand:brand.id,version:5,designerVersion:Number(input.brief.designerVersion),heroOnly:arg('hero-only','0')==='1',ablation:{noCritic,...ablation},designerModel:o.designerModel,criticModel:o.criticModel},started,result,stopped);

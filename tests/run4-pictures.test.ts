@@ -13,7 +13,7 @@ import {createWorkspace,writeResources} from '../apps/local-runner/director/work
 import {buildLivePreview} from '../apps/local-runner/director/live-bundle';
 import {inspectLivePreview} from '../apps/local-runner/director/live-inspect';
 import {analyzeView,unloadedFiles,type RawView,type InspectionView} from '../packages/director/layout-inspection';
-import {suppliedFactLines} from '../apps/local-runner/director/logo-facts';
+import {suppliedFactLines,referenceFactLines} from '../apps/local-runner/director/logo-facts';
 import {assetNames} from '../packages/director/asset-names';
 import {designerDigestText} from '../packages/director/designer-digest';
 import {heroTask,STAGE_H_HARD,stageHFindings} from '../packages/director/hero-chat';
@@ -67,7 +67,13 @@ test('run 4: a supplied photograph, a generated picture, the logo and the brand 
   assert.ok(near(good.at(540,594),[0xB4,0x43,0x2B]),`the supplied photograph drew: ${good.at(540,594)}`);assert.ok(near(good.at(100,1000),[0x20,0x40,0xC0])||near(good.at(900,900),[0x20,0x40,0xC0]),`the generated picture drew: ${good.at(900,900)}`);assert.ok(near(good.at(1000,100),[0xF3,0xEB,0xDD]));
   // The brand's font drew the headline: the browser reports the brand family, loaded, for the approved words.
   const headline=good.raw.texts.find(x=>x.text.includes('The last pot'));assert.equal(headline?.font?.family,'Brask Serif');assert.ok(!headline?.font?.fallback&&!headline?.font?.weightMissing);
-  // A picture that does not load (a brand reference is not a file the code can draw; a guessed path): a hard finding
+  // Owner's decision of 15 November: a kit picture (a brand reference) may be drawn by draft code, by the same pattern.
+  await writeFile(join(pub,'kit-pot.png'),png(300,300,x=>{x.fillStyle='#2F8F4E';x.beginPath();x.arc(150,150,140,0,Math.PI*2);x.fill();}));
+  const kitInput={...input,brand:{...input.brand,references:[{id:'kit-1',url:'kit-pot.png'}]}} as DirectionInput;await writeFile(join(folder,'input.json'),JSON.stringify(kitInput));
+  const kitLines=await referenceFactLines(folder,kitInput,[{name:'pot-green',kind:'product photograph (Use this)',line:'The green pot.',materialId:'kit-1'}]);
+  assert.equal(kitLines[0],"pot-green · product photograph · The green pot. · 300×300 · transparent ground, drawing #2F8F4E (mid) · url 'kit-pot.png' · use it");
+  const kit=await render(frame("'kit-pot.png'"));assert.deepEqual(kit.findings.filter(f=>f.code==='IMAGE_NOT_LOADED'),[]);assert.ok(near(kit.at(540,594),[0x2F,0x8F,0x4E]),`the kit picture drew: ${kit.at(540,594)}`);
+  // A picture that does not load (a guessed path): a hard finding
   // that names the file, on the first render.
   const bad=await render(frame("'not-a-file.png'")),unloaded=bad.findings.filter(f=>f.code==='IMAGE_NOT_LOADED');
   assert.equal(unloaded.length,1);assert.equal(unloaded[0].severity,'hard');assert.match(unloaded[0].detail,/^This picture did not load: "[^"]*not-a-file\.png"\. Only these files load, each with <Img src=\{staticFile\(url\)\}\/>/);

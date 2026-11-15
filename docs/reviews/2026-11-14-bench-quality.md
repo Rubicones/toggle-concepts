@@ -15,7 +15,7 @@ One entry per live bench run: the brief, the result, the cost, the turns, the ju
 
 ## 2. Summary of Changes
 
-- `docs/reviews/2026-11-14-bench-quality.md` (this file): the log of live bench runs. Runs 1 to 4 are recorded, with an art director's reading of run 2, the proposed changes, two more bench cases and the command for run 3.
+- `docs/reviews/2026-11-14-bench-quality.md` (this file): the log of live bench runs. Runs 1 to 7 are recorded, with an art director's reading of run 2, the proposed changes, two more bench cases and the command for run 3.
 
 ### Run 1 — baseline, designer version 5, hero stage only, from the owner's export
 
@@ -219,6 +219,38 @@ It is the command of run 2. What differs is in the code: measured logo and brand
 All three are fixed: see `docs/reviews/2026-11-14-run4-pictures.md`. The headline's "fallback serif" is the invented brand's own font, a plain system serif; it loaded.
 
 **This run says nothing about the quality of a product frame.** It has to be run again.
+
+### Runs 5 to 7 — the owner's reference brands, designer version 6
+
+| | Run 5 | Run 6 | Run 7 |
+|---|---|---|---|
+| Folder | `kiln-pipeline-v5d6-2026-11-14222940` | `dvor-pipeline-v5d6-2026-11-14224321` | `dvor-pipeline-v5d6-nocritic-2026-11-15060649` |
+| Scope | hero only | whole draft, reviewer on | whole draft, reviewer off |
+| Designer turns | 9 | 19 (9 hero, 10 other) | 12 (5 hero, 7 other) |
+| Reviews | hero 6 → 7 notes; 17 points to the last turn | hero 7 → 8 notes; 22 points; end 6 → 6 notes, not accepted | none; the draft says it was not reviewed |
+| Pictures | 3 | 4 (three takes of one photograph) | 2 |
+| Picture wait | 165 s | 249 s | 60 s |
+| Edits | 5 turns with edits, none refused | 10 turns with edits, none refused | 4 turns with edits, none refused |
+| Cost | $1.43 | $4.05 | $1.81 |
+| Time | 801 s | 1,752 s | 752 s |
+
+**The owner's verdict on all of it: better, still below what is needed, "especially in details and quality of execution".**
+
+**What the full-size audit found** (`docs/reviews/2026-11-15-craft-audit.md`; crops in `artifacts/report/craft-2026-11-15/`).
+
+- Every picture in runs 6 and 7 is drawn larger than its pixels (1.05 to 1.22×). The reference sheets' pictures are 2,048 px and drawn at about half size. The bench pictures were 1,024 px. This is the largest single cause of "softer than the reference", and it is a delivery size, not a design choice.
+- Run 6: a cutout with a smeared, blue-tinted hand and a haze along the spokes; a cutout standing on flat colour with no ground; an empty block of 17% under a white strip in the vertical format; second-level type at about a quarter of the headline; a small mark tied to nothing.
+- Run 7: a visible seam where the photograph fades into flat blue in the wide format; the orange band lies over the flat tyre, which is the proof of the line.
+- The reference sheet has the same seam and leaves the same bottom margin plain in its vertical frames. It is not flawless; it is sharper, its type is larger at the second level, and its mark is nearly twice as wide.
+- Run 5's hero holds at full size.
+
+**What runs 6 and 7 say about the reviewer** (`docs/reviews/2026-11-15-critic-role.md`).
+
+- The reviewer cost 124% on top of the draft without it, and no review round reduced the open notes.
+- It did see the empty vertical band, twice, as its first note. The designer did not fix it in two repair turns.
+- Run 7's bolder look was the designer's own first decision (the photograph full-bleed, in the turn before any review could have happened). One pair of runs does not show that the reviewer dulls the work.
+
+**Fixed after these runs:** an enlarged picture and an empty band are now measured and said in the render report; the bench asks for pictures at 2,048 px; kit pictures marked "Use this" can be drawn.
 
 ### What a good bench frame does and does not promise about a live run
 

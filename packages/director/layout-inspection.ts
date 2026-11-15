@@ -5,6 +5,7 @@ import {squarePreviewOnly} from './preview-scope';
  * turns raw geometry into objective findings. It measures and reports only: it never moves, resizes or restyles
  * anything, and it does not choose a creative technique.
  */
+import {PLAIN_BAND_SHARE,PLAIN_BAND_OVER_REFERENCE} from './plain-band';
 import type {DirectionInput,Variant} from './types';
 import type {LiveFrameProps,LiveOptions} from './live-preview';
 import {liveFormat,liveReferenceVariant,readyLiveVariants} from './live-preview';
@@ -17,10 +18,10 @@ export type RawImage={src:string;box:Box;naturalWidth:number;naturalHeight:numbe
 /** C8: a code-built 3D scene's canvas: where it is, the part that drew pixels (fractions of the canvas) and a 4×4 grid of
  * the drawn pixels' luminance (-1 where nothing is drawn). */
 export type RawObject3D={box:Box;drawn:[number,number,number,number]|null;luma:number[];error?:string};
-export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];objects3d?:RawObject3D[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[]};
+export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];objects3d?:RawObject3D[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[];/** The largest bands of plain ground in the rendered picture (views with a screenshot). */plain?:import('./plain-band').PlainBands};
 /** ink: alpha-weighted relative luminance of the logo's own pixels; background/overImage: what it sits on. */
 export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null};
-export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED'|'IMAGE_NOT_LOADED';
+export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED'|'IMAGE_NOT_LOADED'|'EMPTY_BAND';
 export type Finding={code:FindingCode;severity:'hard'|'soft';view:string;detail:string;box?:Box};
 export type ViewReport={view:string;label:string;findings:Finding[];texts:number;images:number};
 export type InspectionSummary={version:1;revision:string;views:number;hard:number;soft:number;reports:ViewReport[]};
@@ -221,7 +222,9 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
  for(const src of new Set(raw.images.filter(i=>!i.naturalWidth&&i.box.width>0&&i.box.height>0).map(i=>i.src)))add('IMAGE_NOT_LOADED','hard',unloadedDetail(src),raw.images.find(i=>i.src===src)?.box);
  for(const image of raw.images.filter(i=>!i.logo)){
   const rect=visibleSourceRect(image);if(!rect)continue;const scale=image.box.width/((rect[2]-rect[0])*image.naturalWidth);
-  if(scale>1.6)add('PICTURE_UPSCALED','soft',`A picture is enlarged ${scale.toFixed(1)}× beyond its pixels and will look soft.`,image.box);
+  // A picture drawn larger than its pixels is soft at the size a viewer gets. Named with its file, the factor and the
+  // width it would need (craft audit of 15 November: 1,024 px pictures drawn up to 1.22×; the reference sheets' were 2,048 px).
+  if(scale>PICTURE_SCALE_LIMIT){const shown=Math.round((rect[2]-rect[0])*image.naturalWidth*scale);add('PICTURE_UPSCALED','soft',`The picture "${image.src}" is drawn ${scale.toFixed(2)}× larger than its pixels (${Math.round((rect[2]-rect[0])*image.naturalWidth)} px shown at ${shown} px), so it looks soft: it needs to be at least ${Math.ceil(image.naturalWidth*scale)} px wide, or drawn smaller.`,image.box);}
   const f=ctx.facts[image.src];if(f){const [sx0,sy0,sx1,sy1]=f.subject,inside=Math.max(0,Math.min(sx1,rect[2])-Math.max(sx0,rect[0]))*Math.max(0,Math.min(sy1,rect[3])-Math.max(sy0,rect[1])),area=(sx1-sx0)*(sy1-sy0);if(area>0&&inside/area<0.6)add('SUBJECT_CROPPED','soft','The measured subject of a picture is mostly cropped out in this view.',image.box);}
  }
  // C8: a code-built 3D object: it must draw, stay inside its canvas and the frame, and the words over it must read.
@@ -278,8 +281,10 @@ export function missingRequiredCopy(views:InspectionView[],raw:{key:string;raw?:
 }
 
 /** Raw browser output → per-view reports. A view that failed to build is a hard finding. */
+/** Above this factor a picture is reported as drawn larger than its pixels. */
+export const PICTURE_SCALE_LIMIT=1.1;
 /** The file name inside an "IMAGE_NOT_LOADED" finding (the comparison key of two renders). */
-export const unloadedDetail=(src:string)=>`This picture did not load: "${src||'(no source)'}". Only these files load, each with <Img src={staticFile(url)}/>: a picture you asked for (resources[id].url, or its cutoutUrl), a supplied file by the url given with its name, and a logo (brand.logos[n].url).`;
+export const unloadedDetail=(src:string)=>`This picture did not load: "${src||'(no source)'}". Only these files load, each with <Img src={staticFile(url)}/>: a picture you asked for (resources[id].url, or its cutoutUrl), a supplied file or a brand picture marked "use it" by the url given with its name, and a logo (brand.logos[n].url).`;
 export const unloadedFiles=(findings:Pick<Finding,'code'|'detail'>[])=>[...new Set(findings.filter(f=>f.code==='IMAGE_NOT_LOADED').map(f=>/^This picture did not load: "([^"]*)"/.exec(f.detail)?.[1]??f.detail))].sort();
 export function analyzeInspection(views:InspectionView[],raw:{revision:string;views:{key:string;raw?:RawView;error?:string}[]},input:DirectionInput,facts:Record<string,ImageFacts|undefined>):InspectionSummary{
  const reports:ViewReport[]=views.map(view=>{
@@ -288,6 +293,19 @@ export function analyzeInspection(views:InspectionView[],raw:{revision:string;vi
   const minTextPx=format?.minTextPx??Math.max(16,Math.round(Math.min(view.props.width,view.props.height)*32/1080));
   return {view:view.key,label:view.label,findings:analyzeView(result.raw,{view,input,minTextPx,safe:format?.safe,facts}),texts:result.raw.texts.length,images:result.raw.images.length};
  });
+ // A band of plain ground across the whole frame, larger than the same scene has in the reference format.
+ const reference=input.variants[0],referenceFormat=input.formats.find(f=>f.id===reference?.format)??input.formats[0];
+ for(const view of views){const band=raw.views.find(r=>r.key===view.key)?.raw?.plain;if(!band)continue;const report=reports.find(r=>r.view===view.key);if(!report)continue;
+  // The reference format is the accepted composition: its own calm space is the designer's choice.
+  if(view.props.width===referenceFormat?.width&&view.props.height===referenceFormat?.height)continue;
+  const same=views.find(v=>v.variantId===view.variantId&&v.props.sceneId===view.props.sceneId&&v.props.width===referenceFormat?.width&&v.props.height===referenceFormat?.height),ref=same&&same.key!==view.key?raw.views.find(r=>r.key===same.key)?.raw?.plain:undefined;
+  for(const [kind,b,base] of [['rows',band.rows,ref?.rows] as const,['columns',band.columns,ref?.columns] as const]){
+   const baseShare=ref?base?.share??0:undefined;
+   if(!b||b.share<PLAIN_BAND_SHARE||b.share-(baseShare??0)<PLAIN_BAND_OVER_REFERENCE)continue;
+   const format=view.ordered?input.formats.find(f=>f.width===view.props.width&&f.height===view.props.height):undefined,margin=format&&b.edge!=='middle'?format.safe[b.edge]/(kind==='rows'?format.height:format.width):0;
+   report.findings.push({code:'EMPTY_BAND',severity:'soft',view:view.key,detail:`A band of plain ground spans the full ${kind==='rows'?'width':'height'} at the ${b.edge==='middle'?'middle':b.edge} of the frame: ${Math.round(b.share*100)}% of its ${kind==='rows'?'height':'width'} with nothing in it${baseShare!==undefined?` (the reference format has ${Math.round(baseShare*100)}%)`:''}.${margin>=b.share-0.03?' The placement keeps words out of this margin; the ground, the picture or a shape can still fill it.':''}`});
+  }
+ }
  for(const finding of missingRequiredCopy(views,raw.views,input)){const report=reports.find(r=>r.view===finding.view);if(report&&!report.findings.some(f=>f.code===finding.code&&f.detail===finding.detail))report.findings.push(finding);}
  return summarizeInspection(raw.revision,reports);
 }

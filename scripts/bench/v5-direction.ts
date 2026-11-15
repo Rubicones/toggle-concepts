@@ -79,11 +79,14 @@ export type V5Options={
   * builds straight from the hero task. v3Context: the designer reads the version 3 brief (designerContext as JSON)
   * instead of the planning-shaped digest. */
  noIdeas?:boolean;v3Context?:boolean;
+ /** A bench switch for the proposal of 15 November: false makes the end review advisory (one review, its notes listed,
+  * no repair round). With heroReviews 1 the hero gets one review and one last turn. */
+ endRepair?:boolean;
  /** Rehearsals without a browser: replace build and render (everything else stays the production code). */
  tools?:(real:DesignerTools)=>DesignerTools;
 };
 export type V5Call={role:string;stage:string;usage:LocalCallUsage|null;conversation?:string;record?:string};
-export type V5Result={state:DesignerLoopState;context:RunContext;calls:V5Call[];timeline:string[];gaps:string[];status:string;apiEquivalentUsd:number;endReview?:{accepted:boolean;notes:number;rounds:number;skipped?:string}};
+export type V5Result={state:DesignerLoopState;context:RunContext;calls:V5Call[];timeline:string[];gaps:string[];status:string;apiEquivalentUsd:number;endReview?:{accepted:boolean;notes:number;rounds:number;skipped?:string;/** an advisory review's notes, not sent to the designer */open?:string[]}};
 
 /** The run context a new shared Local run freezes (apps/local-runner/local-claude/run-context.ts), for one brand. */
 export function benchRunContext(input:DirectionInput,brandPack:string,briefText?:string,materials?:RunContext['materials']):RunContext{
@@ -187,7 +190,10 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
     const read=readReview(text,round);if(!read){end.skipped='UNREADABLE';say('The creative review could not run; the draft is delivered with the measured findings only.');break;}
     const r=withAllRulings(read,memory);state.endMemory=[...memory,r];end.rounds=round;end.accepted=r.accepted;end.notes=r.notes.length;
     say(r.accepted?'The creative review accepted the current views.':`The creative review returned ${r.notes.length} note${r.notes.length===1?'':'s'}.`);
-    const notes=toDesignerNotes(r);if(r.accepted||!notes.length||round===2||state.turn>=requests)break;
+    const notes=toDesignerNotes(r);
+    // An advisory end review (a bench switch): its notes are listed for the art director and no repair round follows.
+    if(o.endRepair===false){end.open=notes.map(x=>`[${x.priority}] ${x.view}: ${x.problem}`);for(const line of end.open)say(`Review note (advisory): ${line.slice(0,300)}`);break;}
+    if(r.accepted||!notes.length||round===2||state.turn>=requests)break;
     state.complete=false;delete state.finish;state.heroNote=reviewRepairMessage({kind:'critic',round,note:notes.map((x,i)=>`${i+1}. [${x.priority}] ${x.view}: ${x.problem} Wanted: ${x.fix}`).join('\n')});await extend();
    }catch(error){end.skipped=error instanceof Error?error.message.slice(0,200):'CRITIC_FAILED';say('The creative review could not run; the draft is delivered with the measured findings only.');break;}
   }

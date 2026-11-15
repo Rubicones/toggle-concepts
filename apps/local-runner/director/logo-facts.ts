@@ -62,8 +62,12 @@ export async function referenceFactLines(folder:string,input:Pick<DirectionInput
  for(const [i,r] of input.brand.references.entries()){
   if(!/\.(png|jpe?g|webp|svg)$/i.test(r.url))continue;
   const entry=catalogue.find(e=>e.materialId===r.id);let measured='';
+  // A reference that is a logo is listed with the logos, not here (one brand's seventeen references were all logos).
+  if(/\blogo\b/i.test(entry?.kind??'')||input.brand.logos.some(l=>l.url===r.url))continue;
   try{const f=await measureLogo(await readFile(resolve(folder,'public',r.url)),r.url);measured=`${f.width}×${f.height} · ${f.transparent?`transparent ground, drawing ${f.ink} (${tone(f.inkLightness)})`:`its own ground ${f.ground}`}`;}catch{measured='not measured';}
-  out.push([`brand.references[${i}]`,entry?.name,entry?.kind,entry?.line?.replace(/\s+/g,' ').slice(0,70),measured].filter(Boolean).join(' · '));
+  // A picture the art director marked "Use this" may be drawn by draft code, by its url; the others are evidence.
+  const use=/\(use this\)/i.test(entry?.kind??'')&&!/logo/i.test(entry?.kind??'');
+  out.push([entry?.name??`brand.references[${i}]`,entry?.kind?.replace(/\s*\(use this\)/i,''),entry?.line?.replace(/\s+/g,' ').slice(0,70),measured,...(use?[`url '${r.url}'`,'use it']:[])].filter(Boolean).join(' · '));
  }
  return out;
 }

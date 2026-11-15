@@ -99,3 +99,13 @@ test('v6 rehearsal (plan E1): stage H requests hold one scene\'s meaning and one
  assert.ok(result.timeline.some(l=>l.startsWith('Hero frame started. Key frame brief: what this scene must say. The file a partner needs today')));
  assert.equal(result.state.hero?.acceptedBy,'critic');assert.equal(result.state.complete,true);
 });
+
+test('bench switch: an advisory reviewer reviews the hero once and the draft once, and no repair round follows', async()=>{
+ const base=input(),v6={...base,brief:{...base.brief,designerVersion:6}} as ReturnType<typeof input>;
+ const {result}=await rehearse('advisory',[IDEAS,say('Building idea 1.','export default 1;',{render:true,review:true}),say('The last turn.','export default 2;'),say('The other scenes.','export default 3;',{finish:{intent:'x'.repeat(90),scenes:scenes()}}),say('A repair that must not be asked for.','export default 4;',{finish:{intent:'x'.repeat(90),scenes:scenes()}}),
+  critics[0],{match:'Review this hero frame',text:review(false)},{match:'Review these rendered views',text:review(false)}],{input:v6,heroReviews:1,endRepair:false});
+ assert.deepEqual(result.calls.map(c=>`${c.role}/${c.stage}`),['designer/design-hero','critic/critic','designer/design-hero','critic/critic','designer/design-hero','designer/design-create','critic/critic'],'one hero review, one last turn, one end review, no repair turn');
+ assert.equal(result.state.hero?.acceptedBy,'reviews-used');assert.equal(result.state.hero?.reviews,1);
+ assert.deepEqual(result.endReview,{accepted:false,notes:1,rounds:1,open:['[P1] square: stopping-power, check 1: The box is small.']});
+ assert.ok(result.timeline.includes('Review note (advisory): [P1] square: stopping-power, check 1: The box is small.'));assert.equal(result.state.complete,true,'the draft stays finished');
+});
