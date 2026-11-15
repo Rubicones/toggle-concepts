@@ -141,7 +141,11 @@ export async function directorStart(campaignId:string,approval?:{quoteId:string;
  // Point 6c: designer quotes learn their allowance from measured runs (none yet: the generous starting ceiling).
  const measured=designer?await loadDesignerMeasurements(saved.admin):undefined;
  const blockId=randomUUID(),inputs:DirectionInput[]=[],estimates:Record<string,Estimate>={};for(const [index,direction]of selectedEntries){try{
-  const entries=saved.context.manifest.entries,slot=entries.some(v=>v.conceptSlot===index+1)?index+1:entries[0]?.conceptSlot,ids=new Set(entries.filter(v=>v.conceptSlot===slot).map(v=>v.id));
+  const entries=saved.context.manifest.entries,slot=entries.some(v=>v.conceptSlot===index+1)?index+1:entries[0]?.conceptSlot,inSlot=entries.filter(v=>v.conceptSlot===slot),
+   // A draft variant has no beat-sequence axis (format, language, hook, CTA, length only). When the brief orders several
+   // beat sequences, the draft shows one of them, the primary (else the first ordered); the others differ in copy and
+   // would otherwise collide as AMBIGUOUS_ORDERED_VARIANTS. They stay in the ordered scope for final production.
+   draftBeat=inSlot.some(v=>v.beatSequence==='primary')?'primary':inSlot[0]?.beatSequence,ids=new Set(inSlot.filter(v=>v.beatSequence===draftBeat).map(v=>v.id));
   const sourceVariants=orderedVariants.filter(v=>ids.has(v.id)),{formats,variants}=squarePreviewScope(orderedFormats,sourceVariants);
   const directionProtectedCopy={...protectedCopy,...(typeof direction.value.cta==='string'?{cta:{...protectedCopy.cta,[saved.context.scope.referenceLocale]:direction.value.cta}}:{})};
   const directionId=requestId({roundId:saved.round.id,direction:index}),scenes=approvedScenes(direction.storyboard,directionId),copy:BrandKit['copy']={...directionProtectedCopy,hook:{[saved.context.scope.referenceLocale]:scenes[0].copy[0]??''}};for(const row of (sharedScenarioCopy??localizationForDirection(localizationRows,direction,directions)))copy[requestId({directionId,field:row.copySlot,variants:row.variantIds})]={[row.locale]:row.text};
