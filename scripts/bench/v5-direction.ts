@@ -42,7 +42,7 @@ import {STAGE_H_INSTRUCTIONS,heroBriefLine,pictureWaitLine,HERO_THUMBNAIL_SIDE,H
 import {heroMeaning} from '../../packages/director/designer';
 import {reviewRepairMessage} from '../../packages/director/extension-chat';
 import {ideasTaskFor,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../packages/director/image-ideas';
-import {checksText,stageReviewMaterial,REVIEW_INSTRUCTIONS,HERO_REVIEW_WHAT,END_REVIEW_WHAT,reviewSchemaV2,reviewContextText,readReview,withAllRulings,toDesignerNotes,settleHeroReview,HERO_REVIEW_ROUNDS} from '../../packages/director/critic-review';
+import {checksText,REVIEW_INSTRUCTIONS,HERO_REVIEW_WHAT,END_REVIEW_WHAT,reviewSchemaV2,reviewContextText,readReview,withAllRulings,toDesignerNotes,settleHeroReview,HERO_REVIEW_ROUNDS} from '../../packages/director/critic-review';
 import {designerDigestText,designerDigestEntries,territoryText} from '../../packages/director/designer-digest';
 import {reviewGaps,reviewReason,unreviewedStatus} from '../../packages/director/review-gaps';
 import {DESIGNER_TURNS,estimateDesignerDirection} from '../../packages/director/money';
@@ -189,7 +189,7 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
     for(const scene of input.storyboard){const views=designerViews(input,scene.id,input.formats.map(f=>f.id)),r=await tools.render(views);
      hard.push(...r.summary.reports.flatMap(x=>x.findings).filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`));
      for(const shot of r.shots.slice(0,2))shots.push({url:await screenshotForDesigner(shot.file,768),label:`Scene ${input.storyboard.indexOf(scene)+1} · ${views.find(v=>v.key===shot.key)?.label??''}`});}
-    const material=stageReviewMaterial(staged,'extension'),memory=state.endMemory??[];
+    const material=reviewMaterialFor(input,staged,'extension'),memory=state.endMemory??[];
     const text=await call('critic','Review these rendered views of the draft.',usesQuality(input)?END_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),...(territoryText(input)||noPicture()||usesQuality(input)?{work:[territoryText(input)?wayOfMakingNote(territoryText(input)):'',usesQuality(input)?chosenIdeaNote(state.ideas):'',noPicture()].filter(Boolean).join('\n\n')}:{}),checks:material.checks,signs:material.signs,hard:hard.slice(0,20),memory})},shots);
     const read=readReview(text,round);if(!read){end.skipped='UNREADABLE';say('The creative review could not run; the draft is delivered with the measured findings only.');break;}
     const r=withAllRulings(read,memory);state.endMemory=[...memory,r];end.rounds=round;end.accepted=r.accepted;end.notes=r.notes.length;

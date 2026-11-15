@@ -67,6 +67,8 @@ export function extensionNote(findings:Pick<Finding,'code'|'severity'|'detail'|'
 
 const section=(name:string)=>{const t=designerInstructionsV3,start=t.indexOf(`${name}`),ends=['\n\nENGINE KIT','\n\nWORDS ARE DATA','\n\nCODE.','\n\nFORMATS.','\n\nWORK.'].map(e=>t.indexOf(e,start+1)).filter(i=>i>start);return start<0?'':t.slice(start,ends.length?Math.min(...ends):undefined).trim();};
 /** The mechanics of stage E, sent once as one message (and again only to seed a condensed conversation). */
+/** Version 6 (live run 4: the scenes after the hero repeated its layout with new words). */
+export const SCENES_OWN_COMPOSITION='Each scene gets its own composition for its own message. What stays the same from scene to scene is the system: the type, the colour and the marks.';
 export function stageEMechanics(input:DirectionInput){
  const table=copyTable(input),scenes=input.storyboard;
  const copy=Object.entries(table).map(([id,hooks])=>`${sceneLabel(id,input)}:\n${Object.entries(hooks).map(([hook,locales])=>Object.entries(locales).map(([locale,l])=>`  ${hook} · ${locale}: ${l.join(' / ')}`).join('\n')).join('\n')}`).join('\n');
@@ -85,7 +87,7 @@ ${section('FORMATS.')}
 
 ${THREE_D_MECHANICS}
 
-${heroMeaning(input)?`${EDITS_NOTE}\n\n`:''}THE ORDER. First the other scenes, carrying the hero's system (its type, hierarchy, the product's presence and the brand's system); then each ordered format as its own composition; then the languages, hooks, calls to action and lengths, which are data the code reads. Render with {"render":{"scenes":["Scene 2","Scene 3"],"formats":["…"]}} (up to four scenes at a time; formats default to the reference one; {"render":{"languages":["…"]}} shows the variations). From now on every hard problem is measured per format and language: fix the rule that causes it, not each case. Keep notes in the actions block ({"notes":"…"}): the decisions that hold, what you tried and what remains. When every scene, format and option works, finish with {"finish":{"intent":"…","scenes":[{"scene":"Scene 1","moment":"…"}]}}.
+${heroMeaning(input)?`${EDITS_NOTE}\n\n${SCENES_OWN_COMPOSITION}\n\n`:''}THE ORDER. First the other scenes, carrying the hero's system (its type, hierarchy, the product's presence and the brand's system); then each ordered format as its own composition; then the languages, hooks, calls to action and lengths, which are data the code reads. Render with {"render":{"scenes":["Scene 2","Scene 3"],"formats":["…"]}} (up to four scenes at a time; formats default to the reference one; {"render":{"languages":["…"]}} shows the variations). From now on every hard problem is measured per format and language: fix the rule that causes it, not each case. Keep notes in the actions block ({"notes":"…"}): the decisions that hold, what you tried and what remains. When every scene, format and option works, finish with {"finish":{"intent":"…","scenes":[{"scene":"Scene 1","moment":"…"}]}}.
 
 COPY TABLE
 ${copy||'(only the reference words)'}`;

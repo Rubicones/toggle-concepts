@@ -80,3 +80,29 @@ The first picture was refused for payment again (the provider: "This request's m
 - **Tests.** Three added to `tests/live-run-2.test.ts` (10 in the file): the stop, the question and both answers; the credit check with an account answer, a key answer and none; the end review texts.
 - **A check for the owner's computer.** `C:\toggle\Check-Pictures.cmd` (new `scripts/windows/Check-Pictures.cmd`, written by the installer and kept in step by `scripts/linux/setup.sh`) runs `scripts/check-picture-provider.ts`. It shows the key's last four characters only, what the provider reports for the key (its own limit, usage, free tier) and for the account (credit bought, used, left, or "not available for this key"), the picture model and what one picture reserves, then offers to buy one test picture with the studio's own request builder and prints the provider's full answer on a refusal. It ends with one conclusion line: key limit, account credit, wrong account, key not accepted, or model not offered. Logic in `packages/data/picture-provider-check.ts`, tested with a fake provider.
 - **The provider's "maximum cost".** The request already states one picture and its ratio. It states no upper bound on the answer, so the provider may hold back the model's whole answer allowance (about $1 at the listed prices, against a real price near $0.04). That would explain a refusal on an account holding less than about $1. I did not change the request: I cannot verify from here which field the images endpoint accepts to lower that maximum. The check prints the figure and the provider's full answer, which settles it.
+
+## Live run 4
+
+Pictures buy now. $4.09, 8 designer turns, one picture. The owner: better, but boring, and the brand's signature object was set at the size of the logo, beside it. No migration; version 5 requests unchanged.
+
+**Causes, checked.**
+- The designer and the reviewers read which devices a brand has, never how the brand uses them. Confirmed: the character's labels are FEEL, DEVICES, COLOUR/TYPE/SPACE/IMAGERY, NEVER, MATERIALS.
+- The sheet's signature pictures were logos because of a rule, not because the kit had nothing else: pictures marked "Use this" came first, and three logos were marked. This kit had 25 logo pictures, 2 product screens and 1 brand-guidelines picture. It had no campaign picture and no photograph.
+- Nothing measured or asked about how much of the frame is used. Confirmed.
+- The stage E opening tells the designer to carry the hero's "hierarchy" into the other scenes. That reads as "repeat the layout".
+
+**Changes (version 6).**
+1. Brand character, for packs written from now on: a new label `DEVICES IN USE`, one line per device with its role, scale, once or repeated, and what it is never used as, "not stated" where the files do not show it. It reaches every role with the brand pack. The hero task gets one sentence and the hero review one check. **Existing packs lack it.** The owner refreshes a brand in the Brand pack panel: "Write the character again" (one model request), with `STUDIO_DESIGNER_VERSION=6` set.
+2. Signature picture candidates: pictures of the brand in use first (marked ones, then the rest taking turns by kind); logos only fill what is left. Applies to every new pack, any version.
+3. Each rendered view gets one observation with numbers: the share of the frame its largest picture covers, the share its largest words cover and their letter height, and the share in one flat colour. No threshold. The hero check I added is not "does the subject dominate": that is a look, and a quiet frame is a legitimate choice. It asks whether every large area does work for the idea.
+4. Stage E opens with a sentence that each scene has its own composition while the system stays one; the end review asks it as a check.
+
+**Honest limits.**
+- A full-bleed photograph counts as a picture covering 100% of the frame, whatever the subject's size inside it. In this run that is exactly the case, so the picture number would not have shown the small panel; the flat-colour share and the words' share would. Whether numbers alone make a designer bolder is not known.
+- The device lines are only as good as the files. This kit shows its marks on plain pages; the model may write "not stated" for scale. Then nothing protects the device except the owner's own words in the kit direction.
+- A brand book that is one PDF gives the catalogue one picture (its first). Its spreads are not separate pictures. Getting them needs the intake to keep page pictures; not done.
+- The three review checks are wording. None is measured.
+
+**Pictures at 2048 px.** The request has no size field and the price code is fixed to one model at about 1024 px (1,290 output tokens). The repository holds no document of a size option, so I changed nothing. The cheapest universal routes, in order: the same provider's larger-size option if its image endpoint has one (needs the quote's token count changed with it); else a second picture model that draws 2K; else an upscale step after purchase (a separate priced request). Prices are not known to me.
+
+**Verification.** Typecheck and lint pass. Full suite once: 1,257 of 1,271; 12 known `creative-skeleton` failures and 2 count assertions in `tests/quality-v6.test.ts` that the new checks changed. Those were corrected and five affected files re-run (79 of 79). Two tests added to `tests/live-run-2.test.ts`.

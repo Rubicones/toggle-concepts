@@ -1,7 +1,7 @@
 // Runs inside the sandboxed tool child: mounts the compiled live preview in an offline headless browser, reads DOM
 // geometry for each requested view and screenshots only the few views marked for the critic.
 import {createCanvas,loadImage} from '@napi-rs/canvas';
-import {plainBands} from '../../../packages/director/plain-band';
+import {plainBands,flatShare} from '../../../packages/director/plain-band';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {chromium} from '@playwright/test';
@@ -61,7 +61,7 @@ export async function inspectLivePreview(folder:string,views:InspectionView[]){
     const raw=await page.evaluate(collectLayout,{width:view.props.width,height:view.props.height});
     let shot:string|undefined;if(view.shot){shot=resolve(out,`view-${results.length}.jpg`);await page.screenshot({path:shot,type:'jpeg',quality:82});}
     // The picture itself is read for bands of plain ground (elements alone do not show an empty part of the canvas).
-    if(shot){try{const image=await loadImage(await readFile(shot)),w=108,h=Math.max(1,Math.round(image.height*w/image.width)),canvas=createCanvas(w,h),ctx=canvas.getContext('2d');ctx.drawImage(image,0,0,w,h);raw.plain=plainBands({width:w,height:h,data:ctx.getImageData(0,0,w,h).data});}catch{/* without it the other measurements stand */}}
+    if(shot){try{const image=await loadImage(await readFile(shot)),w=108,h=Math.max(1,Math.round(image.height*w/image.width)),canvas=createCanvas(w,h),ctx=canvas.getContext('2d');ctx.drawImage(image,0,0,w,h);const pixels={width:w,height:h,data:ctx.getImageData(0,0,w,h).data};raw.plain=plainBands(pixels);raw.flat=flatShare(pixels);}catch{/* without it the other measurements stand */}}
     results.push({key:view.key,raw,...(shot?{shot}:{})});
    }catch(error){results.push({key:view.key,error:(error instanceof Error?error.message:'Inspection failed').slice(0,300)});}
   }

@@ -30,7 +30,7 @@ test('critic@3: the added checks are yes/no questions inside the skill editor\'s
   const check=checkSkillDraft({title:file.title,purpose:file.purpose,stages:file.stages,principles:file.principles,checks:[...file.checks,...added],signs:file.signs});
   assert.deepEqual(check.errors,[],skill);assert.ok(file.checks.length+added.length<=SKILL_PART_LIMITS.checks,`${skill}: at most six checks`);
  }
- assert.equal(QUALITY_CHECKS.filter(c=>c.stage==='hero').length,7);assert.equal(QUALITY_CHECKS.filter(c=>c.stage==='ideas').length,1);
+ assert.equal(QUALITY_CHECKS.filter(c=>c.stage==='hero').length,9);assert.equal(QUALITY_CHECKS.filter(c=>c.stage==='ideas').length,1);
  // The instruction texts keep the owner's rules too: no examples, links or names.
  for(const text of [HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3,NOTES_INSIDE_THE_IDEA,lastTurnNote(['x'])])assert.deepEqual(checkSkillDraft({title:'t',purpose:'p',stages:['critic'],principles:text,checks:[],signs:''}).errors.filter(e=>!/tokens/.test(e)),[]);
  // Principles are untouched, so every stage is where it was, inside its budget.
@@ -39,11 +39,11 @@ test('critic@3: the added checks are yes/no questions inside the skill editor\'s
 
 test('critic@3: version 5 reads the same checks as before; version 6 adds its checks after each skill\'s own', ()=>{
  for(const stage of ['hero','ideas','extension'] as const)assert.deepEqual(reviewMaterialFor(input(5),staged,stage,{chosenIdea:true}),stageReviewMaterial(staged,stage));
- assert.deepEqual(reviewMaterialFor(input(6),staged,'extension'),stageReviewMaterial(staged,'extension'),'the end review is not changed');
+ {const end=reviewMaterialFor(input(6),staged,'extension'),before=stageReviewMaterial(staged,'extension');assert.equal(end.checks.length,before.checks.length+1,'the end review gets one check: each scene its own composition');assert.deepEqual(end.checks.filter(c=>!/each scene have its own composition/.test(c.question)),before.checks);assert.deepEqual(end.signs,before.signs);assert.deepEqual(reviewMaterialFor(input(5),staged,'extension'),before,'version 5: the end review is not changed');}
  // A hero scene whose words hold the call to action is asked every check.
  const withCta=(()=>{const i=input(6);i.brief={...i.brief,cta:heroBrief(i).lines[0]};return i;})();assert.equal(heroHasCallToAction(withCta),true);assert.equal(heroHasCallToAction(input(6)),false);
  const before=stageReviewMaterial(staged,'hero').checks,after=reviewMaterialFor(withCta,staged,'hero',{chosenIdea:true}).checks;
- assert.equal(after.length,before.length+7);assert.equal(reviewMaterialFor(withCta,staged,'hero').checks.length,before.length+6,'without a chosen idea its check is left out');
+ assert.equal(after.length,before.length+9);assert.equal(reviewMaterialFor(withCta,staged,'hero').checks.length,before.length+8,'without a chosen idea its check is left out');
  // Without a call to action in the hero's words, the two checks about one are not asked (a check that cannot apply
  // would always be a no); the others keep their numbers.
  const without=reviewMaterialFor(input(6),staged,'hero',{chosenIdea:true}).checks;assert.equal(without.length,after.length-2);assert.ok(!without.some(c=>/call to action/i.test(c.question)));

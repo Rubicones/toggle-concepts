@@ -126,6 +126,21 @@ Make the three differ in kind, not in detail: in what is shown, in how close the
 
 **8.1** When the designer continues the planning conversation, its context opens with: `YOUR DIRECTION` / `<name>: its strategy, scenario and territory are in this conversation above; keep to that territory's way of making, or say why you change it.`
 
+### After live runs 2 to 4 (new, not yet approved)
+
+- **9.1 Reviewer, hero and end:** `The frame's main subject and its way of making stay through a review: a photographed frame stays photographed, a frame built in code stays built in code. No note asks to remove the subject or to make the frame another way; when the subject or the way of making is itself the problem, say so in one note for the art director and ask the designer for nothing about it.`
+- **9.2 Designer, with review notes:** `The frame's main subject and its way of making stay: answer no note by removing the subject or by making the frame another way.`
+- **9.3 Designer, when no further picture can be had:** `Keep the pictures you have and the way of making you chose. Fix in code what code can fix, and say in your answer which notes stay open because they need a picture.`
+- **9.4 Reviewer, when no further picture can be had:** `No further picture can be made or bought for this draft. Judge the pictures in the frame as they are. A note may ask only for what code can change; where a problem can only be solved by a new or re-made picture, say so in one note, marked as open for the art director, and ask for nothing else about it.`
+- **9.5 End review:** `The element that carries the turn of the chosen idea (given under THE CHOSEN IDEA) stays in the work: no note asks to remove or replace it. When that element is itself the problem, say so in one note for the art director and ask the designer for nothing about it.`
+- **9.6 Designer, with the end review's notes:** `The element that carries the turn of your chosen idea stays as well: when a note asks for it to go, keep it and say that the note stays open.`
+- **9.7 Ideas, only for a brand with no showable picture of its product or work:** `This brand has no picture of its product or its work that the frame may show. Do not put an empty stand-in in its place (a blank plate, an empty frame, a placeholder screen), and do not make the ad itself the subject. Each idea shows one of these instead, and the three do not all choose the same one: the viewer's situation before the product (the problem as it looks in their day); the result the product leaves (what is different afterwards, as a thing or a moment a stranger can see); or a made scene that stands for the promise (a place, an object or an action that reads as the promise with no product in it).`
+- **9.8 Brand character, new label:** `DEVICES IN USE: one line for each device named above, taken from how the brand's own materials use it: its role there (the main subject, an accent, a texture, or a mark), its scale there (dominant, secondary, or small), whether it appears once or repeated, and what it is never used as. Where the materials do not show one of these, write "not stated".`
+- **9.9 Hero task:** `Use each of the brand's devices in the role and at the scale its own materials give it; where the brand pack lists DEVICES IN USE, follow that, and where it says "not stated", choose the role yourself and say which.`
+- **9.10 Stage E opening:** `Each scene gets its own composition for its own message. What stays the same from scene to scene is the system: the type, the colour and the marks.`
+- **9.11 Checks.** Hero: `Is each device of the brand used in the role and at the scale that the brand's own materials give it?` and `Does every large area of the frame do work for the idea: it shows the subject, carries words, or is space the idea needs?` End: `Does each scene have its own composition for its own message, while the type, the colour and the marks stay one system?`
+- **9.12 Observation on each render:** `Measured, for your judgement (no rule): the largest picture covers N% of the frame; the largest words cover N% of it and their letters are N% of its height; N% of the frame is one flat colour.`
+
 ## 3. Self-Review & Risk Audit ("Can It Produce Another Bug or Blocking Error?")
 
 1. **Frozen `config_hash`, `requestId`, `quoteId` on active runs:** this file changes nothing.

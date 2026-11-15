@@ -16,7 +16,10 @@ export const usesQuality=(input:Pick<DirectionInput,'brief'>)=>heroMeaning(input
 /** Checks added to a skill's own for one review stage. Each is a yes/no question with one reading, answerable from the
  * render at full size and at thumbnail size (or, for ideas, from the idea's text and the brand). With the skill's own
  * checks no skill has more than six (the skill editor's limit). */
-export const QUALITY_CHECKS:{skill:string;stage:'hero'|'ideas';question:string}[]=[
+export const QUALITY_CHECKS:{skill:string;stage:'hero'|'ideas'|'extension';question:string}[]=[
+ {skill:'brand-character',stage:'hero',question:'Is each device of the brand used in the role and at the scale that the brand\'s own materials give it?'},
+ {skill:'stopping-power',stage:'hero',question:'Does every large area of the frame do work for the idea: it shows the subject, carries words, or is space the idea needs?'},
+ {skill:'layout-craft',stage:'extension',question:'Does each scene have its own composition for its own message, while the type, the colour and the marks stay one system?'},
  {skill:'ad-idea',stage:'hero',question:'Is everything the frame shows as the product or its work the real thing, with no placeholder standing in for it?'},
  {skill:'frame-composition',stage:'hero',question:'Do all parts of the frame share one direction of light, one perspective and one scale?'},
  {skill:'frame-composition',stage:'hero',question:'Is the outline of every element readable, with none hidden or cut by another element?'},
@@ -33,7 +36,7 @@ export function heroHasCallToAction(input:DirectionInput):boolean{
  return lines.some(l=>cta.some(c=>l===c||l.includes(c)));
 }
 export function reviewMaterialFor(input:DirectionInput,st:StageSkills|undefined,stage:SkillStage,options:{/** the hero review was given THE CHOSEN IDEA */chosenIdea?:boolean}={}){
- const all=stageReviewMaterial(st,stage);if(!usesQuality(input)||(stage!=='hero'&&stage!=='ideas'))return all;
+ const all=stageReviewMaterial(st,stage);if(!usesQuality(input)||(stage!=='hero'&&stage!=='ideas'&&stage!=='extension'))return all;
  // With the strict rule a check that cannot apply would always be a no: a hero scene without a call to action is not
  // asked about one. The other checks keep their numbers.
  const base=stage==='hero'&&!heroHasCallToAction(input)?{...all,checks:all.checks.filter(c=>!/call to action/i.test(c.question))}:all;

@@ -18,10 +18,10 @@ export type RawImage={src:string;box:Box;naturalWidth:number;naturalHeight:numbe
 /** C8: a code-built 3D scene's canvas: where it is, the part that drew pixels (fractions of the canvas) and a 4×4 grid of
  * the drawn pixels' luminance (-1 where nothing is drawn). */
 export type RawObject3D={box:Box;drawn:[number,number,number,number]|null;luma:number[];error?:string};
-export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];objects3d?:RawObject3D[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[];/** The largest bands of plain ground in the rendered picture (views with a screenshot). */plain?:import('./plain-band').PlainBands};
+export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];objects3d?:RawObject3D[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[];/** The largest bands of plain ground in the rendered picture (views with a screenshot). */plain?:import('./plain-band').PlainBands;/** the share of the rendered picture in its one most common colour */flat?:number};
 /** ink: alpha-weighted relative luminance of the logo's own pixels; background/overImage: what it sits on. */
 export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null;/** the nearest ground is a gradient or a background picture: its colour is not known */complexGround?:boolean};
-export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED'|'IMAGE_NOT_LOADED'|'EMPTY_BAND';
+export type FindingCode='FRAME_SHARES'|'COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED'|'IMAGE_NOT_LOADED'|'EMPTY_BAND';
 export type Finding={code:FindingCode;severity:'hard'|'soft';view:string;detail:string;box?:Box};
 export type ViewReport={view:string;label:string;findings:Finding[];texts:number;images:number};
 export type InspectionSummary={version:1;revision:string;views:number;hard:number;soft:number;reports:ViewReport[]};
@@ -290,6 +290,14 @@ export const PICTURE_SCALE_LIMIT=1.1;
 /** The file name inside an "IMAGE_NOT_LOADED" finding (the comparison key of two renders). */
 export const unloadedDetail=(src:string)=>`This picture did not load: "${src||'(no source)'}". Only these files load, each with <Img src={staticFile(url)}/>: a picture you asked for (resources[id].url, or its cutoutUrl), a supplied file or a brand picture marked "use it" by the url given with its name, and a logo (brand.logos[n].url).`;
 export const unloadedFiles=(findings:Pick<Finding,'code'|'detail'>[])=>[...new Set(findings.filter(f=>f.code==='IMAGE_NOT_LOADED').map(f=>/^This picture did not load: "([^"]*)"/.exec(f.detail)?.[1]??f.detail))].sort();
+/** The measured shares of one rendered view, in one plain line. */
+export function frameShares(raw:Pick<RawView,'width'|'height'|'texts'|'images'|'flat'>):string{
+ const area=raw.width*raw.height;if(!area)return '';
+ const inside=(b:Box)=>Math.max(0,Math.min(raw.width,b.x+b.width)-Math.max(0,b.x))*Math.max(0,Math.min(raw.height,b.y+b.height)-Math.max(0,b.y));
+ const pct=(v:number)=>`${Math.round(v*100)}%`,picture=Math.max(0,...raw.images.filter(i=>!i.logo).map(i=>inside(i.box)))/area;
+ const size=Math.max(0,...raw.texts.map(t=>t.fontSize)),head=raw.texts.filter(t=>size>0&&t.fontSize>=size*0.9),headline=head.reduce((n,t)=>n+inside(t.box),0)/area;
+ return `Measured, for your judgement (no rule): ${raw.images.some(i=>!i.logo)?`the largest picture covers ${pct(picture)} of the frame`:'the frame has no picture'}; ${head.length?`the largest words cover ${pct(headline)} of it and their letters are ${pct(size/raw.height)} of its height`:'the frame has no words'}${raw.flat!==undefined?`; ${pct(raw.flat)} of the frame is one flat colour`:''}.`;
+}
 export function analyzeInspection(views:InspectionView[],raw:{revision:string;views:{key:string;raw?:RawView;error?:string}[]},input:DirectionInput,facts:Record<string,ImageFacts|undefined>):InspectionSummary{
  const reports:ViewReport[]=views.map(view=>{
   const result=raw.views.find(r=>r.key===view.key),format=view.ordered?input.formats.find(f=>f.width===view.props.width&&f.height===view.props.height):undefined;
@@ -297,6 +305,9 @@ export function analyzeInspection(views:InspectionView[],raw:{revision:string;vi
   const minTextPx=format?.minTextPx??Math.max(16,Math.round(Math.min(view.props.width,view.props.height)*32/1080));
   return {view:view.key,label:view.label,findings:analyzeView(result.raw,{view,input,minTextPx,safe:format?.safe,facts}),texts:result.raw.texts.length,images:result.raw.images.length};
  });
+ // Version 6 (live run 4): how much of the frame its largest picture, its headline and flat ground take, as numbers for
+ // the designer's and the reviewer's judgement. No threshold: a quiet frame and a full one are both the designer's.
+ if(Number(input.brief.designerVersion)>=6)for(const view of views){const r=raw.views.find(x=>x.key===view.key)?.raw,report=reports.find(x=>x.view===view.key);if(!r||!report||r.flat===undefined)continue;const line=frameShares(r);if(line)report.findings.push({code:'FRAME_SHARES',severity:'soft',view:view.key,detail:line});}
  // A band of plain ground across the whole frame, larger than the same scene has in the reference format.
  const reference=input.variants[0],referenceFormat=input.formats.find(f=>f.id===reference?.format)??input.formats[0];
  for(const view of views){const band=raw.views.find(r=>r.key===view.key)?.raw?.plain;if(!band)continue;const report=reports.find(r=>r.view===view.key);if(!report)continue;

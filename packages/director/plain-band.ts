@@ -27,6 +27,15 @@ export function plainBands(pixels:{width:number;height:number;data:ArrayLike<num
  const rows=Array.from({length:h},(_,y)=>line(w,x=>(y*w+x)*4)),columns=Array.from({length:w},(_,x)=>line(h,y=>(y*w+x)*4));
  return {rows:largest(rows,'top','bottom'),columns:largest(columns,'left','right')};
 }
+/** The share of the picture taken by its one most common colour (colours within the plain tolerance of it): how much of
+ * the frame is flat ground. A measurement, not a judgement. */
+export function flatShare(pixels:{width:number;height:number;data:ArrayLike<number>}):number{
+ const {width:w,height:h,data}=pixels,n=w*h;if(!n)return 0;
+ const bins=new Map<number,number>();for(let i=0;i<n;i++){const o=i*4,k=(data[o]>>4)<<8|(data[o+1]>>4)<<4|(data[o+2]>>4);bins.set(k,(bins.get(k)??0)+1);}
+ const top=[...bins.entries()].sort((a,b)=>b[1]-a[1])[0][0],c=[((top>>8)&15)*16+8,((top>>4)&15)*16+8,(top&15)*16+8];let same=0;
+ for(let i=0;i<n;i++){const o=i*4;if(Math.abs(data[o]-c[0])<=PLAIN_TOLERANCE&&Math.abs(data[o+1]-c[1])<=PLAIN_TOLERANCE&&Math.abs(data[o+2]-c[2])<=PLAIN_TOLERANCE)same++;}
+ return Math.round(same/n*100)/100;
+}
 /** A band is reported from this share of the side on, and only when it is this much larger than the same scene's band
  * in the reference format (calm space that the accepted composition already has is the designer's choice). */
 export const PLAIN_BAND_SHARE=0.15,PLAIN_BAND_OVER_REFERENCE=0.06;

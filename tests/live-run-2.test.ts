@@ -23,6 +23,12 @@ import {recoveryActions} from '../packages/director/ad-flow';
 import {readFileSync} from 'node:fs';
 import {accountLines,buyTestPicture,conclusion,keyFromEnvFile,priceLines,providerMaximumUsd,readCredits,readKey,testPictureRequest} from '../packages/data/picture-provider-check';
 import {imageRequest,type ImageQuote} from '../packages/agents/image-provider';
+import {brandCharacterInstructions,characterPictures,DEVICES_IN_USE_LABEL,type CatalogueEntry} from '../packages/brand/brand-pack-contents';
+import {heroTask,DEVICE_USE_DESIGNER} from '../packages/director/hero-chat';
+import {QUALITY_CHECKS,reviewMaterialFor} from '../packages/director/quality';
+import {stageEMechanics,SCENES_OWN_COMPOSITION} from '../packages/director/extension-chat';
+import {frameShares} from '../packages/director/layout-inspection';
+import {flatShare} from '../packages/director/plain-band';
 import type {DirectionInput} from '../packages/director/types';
 
 const input=(version=6)=>{const i=structuredClone((recovery as {input:unknown}).input) as DirectionInput;i.brief={...i.brief,designerVersion:version,materialsVersion:1,digestVersion:1};i.resourceIds=['picture-1','picture-2','picture-3','picture-4'];return i;};
@@ -212,4 +218,35 @@ test('the picture provider check: reads the key without showing it, says what ke
  // The launcher is written by the installer and kept in step by the setup script; it never echoes the settings file.
  const launcher=readFileSync('scripts/windows/Check-Pictures.cmd','utf8'),line=launcher.split(/\r?\n/).find(l=>l.startsWith('wsl.exe'))!;
  assert.ok(readFileSync('scripts/windows/Install-Toggle.cmd','utf8').includes(line)&&line.includes('scripts/check-picture-provider.ts')&&!/\.env/.test(line));
+});
+
+test('live run 4: devices carry their use; the signature pictures are the brand in use before its logos', ()=>{
+ // New packs written under version 6 record, per device, its role, scale, repetition and what it is never used as.
+ assert.ok(brandCharacterInstructions(null,{devicesInUse:true}).includes(`DEVICES: the visual devices that make it recognisable with the logo covered.\n${DEVICES_IN_USE_LABEL}\nCOLOUR, TYPE`));
+ assert.ok(!brandCharacterInstructions(null).includes('DEVICES IN USE'),'earlier versions keep their request');
+ assert.match(DEVICES_IN_USE_LABEL,/Where the materials do not show one of these, write "not stated"\./);
+ assert.ok(heroTask(input(6)).includes(DEVICE_USE_DESIGNER)&&!heroTask(input(5)).includes(DEVICE_USE_DESIGNER));
+ assert.equal(QUALITY_CHECKS.filter(c=>c.skill==='brand-character'&&c.stage==='hero').length,1);
+ // The shape of the run's kit: three logos marked "Use this", many other logos, two product screens, one guidelines page.
+ const e=(name:string,kind:string):CatalogueEntry=>({name,kind,line:'',size:'picture',materialId:name,picture:{objectKey:name,sha256:name,width:10,height:10}} as unknown as CatalogueEntry);
+ const kit=[e('logo-a','logo (Use this)'),e('logo-b','logo (Use this)'),e('logo-c','logo (Use this)'),e('logo-d','logo'),e('screen-1','product screen'),e('screen-2','product screen'),e('book','brand guidelines')];
+ assert.deepEqual(characterPictures(kit).map(x=>x.name),['screen-1','book','screen-2','logo-a','logo-b','logo-c','logo-d']);
+ assert.deepEqual(characterPictures([e('p1','photo (Use this)'),e('p2','photo (Use this)'),e('p3','photo (Use this)'),e('logo-a','logo (Use this)')]).map(x=>x.name),['p1','p2','p3']);
+});
+
+test('live run 4: the frame\'s shares are measured and said as numbers; scenes get their own composition', ()=>{
+ const box=(x:number,y:number,width:number,height:number)=>({x,y,width,height}),text=(fontSize:number,b:ReturnType<typeof box>)=>({text:'t',box:b,fontSize} as never),img=(b:ReturnType<typeof box>,logo=false)=>({src:'p.png',box:b,logo} as never);
+ assert.equal(frameShares({width:1000,height:1000,flat:0.62,images:[img(box(300,300,400,400)),img(box(0,0,900,900),true)],texts:[text(40,box(100,100,400,50)),text(38,box(100,160,400,50)),text(16,box(100,900,800,20))]}),
+  'Measured, for your judgement (no rule): the largest picture covers 16% of the frame; the largest words cover 4% of it and their letters are 4% of its height; 62% of the frame is one flat colour.');
+ assert.match(frameShares({width:100,height:100,images:[],texts:[]}),/the frame has no picture; the frame has no words\.$/);
+ const px=(w:number,h:number,at:(x:number,y:number)=>[number,number,number])=>{const data=new Uint8ClampedArray(w*h*4);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=at(x,y);data.set([...c,255],(y*w+x)*4);}return {width:w,height:h,data};};
+ assert.equal(flatShare(px(10,10,(x)=>x<6?[10,12,20]:[200+x*5,90,40])),0.6);assert.equal(flatShare(px(10,10,()=>[240,240,240])),1);
+ // The scenes sentence opens stage E in version 6 only; the end review asks it as a check.
+ assert.ok(stageEMechanics(input(6)).includes(SCENES_OWN_COMPOSITION)&&!stageEMechanics(input(5)).includes(SCENES_OWN_COMPOSITION));
+ const end=reviewMaterialFor(input(6),undefined,'extension').checks.map(c=>c.question);
+ assert.deepEqual(end,['Does each scene have its own composition for its own message, while the type, the colour and the marks stay one system?']);
+ assert.deepEqual(reviewMaterialFor(input(5),undefined,'extension').checks,[]);
+ const hero=reviewMaterialFor(input(6),undefined,'hero').checks.map(c=>c.question);
+ assert.ok(hero.includes('Does every large area of the frame do work for the idea: it shows the subject, carries words, or is space the idea needs?'));
+ for(const text of [DEVICES_IN_USE_LABEL,DEVICE_USE_DESIGNER,SCENES_OWN_COMPOSITION,...QUALITY_CHECKS.map(c=>c.question)])assert.doesNotMatch(text,/\b(left|right|top|bottom|centre|center|grid|column|ring|orange)\b/i,text);
 });
