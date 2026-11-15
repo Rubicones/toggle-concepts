@@ -15,7 +15,7 @@ import {designerDigestText} from '../../packages/director/designer-digest';
 import {heroTask} from '../../packages/director/hero-chat';
 import {buildStageSkills,creatorStageText} from '../../packages/agents/stage-skills';
 import {reviewMaterialFor} from '../../packages/director/quality';
-import {fileDropPictures,missingBrandFiles,fillBrandFonts,missingBrandFilesMessage,prepareBrandWorkspace} from './export-files';
+import {localMaterialEntries,fileDropPictures,missingBrandFiles,fillBrandFonts,missingBrandFilesMessage,prepareBrandWorkspace} from './export-files';
 import {DEFAULT_MATERIAL_BUDGET} from '../../packages/agents/materials';
 import type {RunContext} from '../../packages/agents/run-context';
 import {createWorkspace,writeResources} from '../../apps/local-runner/director/workspace';
@@ -216,7 +216,9 @@ async function benchFromExport(folder:string){
  // stored file's), then the folder given with --fonts.
  const fontsFrom=arg('fonts',''),filled=[...await fillBrandFonts(input,pub,resolve('public/fixtures')),...(fontsFrom?await fillBrandFonts(input,pub,resolve(fontsFrom)):[])];
  if(filled.length)console.error(`[bench] font files filled: ${filled.map(f=>`${f.from}${f.exact?'':' (stand-in, not the stored file)'}`).join(', ')}`);
- const missing=missingBrandFiles(input,pub);
+ // The catalogue's pictures of this workspace's own brand files are read from those files.
+ if(context.materials)context.materials={...context.materials,entries:localMaterialEntries(context.materials.entries,input,pub)};
+ const missing=missingBrandFiles(input,pub,filled.filter(f=>!f.exact).map(f=>f.url));
  if(missing.length&&arg('allow-missing','0')!=='1'){console.error(`[bench] stopped before any request:\n${missingBrandFilesMessage(missing)}`);await writeFile(join(out,'summary.json'),JSON.stringify({source:'export',stopped:'BRAND_FILES_MISSING',missingBrandFiles:missing},null,1));process.exitCode=2;return;}
  const designerVersion=Number(arg('designer','0'));if(designerVersion)input.brief={...input.brief,designerVersion} as DirectionInput['brief'];
  const catalog:CatalogEntry[]=[],pictures=resolve(out,'pictures');await mkdir(pictures,{recursive:true});await writeResources(workspace,input,catalog);

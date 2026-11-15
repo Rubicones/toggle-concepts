@@ -305,3 +305,24 @@ test('live run 5: the draft says what state it is in, and a picture the draft we
  assert.equal(designerStage({phase:'designer',designer:{complete:true,hero:{state:'accepted'}}}),'review');assert.equal(designerStage({phase:'critic',designer:{hero:{state:'accepted'}}}),'review');
  assert.equal(recoveredPictureLine(pictureFailure('CREATIVE_IMAGE_FAILED:IMAGE_PREFLIGHT_FAILED')),'One picture could not be made (the picture could not be made); the designer went on without it.');
 });
+
+test('bench on an export: a font file whose bytes are not its name\'s is missing; catalogue pictures of local brand files are read from them', async()=>{
+ const {damagedFile,missingBrandFiles,localMaterialEntries}=await import('../scripts/bench/export-files');const {BINARY_FILE}=await import('../packages/data/run-export');const {createHash}=await import('node:crypto');
+ const pub=await mkdtemp(join(tmpdir(),'pub-')),good=Buffer.from('a real font, for this test'),name=`${createHash('sha256').update(good).digest('hex')}.ttf`,bad=`${'0'.repeat(64)}.ttf`;
+ await writeFile(join(pub,name),good);await writeFile(join(pub,bad),'text-mangled bytes');await writeFile(join(pub,'mark.svg'),'<svg/>');
+ assert.equal(damagedFile(pub,name),false);assert.equal(damagedFile(pub,bad),true);assert.equal(damagedFile(pub,'mark.svg'),false,'only content-named files are checked');
+ const i={...input(),brand:{...input().brand,fonts:[{family:'A',url:name,weight:'400'},{family:'B',url:bad,weight:'600'}],logos:[{id:'l1',url:'mark.svg',clearSpacePx:0}],references:[]}} as DirectionInput;
+ assert.deepEqual(missingBrandFiles(i,pub).map(m=>m.label),['B 600']);assert.deepEqual(missingBrandFiles(i,pub,[bad]),[],'a stand-in put there on purpose counts as filled');
+ const entries=localMaterialEntries([{name:'mark',materialId:'l1',picture:{objectKey:'k',sha256:'s'}},{name:'book-p1',materialId:'b1',picture:{objectKey:'k2',sha256:'s2'}},{name:'kit-colour'}] as never[],i,pub) as {name:string;file?:string;picture?:unknown}[];
+ assert.deepEqual(entries.map(e=>[e.name,!!e.file,!!e.picture]),[['mark',true,false],['book-p1',false,true],['kit-colour',false,false]]);
+ for(const f of ['a.woff2','b.ttf','c.otf','d.png','e.glb'])assert.ok(BINARY_FILE.test(f),f);for(const f of ['Frame.tsx','input.json','mark.svg'])assert.ok(!BINARY_FILE.test(f),f);
+});
+
+test('new run with the same brief: the new campaign gets the next free name; the earlier one is never renamed', async()=>{
+ const {nextRunName}=await import('../packages/contracts/new-run');
+ assert.equal(nextRunName('Autumn launch',['Autumn launch']),'Autumn launch · run 2');
+ assert.equal(nextRunName('Autumn launch · run 2',['Autumn launch','autumn launch · run 2','Autumn launch · run 3']),'Autumn launch · run 4');
+ assert.ok(nextRunName('x'.repeat(80),[]).length<=80,'inside the campaign name limit');
+ const source=readFileSync('lib/server/new-run.ts','utf8');
+ assert.ok(source.includes("rpc('studio_set_brand_source'")&&source.includes("rpc('studio_save_brief'")&&!/studio_c1_checkpoints|studio_a1_reviews|from\('[a-z_]+'\)\.update\(/.test(source),'only creation, the brand link and the brief draft: no checkpoint is touched');
+});

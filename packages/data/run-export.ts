@@ -101,3 +101,6 @@ export function workspaceFileWanted(path:string,bytes:number):boolean{
  if(/\.(woff2?|ttf|otf)$/i.test(path))return bytes<=6_000_000;
  return false;
 }
+
+/** Workspace files that are never text: copied as they are (a text read would destroy them). */
+export const BINARY_FILE=/\.(png|jpe?g|webp|gif|avif|woff2?|ttf|otf|glb|mp4|webm|mov|wav|mp3|m4a|ogg|pdf|zip)$/i;

@@ -1,7 +1,7 @@
 // What a bench run rebuilt from an export needs on disk, and the picture stand-in: brand files the direction's own
 // input names (fonts, logos, references), and pictures put beside their request by hand. No model, no network.
 import {copyFile,readFile,readdir,writeFile} from 'node:fs/promises';
-import {existsSync} from 'node:fs';
+import {existsSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {join} from 'node:path';
 import {loadImage} from '@napi-rs/canvas';
@@ -13,10 +13,22 @@ export type MissingBrandFile={kind:'font'|'logo'|'reference';url:string;label:st
 const slug=(text:string)=>text.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 
 /** Brand files the direction's input names that are not in the workspace's public folder. */
-export function missingBrandFiles(input:DirectionInput,pub:string):MissingBrandFile[]{
+/** A stored file is named by the hash of its bytes. An export made before the tool copied fonts byte for byte holds
+ * font files with other bytes under those names; the browser refuses them, so they count as missing. */
+export function damagedFile(pub:string,url:string):boolean{
+ const named=/^([a-f0-9]{64})\.[a-z0-9]+$/i.exec(url)?.[1];if(!named||!existsSync(join(pub,url)))return false;
+ return createHash('sha256').update(readFileSync(join(pub,url))).digest('hex')!==named.toLowerCase();
+}
+/** Catalogue entries whose picture is a brand file of this workspace are read from that file (the export does not hold
+ * the studio's stored previews). Entries without a local file, such as brand book pages, stay as they are. */
+export function localMaterialEntries<E extends {materialId?:string;picture?:unknown}>(entries:E[],input:DirectionInput,pub:string):E[]{
+ const files=new Map([...input.brand.logos,...input.brand.references].filter(r=>/\.(png|jpe?g|webp|gif|svg)$/i.test(r.url)).map(r=>[r.id,join(pub,r.url)]));
+ return entries.map(e=>{const file=e.picture&&e.materialId?files.get(e.materialId):undefined;if(!file||!existsSync(file))return e;const {picture:_stored,...rest}=e;void _stored;return {...rest,file} as unknown as E;});
+}
+export function missingBrandFiles(input:DirectionInput,pub:string,/** urls filled with a stand-in file on purpose (its bytes are not the stored file's) */standIns:string[]=[]):MissingBrandFile[]{
  const local=(url:string)=>!/^(https?:|data:|blob:)/.test(url),gone=(url:string)=>local(url)&&!existsSync(join(pub,url));
  return [
-  ...input.brand.fonts.filter(f=>gone(f.url)).map(f=>({kind:'font' as const,url:f.url,label:`${f.family} ${f.weight}${f.style&&f.style!=='normal'?` ${f.style}`:''}`})),
+  ...input.brand.fonts.filter(f=>gone(f.url)||local(f.url)&&!standIns.includes(f.url)&&damagedFile(pub,f.url)).map(f=>({kind:'font' as const,url:f.url,label:`${f.family} ${f.weight}${f.style&&f.style!=='normal'?` ${f.style}`:''}`})),
   ...input.brand.logos.filter(l=>gone(l.url)).map(l=>({kind:'logo' as const,url:l.url,label:`logo ${l.id}`})),
   ...input.brand.references.filter(r=>gone(r.url)).map(r=>({kind:'reference' as const,url:r.url,label:`reference ${r.id}`})),
  ];
@@ -31,7 +43,7 @@ export async function fillBrandFonts(input:DirectionInput,pub:string,dir:string)
  const hashes=new Map<string,string>();for(const n of names)hashes.set(createHash('sha256').update(await readFile(join(dir,n))).digest('hex'),n);
  const base=(n:string)=>slug(n.replace(/\.[a-z0-9]+$/i,''));
  for(const f of input.brand.fonts){
-  if(existsSync(join(pub,f.url)))continue;
+  if(existsSync(join(pub,f.url))&&!damagedFile(pub,f.url))continue;
   const ext=f.url.slice(f.url.lastIndexOf('.')).toLowerCase(),family=slug(f.family),stored=f.url.slice(0,f.url.lastIndexOf('.'));
   const exact=names.find(n=>n===f.url)??hashes.get(stored);
   // More than one stored file for one family and weight (script subsets) cannot be told apart by name: only the exact file fits.
@@ -46,7 +58,7 @@ export async function fillBrandFonts(input:DirectionInput,pub:string,dir:string)
 export function missingBrandFilesMessage(missing:MissingBrandFile[]):string{
  const fonts=missing.filter(m=>m.kind==='font'),others=missing.filter(m=>m.kind!=='font');
  return ['The export does not hold every brand file the direction uses, so the frame would not be the brand\'s.',
-  fonts.length?`Fonts missing (${fonts.length}): ${fonts.map(f=>f.label).join(', ')}. Export the run again with the current export tool (it now includes font files), or pass --fonts=<folder> with the files named <family>-<weight>.<ext> (for example inter-tight-600.ttf).`:'',
+  fonts.length?`Fonts missing (${fonts.length}): ${fonts.map(f=>f.label).join(', ')}. Export the run again with the current export tool (it copies font files byte for byte; an earlier one damaged them), or pass --fonts=<folder> with the files named <family>-<weight>.<ext> (for example inter-tight-600.ttf).`:'',
   others.length?`Other files missing (${others.length}): ${others.map(f=>`${f.label} (${f.url})`).join(', ')}.`:'',
   'To run all the same, add --allow-missing=1; the summary then says which files were missing.'].filter(Boolean).join('\n');
 }

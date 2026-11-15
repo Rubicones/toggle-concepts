@@ -9,7 +9,7 @@ import {homedir} from 'node:os';
 import {spawnSync} from 'node:child_process';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {loadLocalEnv} from './local-env';
-import {redactValue,redactText,requestComposition,requestsCsv,slimRunContext,safeName,neverExported,workspaceFileWanted,EXPORT_LAYOUT,type StepRow} from '../packages/data/run-export';
+import {redactValue,redactText,requestComposition,requestsCsv,slimRunContext,safeName,neverExported,workspaceFileWanted,BINARY_FILE,EXPORT_LAYOUT,type StepRow} from '../packages/data/run-export';
 
 const args=process.argv.slice(2),outAt=args.indexOf('--out'),outRoot=resolve(outAt>=0&&args[outAt+1]?args[outAt+1]:'exports'),runArg=args.find((a,i)=>!a.startsWith('--')&&(outAt<0||i!==outAt+1));
 const toggleHome=()=>process.env.TOGGLE_HOME??join(homedir(),'.toggle');
@@ -81,7 +81,9 @@ async function main(){
    const render=/(^|[\\/])(renders|\.shots|shots|out)[\\/]/.test(rel)&&/\.(png|jpe?g|webp)$/i.test(rel);
    if(!workspaceFileWanted(rel,info.size)||render&&!heroFiles.has(resolve(file))&&copied>400||bytes>150_000_000)continue;
    const target=join(folder,dir,'workspace',rel);await mkdir(dirname(target),{recursive:true});
-   if(/\.(png|jpe?g|webp)$/i.test(rel))await copyFile(file,target);else await writeFile(target,redactText(await readFile(file,'utf8')));
+   // Files that are not text are copied byte for byte. Fonts were once written through the text redaction, which
+   // destroyed them: every bench run on such an export drew the fallback font (bench run of 15 November).
+   if(BINARY_FILE.test(rel))await copyFile(file,target);else await writeFile(target,redactText(await readFile(file,'utf8')));
    copied++;bytes+=info.size;}
   for(const file of heroFiles)if(existsSync(file)&&!file.startsWith(resolve(source))){await mkdir(join(folder,dir,'hero'),{recursive:true});await copyFile(file,join(folder,dir,'hero',safeName(file.split(/[\\/]/).pop()??'hero.png')));}
   notes.push(`${dir}: ${copied} workspace files (${Math.round(bytes/1024)} KB)`);
