@@ -54,7 +54,7 @@ test('v5 rehearsal: ideas, selection, build in the same conversation, hero revie
  assert.deepEqual(result.gaps,[]);assert.equal(result.status,'Source checks complete. Ready for your review.');
  assert.ok(result.timeline.some(l=>l==='Chosen: idea 1 — One box, as the direction asks.')&&result.timeline.some(l=>l==='The creative review accepted the current views.'));
  assert.ok(result.apiEquivalentUsd>0&&result.apiEquivalentUsd<1,'priced per request, not as a running total');
- assert.equal(records[4].content.filter(c=>c.type==='image').length,1,'version 5: the hero review sees one picture');assert.ok(!JSON.stringify(records[4]).includes('THE CHOSEN IDEA (as')&&!JSON.stringify(records[4]).includes('present this frame')&&!text(4).includes('frame-composition 4:'),'version 5: critic@2 as it was');
+ assert.equal(records[4].content.filter(c=>c.type==='image').length,1,'version 5: the hero review sees one picture');assert.ok(!JSON.stringify(records).includes('differ in kind'));assert.ok(!JSON.stringify(records).includes("BRAND'S OWN DEVICES")&&!JSON.stringify(records).includes("is the brand's device"),'version 5: nobody is told');assert.ok(!JSON.stringify(records[4]).includes('THE CHOSEN IDEA (as')&&!JSON.stringify(records[4]).includes('present this frame')&&!text(4).includes('frame-composition 4:'),'version 5: critic@2 as it was');
  assert.equal(benchRunContext(input(),benchBrandPack(brand)).stageSkills?.version,'stage-skills@2');
 });
 
@@ -95,6 +95,10 @@ test('v6 rehearsal (plan E1): stage H requests hold one scene\'s meaning and one
  // critic@3: the hero review reads the chosen idea, the added checks and the strict instructions.
  for(const part of ['THE CHOSEN IDEA (as the designer wrote it; the frame is reviewed as this idea)\nOne sealed archive box','frame-composition 4: Do all parts of the frame share one direction of light','revise-with-reason 4: Is the idea on the frame the chosen idea'])assert.ok(text(heroReview).includes(part),part);
  assert.ok(JSON.stringify(records[heroReview]).includes('you would present this frame to the client as it is'));assert.ok(JSON.stringify(records[1]).includes('It gives no advice on how to build it')&&text(1).includes('one-idea 3: Can the idea be made from what the brand really has'));
+ assert.ok(stageH[0].includes('Make the three differ in kind, not in detail'),'the version 6 ideas task');
+ // The brand's own devices: said once to the designer and to every reviewer of a version 6 direction.
+ assert.ok(stageH[0].includes("THE BRAND'S OWN DEVICES\nA finish, a material, a gradient, a shape or a mark that the brand's own kit names is this brand's: use it with confidence"));assert.equal(stageH.join('').split("THE BRAND'S OWN DEVICES").length-1,1,'once');
+ for(const i of [1,heroReview])assert.ok(JSON.stringify(records[i]).includes("is the brand's device: it is never a sign of failure and never fails a check"),`reviewer request ${i}`);
  assert.ok(stageH[0].includes('CHANGING A FILE YOU HAVE WRITTEN')&&stageH[0].includes('Logos (each supplied file as measured')||stageH[0].includes('CHANGING A FILE YOU HAVE WRITTEN'));
  assert.ok(result.timeline.some(l=>l.startsWith('Hero frame started. Key frame brief: what this scene must say. The file a partner needs today')));
  assert.equal(result.state.hero?.acceptedBy,'critic');assert.equal(result.state.complete,true);

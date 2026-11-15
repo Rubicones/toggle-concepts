@@ -1,5 +1,6 @@
+import {ADVISORY_CRITIC} from '../../../packages/agents/run-context';
 import {assetNames} from '../../../packages/director/asset-names';
-import {usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3} from '../../../packages/director/quality';
+import {usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3,END_REVIEW_INSTRUCTIONS_V3} from '../../../packages/director/quality';
 import {transientExecutionFailure,propagateExecutionFailure,localTemporaryStop,LOCAL_RECOVERY_LIMIT} from '../../../packages/director/execution-failures';
 import {recoverUnsubmittedClock} from '../../../packages/director/working-clock';
 import {withCreativeHandoff} from '../../../packages/director/creative-handoff';
@@ -33,7 +34,7 @@ import {reviewRepairMessage} from '../../../packages/director/extension-chat';
 import {creatorStageText,stageSkillTitles} from '../../../packages/agents/stage-skills';
 import {forkFromDirection,branchFromDirection,directionBranchLine,type DirectionBranch} from '../../../packages/agents/local-session';
 import {localModelFor} from '../../../packages/agents/local-models';
-import {usesImageIdeas,IDEAS_TASK,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../../packages/director/image-ideas';
+import {usesImageIdeas,ideasTaskFor,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../../packages/director/image-ideas';
 import {designerRoleLine} from '../../../packages/director/roles';
 import {directorAdmissionProblem,directorRequestSnapshot,criticAllowanceUsed} from '../../../packages/director/admission';
 import {screenshotForDesigner,RENDER_LONG_SIDE} from './designer-loop';
@@ -220,6 +221,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
   // C1 (chat-shaped plan): the turn's conversation plan is decided BEFORE its request is built, so the loop sends the
   // short payload only on a real continuation of the designer's own conversation, and the transport uses that same plan.
   let branchDecision:{decision:DirectionBranch;planning?:string;designer?:string}|undefined;
+  let advisoryCritic=false;
   const designerConversation=(()=>{let pending:StoredPoint|null=null,decided:Plan|undefined;const loopState=()=>(state.designer??{}) as DesignerLoopState;
    // C6 (designerVersion 4): the cap is relative to the conversation's seed (its first request) plus a working room.
    // D4 follow-up (version 5): fork its direction's planning conversation when that is cheap (forkFromDirection), else
@@ -356,12 +358,12 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     };
     const designerBlocked=async()=>{const a=designerAllowance();return a.requests-(state.designer?.turn??0)<1?'No designer turns remain in the approved allowance.':undefined;};
     const criticConfig=snapshot.models.critic,canReview=estimate.roles.critic.requests>0&&!!criticConfig?.vision;
-    return runLiveReview({...(usesDesigner(input)?{owner:'designer' as const}:{}),inspect,repair:usesDesigner(input)?designerRepair:repair,repairBlocked:usesDesigner(input)?designerBlocked:repairBlocked,criticRounds:canReview?Math.max(0,Math.min(2,estimate.roles.critic.requests-(state.designer?.hero?.reviews??0)-(usesImageIdeas(input)?state.designer?.ideas?.rounds??0:0))):0,state:reviewState,
+    return runLiveReview({...(usesDesigner(input)?{owner:'designer' as const}:{}),inspect,repair:usesDesigner(input)?designerRepair:repair,repairBlocked:usesDesigner(input)?designerBlocked:repairBlocked,...(advisoryCritic?{advisory:true}:{}),criticRounds:canReview?Math.max(0,Math.min(advisoryCritic?1:2,estimate.roles.critic.requests-(state.designer?.hero?.reviews??0)-(usesImageIdeas(input)?state.designer?.ideas?.rounds??0:0))):0,state:reviewState,
      critic:canReview?async(round,context,views)=>{await controls();
       // D5 (critic@2): the end review uses the same request shape with the extension checks and its own memory.
       const ctx2=heroChat(input)&&execution.mode==='local_claude'&&execution.context_mode==='shared'?await sharedContextFor(admin,execution,input.runId)?.():null;
       if(ctx2?.criticVersion){const loopNow=state.designer as DesignerLoopState,memory=loopNow?.endMemory??[],material=stageReviewMaterial(ctx2.stageSkills,'extension'),hard=findings(views.summary).filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`);
-       const text=(await call('critic','Review these rendered views of the draft.',REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard,memory})},{review:'live',round,critic:2},await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:criticCrops(6)}))).text;
+       const text=(await call('critic','Review these rendered views of the draft.',usesQuality(input)?END_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard,memory})},{review:'live',round,critic:2},await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:criticCrops(6)}))).text;
        const read=readReview(text,round);if(!read)return text;const r=withAllRulings(read,memory);if(loopNow){loopNow.endMemory=[...memory,r];await save();}void recordCheckAnswers(admin,{runId:input.runId,directionId:input.directionId,stage:'extension',round,answers:r.answers});
        return JSON.stringify({accepted:r.accepted,summary:(JSON.parse(text) as {summary?:string}).summary?.slice(0,1200)||'Reviewed.',notes:toDesignerNotes(r).slice(0,10)});}
       return (await call('critic','Review these rendered views of the live draft and the measurements.',liveCriticInstructionsFor(input.brief),liveCriticSchema,context,{review:'live',round},[...await brandSheetImages(folder,input),...await reviewImages(folder,views.shots,findings(views.summary),{maxCrops:criticCrops(6)})])).text;}:undefined,selfReview:usesDesigner(input)?false:coderSees,
@@ -401,6 +403,8 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     // C3 (materialsVersion 1, shared Local runs with a stored pack): materials on request. With a compact brand sheet in
     // the run context, the designer's own brand references and logos leave its prefix and become entries it asks for.
     const runContext=usesMaterials(input)&&execution.mode==='local_claude'&&execution.context_mode==='shared'?await sharedContextFor(admin,execution,input.runId)?.()??null:null;
+    // The advisory reviewer (a run context frozen with it; version 6 only, which has the one last turn).
+    advisoryCritic=heroMeaning(input)&&runContext?.criticMode===ADVISORY_CRITIC;
     // Version 6: each supplied logo measured once from the draft folder, so the designer picks a mark by fact.
     const logoLines=heroMeaning(input)?logoFactLines(await measureLogos(folder,input,runContext?.materials?.entries??[]),input):undefined;
     const referenceLines=heroMeaning(input)?await referenceFactLines(folder,input,runContext?.materials?.entries??[]):undefined;
@@ -419,7 +423,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
       return {attached,lines:f.plan.map(p=>p.status==='attached'?`Asked to see ${p.name}; it arrives with the next turn.`:`${p.name}: ${p.status}.`)};},
      load:names=>loadMaterials(ctx,names,references),left:async()=>budgetLeft('designer',budget,await materialsUsed(input.runId)).count};}
     // Point 3: the hero frame's reviews use the critic requests the quote added for them (estimate.heroReviews).
-    const heroCritic=heroFirst(input)&&!!snapshot.models.critic?.vision?Math.min(estimate.heroReviews??0,estimate.roles.critic.requests):0;
+    const heroCritic=heroFirst(input)&&!!snapshot.models.critic?.vision?Math.min(advisoryCritic?1:Infinity,estimate.heroReviews??0,estimate.roles.critic.requests):0;
     // D5 (critic@2): the hero review answers the hero checks with evidence, rules on its own earlier notes (text only)
     // and stops by rule; it sees the work at 1,024 px, the territory and the brand, never the designer's conversation.
     tools.reviewHero=heroCritic&&heroChat(input)&&runContext?.criticVersion?async(round,shots,measured)=>{await controls();
@@ -450,7 +454,7 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     if(heroChat(input)&&loop.hero?.state!=='accepted'){
      await workingWith('hero');
      // D4 (version 5): three image ideas, an independent selection (the critic role), then the build, in this conversation.
-     const owned=input.creativeHandoff?.intent.direction,ideasArgs=usesImageIdeas(input)?{ideas:{task:(owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:'')+IDEAS_TASK+(staged?`\n\n${creatorStageText(staged,'ideas')}`:''),
+     const owned=input.creativeHandoff?.intent.direction,ideasArgs=usesImageIdeas(input)?{ideas:{task:(owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:'')+ideasTaskFor(input)+(staged?`\n\n${creatorStageText(staged,'ideas')}`:''),
       select:async(text:string,round:number)=>{if(!snapshot.models.critic?.vision||estimate.roles.critic.requests-(loop.hero?.reviews??0)-(round-1)<1)return null;
        // A selection its critic allowance cannot hold falls back to the first idea, as when it cannot run at all.
        try{return readSelection((await call('critic','Choose one of the three ideas.',usesQuality(input)?SELECTION_INSTRUCTIONS_V3:SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(reviewMaterialFor(input,staged,'ideas').checks),territoryText(input))},{review:'ideas',round},[])).text);}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},

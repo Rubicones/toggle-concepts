@@ -15,6 +15,12 @@ export const IDEAS_TASK=`FIRST, THREE IMAGE IDEAS FOR THE HERO FRAME (no code ye
 2. Push each one to be bolder and more distinct from the others.
 3. Give the final three as IDEA 1, IDEA 2 and IDEA 3, each with: what the viewer sees; the turn or surprise; the way of making (photo, rendered 3D, code-built graphics or interface, or a mix); why it stops the scroll for this product.
 Keep the answer short, about 600 to 1,000 tokens. An independent reviewer picks one; you then build it in this conversation.`;
+/** Version 6: the three ideas must differ in kind. Bench runs of 15 November: for a restrained brand all three ideas
+ * of every run were one object alone on a plain ground, and the owner asked for live photographs and fuller frames. A
+ * range rule, not a look: it asks that one of three be a whole scene when the direction allows a photograph. */
+export const IDEAS_RANGE='Make the three differ in kind, not in detail: in what is shown, in how close the viewer is to it, and in how much of the frame it takes. When the direction allows a photograph, at least one idea is a whole scene, a place or a moment with the subject in it, and not the subject alone on a plain ground.';
+export const IDEAS_TASK_V6=IDEAS_TASK.replace('2. Push each one to be bolder and more distinct from the others.',`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE}`);
+export const ideasTaskFor=(input:{brief:{designerVersion?:unknown}})=>Number(input.brief.designerVersion)>=6?IDEAS_TASK_V6:IDEAS_TASK;
 export const ideasAgain=(notes:string[])=>`None of the three ideas passes the key checks:\n${notes.map(n=>`- ${n}`).join('\n')}\nWrite three new ideas the same way (IDEA 1, IDEA 2, IDEA 3), bolder and closer to the territory. This is the last ideas round.`;
 /** The chosen idea in the designer's own words (the whole of its IDEA n section); when the sections cannot be told
  * apart, the whole ideas answer, so the build never starts without the idea's text. */

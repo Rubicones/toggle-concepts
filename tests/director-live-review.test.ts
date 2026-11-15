@@ -133,3 +133,17 @@ test('a network timeout before the critic request is sent gets one more try; a s
  let tries=0;const twice=deps({criticRounds:1,critic:async()=>{tries++;throw new DOMException('The operation was aborted due to timeout','TimeoutError');}});
  const record=(await runLiveReview(twice.d))!;assert.equal(record.criticRounds,0);assert.equal(tries,2);
 });
+
+test('advisory review: notes are kept for the art director, only a blocking note is repaired, and no second review follows',async()=>{
+ const notes=critique().notes;
+ // No blocking note: no repair, one review, every note kept.
+ const a=deps({owner:'designer',advisory:true,criticRounds:1,critic:async()=>JSON.stringify(critique())}),first=(await runLiveReview(a.d))!;
+ assert.equal(a.calls.critic,0);assert.equal(a.calls.repairs.length,0);assert.equal(first.criticRounds,1);assert.equal(first.directorNotes.length,notes.length);assert.ok(a.calls.events.includes('review:critic:1:advisory'));
+ // A blocking note gets one repair turn, with that note only; the others are kept.
+ const blocking=critique({notes:[{...notes[0],priority:'P0',problem:'The vertical format leaves a third of the frame empty.'},notes[1]]});
+ const b=deps({owner:'designer',advisory:true,criticRounds:1,critic:async()=>JSON.stringify(blocking)}),second=(await runLiveReview(b.d))!;
+ assert.equal(b.calls.repairs.length,1);assert.ok(b.calls.repairs[0].note.includes('The vertical format leaves a third of the frame empty.')&&!b.calls.repairs[0].note.includes('The scene shows no product proof.'));
+ assert.equal(second.criticRounds,1,'no second review');assert.deepEqual(second.directorNotes.map(n=>n.problem),['The scene shows no product proof.']);
+ // Without the mode a designer's review repairs every note, as before.
+ const c=deps({owner:'designer',criticRounds:1,critic:async()=>JSON.stringify(critique())});await runLiveReview(c.d);assert.equal(c.calls.repairs.length,1);assert.ok(c.calls.repairs[0].note.includes('The scene shows no product proof.'));
+});

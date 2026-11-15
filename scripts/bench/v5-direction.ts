@@ -12,7 +12,7 @@
 // designer (the territory is given), and the compact brand sheet pictures of a stored brand pack.
 import {designerContext} from '../../packages/director/designer-context';
 import {assetNames} from '../../packages/director/asset-names';
-import {usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3} from '../../packages/director/quality';
+import {usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3,END_REVIEW_INSTRUCTIONS_V3} from '../../packages/director/quality';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {existsSync} from 'node:fs';
@@ -40,7 +40,7 @@ import {designerRoleLine,staticRoleInstructions} from '../../packages/director/r
 import {STAGE_H_INSTRUCTIONS,heroBriefLine,pictureWaitLine,HERO_THUMBNAIL_SIDE,HERO_THUMBNAIL_LABEL} from '../../packages/director/hero-chat';
 import {heroMeaning} from '../../packages/director/designer';
 import {reviewRepairMessage} from '../../packages/director/extension-chat';
-import {IDEAS_TASK,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../packages/director/image-ideas';
+import {ideasTaskFor,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../packages/director/image-ideas';
 import {checksText,stageReviewMaterial,REVIEW_INSTRUCTIONS,HERO_REVIEW_WHAT,END_REVIEW_WHAT,reviewSchemaV2,reviewContextText,readReview,withAllRulings,toDesignerNotes,settleHeroReview,HERO_REVIEW_ROUNDS} from '../../packages/director/critic-review';
 import {designerDigestText,designerDigestEntries,territoryText} from '../../packages/director/designer-digest';
 import {reviewGaps,reviewReason,unreviewedStatus} from '../../packages/director/review-gaps';
@@ -161,7 +161,7 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
  // Stage H: three ideas, the independent choice, the build in the same conversation, the hero review.
  working('hero');
  await runHeroChat({input,state,maxTurns:Math.min(requests,Math.ceil(requests*HERO_TURN_SHARE)+(state.heroExtraTurns??0)),maxPictures,timeMs:3600000,tools,heroReviews,conversation,
-  ...(o.noIdeas?{}:{ideas:{task:`${owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:''}${IDEAS_TASK}\n\n${creatorStageText(staged,'ideas')}`,unreviewedReason:()=>heroReviews>0?undefined:'NO_REVIEW_IN_QUOTE',
+  ...(o.noIdeas?{}:{ideas:{task:`${owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:''}${ideasTaskFor(input)}\n\n${creatorStageText(staged,'ideas')}`,unreviewedReason:()=>heroReviews>0?undefined:'NO_REVIEW_IN_QUOTE',
    select:async(text)=>{if(heroReviews<1)return null;try{return readSelection(await call('critic','Choose one of the three ideas.',usesQuality(input)?SELECTION_INSTRUCTIONS_V3:SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(reviewMaterialFor(input,staged,'ideas').checks),territoryText(input))}));}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
    onIdeas:async()=>{say('Three ideas for the key frame.');},
    onChosen:async(pick,reason)=>{if(state.ideas?.unreviewed)say(`The three ideas were NOT reviewed: ${reviewReason(state.ideas.unreviewed)}. The first idea is built.`);say(`Chosen: idea ${pick} — ${reason}`);}}}),
@@ -186,7 +186,7 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
      hard.push(...r.summary.reports.flatMap(x=>x.findings).filter(f=>f.severity==='hard').map(f=>`${f.view}: ${f.detail}`));
      for(const shot of r.shots.slice(0,2))shots.push({url:await screenshotForDesigner(shot.file,768),label:`Scene ${input.storyboard.indexOf(scene)+1} · ${views.find(v=>v.key===shot.key)?.label??''}`});}
     const material=stageReviewMaterial(staged,'extension'),memory=state.endMemory??[];
-    const text=await call('critic','Review these rendered views of the draft.',REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard:hard.slice(0,20),memory})},shots);
+    const text=await call('critic','Review these rendered views of the draft.',usesQuality(input)?END_REVIEW_INSTRUCTIONS_V3:REVIEW_INSTRUCTIONS(END_REVIEW_WHAT),reviewSchemaV2,{contextText:reviewContextText({territory:designerDigestText(input),...(territoryText(input)?{work:wayOfMakingNote(territoryText(input))}:{}),checks:material.checks,signs:material.signs,hard:hard.slice(0,20),memory})},shots);
     const read=readReview(text,round);if(!read){end.skipped='UNREADABLE';say('The creative review could not run; the draft is delivered with the measured findings only.');break;}
     const r=withAllRulings(read,memory);state.endMemory=[...memory,r];end.rounds=round;end.accepted=r.accepted;end.notes=r.notes.length;
     say(r.accepted?'The creative review accepted the current views.':`The creative review returned ${r.notes.length} note${r.notes.length===1?'':'s'}.`);

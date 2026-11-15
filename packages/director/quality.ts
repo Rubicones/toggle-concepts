@@ -4,7 +4,7 @@
 // what an agency would ask, and a note that came with the acceptance never reached the designer. Everything here is
 // frozen with the run by its designer version; version 5 runs read critic@2 exactly as before. Pure.
 import {heroMeaning} from './designer';
-import {CRITIC_BASE,SELECTION_WHAT,stageReviewMaterial,type CriticCheck,type ReviewRound} from './critic-review';
+import {CRITIC_BASE,SELECTION_WHAT,REVIEW_INSTRUCTIONS,END_REVIEW_WHAT,stageReviewMaterial,type CriticCheck,type ReviewRound} from './critic-review';
 import {ideaText} from './image-ideas';
 import {heroBrief} from './hero-chat';
 import type {StageSkills,SkillStage} from '../agents/stage-skills';
@@ -42,14 +42,19 @@ export function reviewMaterialFor(input:DirectionInput,st:StageSkills|undefined,
  return {checks,signs:base.signs};
 }
 
+/** Version 6, every review: a device the brand's own kit names never counts against the work. */
+export const BRAND_DEVICES_REVIEWER='A finish, a material, a gradient, a shape or a mark that the brand\'s own kit names is the brand\'s device: it is never a sign of failure and never fails a check. The signs and checks about glows, gloss, gradients or added depth apply only to devices the brand does not own.';
 /** The hero review's instructions in critic@3. */
 export const HERO_REVIEW_INSTRUCTIONS_V3=`${CRITIC_BASE} This is the hero frame, the frame every other scene follows: judge stopping power and the idea first, then craft. You see it at full size and at thumbnail size.
 1. When your earlier review is given, rule on each earlier note first: fixed, open or worse.
 2. Answer every check yes or no, with one line of evidence from the render (s = skill id, n = check number). Yes means the thing is plainly true of this frame as a stranger sees it. When your evidence needs a reservation (it is implied, partly so, acceptable, or the check does not apply), the answer is no.
 3. Then add new notes. Each names its skill and check, has a priority (P0 blocks, P1 should, P2 could) and names the view. In problem, say what a viewer sees or fails to understand. In fix, say what must become true for the viewer and what must stay as it is. The solution is the designer's: a fix names no position, no added element, no arrangement and no other idea. A note that contradicts an earlier one names it in replaces and says why it no longer holds; otherwise replaces is empty.
+${BRAND_DEVICES_REVIEWER}
 accepted is true when every check passes, no P0 or P1 note is open, and you would present this frame to the client as it is. When every check passes and you would still not present it, accepted is false and a note says what is missing. Approved words and facts stay as they are.`;
 /** The selection's instructions in critic@3: the reason explains the choice and carries no advice on building it. */
-export const SELECTION_INSTRUCTIONS_V3=`${CRITIC_BASE} ${SELECTION_WHAT} The reason says only why this idea is the strongest of the three. It gives no advice on how to build it: no position, no added element, no arrangement and no change to the idea.`;
+export const SELECTION_INSTRUCTIONS_V3=`${CRITIC_BASE} ${SELECTION_WHAT} The reason says only why this idea is the strongest of the three. It gives no advice on how to build it: no position, no added element, no arrangement and no change to the idea. ${BRAND_DEVICES_REVIEWER}`;
+/** The end review in version 6: the critic@2 text with the brand's own devices said once. */
+export const END_REVIEW_INSTRUCTIONS_V3=`${REVIEW_INSTRUCTIONS(END_REVIEW_WHAT)}\n${BRAND_DEVICES_REVIEWER}`;
 /** The chosen idea in the designer's own words, for the hero review (critic@3). */
 export function chosenIdeaNote(ideas:{picked?:number;texts?:string[]}|undefined):string{
  const text=ideas?.picked&&ideas.texts?.length?ideaText(ideas.texts.at(-1)!,ideas.picked).slice(0,1600):'';

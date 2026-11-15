@@ -58,15 +58,21 @@ export function logoFactLines(facts:LogoFact[],input:Pick<DirectionInput,'brand'
 /** The brand's reference pictures (product photographs, signature pictures) as measured lines: which file is which is
  * said by the catalogue entry of the same material, when there is one; the size and ground are measured. */
 export async function referenceFactLines(folder:string,input:Pick<DirectionInput,'brand'>,catalogue:{name:string;kind?:string;line?:string;materialId?:string}[]=[]):Promise<string[]>{
- const out:string[]=[];
+ const out:string[]=[],marks=new Set<string>();
  for(const [i,r] of input.brand.references.entries()){
-  if(!/\.(png|jpe?g|webp|svg)$/i.test(r.url))continue;
-  const entry=catalogue.find(e=>e.materialId===r.id);let measured='';
-  // A reference that is a logo is listed with the logos, not here (one brand's seventeen references were all logos).
-  if(/\blogo\b/i.test(entry?.kind??'')||input.brand.logos.some(l=>l.url===r.url))continue;
-  try{const f=await measureLogo(await readFile(resolve(folder,'public',r.url)),r.url);measured=`${f.width}×${f.height} · ${f.transparent?`transparent ground, drawing ${f.ink} (${tone(f.inkLightness)})`:`its own ground ${f.ground}`}`;}catch{measured='not measured';}
+  if(!/\.(png|jpe?g|webp|svg)$/i.test(r.url)||input.brand.logos.some(l=>l.url===r.url))continue;
+  const entry=catalogue.find(e=>e.materialId===r.id),isLogo=/\blogo\b/i.test(entry?.kind??'');
+  let f:Awaited<ReturnType<typeof measureLogo>>|undefined;try{f=await measureLogo(await readFile(resolve(folder,'public',r.url)),r.url);}catch{f=undefined;}
+  if(isLogo){
+   // A mark of the brand that is not among the logos in code (a lockup, a symbol, a glossy or shaded version of the mark):
+   // it is the brand's own device and is drawn as supplied. The same drawing in a second file format is listed once
+   // (bench run of 15 November: the brand's one glossy object was in the kit and never reached the designer).
+   if(!f)continue;const key=`${(entry?.name??r.url).replace(/-\d+$/,'')}|${f.ink}|${Math.round(f.aspect*10)}`;if(marks.has(key))continue;marks.add(key);
+   out.push([entry?.name??`brand.references[${i}]`,'a mark of the brand',`drawing ${f.ink} (${tone(f.inkLightness)})${f.colours>=4?`, ${f.colours} colours (shaded, not flat)`:f.colours>1?`, ${f.colours} colours`:''}`,f.transparent?'transparent ground':`its own ground ${f.ground}`,shape(f.aspect),`reads on ${f.readsOn}`,`url '${r.url}'`,'use it'].join(' · '));continue;
+  }
+  const measured=f?`${f.width}×${f.height} · ${f.transparent?`transparent ground, drawing ${f.ink} (${tone(f.inkLightness)})`:`its own ground ${f.ground}`}`:'not measured';
   // A picture the art director marked "Use this" may be drawn by draft code, by its url; the others are evidence.
-  const use=/\(use this\)/i.test(entry?.kind??'')&&!/logo/i.test(entry?.kind??'');
+  const use=/\(use this\)/i.test(entry?.kind??'');
   out.push([entry?.name??`brand.references[${i}]`,entry?.kind?.replace(/\s*\(use this\)/i,''),entry?.line?.replace(/\s+/g,' ').slice(0,70),measured,...(use?[`url '${r.url}'`,'use it']:[])].filter(Boolean).join(' · '));
  }
  return out;

@@ -116,3 +116,30 @@ test('critic@3: notes come with the rule to solve them inside the chosen idea; v
  const v5=await drive(5,[say('The idea.','export default 1;',{review:true}),say('Fixed.','export default 2;')],[open]);
  assert.match(v5.sent[1],/Apply what you agree with, then ask for the review again\./);assert.ok(!v5.sent[1].includes('inside the chosen idea'));
 });
+
+test('brand devices and the advisory mode: the texts keep the owner\'s rules, and the mode is frozen only when asked for', async()=>{
+ const {BRAND_DEVICES_REVIEWER,END_REVIEW_INSTRUCTIONS_V3}=await import('../packages/director/quality');const {BRAND_DEVICES_DESIGNER,heroTask}=await import('../packages/director/hero-chat');
+ const {buildRunContext,ADVISORY_CRITIC}=await import('../packages/agents/run-context');const {DEFAULT_MATERIAL_BUDGET}=await import('../packages/agents/materials');
+ for(const text of [BRAND_DEVICES_DESIGNER,BRAND_DEVICES_REVIEWER])assert.deepEqual(checkSkillDraft({title:'t',purpose:'p',stages:['critic'],principles:text,checks:[],signs:''}).errors,[]);
+ assert.ok(HERO_REVIEW_INSTRUCTIONS_V3.includes(BRAND_DEVICES_REVIEWER)&&SELECTION_INSTRUCTIONS_V3.includes(BRAND_DEVICES_REVIEWER)&&END_REVIEW_INSTRUCTIONS_V3.includes(BRAND_DEVICES_REVIEWER));
+ assert.ok(END_REVIEW_INSTRUCTIONS_V3.startsWith(REVIEW_INSTRUCTIONS('These are the finished scenes and formats of the draft: judge whether the idea holds in every view, then craft.')));
+ assert.ok(heroTask(input(6)).includes(BRAND_DEVICES_DESIGNER)&&!heroTask(input(5)).includes('OWN DEVICES'));
+ const ctx=(over:Record<string,unknown>)=>buildRunContext({briefText:'{}',brandPack:'BRAND CHARACTER\nCalm.',packVersion:1,materials:{entries:[],budget:DEFAULT_MATERIAL_BUDGET},planningChat:true,schemaInText:true,critic:true,...over});
+ assert.equal(ctx({advisoryCritic:true}).criticMode,ADVISORY_CRITIC);assert.equal(ctx({}).criticMode,undefined);assert.equal(ctx({advisoryCritic:true}).sha256,ctx({}).sha256,'the prefix is the same');
+});
+
+test('version 6: the ideas differ in kind; the kit\'s other marks reach the designer as drawable, once each', async()=>{
+ const {IDEAS_TASK,IDEAS_TASK_V6,IDEAS_RANGE,ideasTaskFor}=await import('../packages/director/image-ideas');const {referenceFactLines}=await import('../apps/local-runner/director/logo-facts');const {mkdir}=await import('node:fs/promises');
+ assert.equal(ideasTaskFor(input(5)),IDEAS_TASK);assert.equal(ideasTaskFor(input(6)),IDEAS_TASK_V6);assert.ok(IDEAS_TASK_V6.includes(`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE}`)&&IDEAS_TASK_V6.length===IDEAS_TASK.length+IDEAS_RANGE.length+1);
+ assert.deepEqual(checkSkillDraft({title:'t',purpose:'p',stages:['ideas'],principles:IDEAS_RANGE,checks:[],signs:''}).errors,[]);
+ // A brand whose kit holds a shaded version of its mark beside the flat logos: it is listed once, with its url.
+ const folder=await mkdtemp(join(tmpdir(),'marks-'));await mkdir(join(folder,'public'));
+ const shaded=(()=>{const c=createCanvas(280,100),x=c.getContext('2d');for(let i=0;i<7;i++){x.fillStyle=`rgb(${250-i*22},${130-i*12},${20+i*6})`;x.fillRect(20+i*34,20,34,60);}return c.toBuffer('image/png');})();
+ const flat=(()=>{const c=createCanvas(280,100),x=c.getContext('2d');x.fillStyle='#0C2B3F';x.fillRect(20,20,240,60);return c.toBuffer('image/png');})();
+ await writeFile(join(folder,'public','ring.png'),shaded);await writeFile(join(folder,'public','lockup.png'),flat);await writeFile(join(folder,'public','lockup2.png'),flat);await writeFile(join(folder,'public','main.png'),flat);
+ const brand={brand:{logos:[{id:'l0',url:'main.png',clearSpacePx:0}],references:[{id:'r1',url:'ring.png'},{id:'r2',url:'lockup.png'},{id:'r3',url:'lockup2.png'},{id:'r4',url:'main.png'}]}} as never;
+ const lines=await referenceFactLines(folder,brand,[{name:'mark-gloss',kind:'logo',materialId:'r1'},{name:'lockup-navy',kind:'logo',materialId:'r2'},{name:'lockup-navy-2',kind:'logo',materialId:'r3'},{name:'main',kind:'logo',materialId:'r4'}]);
+ assert.equal(lines.length,2,'the same drawing in a second file and the logo already in code are not repeated');
+ assert.match(lines[0],/^mark-gloss · a mark of the brand · drawing #[0-9A-F]{6} \((mid|light|dark)\), \d colours \(shaded, not flat\) · transparent ground · 2\.8:1 wide · reads on .* · url 'ring\.png' · use it$/);
+ assert.match(lines[1],/^lockup-navy · a mark of the brand · drawing #0C2B3F \(dark\) · transparent ground · 2\.8:1 wide · reads on light grounds · url 'lockup\.png' · use it$/);
+});

@@ -127,6 +127,11 @@ export function heroBriefLine(input:DirectionInput){
  const b=heroBrief(input);
  return `Key frame brief: what this scene must say. ${b.meaning}${b.proof?` Proof: ${b.proof}`:''} Words: ${b.lines.length?b.lines.map(l=>`"${l}"`).join(' / '):'none'}`.slice(0,900);
 }
+/** Version 6: a device the brand's own kit names is the brand's. The general advice of the skills against added
+ * depth, gloss and gradients is about devices a brand does not own; without this sentence a brand whose identity is a
+ * glossy mark or a gradient was steered away from its own identity (bench runs of 15 November). */
+export const BRAND_DEVICES_DESIGNER=`THE BRAND'S OWN DEVICES
+A finish, a material, a gradient, a shape or a mark that the brand's own kit names is this brand's: use it with confidence, as the kit describes it. What your skills say against depth, gloss, glows or gradients added to make a frame look finished is about devices the brand does not own.`;
 /** Plan E4c (version 6): the edit format, said once in the hero task and once in the stage E opening. */
 export const EDITS_NOTE=`CHANGING A FILE YOU HAVE WRITTEN
 Your first build writes each file whole. After that, change a file with edits, not by writing it again: one fenced block per edit, opened with \`\`\`edit and the file's path, holding the exact current text, then a line of =======, then the text that replaces it. The current text must be in the file exactly as you quote it, and only once: quote enough of it to be found once. Edits are applied in the order you write them. Write a file whole again only when most of it changes.`;
@@ -158,6 +163,8 @@ Make Scene ${b.number} of ${b.of} as one finished frame in ${b.format?`${b.forma
 What it must make the viewer understand: ${b.meaning}${b.proof?`\nWhat proves it: ${b.proof}`:''}
 Its approved words${b.locale?` (${b.locale})`:''}, exactly as written, nothing added: ${b.lines.length?b.lines.map(l=>`"${l}"`).join(' / '):'none'}
 What the frame shows is yours to decide.
+
+${BRAND_DEVICES_DESIGNER}
 
 ${HERO_CODE_NOTE(pictures)}`;
 }
