@@ -17,7 +17,7 @@ export async function GET(request:Request,ctx:RouteContext<'/api/studio/campaign
 });}
 const commands=z.discriminatedUnion('action',[
  z.strictObject({action:z.literal('write')}),
- z.strictObject({action:z.literal('edit'),expectedVersion:z.number().int().positive(),character:z.string().max(12000).optional(),signatures:z.array(z.string().max(80)).max(6).optional()}),
+ z.strictObject({action:z.literal('edit'),expectedVersion:z.number().int().positive(),character:z.string().max(12000).optional(),signatures:z.array(z.string().max(80)).max(6).optional(),pages:z.array(z.strictObject({name:z.string().max(80),inUse:z.boolean()})).max(32).optional()}),
 ]);
 export async function POST(request:Request,ctx:RouteContext<'/api/studio/campaigns/[id]/brand-pack'>){return api(async()=>{
  const campaign=await campaignRecord((await ctx.params).id),input=await body(request,commands,40000);

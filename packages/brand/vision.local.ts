@@ -35,7 +35,7 @@ export async function loadBrandSheetVision(snapshot:Record<string,unknown>,get:(
  * material marked "Use this" (pinned in its frozen snapshot). Each is read from the brand's own ready material and
  * checked against its hash. Absent for every other request.
  */
-const characterRefSchema=z.array(materialImageSchema.extend({materialId:z.uuid(),label:z.string().max(300)})).max(12);
+const characterRefSchema=z.array(materialImageSchema.extend({materialId:z.uuid(),label:z.string().max(300)})).max(24);
 export async function loadBrandCharacterVision(snapshot:Record<string,unknown>,campaignId:string){
  if(snapshot.brandCharacterImages===undefined)return [];
  const admin=adminClient(),refs=characterRefSchema.parse(snapshot.brandCharacterImages),images:{url:string;label:string}[]=[];let total=0;

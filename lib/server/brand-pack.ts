@@ -16,7 +16,7 @@ import type {TextSnapshot} from '@/packages/agents/text-provider';
 import type {AgentSetting} from '@/packages/contracts/shared';
 import {brandPackStoreReady,brandCharacterRequest,brandScopeOf,ingestPendingCharacters,latestBrandPack,loadPackSources,packSourceSha,sheetRefsForRevision} from '@/packages/brand/brand-pack-store';
 import {compactPageLabels,type CompactPageKey} from '@/packages/brand/compact-sheet';
-import {estimateImageTokens,packImageSize,packPictures,packSheet,pictureCandidates,swapSignatures,type StoredBrandPack} from '@/packages/brand/brand-pack-contents';
+import {bookPageEntries,isBookPage,markBookPages,pageInUse,estimateImageTokens,packImageSize,packPictures,packSheet,pictureCandidates,swapSignatures,type StoredBrandPack} from '@/packages/brand/brand-pack-contents';
 
 const stableId=(value:string)=>{const h=createHash('sha256').update(value).digest('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-8${h.slice(17,20)}-${h.slice(20,32)}`;};
 type Accepted={runId:string;revisionId:string;payload:unknown;campaignId:string};
@@ -82,7 +82,9 @@ export async function requestBrandCharacterQuietly(runId:string){try{return awai
 
 export type BrandPackView={schemaReady:boolean;accepted:boolean;
  pack:null|{version:number;origin:string;createdAt?:string;character:string;characterTokens:number;signatures:{name:string;why:string;kind:string;url:string}[];compact:{label:string;url:string}[];sheet:{label:string;url:string}[];materials:number;more:number;tokens:number;pictures:number};
- pictures:{name:string;kind:string;line:string;url:string}[];versions:{version:number;origin:string;createdAt:string}[];
+ pictures:{name:string;kind:string;line:string;url:string}[];
+ /** The brand book: how many of its pages the studio holds, and the pages this version read (judged in use or rules). */
+ book:{pagesHeld:number;pages:{name:string;line:string;inUse:boolean;judged:boolean;url:string}[]};versions:{version:number;origin:string;createdAt:string}[];
  request:{state:'none'|'waiting'|'failed';failure?:string};local:boolean};
 const pictureUrl=(campaignId:string,sha:string)=>`/api/studio/campaigns/${campaignId}/brand-pack?picture=${sha}`;
 const sheetUrl=(campaignId:string,sha:string)=>`/api/studio/campaigns/${campaignId}/brand-fields?sheetImage=${sha}`;
@@ -105,7 +107,7 @@ export function packSummary(campaignId:string,pack:StoredBrandPack,compact:Compa
   sheet:packSheet(pack).map(s=>({label:s.label,url:sheetUrl(campaignId,s.sha256)})),materials,more:Math.max(0,materials-pack.signatures.length),tokens,pictures:prefix.length};
 }
 export async function brandPackView(campaignId:string):Promise<BrandPackView>{
- const {admin,tenant}=await studioContext(),empty:BrandPackView={schemaReady:false,accepted:false,pack:null,pictures:[],versions:[],request:{state:'none'},local:false};
+ const {admin,tenant}=await studioContext(),empty:BrandPackView={schemaReady:false,accepted:false,pack:null,pictures:[],book:{pagesHeld:0,pages:[]},versions:[],request:{state:'none'},local:false};
  const accepted=await acceptedOfCampaign(campaignId);
  if(!await brandPackStoreReady(admin))return {...empty,accepted:!!accepted};
  if(!accepted)return {...empty,schemaReady:true};
@@ -113,11 +115,13 @@ export async function brandPackView(campaignId:string):Promise<BrandPackView>{
  const pack=await latestBrandPack(admin,accepted.revisionId),steps=await characterSteps(accepted.runId,accepted.revisionId),last=steps[0];
  const versions=(checked(await admin.from('studio_brand_packs').select('version,origin,created_at').eq('tenant_id',tenant).eq('brand_revision_id',accepted.revisionId).order('version',{ascending:false}).limit(20))??[]).map(v=>({version:v.version,origin:v.origin,createdAt:v.created_at}));
  const waiting=!!last&&['reserved','running'].includes(last.status),failed=!!last&&['failed','unknown'].includes(last.status)&&(!pack||Date.parse(pack.created_at??'')<Date.parse(last.created_at));
- return {schemaReady:true,accepted:true,pack:pack?packSummary(campaignId,pack,await compactRows(pack.id)):null,pictures:pack?pictureCandidates(pack.catalogue).map(e=>({name:e.name,kind:e.kind,line:e.line,url:pictureUrl(campaignId,e.picture.sha256)})):[],versions,
+ const held=await loadPackSources(admin,tenant,await brandScopeOf(admin,accepted.campaignId)).then(s=>bookPageEntries(s.materials).length,()=>0);
+ const book={pagesHeld:held,pages:pack?pictureCandidates(pack.catalogue).filter(isBookPage).map(e=>({name:e.name,line:e.line,inUse:pageInUse(e),judged:!e.kind.endsWith('(not judged)')&&e.kind!=='brand book page',url:pictureUrl(campaignId,e.picture.sha256)})):[]};
+ return {book,schemaReady:true,accepted:true,pack:pack?packSummary(campaignId,pack,await compactRows(pack.id)):null,pictures:pack?pictureCandidates(pack.catalogue).map(e=>({name:e.name,kind:e.kind,line:e.line,url:pictureUrl(campaignId,e.picture.sha256)})):[],versions,
   request:waiting?{state:'waiting'}:failed?{state:'failed',failure:last.error_code??undefined}:{state:'none'},local:(await runMode(accepted.runId)).local};
 }
 /** The AD's edit: a new version with the changed character and/or signature pictures. */
-export async function editBrandPack(campaignId:string,input:{expectedVersion:number;character?:string;signatures?:string[]}){
+export async function editBrandPack(campaignId:string,input:{expectedVersion:number;character?:string;signatures?:string[];/** the art director's judgement of brand book pages */pages?:{name:string;inUse:boolean}[]}){
  const {admin,actorId}=await studioContext();
  if(!await brandPackStoreReady(admin))throw new ApiError(503,'BRAND_PACK_SCHEMA_REQUIRED','Apply the brand pack update (migration 20261113000100) first. Nothing was changed.');
  const accepted=await acceptedOfCampaign(campaignId);if(!accepted)throw new ApiError(409,'A1_REQUIRED','Approve the brand first.');
@@ -125,7 +129,7 @@ export async function editBrandPack(campaignId:string,input:{expectedVersion:num
  if(latest.version!==input.expectedVersion)throw new ApiError(409,'STALE_BRAND_PACK','Someone saved a newer version. Reload before editing.');
  const character=(input.character??latest.character).trim();if(character.length<200)throw new ApiError(400,'BRAND_CHARACTER_TOO_SHORT','The character needs at least a few sentences.');
  const signatures=input.signatures?swapSignatures(input.signatures,latest):latest.signatures;
- const result=await admin.rpc('studio_add_brand_pack',{target_revision:accepted.revisionId,pack_origin:'edit',origin_step:null,expected_version:latest.version,source_sha:latest.source_sha256??'0'.repeat(64),character_text:character,signature_list:signatures,catalogue_list:latest.catalogue,sheet_list:latest.sheet,acting_user:actorId});
+ const result=await admin.rpc('studio_add_brand_pack',{target_revision:accepted.revisionId,pack_origin:'edit',origin_step:null,expected_version:latest.version,source_sha:latest.source_sha256??'0'.repeat(64),character_text:character,signature_list:signatures,catalogue_list:input.pages?.length?markBookPages(latest.catalogue,input.pages):latest.catalogue,sheet_list:latest.sheet,acting_user:actorId});
  if(result.error){if(result.error.message.includes('STALE_BRAND_PACK'))throw new ApiError(409,'STALE_BRAND_PACK','Someone saved a newer version. Reload before editing.');throw new Error(result.error.message);}
  return {version:(result.data as StoredBrandPack).version};
 }

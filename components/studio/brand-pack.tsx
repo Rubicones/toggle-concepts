@@ -119,10 +119,34 @@ export function BrandPackPanel({ campaignId }: { campaignId: string }) {
           <p className={styles.source}>{pack.more} more material{pack.more === 1 ? "" : "s"} available on request.</p>
         </>
       )}
+      {data.book.pagesHeld > 0 && (
+        <>
+          <h3>Brand book pages</h3>
+          {pack && data.book.pages.length > 0 ? (
+            <>
+              <p className={styles.source}>{data.book.pages.filter((p) => p.inUse).length} of {data.book.pages.length} pages read show the brand in use. Agents can ask for any of them by name; a page is evidence of how the brand looks, never a layout to copy. Tick or untick a page to correct the reading.</p>
+              <ul className={styles.sheetStrip}>
+                {data.book.pages.map((p) => (
+                  <li key={p.name}>
+                    <label>
+                      <input type="checkbox" checked={p.inUse} disabled={busy} onChange={() => void run({ action: "edit", expectedVersion: pack.version, pages: [{ name: p.name, inUse: !p.inUse }] }, `Saved as version ${pack.version + 1}.`)} />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.url} alt="" loading="lazy" width={96} height={96} />
+                      <span>{p.name} · {p.judged ? (p.inUse ? "in use" : "rules") : "not judged"}{p.line ? ` · ${p.line}` : ""}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className={styles.source}>This brand has a brand book of {data.book.pagesHeld} page{data.book.pagesHeld === 1 ? "" : "s"} that this version has not read. Use “Read the brand book again” below.</p>
+          )}
+        </>
+      )}
       {data.schemaReady && data.request.state !== "waiting" && (
         <div className="data-heading-actions">
           <Button variant="outline" disabled={busy} onClick={() => void run({ action: "write" }, "The brand character is being written.")}>
-            {pack ? "Write the character again" : "Write the brand character"}
+            {data.book.pagesHeld > 0 ? (pack ? "Read the brand book again" : "Read the brand book and write the character") : pack ? "Write the character again" : "Write the brand character"}
           </Button>
           <small className={styles.source}>{data.local ? "Uses the Claude subscription on this computer." : "A paid request from this run's brand budget."}</small>
         </div>

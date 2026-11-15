@@ -5,7 +5,8 @@ import {createHash} from 'node:crypto';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {canonicalJson} from '../agents/prepared-request';
 import {effectiveMaterialRole} from './material-roles';
-import {BRAND_CHARACTER_SCHEMA,BRAND_CHARACTER_TASK,BRAND_PACK_STORE_VERSION,brandCharacterContext,brandCharacterInstructions,candidateLabel,characterPictures,materialCatalogue,parseBrandCharacter,markedFindings,
+import {BRAND_CHARACTER_SCHEMA,BRAND_CHARACTER_TASK,BRAND_PACK_STORE_VERSION,brandCharacterContext,brandCharacterInstructions,candidateLabel,materialCatalogue,parseBrandCharacter,markedFindings,
+ annotateBookPages,bookPageEntries,shownPictures,BRAND_CHARACTER_SCHEMA_PAGES,
  type CatalogueEntry,type PackFinding,type PackMaterial,type SheetRef,type StoredBrandPack} from './brand-pack-contents';
 
 export async function brandPackStoreReady(admin:SupabaseClient){
@@ -59,11 +60,13 @@ export type CharacterAgent={instructions:string;max_output_tokens:number;step_ca
 export type CharacterModel={id:string;maxOutput:number;inputPrice:number;outputPrice:number}&Record<string,unknown>;
 /** The one character request: its task text and frozen snapshot (an ordinary manual brand-kit step). */
 export function brandCharacterRequest(args:{runId:string;checkpointId:string|null;revisionId:string;revisionPayload:unknown;materials:PackMaterial[];findings:PackFinding[];sheet:SheetRef[];skill:{id:string;text:string}|null;agent:CharacterAgent;model:CharacterModel}){
- const catalogue=materialCatalogue(args.revisionPayload,args.materials,args.findings),sourceSha=packSourceSha(args.revisionPayload,args.materials,args.findings);
- const shown=characterPictures(catalogue),images=shown.map(e=>({materialId:e.materialId,label:candidateLabel(e),...e.picture}));
- const snapshot={instructions:args.agent.instructions,protocolInstructions:brandCharacterInstructions(args.skill,{devicesInUse:process.env.STUDIO_DESIGNER_VERSION==='6'}),maxOutputTokens:Math.min(8192,args.agent.max_output_tokens,args.model.maxOutput),stepCapMicroUsd:args.agent.step_cap_micro_usd,pricing:args.model,
+ // Version 6: the pages of the brand's book are read with the character (docs/reviews/2026-11-16-brand-book-pages.md).
+ const pages=process.env.STUDIO_DESIGNER_VERSION==='6'?bookPageEntries(args.materials):[];
+ const catalogue=[...materialCatalogue(args.revisionPayload,args.materials,args.findings),...pages],sourceSha=packSourceSha(args.revisionPayload,args.materials,args.findings);
+ const shown=shownPictures(catalogue),images=shown.map(e=>({materialId:e.materialId,label:candidateLabel(e),...e.picture}));
+ const snapshot={instructions:args.agent.instructions,protocolInstructions:brandCharacterInstructions(args.skill,{devicesInUse:process.env.STUDIO_DESIGNER_VERSION==='6',bookPages:pages.length>0}),maxOutputTokens:Math.min(8192,args.agent.max_output_tokens,args.model.maxOutput),stepCapMicroUsd:args.agent.step_cap_micro_usd,pricing:args.model,
   campaignContext:brandCharacterContext({checkpointId:args.checkpointId,revision:args.revisionPayload,findings:args.findings,catalogue}),budgetScopeId:args.checkpointId?`budget-step-${args.runId}-brand-kit`:null,
-  outputFormat:'json_schema',responseSchema:BRAND_CHARACTER_SCHEMA as unknown as {name:string;schema:Record<string,unknown>},disableReasoning:args.model.id==='google/gemini-2.5-flash',
+  outputFormat:'json_schema',responseSchema:(pages.length?BRAND_CHARACTER_SCHEMA_PAGES:BRAND_CHARACTER_SCHEMA) as unknown as {name:string;schema:Record<string,unknown>},disableReasoning:args.model.id==='google/gemini-2.5-flash',
   segment:'brand-character',localStage:'brand character',brandCharacter:{version:1,revisionId:args.revisionId,sourceSha,catalogue,pictures:shown.map(e=>e.name),sheet:args.sheet},brandCharacterImages:images};
  return {prompt:BRAND_CHARACTER_TASK,snapshot,catalogue,sourceSha,images:images.length};
 }
@@ -75,7 +78,7 @@ export async function ingestBrandCharacter(admin:SupabaseClient,stepId:string):P
  const s=step.data as {id:string;status:string;output:string|null;config_snapshot:CharacterSnapshot}|null;const bc=s?.config_snapshot?.brandCharacter;
  if(step.error||!s||s.status!=='succeeded'||!s.output||!bc)return null;
  let parsed;try{parsed=parseBrandCharacter(s.output,bc.catalogue,bc.pictures);}catch{return null;}
- const r=await admin.rpc('studio_add_brand_pack',{target_revision:bc.revisionId,pack_origin:'model',origin_step:s.id,expected_version:null,source_sha:bc.sourceSha,character_text:parsed.character,signature_list:parsed.signatures,catalogue_list:bc.catalogue,sheet_list:bc.sheet,acting_user:null});
+ const r=await admin.rpc('studio_add_brand_pack',{target_revision:bc.revisionId,pack_origin:'model',origin_step:s.id,expected_version:null,source_sha:bc.sourceSha,character_text:parsed.character,signature_list:parsed.signatures,catalogue_list:annotateBookPages(bc.catalogue,parsed.pages),sheet_list:bc.sheet,acting_user:null});
  return r.error?null:r.data as StoredBrandPack;
 }
 /** Succeeded character steps of a revision whose version was not stored yet (a runner stopped in between). */
