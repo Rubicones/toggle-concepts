@@ -59,7 +59,7 @@ export const GIVING_A_BODY=`WHEN THE SUBJECT IS NOT A PHYSICAL THING (a service,
 - the screens or cards made into real objects (printed sheets, glass, panels), with material, thickness and shadow;
 - an object or a model made in three dimensions for the idea;
 - graphics set in code together with a photographed or three-dimensional object: the object gives material and light, the code gives the exact content.
-In each of these, what is exact (words, interface, the brand's marks) is set in code on a real surface of the picture: a screen, a sheet, a panel, a wall. Ask for the picture with that surface plain, and set the content on it in the perspective and the light of the picture. Flat shapes floating over an empty ground are none of these ways.`;
+In each of these, what is exact (words, interface, the brand's marks) is set in code on a real surface of the picture: a screen, a sheet, a panel, a wall. The picture holds the things themselves (the sheets, the panels, the device, the object), with their faces left plain; code only fills those faces, in the perspective and the light of the picture. An empty wall, table or room with flat shapes set over it in code is none of these ways.`;
 /** The aim with its two fuller parts, as one block. */
 /** The owner, 16 November: "the next stages are animation; it must be known in advance what will be animated and
  * how"; and the same day: it may be motion between scenes, inside a scene, travelling light or one principle of the
