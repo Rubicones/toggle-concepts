@@ -70,9 +70,10 @@ if ([Environment]::OSVersion.Version.Build -ge 22621) {
 
 Step 'Файл настроек'
 $envFile = Join-Path $Dir 'forma.env'
-# Файл от Димы под любым именем (doc_....env, .env, forma.env.txt): самый новый в C:\toggle или в «Загрузках»,
+# Файл от Димы под любым именем (doc_....env, .env, forma.env.txt): самый новый в C:\toggle, в «Загрузках» или в папке внутри них,
 # в котором есть строка FORMA_STORE=. Более новый заменяет прежний.
-$found = @($Dir, (Join-Path $env:USERPROFILE 'Downloads')) | ForEach-Object { Get-ChildItem -LiteralPath $_ -File -Force -ErrorAction SilentlyContinue } |
+# Also one level down in Downloads: Telegram saves files into Downloads\Telegram Desktop.
+$found = @(@($Dir, (Join-Path $env:USERPROFILE 'Downloads')) | ForEach-Object { Get-ChildItem -LiteralPath $_ -File -Force -ErrorAction SilentlyContinue }) + @(Get-ChildItem -LiteralPath (Join-Path $env:USERPROFILE 'Downloads') -Directory -ErrorAction SilentlyContinue | ForEach-Object { Get-ChildItem -LiteralPath $_.FullName -File -Force -ErrorAction SilentlyContinue }) |
   Where-Object { $_.FullName -ne $envFile -and $_.Length -lt 65536 -and $_.Extension -notin '.cmd','.sh','.lnk','.ps1' -and (Select-String -LiteralPath $_.FullName -Pattern '^\s*FORMA_STORE=' -Quiet) } |
   Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($found -and (-not (Test-Path $envFile) -or $found.LastWriteTime -gt (Get-Item $envFile).LastWriteTime)) { Copy-Item -Force $found.FullName $envFile; Write-Host "Настройки взяты из $($found.FullName)" }
