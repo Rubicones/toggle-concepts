@@ -14,8 +14,8 @@ $ErrorActionPreference = 'Continue'
 # Russian text from Ubuntu reaches this window as UTF-8; without this it shows as question marks.
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
 $Distro = 'Ubuntu-24.04'; $Dir = 'C:\toggle'; $Old = Join-Path $Dir 'old-toggle-studio'
-# Your name in the shared base and your working branch (never main). forma-author.txt / forma-branch.txt override them.
-$Author = 'Roman'; $Branch = 'roman/work'
+# Your name in the shared base, and the code you test: main, as Dima publishes it. forma-author.txt / forma-branch.txt override them.
+$Author = 'Roman'; $Branch = 'main'
 function Step($t) { Write-Host "`n== $t" -ForegroundColor Cyan }
 New-Item -ItemType Directory -Force $Dir | Out-Null
 $Self = Join-Path $Dir 'Install-Forma.cmd'
