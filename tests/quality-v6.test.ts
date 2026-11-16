@@ -129,8 +129,8 @@ test('brand devices and the advisory mode: the texts keep the owner\'s rules, an
 });
 
 test('version 6: the ideas differ in kind; the kit\'s other marks reach the designer as drawable, once each', async()=>{
- const {IDEAS_TASK,IDEAS_TASK_V6,IDEAS_RANGE,IDEAS_SUBJECT,ideasTaskFor}=await import('../packages/director/image-ideas');const {referenceFactLines}=await import('../apps/local-runner/director/logo-facts');const {mkdir}=await import('node:fs/promises');
- assert.equal(ideasTaskFor(input(5)),IDEAS_TASK);assert.equal(ideasTaskFor(input(6)),IDEAS_TASK_V6);assert.ok(IDEAS_TASK_V6.includes(`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE} ${IDEAS_SUBJECT}`)&&IDEAS_TASK_V6.length===IDEAS_TASK.length+IDEAS_RANGE.length+IDEAS_SUBJECT.length+2);
+ const {IDEAS_TASK,IDEAS_TASK_V6,IDEAS_RANGE,IDEAS_SUBJECT,IDEAS_WIDE,ideasTaskFor}=await import('../packages/director/image-ideas');const {referenceFactLines}=await import('../apps/local-runner/director/logo-facts');const {mkdir}=await import('node:fs/promises');
+ assert.equal(ideasTaskFor(input(5)),IDEAS_TASK);assert.equal(ideasTaskFor(input(6)),IDEAS_TASK_V6);assert.ok(IDEAS_TASK_V6.includes(`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE} ${IDEAS_SUBJECT}`)&&IDEAS_TASK_V6.includes(IDEAS_WIDE));
  assert.deepEqual(checkSkillDraft({title:'t',purpose:'p',stages:['ideas'],principles:IDEAS_RANGE,checks:[],signs:''}).errors,[]);
  // A brand whose kit holds a shaded version of its mark beside the flat logos: it is listed once, with its url.
  const folder=await mkdtemp(join(tmpdir(),'marks-'));await mkdir(join(folder,'public'));

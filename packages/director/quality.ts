@@ -69,6 +69,9 @@ export const SUBJECT_AND_MAKING_STAY='The frame\'s main subject and its way of m
 export const IDEA_TURN_REVIEWER='The element that carries the turn of the chosen idea (given under THE CHOSEN IDEA) stays in the work: no note asks to remove or replace it. When that element is itself the problem, say so in one note for the art director and ask the designer for nothing about it.';
 /** Version 6, what the designer reads with the end review's notes. */
 export const IDEA_TURN_STAYS='The element that carries the turn of your chosen idea stays as well: when a note asks for it to go, keep it and say that the note stays open.';
+/** The owner, 16 November: frames were correct and "a little dull". A review that only finds faults makes a frame
+ * safer; one note of every hero review names where the frame is timid. It names no solution. */
+export const BOLDER_NOTE='Whatever the checks say, add one note of priority P1 that names where this frame is timid: what holds it back from being more striking and more beautiful while it stays this idea and this brand (its scale, its light, its colour, the richness of its picture, or its point of view). The note says what is timid and why; the answer is the designer\'s.';
 /** The hero review's instructions in critic@3. */
 export const HERO_REVIEW_INSTRUCTIONS_V3=`${CRITIC_BASE} This is the hero frame, the frame every other scene follows: judge stopping power and the idea first, then craft. You see it at full size and at thumbnail size.
 1. When your earlier review is given, rule on each earlier note first: fixed, open or worse.
@@ -77,6 +80,7 @@ export const HERO_REVIEW_INSTRUCTIONS_V3=`${CRITIC_BASE} This is the hero frame,
 ${BRAND_DEVICES_REVIEWER}
 ${BRAND_SPIRIT_REVIEWER}
 ${SUBJECT_AND_MAKING_REVIEWER}
+${BOLDER_NOTE}
 accepted is true when every check passes, no P0 or P1 note is open, and you would present this frame to the client as it is. When every check passes and you would still not present it, accepted is false and a note says what is missing. Approved words and facts stay as they are.`;
 /** The selection's instructions in critic@3: the reason explains the choice and carries no advice on building it. */
 export const SELECTION_INSTRUCTIONS_V3=`${CRITIC_BASE} ${SELECTION_WHAT} The reason says only why this idea is the strongest of the three. It gives no advice on how to build it: no position, no added element, no arrangement and no change to the idea. ${BRAND_DEVICES_REVIEWER} ${BRAND_SPIRIT_REVIEWER} An idea that needs special knowledge or an explanation to be understood does not pass, however striking it looks. Between two ideas that pass, the one that would show its idea most vividly wins; then the one with more wit; then the one that says most clearly how it will move.`;

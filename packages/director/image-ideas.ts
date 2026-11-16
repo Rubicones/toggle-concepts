@@ -48,6 +48,8 @@ export const ATTRACTIVE_PICTURE=`AN ATTRACTIVE PICTURE
 - A point of view. The camera is somewhere on purpose: close or far, low or high, at an angle, through something. Straight-on and centred is a choice to be made, never the default.
 - A decided composition. Where the weight sits and where the air is were chosen for this idea; nothing is placed where it is by habit.
 - Finish. Everything is made with care at the size it is seen, with one light and clean edges; nothing looks unfinished, cheap or like a stand-in.
+- Worth looking at alone. With the words taken away, the picture is still one a person would stop for: something in it is rich (a material, a light of a particular hour, a colour that sings against the rest, layers from near to far). A clean empty room is tidy; it is not yet beautiful.
+- Room for the words without emptiness. Words can sit on a calm part of the picture; a large share of the frame is not emptied for them.
 - Feeling. The picture has a mood a viewer could name, and they want to look a little longer.`;
 /** The owner, 16 November, on brands whose product is not a physical thing (a service, software): the designer drew
  * flat cards in code or reached for one kind of metaphor. "There are many ways, not only images like clothes: cards
@@ -70,7 +72,10 @@ export const MOTION_AHEAD='THE WORK WILL MOVE. Later stages animate it, so have 
 export const AIM_IN_FULL=`${VIVID_IDEA}\n\n${ATTRACTIVE_PICTURE}`;
 /** What each of the three ideas owes, version 6: the brand's spirit, a subject of its own and a turn worth retelling. */
 export const IDEAS_SUBJECT='The three ideas differ in their subject. Each idea has a turn with wit in it: something a stranger would retell to a friend in one sentence. Each idea also says its plan for motion in one line. Each is judged by the aim above.';
-export const IDEAS_TASK_V6=IDEAS_TASK.replace('2. Push each one to be bolder and more distinct from the others.',`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE} ${IDEAS_SUBJECT}`);
+/** The owner, 16 November: results were "a little dull", and across runs the same few ideas came back. The first step
+ * asks for many ideas from different worlds and drops the ones that come first. */
+export const IDEAS_WIDE='1. Write ten rough ideas for this frame, one line each, from different worlds and in different ways of making. Then cross out the ones that came first to mind and the ones any brand of this kind would show, and say in a word why.';
+export const IDEAS_TASK_V6=IDEAS_TASK.replace('1. Write rough ideas for this frame.',IDEAS_WIDE).replace('2. Push each one to be bolder and more distinct from the others.',`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE} ${IDEAS_SUBJECT}`).replace('Keep the answer short, about 600 to 1,000 tokens.','Keep the answer short, about 800 to 1,200 tokens.');
 /** The territory of a direction, version 6: the same rule where the visual idea is first written. */
 export const TERRITORY_SPIRIT=`In visualIdea and productRole: ${BRAND_SPIRIT}`;
 /** The owner, 16 November: attractiveness cannot be read from a description, so the three ideas are chosen by looking.
