@@ -34,6 +34,7 @@ export const VIVID_IDEA=`AN IDEA SHOWN VIVIDLY
 - A turn. Something in the picture is not as expected: two things meet that do not usually meet, a familiar thing behaves in an unfamiliar way, or a size, a place or a moment is wrong on purpose. The turn is the idea made visible.
 - Its strongest form. Take the idea as far as it goes: the largest difference, the clearest contrast, the most telling moment. A mild version of an idea is seen as no idea.
 - Its own image. Pass over the first image everyone reaches for: the stock symbol that many ads have already used for this theme is not a turn. Look for the image that only this brand, with this message, would arrive at.
+- Past the first solution. The plain version of any way (one thing, alone, flat to the viewer, in the middle of an empty ground) is what every brand of this kind already shows. Take it further: more of the world around it, more than one of it, a scale, an action, a moment caught.
 - Read at once. The viewer knows straight away what they are looking at, with no special knowledge: the things in the picture are ones anyone would name. The surprise is in what it means, never in working out what it is. Unusual is not the same as vivid: a rare object or an elaborate construction that has to be explained loses to a plain thing whose turn is seen at once.
 - About the viewer. The idea touches something the viewer wants, fears or knows from their own life.
 - Retold in one sentence. A stranger can tell it to a friend, and the friend reacts.`;
@@ -44,6 +45,7 @@ export const ATTRACTIVE_PICTURE=`AN ATTRACTIVE PICTURE
 - Light. It has a direction and a mood, and it shapes the subject.
 - Colour as a decision. Few colours, one of them leading, taken from the brand.
 - Material and detail. Surfaces, textures and finishes are made well enough to reward a second look.
+- A point of view. The camera is somewhere on purpose: close or far, low or high, at an angle, through something. Straight-on and centred is a choice to be made, never the default.
 - A decided composition. Where the weight sits and where the air is were chosen for this idea; nothing is placed where it is by habit.
 - Finish. Everything is made with care at the size it is seen, with one light and clean edges; nothing looks unfinished, cheap or like a stand-in.
 - Feeling. The picture has a mood a viewer could name, and they want to look a little longer.`;
@@ -59,7 +61,7 @@ export const GIVING_A_BODY=`WHEN THE SUBJECT IS NOT A PHYSICAL THING (a service,
 - the screens or cards made into real objects (printed sheets, glass, panels), with material, thickness and shadow;
 - an object or a model made in three dimensions for the idea;
 - graphics set in code together with a photographed or three-dimensional object: the object gives material and light, the code gives the exact content.
-In each of these, what is exact (words, interface, the brand's marks) is set in code on a real surface of the picture: a screen, a sheet, a panel, a wall. The picture holds the things themselves (the sheets, the panels, the device, the object), with their faces left plain; code only fills those faces, in the perspective and the light of the picture. An empty wall, table or room with flat shapes set over it in code is none of these ways.`;
+In each of these, what is exact (words, interface, the brand's marks) is set in code on a real surface of the picture: a screen, a sheet, a panel, a wall. The picture holds the things themselves (the sheets, the panels, the device, the object), with their faces left plain; code only fills those faces, in the perspective and the light of the picture. What code sets belongs to the scene: it takes the light, the grain and the perspective of the surface it sits on, and wherever the scene shows that surface again (a reflection, a shadow, a glow on what is near it), the same content appears there as the scene would show it, drawn to match. An empty wall, table or room with flat shapes set over it in code is none of these ways.`;
 /** The aim with its two fuller parts, as one block. */
 /** The owner, 16 November: "the next stages are animation; it must be known in advance what will be animated and
  * how"; and the same day: it may be motion between scenes, inside a scene, travelling light or one principle of the
