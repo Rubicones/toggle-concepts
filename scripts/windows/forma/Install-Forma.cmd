@@ -115,19 +115,14 @@ call "C:\toggle\Install-Forma.cmd"
 @echo off
 title Forma Lab
 rem Forma Lab: starts Forma and connects the lab to the Claude app (phone or claude.ai/code). Keep the window open while you work.
-rem Windows Terminal handles typing in Russian and Ctrl+V properly; the old console window is only a fallback.
-wsl.exe -d Ubuntu-24.04 -u root -- test -x /root/forma/lab-chat.sh
+rem Runs the script directly (-e, no shell command line), so no quotes can get lost on the way.
+wsl.exe -d Ubuntu-24.04 -u root -e test -x /root/forma/lab-chat.sh
 if errorlevel 1 (
-  echo Lab is not installed. Double-click C:\toggle\Update-Forma.cmd.
+  echo Lab is not installed. Double-click C:\toggle\Update-Forma.cmd
   pause
   exit /b 1
 )
-where wt.exe >nul 2>nul
-if not errorlevel 1 (
-  start "" wt.exe new-tab --title "Forma Lab" wsl.exe -d Ubuntu-24.04 -u root -- bash /root/forma/lab-chat.sh
-  exit /b 0
-)
-wsl.exe -d Ubuntu-24.04 -u root -- bash /root/forma/lab-chat.sh
+wsl.exe -d Ubuntu-24.04 -u root -e bash /root/forma/lab-chat.sh
 '@ | Set-Content -Encoding ASCII (Join-Path $Dir 'Forma-Lab.cmd')
 @'
 @echo off
