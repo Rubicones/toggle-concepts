@@ -152,7 +152,7 @@ export type DesignerLoopState={
  heroMemory?:import('./critic-review').ReviewRound[];
  /** D5: the end review's own earlier rounds. */
  endMemory?:import('./critic-review').ReviewRound[];
- ideas?:{rounds:number;picked?:number;reason?:string;notes?:string[];texts?:string[];/** why no reviewer chose (the first idea was built) */unreviewed?:string};
+ ideas?:{rounds:number;picked?:number;reason?:string;notes?:string[];texts?:string[];/** version 6: the pictures made of the three ideas for the selection (resource ids, by idea) */sketches?:(string|null)[];/** why no reviewer chose (the first idea was built) */unreviewed?:string};
  /** Live run 2026-11-14: the same build error in a row (three stops the direction with a question), and extra hero
   * turns granted by a retry after such a stop. */
  buildStuck?:{code:string;count:number};heroExtraTurns?:number;

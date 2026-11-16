@@ -25,11 +25,46 @@ export const IDEAS_RANGE='Make the three differ in kind, not in detail: in what 
  * owner refused as fixes of one request: what a frame is made with depends on the brand and on the idea. It names no
  * brand, no look, no arrangement and no preferred way of making. */
 export const BRAND_SPIRIT='THE AIM OF EVERY FRAME: an attractive picture, in the brand\'s own style, that shows the idea as vividly as it can be shown. Attractive: a stranger wants to look at it. In the brand\'s own style: made as the brand\'s own designers would make it, in its aesthetic (the brand pack gives it under AESTHETIC and FEEL, and the brand\'s own pictures show it); it is a new picture, not the parts of the kit set side by side. Vivid: the idea is seen in the picture at once, before the words are read. Every way of making is open to you (photograph, render, drawing, type, flat or with depth, real or imagined), and none is preferred: choose what makes this idea most vivid for this brand.';
+/** The owner, 16 November: "write out what a vivid showing of an idea and an attractive picture are, as fuller general
+ * rules". Principles that hold for any brand and any way of making; they name no look, no arrangement and no medium.
+ * For the owner to approve. */
+export const VIVID_IDEA=`AN IDEA SHOWN VIVIDLY
+- One thought. The picture says one thing, and everything in it serves that thing; what does not is taken out.
+- Shown, not told. The picture does the work of the idea itself: a stranger who cannot read the words still gets the point. The words finish the thought; they do not carry it.
+- A turn. Something in the picture is not as expected: two things meet that do not usually meet, a familiar thing behaves in an unfamiliar way, or a size, a place or a moment is wrong on purpose. The turn is the idea made visible.
+- Its strongest form. Take the idea as far as it goes: the largest difference, the clearest contrast, the most telling moment. A mild version of an idea is seen as no idea.
+- Read at once. The viewer knows straight away what they are looking at; the surprise is in what it means, never in working out what it is.
+- About the viewer. The idea touches something the viewer wants, fears or knows from their own life.
+- Retold in one sentence. A stranger can tell it to a friend, and the friend reacts.`;
+export const ATTRACTIVE_PICTURE=`AN ATTRACTIVE PICTURE
+- One hero. One element leads by size, light or contrast; the eye lands on it first and knows where to go next.
+- Scale with courage. The main thing takes as much of the frame as its importance; large and small are plainly different, and nothing is medium by default.
+- Contrast. The frame has one strongest contrast (light against dark, large against small, sharp against soft, colour against quiet), and it sits on the subject.
+- Light. It has a direction and a mood, and it shapes the subject.
+- Colour as a decision. Few colours, one of them leading, taken from the brand.
+- Material and detail. Surfaces, textures and finishes are made well enough to reward a second look.
+- A decided composition. Where the weight sits and where the air is were chosen for this idea; nothing is placed where it is by habit.
+- Finish. Everything is made with care at the size it is seen, with one light and clean edges; nothing looks unfinished, cheap or like a stand-in.
+- Feeling. The picture has a mood a viewer could name, and they want to look a little longer.`;
+/** The aim with its two fuller parts, as one block. */
+export const AIM_IN_FULL=`${VIVID_IDEA}\n\n${ATTRACTIVE_PICTURE}`;
 /** What each of the three ideas owes, version 6: the brand's spirit, a subject of its own and a turn worth retelling. */
-export const IDEAS_SUBJECT=`${BRAND_SPIRIT} The three ideas differ in their subject. Each idea has a turn with wit in it: something a stranger would retell to a friend in one sentence.`;
+export const IDEAS_SUBJECT='The three ideas differ in their subject. Each idea has a turn with wit in it: something a stranger would retell to a friend in one sentence. Each is judged by the aim above.';
 export const IDEAS_TASK_V6=IDEAS_TASK.replace('2. Push each one to be bolder and more distinct from the others.',`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE} ${IDEAS_SUBJECT}`);
 /** The territory of a direction, version 6: the same rule where the visual idea is first written. */
 export const TERRITORY_SPIRIT=`In visualIdea and productRole: ${BRAND_SPIRIT}`;
+/** The owner, 16 November: attractiveness cannot be read from a description, so the three ideas are chosen by looking.
+ * Each idea carries the request for one picture of it; the three are made inside the approved number of pictures and
+ * the reviewer chooses by what it sees. Off when the draft cannot have four pictures. */
+export const IDEAS_SKETCHES='After the three ideas add three lines that begin SKETCH 1:, SKETCH 2: and SKETCH 3:. Each is the request for one picture of that idea as the viewer would see it, written as you would ask for the finished picture, in the aesthetic of the brand, with no words in it. The three pictures are made, and the reviewer chooses one idea by looking at them. They count as three of your pictures; the picture of the chosen idea stays yours to use.';
+/** The three sketch requests of an ideas answer, in order; fewer than three means the ideas are chosen from the text. */
+export function sketchPrompts(text:string):string[]{
+ const marks=[...text.matchAll(/^[\s>*_#-]*SKETCH\s*([123])\s*[*_]*\s*[:.]\s*[*_]*/gim)],out:string[]=[];
+ for(const n of [1,2,3]){const i=marks.findIndex(m=>Number(m[1])===n);if(i<0)return [];const from=marks[i].index!+marks[i][0].length,to=marks[i+1]?.index??text.length;const prompt=text.slice(from,to).replace(/\s+/g,' ').trim();if(prompt.length<40)return [];out.push(prompt.slice(0,3800));}
+ return out;
+}
+/** What the reviewer reads when the sketches are attached. */
+export const SKETCH_SELECTION='A picture of each idea is attached, in order: sketch 1, sketch 2 and sketch 3. Choose by what you see in them: which picture is the most attractive, is in the brand\'s own aesthetic and shows its idea at once. The written ideas say what each picture was meant to be; a good description does not rescue a weak picture.';
 /** Version 6, only when the brand has no picture of its product or its work that the frame may show (live run of
  * 15 November: a service brand with no cleared work; every idea became "the ad shows itself", a blank plate carrying the
  * headline). A rule about what the subject may be, not a look. For the owner to approve. */
@@ -39,7 +74,7 @@ export const IDEAS_WITHOUT_PRODUCT_PICTURE='This brand has no picture of its pro
 export function hasShowablePicture(input:{assets?:{url:string}[];brand?:{references?:{url?:string;use?:boolean}[];interface?:unknown[]}}):boolean{
  return (input.assets??[]).some(a=>/\.(png|jpe?g|webp)$/i.test(a.url))||(input.brand?.references??[]).some(r=>r.use===true)||(input.brand?.interface??[]).length>0;
 }
-export const ideasTaskFor=(input:{brief:{designerVersion?:unknown};assets?:{url:string}[];brand?:{references?:{url?:string;use?:boolean}[];interface?:unknown[]}})=>Number(input.brief.designerVersion)>=6?(hasShowablePicture(input)?IDEAS_TASK_V6:IDEAS_TASK_V6.replace(IDEAS_SUBJECT,`${IDEAS_SUBJECT} ${IDEAS_WITHOUT_PRODUCT_PICTURE}`)):IDEAS_TASK;
+export const ideasTaskFor=(input:{brief:{designerVersion?:unknown};assets?:{url:string}[];brand?:{references?:{url?:string;use?:boolean}[];interface?:unknown[]}},options:{sketches?:boolean}={})=>Number(input.brief.designerVersion)>=6?(hasShowablePicture(input)?IDEAS_TASK_V6:IDEAS_TASK_V6.replace(IDEAS_SUBJECT,`${IDEAS_SUBJECT} ${IDEAS_WITHOUT_PRODUCT_PICTURE}`))+(options.sketches?`\n${IDEAS_SKETCHES}`:''):IDEAS_TASK;
 export const ideasAgain=(notes:string[])=>`None of the three ideas passes the key checks:\n${notes.map(n=>`- ${n}`).join('\n')}\nWrite three new ideas the same way (IDEA 1, IDEA 2, IDEA 3), bolder and closer to the territory. This is the last ideas round.`;
 /** The chosen idea in the designer's own words (the whole of its IDEA n section); when the sections cannot be told
  * apart, the whole ideas answer, so the build never starts without the idea's text. */

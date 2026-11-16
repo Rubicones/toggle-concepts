@@ -5,7 +5,7 @@
 // frozen with the run by its designer version; version 5 runs read critic@2 exactly as before. Pure.
 import {heroMeaning} from './designer';
 import {CRITIC_BASE,SELECTION_WHAT,REVIEW_INSTRUCTIONS,END_REVIEW_WHAT,stageReviewMaterial,type CriticCheck,type ReviewRound} from './critic-review';
-import {ideaText} from './image-ideas';
+import {ideaText,AIM_IN_FULL} from './image-ideas';
 import {heroBrief} from './hero-chat';
 import type {StageSkills,SkillStage} from '../agents/stage-skills';
 import type {DirectionInput} from './types';
@@ -54,7 +54,7 @@ export function reviewMaterialFor(input:DirectionInput,st:StageSkills|undefined,
 /** Version 6, every review: a device the brand's own kit names never counts against the work. */
 export const BRAND_DEVICES_REVIEWER='A finish, a material, a gradient, a shape or a mark that the brand\'s own kit names is the brand\'s device: it is never a sign of failure and never fails a check. The signs and checks about glows, gloss, gradients or added depth apply only to devices the brand does not own.';
 /** The owner's one aim, 16 November, for the reviewer (see BRAND_SPIRIT). */
-export const BRAND_SPIRIT_REVIEWER='The work is judged by one aim: an attractive picture, in the brand\'s own style, that shows the idea as vividly as it can be shown. In the brand\'s own style means made as its own designers would make it, in its aesthetic; the parts of its kit set side by side are not that. Vivid means the idea is seen in the picture at once, before the words are read. No way of making is preferred or forbidden. Work that misses one of the three (it is not attractive, it is not in the brand\'s own style, or its idea is not seen) fails, however well the other two are done, and a note names which.';
+export const BRAND_SPIRIT_REVIEWER='The work is judged by one aim: an attractive picture, in the brand\'s own style, that shows the idea as vividly as it can be shown. In the brand\'s own style means made as its own designers would make it, in its aesthetic; the parts of its kit set side by side are not that. Vivid means the idea is seen in the picture at once, before the words are read. No way of making is preferred or forbidden. Work that misses one of the three (it is not attractive, it is not in the brand\'s own style, or its idea is not seen) fails, however well the other two are done, and a note names which.\n'+AIM_IN_FULL;
 /** Version 6, every review (live run of 15 November: two review rounds each ended with the frame's subject or its way of
  * making replaced). A departure from plan D5, decided on live evidence. */
 export const SUBJECT_AND_MAKING_REVIEWER='The frame\'s main subject and its way of making stay through a review: a photographed frame stays photographed, a frame built in code stays built in code. No note asks to remove the subject or to make the frame another way; when the subject or the way of making is itself the problem, say so in one note for the art director and ask the designer for nothing about it.';

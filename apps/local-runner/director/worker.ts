@@ -41,7 +41,7 @@ import {reviewRepairMessage} from '../../../packages/director/extension-chat';
 import {creatorStageText,stageSkillTitles} from '../../../packages/agents/stage-skills';
 import {forkFromDirection,branchFromDirection,directionBranchLine,type DirectionBranch} from '../../../packages/agents/local-session';
 import {localModelFor} from '../../../packages/agents/local-models';
-import {usesImageIdeas,ideasTaskFor,SELECTION_INSTRUCTIONS,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../../packages/director/image-ideas';
+import {usesImageIdeas,ideasTaskFor,SELECTION_INSTRUCTIONS,SKETCH_SELECTION,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../../packages/director/image-ideas';
 import {designerRoleLine} from '../../../packages/director/roles';
 import {directorAdmissionProblem,directorRequestSnapshot,criticAllowanceUsed} from '../../../packages/director/admission';
 import {screenshotForDesigner,RENDER_LONG_SIDE} from './designer-loop';
@@ -468,10 +468,14 @@ export async function executeDirector(claim:DirectorClaim,device:string,local:Lo
     if(heroChat(input)&&loop.hero?.state!=='accepted'){
      await workingWith('hero');
      // D4 (version 5): three image ideas, an independent selection (the critic role), then the build, in this conversation.
-     const owned=input.creativeHandoff?.intent.direction,ideasArgs=usesImageIdeas(input)?{ideas:{task:(owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:'')+ideasTaskFor(input)+(staged?`\n\n${creatorStageText(staged,'ideas')}`:''),
-      select:async(text:string,round:number)=>{if(!snapshot.models.critic?.vision||estimate.roles.critic.requests-(loop.hero?.reviews??0)-(round-1)<1)return null;
+     // Version 6: the three ideas are chosen by looking at a picture of each, when the draft may have four pictures or
+     // more (STUDIO_IDEA_SKETCHES=0 turns it off).
+     const ideaSketches=heroMeaning(input)&&estimate.maxStills>=4&&process.env.STUDIO_IDEA_SKETCHES!=='0';
+     const owned=input.creativeHandoff?.intent.direction,ideasArgs=usesImageIdeas(input)?{ideas:{task:(owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:'')+ideasTaskFor(input,{sketches:ideaSketches})+(staged?`\n\n${creatorStageText(staged,'ideas')}`:''),
+      ...(ideaSketches?{sketchImage:async(id:string)=>{const entry=(state.catalog??[]).find(c=>c.id===id);return entry?{url:await screenshotForDesigner(resolve(folder,'public',entry.url),768),label:id}:null;}}:{}),
+      select:async(text:string,round:number,sketches?:{url:string;label:string}[])=>{if(!snapshot.models.critic?.vision||estimate.roles.critic.requests-(loop.hero?.reviews??0)-(round-1)<1)return null;
        // A selection its critic allowance cannot hold falls back to the first idea, as when it cannot run at all.
-       try{return readSelection((await call('critic','Choose one of the three ideas.',usesQuality(input)?SELECTION_INSTRUCTIONS_V3:SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(reviewMaterialFor(input,staged,'ideas').checks),territoryText(input))},{review:'ideas',round},[])).text);}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
+       try{return readSelection((await call('critic','Choose one of the three ideas.',usesQuality(input)?SELECTION_INSTRUCTIONS_V3:SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(reviewMaterialFor(input,staged,'ideas').checks),territoryText(input))+(sketches?.length?`\n\n${SKETCH_SELECTION}`:'')},{review:'ideas',round},sketches??[])).text);}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
       unreviewedReason:()=>!snapshot.models.critic?.vision||estimate.roles.critic.requests<1?'NO_REVIEW_IN_QUOTE':undefined,
       onIdeas:async(cards:string[],_text:string,round:number)=>{const step=`ideas:${state.iteration??1}:${round}`;await events.emit(step,{stepId:step,kind:'designer',status:'done',costMicroUsd:0,message:'Three ideas for the key frame.',detail:{ideas:cards}});},
       onChosen:async(pick:number,reason:string)=>{const step=`ideas:${state.iteration??1}:chosen`,unreviewed=loop.ideas?.unreviewed;
