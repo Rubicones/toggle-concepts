@@ -4,7 +4,7 @@
 // LIVE: every run spends the signed-in Claude subscription. Never part of `npm test`; run it by hand:
 //   node --import tsx scripts/bench/pipeline-bench.ts <brand> [--turns=12] [--model=claude-sonnet-5-5] [--effort=high] [--version=3]
 import {mkdir,writeFile,readFile,copyFile,rm,mkdtemp,cp} from 'node:fs/promises';
-import {existsSync} from 'node:fs';
+import {existsSync,readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {brands,benchInput,benchInputV5,benchBrandPack,benchCatalogue,type BenchBrand} from './brands';
@@ -47,7 +47,7 @@ const arg=(name:string,fallback:string)=>process.argv.find(a=>a.startsWith(`--${
 //   --refuse-pictures-after=N  every picture after the first N is refused as a payment refusal (PROVIDER_402)
 const advisory=arg('full-critic','0')!=='1'&&(arg('advisory-critic','0')==='1'||arg('designer','0')==='6');
 const refusal=arg('refuse-pictures-after','')!==''?{refuseAfter:Number(arg('refuse-pictures-after','0'))}:{};
-const noCritic=arg('no-critic','0')==='1',ablation={...(advisory?{endRepair:false}:{}),...(arg('no-ideas','0')==='1'?{noIdeas:true}:{}),...(arg('v3-context','0')==='1'?{v3Context:true}:{})};
+const noCritic=arg('no-critic','0')==='1',ablation={...(advisory?{endRepair:false}:{}),...(arg('no-ideas','0')==='1'?{noIdeas:true}:{}),...(arg('idea','')?{idea:readFileSync(resolve(arg('idea','')),'utf8').trim()}:{}),...(arg('v3-context','0')==='1'?{v3Context:true}:{})};
 const ablationName=`${noCritic?'-nocritic':''}${advisory?'-advisory':''}${arg('no-ideas','0')==='1'?'-noideas':''}${arg('v3-context','0')==='1'?'-v3context':''}`;
 
 async function main(){

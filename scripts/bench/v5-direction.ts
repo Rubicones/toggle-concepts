@@ -42,7 +42,7 @@ import {designerRoleLine,staticRoleInstructions} from '../../packages/director/r
 import {STAGE_H_INSTRUCTIONS,heroBriefLine,pictureWaitLine,HERO_THUMBNAIL_SIDE,HERO_THUMBNAIL_LABEL} from '../../packages/director/hero-chat';
 import {heroMeaning} from '../../packages/director/designer';
 import {reviewRepairMessage} from '../../packages/director/extension-chat';
-import {ideasTaskFor,ideaSketchCount,IDEA_SKETCHES,SELECTION_INSTRUCTIONS,SKETCH_SELECTION,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../packages/director/image-ideas';
+import {ideasTaskFor,chosenMessage,ideaSketchCount,IDEA_SKETCHES,SELECTION_INSTRUCTIONS,SKETCH_SELECTION,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../packages/director/image-ideas';
 import {checksText,REVIEW_INSTRUCTIONS,HERO_REVIEW_WHAT,END_REVIEW_WHAT,reviewSchemaV2,reviewContextText,readReview,withAllRulings,toDesignerNotes,settleHeroReview,HERO_REVIEW_ROUNDS} from '../../packages/director/critic-review';
 import {designerDigestText,designerDigestEntries,territoryText} from '../../packages/director/designer-digest';
 import {reviewGaps,reviewReason,unreviewedStatus} from '../../packages/director/review-gaps';
@@ -85,6 +85,8 @@ export type V5Options={
   * builds straight from the hero task. v3Context: the designer reads the version 3 brief (designerContext as JSON)
   * instead of the planning-shaped digest. */
  noIdeas?:boolean;v3Context?:boolean;
+ /** An experiment switch: build this idea (the designer's own words of an earlier run) as the chosen one, with no ideas turn and no selection. */
+ idea?:string;
  /** A bench switch for the proposal of 15 November: false makes the end review advisory (one review, its notes listed,
   * no repair round). With heroReviews 1 the hero gets one review and one last turn. */
  endRepair?:boolean;
@@ -113,6 +115,7 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
  // The quote a version 5 block is approved with: 24 designer turns, two end reviews, two hero reviews, one selection.
  const quote=estimateDesignerDirection({designer:PRICING,critic:CRITIC_PRICING},0,0,{bench:input.directionId},{criticRequests:heroReviews>0?2:0,heroReviews,ideasSelection:true,requestInputCap:designerRequestCap(1000000,32000)});
  const state:DesignerLoopState=newDesignerState(),design=provisionalDesign(input);
+ if(o.idea){state.ideas={rounds:1,picked:1,reason:'The art director chose this idea.',texts:[`IDEA 1\n${o.idea}`]};state.heroNote=chosenMessage(1,'The art director chose this idea.','reviewer',`IDEA 1\n${o.idea}`);}
  if(o.recordRequests)await mkdir(join(o.out,'requests'),{recursive:true});
  // The designer's own conversation, as the worker keeps it: each turn continues the last accepted one.
  const conversation=(()=>{let pending:StoredPoint|null=null,decided:Plan|undefined;
