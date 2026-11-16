@@ -8,7 +8,7 @@ import {lintWorkspace,confinedPath} from '../../../packages/director/policy.loca
 import {readLiveOptions} from '../../../packages/director/live-options.local';
 import {digest} from '../../../packages/director/money';
 import type {DirectionInput} from '../../../packages/director/types';
-const generated=new Set(['brand.ts','resources.ts','entry.tsx','runtime.ts','kit.ts','input.json','draft.json','catalog.json','toolchain.json','tsconfig.json']);
+const generated=new Set(['brand.ts','resources.ts','entry.tsx','runtime.ts','kit.ts','kit3d.ts','input.json','draft.json','catalog.json','toolchain.json','tsconfig.json']);
 export async function liveSource(folder:string){
  await requireRuntimeVersion(folder);
  const input:DirectionInput=JSON.parse(await readFile(resolve(folder,'input.json'),'utf8'));if(input.stage!=='draft')throw new Error('LIVE_STATIC_DRAFT_REQUIRED');
@@ -29,7 +29,9 @@ export async function buildLivePreview(folder:string){
    if([resolve(root,'brand'),resolve(root,'brand.ts')].includes(resolve(args.resolveDir,args.path)))return {path:'brand',namespace:'live-brand'};
    if([resolve(root,'resources'),resolve(root,'resources.ts')].includes(resolve(args.resolveDir,args.path)))return {path:'resources',namespace:'live-resources'};
    if(args.path.startsWith('.')){const name=relative(root,resolve(args.resolveDir,args.path));await confinedPath(root,name);for(const tail of ['', '.tsx','.ts','.css','.json','/index.tsx','/index.ts'])try{const file=await realpath(resolve(root,name+tail));if(!file.startsWith(root+'/'))throw new Error('WORKSPACE_PATH_REJECTED');await readFile(file);return {path:file};}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT'&&(error as NodeJS.ErrnoException).code!=='EISDIR')throw error;}throw new Error('PREVIEW_IMPORT_NOT_FOUND');}
-   if(!['react','react/jsx-runtime','react-dom','remotion'].some(id=>args.path===id||args.path.startsWith(id+'/'))&&!/^@remotion\/(shapes|paths|layout-utils)$/.test(args.path))throw new Error('PREVIEW_IMPORT_REJECTED');
+   // C8 (designerVersion 4): three.js for code-built 3D scenes (and its model loader, used by ./kit3d).
+   const threeD=Number(before.input.brief.designerVersion)>=4&&(args.path==='three'||args.path==='three/examples/jsm/loaders/GLTFLoader.js');
+   if(!threeD&&!['react','react/jsx-runtime','react-dom','remotion'].some(id=>args.path===id||args.path.startsWith(id+'/'))&&!/^@remotion\/(shapes|paths|layout-utils)$/.test(args.path))throw new Error('PREVIEW_IMPORT_REJECTED');
    return b.resolve(args.path,{resolveDir:process.cwd(),kind:args.kind});
   });
   b.onLoad({filter:/.*/,namespace:'live-resources'},()=>({contents:"export const resources=window.__DIRECTOR_PREVIEW__.resources;",loader:'js'}));

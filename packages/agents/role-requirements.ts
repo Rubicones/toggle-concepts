@@ -1,4 +1,5 @@
 import type {CatalogModel} from './catalog';
+import {TRIPO_AGENT_MODELS} from '../director/tripo';
 import {FLASH_MODEL,IMAGE_MODEL} from './defaults';
 import {draftModelProblem,type DirectorModelRole} from '../director/role-models';
 
@@ -9,7 +10,8 @@ const draftRoles:Record<string,DirectorModelRole>={'visual-direction':'director'
 export function roleRequirement(role:string){
  if(role==='image')return `Runs through the image adapter, which executes ${IMAGE_MODEL} only.`;
  if(role==='brand-kit')return `Brand vision reading runs through an adapter that requires ${FLASH_MODEL}.`;
- if(role==='video'||role==='model3d')return 'No generation provider is connected; no model is used.';
+ if(role==='video')return 'No generation provider is connected; no model is used.';
+ if(role==='model3d')return `Image-to-3D models through Tripo (${TRIPO_AGENT_MODELS.join(' or ')}): used only by version 4 drafts, for a picture the designer cannot build in code. Needs TRIPO_API_KEY on this computer; set this before creating the run.`;
  if(role==='visual-direction')return 'Text model that reads images, supports structured outputs and has at least 64k context (also used as the live-draft visual director).';
  if(role==='creative-code')return 'Text model that supports structured outputs and has at least 64k context (also used as the live-draft coder).';
  if(role==='critic')return 'Text model that reads images, supports structured outputs and has at least 32k context (the live-draft creative review).';
@@ -18,7 +20,8 @@ export function roleRequirement(role:string){
 
 /** Why a model cannot work in a role, or undefined when it can. The same rules the runs apply. */
 export function agentModelProblem(role:string,model:CatalogModel|undefined,modelId:string|null):string|undefined{
- if(role==='video'||role==='model3d')return modelId===null?undefined:'No generation provider is connected for this role.';
+ if(role==='video')return modelId===null?undefined:'No generation provider is connected for this role.';
+ if(role==='model3d')return modelId===null||TRIPO_AGENT_MODELS.includes(modelId)?undefined:`Choose ${TRIPO_AGENT_MODELS.join(' or ')}, or no 3D models.`;
  if(!modelId)return 'Choose a model.';
  if(!model)return `The model ${modelId} is not available from the provider right now.`;
  if(role==='image')return model.id===IMAGE_MODEL?undefined:`The image adapter executes ${IMAGE_MODEL} only; ${model.name} would never run.`;

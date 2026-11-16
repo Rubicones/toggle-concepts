@@ -1,0 +1,236 @@
+// Chat-shaped plan C5 (designerVersion 4, stage H): the hero frame as a chat. One conversation per direction: the
+// designer answers in prose with whole files and an optional actions block; the app writes and builds the files, renders
+// the hero after every change, buys pictures inside the approved count, fetches materials by name, and answers with the
+// render and a short plain note. The hero review is a separate request; its notes come back as the next message. When
+// the hero is accepted, the extension (stage E) continues in the same conversation (runDesigner). Tools are injected,
+// so the loop is tested without paid calls.
+import {heroScene,heroMeaning} from '../../../packages/director/designer';
+import {unloadedFiles} from '../../../packages/director/layout-inspection';
+import {usesQuality,reasonOnly,lastTurnNote,NOTES_INSIDE_THE_IDEA} from '../../../packages/director/quality';
+import {PICTURE_HOLD_SECONDS,actionsCorrection,heroTask,parseChatAnswer,heroActionsSchema,usesEdits,applyEdits,renderNote,stageHFindings,type HeroAnswer} from '../../../packages/director/hero-chat';
+import {resolveAssetReferences} from '../../../packages/director/asset-names';
+import {splitPictureReferences,brandReferenceNames,referenceRefusal} from '../../../packages/director/picture-references';
+import {recordPictureFailure,noFurtherPictureNote,KEEP_THE_WAY_OF_MAKING,PICTURE_PAYMENT_REFUSED,providerSentence,picturesAgainNote,pictureFailureNote,pictureFailure,picturesLeft,type PictureFailure} from '../../../packages/director/picture-failure';
+import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../packages/director/execution-failures';
+import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
+import type {DirectionInput} from '../../../packages/director/types';
+import {openPointsNote} from '../../../packages/director/critic-review';
+import {MAX_IDEA_ROUNDS,SKETCH_NOT_FINAL,chosenMessage,ideaCards,ideasAgain,sketchPrompts,type Selection} from '../../../packages/director/image-ideas';
+import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,buildStuck,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
+
+export type HeroCall=(message:string,images:{url:string;label:string}[])=>Promise<string>;
+export type HeroTurnEvent={turn:number;idea:string;prose:string;files:string[];actions?:string;results:string[];looked?:string};
+/** How many turns stage H may use at most: the rest of the allowance is for the other scenes and formats. */
+export const HERO_TURN_SHARE=0.5;
+
+/** Plan E5: the longest a hero render waits for the pictures it asked for. Twice the longest wait measured on the bench
+ * (a picture delivered by hand took 40 to 120 s on 14 November); the time of a picture bought in production is not
+ * measured yet, so this bound is a starting value. */
+export const PICTURE_HOLD_MS=PICTURE_HOLD_SECONDS*1000;
+export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;tools:DesignerTools;call:HeroCall;save:(s:DesignerLoopState)=>Promise<void>;heroReviews?:number;
+ conversation?:{decide:()=>Promise<boolean>;accept:()=>Promise<void>;lost?:()=>void};onTurn?:(e:HeroTurnEvent)=>Promise<void>;
+ /** A picture that could not be bought: said on the timeline at once (version 6). */onPictureFailed?:(e:{id:string;failure:PictureFailure})=>Promise<void>;
+ /** Plan E5 (version 6): how long a render waits for the pictures asked for (default PICTURE_HOLD_MS), and a call when a wait starts. */pictureHoldMs?:number;onPictureWait?:(e:{pictures:number;holdMs:number})=>Promise<void>;
+ /** D4 (version 5): three image ideas before any code; an independent selection picks one (at most one extra round). */
+ ideas?:{task:string;select:(ideas:string,round:number,sketches?:{url:string;label:string}[])=>Promise<Selection|null>;/** version 6: the three issued ids of the idea sketches (quoted on their own line) */sketchIds?:string[];/** version 6: turns a made sketch (a resource id) into the picture the reviewer sees; absent = ideas are chosen from the text */sketchImage?:(id:string)=>Promise<{url:string;label:string}|null>;/** why the selection returned nothing without an error (no review in the quote, its allowance used) */unreviewedReason?:()=>string|undefined;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
+ const {input,state,tools}=args,now=args.now??Date.now,referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
+ if(!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
+ let paymentStop:string|null=null;const stopForPayment=async()=>{if(!paymentStop)return;await args.save(state);throw Object.assign(new Error(PICTURE_PAYMENT_REFUSED),{detail:paymentStop});};
+ const hero=state.hero,pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];
+ // Version 6: a failed purchase is said with its plain reason and, once, with how many pictures can still be had.
+ const failed=async(p:PictureResult)=>{if(!heroMeaning(input))return `The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`;const said=recordPictureFailure(state,p,args.maxPictures);if(said.failure.payment&&!state.picturesDeclined){state.paymentStopped=p.id;paymentStop=`designer: the picture ${p.id} was refused for payment (${said.failure.code}).${p.said?` Provider says: ${p.said}`:''}`;}await args.save(state);await args.onPictureFailed?.({id:p.id,failure:said.failure});return said.note;};
+ // The owner answered a payment stop: buying is tried again, or the draft goes on without pictures.
+ if(state.paymentStopped&&heroMeaning(input)){const id=state.paymentStopped;delete state.paymentStopped;if(!state.picturesDeclined)delete state.picturesBlocked;
+  state.heroNote=[state.heroNote??'',state.picturesDeclined?pictureFailureNote(id,pictureFailure('PROVIDER_402'),0):picturesAgainNote(id,picturesLeft(args.maxPictures,state.pictures,false))].filter(Boolean).join('\n\n');await args.save(state);}
+ const noMore=()=>state.picturesBlocked||state.pictures>=args.maxPictures?` You can get no further picture in this draft. ${KEEP_THE_WAY_OF_MAKING}`:'';
+ // Version 6: which bought or supplied pictures the frame's code draws (read from the source), so a turn after a review
+ // that drops every picture is told once that the way of making stays.
+ const drawn=async()=>{const text=(await tools.files()).map(f=>f.source).join('\n');return [...new Set([...text.matchAll(/resources\[['"]([^'"]+)['"]\]/g)].map(m=>m[1]))];};
+ const accept=async(by:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed')=>{hero.state='accepted';hero.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:hero.sceneId,format:hero.format,by});};
+ // D4: the ideas turns open stage H (the first carries the task); the choice is the next message, then the build.
+ if(args.ideas&&!state.ideas?.picked){
+  const ideas=state.ideas??={rounds:0};
+  while(!ideas.picked&&ideas.rounds<MAX_IDEA_ROUNDS&&state.turn<args.maxTurns){
+   // The ideas turn is a turn of the designer's own conversation: decided and accepted like every other, so the build
+   // continues it and reads the ideas it wrote.
+   await args.conversation?.decide();
+   const text=await args.call(ideas.rounds===0?`${heroTask(input,{pictures:args.maxPictures})}\n\n${args.ideas.task}`:ideasAgain(ideas.notes??[]),[]);
+   await args.conversation?.accept();
+   state.turn++;ideas.rounds++;ideas.texts=[...(ideas.texts??[]),text.slice(0,8000)];await args.save(state);
+   await args.ideas.onIdeas?.(ideaCards(text),text,ideas.rounds);
+   // A selection that cannot run is recorded with its reason (it is said on the timeline and on the draft).
+   let selectError='NO_REVIEW_IN_QUOTE';
+   // Version 6: a picture of each idea is made under its own issued ids (their own line of the quote), and the reviewer
+   // chooses by looking. Any sketch that cannot be made leaves the choice to the text, as before.
+   let sketches:{url:string;label:string}[]|undefined;
+   {const ids=args.ideas.sketchIds??[],prompts=args.ideas.sketchImage&&ids.length===3&&ideas.rounds===1&&!state.picturesBlocked?sketchPrompts(text):[];
+    if(prompts.length===3){
+     const aspect=(()=>{const f=input.formats.find(x=>x.id===state.hero?.format)??input.formats[0];const g=(a:number,b:number):number=>b?g(b,a%b):a,d=f?g(f.width,f.height):1;return f?`${f.width/d}:${f.height/d}`:'1:1';})();
+     const made=await Promise.all(prompts.map(async(prompt,i)=>{
+      try{const r=await tools.requestImage({purpose:`Sketch of idea ${i+1} for the choice between the three ideas`,scene:state.hero!.sceneId,prompt,aspect,referenceAssetIds:[],mustNotContain:[],resourceId:ids[i]});return r.status==='ready'?r.id:null;}
+      catch(error){if(propagateExecutionFailure(error))throw error;return null;}}));
+     ideas.sketches=made;await args.save(state);
+     if(made.every(Boolean)){const images=await Promise.all(made.map(async(id,i)=>{const image=await args.ideas!.sketchImage!(id!);return image?{...image,label:`Sketch ${i+1}: the picture of idea ${i+1}`}:null;}));if(images.every(Boolean))sketches=images as {url:string;label:string}[];}
+    }}
+   const chosen=await args.ideas.select(text,ideas.rounds,sketches).catch(error=>{if(propagateExecutionFailure(error))throw error;selectError=error instanceof Error?error.message.slice(0,120):'UNREADABLE';return null;});
+   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=usesQuality(input)?reasonOnly(chosen.reason):chosen.reason;const sketch=ideas.sketches?.[chosen.pick-1];state.heroNote=chosenMessage(chosen.pick,ideas.reason,'reviewer',text)+(sketch?`\n\n${SKETCH_NOT_FINAL}`:'');}
+   else if(!chosen||ideas.rounds>=MAX_IDEA_ROUNDS){ideas.picked=1;if(!chosen)ideas.unreviewed=args.ideas.unreviewedReason?.()??selectError;ideas.reason=!chosen?'The selection could not run, so the first idea is built.':'No idea passed after the extra round, so the first idea is built.';state.heroNote=chosenMessage(1,ideas.reason,'fallback',text);}
+   else ideas.notes=chosen.notes;
+   await args.save(state);
+   if(ideas.picked)await args.ideas.onChosen?.(ideas.picked,ideas.reason??'');
+  }
+ }
+ let missingRetried=false;
+ while(hero.state!=='accepted'&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
+  // What arrived since the last answer; a continued conversation holds everything earlier.
+  const pictures:string[]=[];for(const p of arrived.splice(0))pictures.push(p.status==='ready'?`The picture ${p.id} has arrived: read resources['${p.id}'].${p.faces===undefined?'':p.faces?` ${p.faces===1?'One plain face was':`${p.faces} plain faces were`} measured in it (onPicture gives ${p.faces===1?'it':'them'}).`:' No plain face was measured in it.'}`:await failed(p));
+  if(paymentStop){const kept=pictures.filter(n=>!n.includes('could not be bought'));if(kept.length)state.heroNote=[state.heroNote??'',...kept].filter(Boolean).join('\n\n');}
+  await stopForPayment();
+  const short=args.conversation?await args.conversation.decide():state.turn>0;
+  const due=tools.materials&&state.materialsDue?.length?await tools.materials.load(state.materialsDue):null;
+  const last=state.lastRender,shots=last?await Promise.all(last.views.map(async v=>({url:await screenshotForDesigner(v.file,RENDER_LONG_SIDE),label:`${v.label} (rendered)`}))):[];
+  // A new or restarted conversation gets the task again, with the files so far and the last note.
+  const files=await tools.files(),opening=state.turn===0||!short;
+  const message=[opening?heroTask(input,{pictures:args.maxPictures}):'',opening&&state.turn>0?`YOUR FILES SO FAR\n${files.map(f=>`\`\`\`tsx ${f.path}\n${f.source}\n\`\`\``).join('\n')}`:'',state.heroNote??'',...pictures,due?.text??''].filter(Boolean).join('\n\n');
+  let text:string;
+  try{text=await args.call(message,[...shots,...(due?.images??[])]);}
+  catch(error){
+   if(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'){state.turn++;state.heroNote='Your answer was cut off. Answer shorter: the idea in a few sentences and only the files that change.';await args.save(state);continue;}
+   if(error instanceof Error&&error.message==='CONVERSATION_MISSING'&&args.conversation?.lost&&!missingRetried){missingRetried=true;args.conversation.lost();continue;}
+   throw error;}
+  missingRetried=false;state.turn++;delete state.heroNote;delete state.lastRender;
+  await args.conversation?.accept();
+  if(due&&state.materialsDue?.length){state.materialsSeen=[...new Set([...(state.materialsSeen??[]),...state.materialsDue])];state.materialsDue=[];}
+  state.transcript.push({from:'agent',text:text.slice(0,2000)});await args.save(state);
+  const answer:HeroAnswer=parseChatAnswer(text,heroActionsSchema,{edits:usesEdits(input)}),results:string[]=[],notes:string[]=[];const lastTurn=hero.lastTurn;let looked:string|undefined;let stuck:string|null=null;let pictureStop:string|null=null;
+  try{
+   // 1. Files: written whole, then built. A building change is rendered: the app shows it, as in a chat.
+   for(const f of answer.files){await tools.write(f.path,f.source);results.push(`Saved ${f.path}.`);}
+   // Plan E4 (version 6): exact edits, applied in order to the files as they now stand; a refused edit is said in one
+   // line and the others still apply.
+   const edited=answer.edits?.length?applyEdits(await tools.files(),answer.edits):null;
+   if(edited){for(const f of edited.changed){await tools.write(f.path,f.source);results.push(`Changed ${f.path} (${f.edits} edit${f.edits===1?'':'s'}).`);}if(edited.refused.length){results.push(`${edited.refused.length} edit${edited.refused.length===1?' was':'s were'} not applied.`);notes.push(edited.refused.join('\n'));}}
+   const changedFiles=answer.files.length+(edited?.changed.length??0);
+   const built=await tools.build();
+   if(!built.ok){results.push('The code does not build yet.');notes.push(`The code does not build:\n${shortIssue(built.issue)}`);}
+   stuck=buildStuck(state,built.ok?null:built.issue);
+   if(answer.actionsError){results.push(answer.actions?'Part of the actions block could not be read.':'The actions block could not be read.');notes.push(answer.actions?`Part of your actions block could not be read (${answer.actionsError}); the rest was carried out.`:actionsCorrection(answer.actionsError));}
+   const actions=answer.actions??{};
+   // 2. Materials and pictures, inside their budgets; pictures arrive in a later message.
+   if(actions.materials?.length){if(!tools.materials)notes.push('Materials are not available in this draft.');else{const asked=await tools.materials.fetch(actions.materials,[...(state.materialsSeen??[]),...(state.materialsDue??[])]);state.materialsDue=[...new Set([...(state.materialsDue??[]),...asked.attached])];notes.push(asked.lines.join('\n'));results.push(...asked.lines);}}
+   const askedNow:string[]=[];
+   for(const p of actions.pictures??[]){
+    if(heroMeaning(input)&&state.picturesBlocked){notes.push(noFurtherPictureNote(state.picturesBlocked));results.push('No picture: none can be bought.');break;}
+    if(state.pictures>=args.maxPictures){notes.push('The approved number of pictures is used: build the rest in code or with the pictures you have.');break;}
+    // Version 6: references may be supplied files or the brand's own drawable files; one that cannot be issued is named
+    // with its reason and the picture is not counted.
+    const split=heroMeaning(input)?splitPictureReferences(p.references??[],input,tools.brandNames??brandReferenceNames(input)):null;
+    if(split?.problems.length){notes.push(referenceRefusal(p.purpose,split.problems));continue;}
+    state.pictures++;await args.save(state);const id=input.resourceIds[state.pictures-1],key=`${state.turn}:${state.pictures}`;if(id)askedNow.push(id);
+    const picture={purpose:p.purpose,scene:hero.sceneId,prompt:p.prompt,aspect:p.aspect,...(split?.brandUrls.length?{brandRefs:split.brandUrls}:{}),referenceAssetIds:split?split.assetIds:resolveAssetReferences(p.references??[],input),mustNotContain:p.mustNotContain??[],...(p.cutout?{cutout:true}:{}),...(p.proxyFor?{proxyFor:p.proxyFor}:{}),...(p.becomes&&p.proxyFor?{becomes:p.becomes}:{})};
+    pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const,detail:(error instanceof Error?error.message:'').slice(0,200),code:(error instanceof Error?error.message:'').slice(0,200),said:providerSentence((error as {detail?:string}|null)?.detail)};arrived.push(r);pending.delete(key);return r;}));
+    notes.push(`Asked for a picture (${p.purpose.slice(0,80)}): it will be resources['${id}'] and arrives in a later message.`);results.push('Asked for a picture.');
+   }
+   // C8 follow-up: a 3D model of a picture it already has, when code cannot build that object; the picture stays the fallback.
+   for(const m of actions.models??[]){
+    if(!tools.requestModel){notes.push(`No 3D model for ${m.picture}: ${MODELS_NOT_SET_UP}`);results.push('No 3D model.');continue;}
+    const made=await tools.requestModel(m);results.push(made.status==='model'?'Made a 3D model.':'No 3D model.');
+    notes.push(made.status==='model'?`The 3D model of ${made.id} is ready: draw it with <Scene3D model={resources['${made.id}']} …/>; its picture stays the fallback.`:`No 3D model for ${made.id}: ${made.detail??'it could not be made'}. Keep the picture, or build the object in code.`);
+   }
+   if(heroMeaning(input)&&changedFiles&&built.ok&&hero.reviewedWith?.length&&!hero.makingNoted&&!(await drawn()).length){hero.makingNoted=true;notes.push(`The frame the reviewer saw drew ${hero.reviewedWith.length===1?'a picture':'pictures'} (${hero.reviewedWith.join(', ')}); this code draws none. The way of making stays through a review: put the picture back and solve the notes around it, or say in one sentence why the frame cannot keep it.`);results.push('The pictures were dropped after a review: told to keep the way of making.');}
+   // 3. The render: after every building change, or when asked.
+   if(built.ok&&(changedFiles||actions.render)){
+    // Version 6 (plan E1): the hero stage makes one frame with the reference words; the longest copy of another
+    // hook or language is measured from stage E on, when the designer has been given it.
+    // Plan E5 (version 6): a picture asked for holds this render until it is ready, for a bounded time, so the
+    // designer sees the frame with its picture and no render is spent on a stand-in. The picture's file changes
+    // resources.ts, so the code is built again before the render.
+    if(heroMeaning(input)&&pending.size){
+     const holdMs=args.pictureHoldMs??PICTURE_HOLD_MS,waiting=[...pending.keys()].length,from=now();
+     await args.onPictureWait?.({pictures:waiting,holdMs});
+     let timer:ReturnType<typeof setTimeout>|undefined;
+     await Promise.race([Promise.allSettled([...pending.values()]),new Promise(r=>{timer=setTimeout(r,holdMs);})]);if(timer)clearTimeout(timer);
+     state.pictureWaitMs=(state.pictureWaitMs??0)+(now()-from);
+     const here=arrived.splice(0);
+     for(const p of here)notes.push(p.status==='ready'?`The picture ${p.id} has arrived and is in this render: read resources['${p.id}'].${p.cutout===true?` Its cutout is resources['${p.id}'].cutoutUrl.`:p.cutout===false?` ${p.detail??'The cutout failed; use the rectangle.'}`:''}`:await failed(p));
+     if(pending.size)notes.push(`${pending.size===1?'One picture was':`${pending.size} pictures were`} not ready after ${Math.round(holdMs/1000)} s: this render is without ${pending.size===1?'it':'them'}, and ${pending.size===1?'it arrives':'they arrive'} in a later message.`);
+     if(here.some(p=>p.status==='ready')){const again=await tools.build();if(!again.ok)notes.push(`The code does not build with the picture in place:\n${shortIssue(again.issue)}`);}
+     results.push(here.length?`Waited for ${here.length===1?'the picture':`${here.length} pictures`}.`:'The picture was not ready in time.');if(here.some(p=>p.status!=='ready'))results.push('A picture could not be bought.');
+    }
+    const views=designerViews(input,hero.sceneId,[hero.format]).filter(v=>!heroMeaning(input)||v.shot),out=await tools.render(views);state.renders[renderKey(hero.sceneId,hero.format)]=(state.renders[renderKey(hero.sceneId,hero.format)]??0)+1;
+    const findings=stageHFindings(out.summary.reports.flatMap(r=>r.findings)).sort((a,b)=>Number(b.severity==='hard')-Number(a.severity==='hard'));
+    // A picture that did not load: said on this render; the same file unloaded on two renders in a row stops the
+    // direction with a question (the designer cannot repair what the app does not serve).
+    {const files=unloadedFiles(findings),same=files.length&&state.unloaded&&files.some(f=>state.unloaded!.files.includes(f));
+     if(files.length)state.unloaded={files,renders:same?state.unloaded!.renders+1:1};else delete state.unloaded;
+     if(state.unloaded&&state.unloaded.renders>=2)pictureStop=`designer: a picture did not load in two renders in a row: ${state.unloaded.files.join(', ').slice(0,300)}`;}
+    state.lastRender={sceneId:hero.sceneId,findings,views:views.filter(v=>v.shot).flatMap(v=>{const s=out.shots.find(x=>x.key===v.key);return s?[{label:v.label,file:s.file,width:v.props.width,height:v.props.height}]:[];})};
+    hero.shots=state.lastRender.views.map(v=>({label:v.label,file:v.file}));looked=hero.shots[0]?.file;
+    notes.push(renderNote(findings,state.lastRender.views.length));results.push(`Rendered: ${findings.filter(f=>f.severity==='hard').length} to fix, ${findings.filter(f=>f.severity!=='hard').length} observations.`);
+   }
+   // critic@3: this was the last turn after the review. The frame is accepted as it now stands; a turn whose code does
+   // not build gets one more turn to repair it, then the frame is accepted as the turn cap accepts it.
+   // Bench run 21: the code of an answer drew another picture than the one that answer asked for (the designer counted
+   // its pictures wrongly), and the frame was accepted with it. Measured, not left to counting: a picture asked for in
+   // this answer that the code does not draw is said at once, and the last turn is not closed on it.
+   let askedNotDrawn=false;
+   {const sk=(state.ideas?.sketches??[]).filter((x):x is string=>!!x);if(sk.length&&built.ok){const used=await drawn();if(used.some(id=>sk.includes(id))){askedNotDrawn=true;notes.push(`The frame draws a sketch that was made only for the choice between the ideas (${used.filter(id=>sk.includes(id)).map(id=>`resources['${id}']`).join(', ')}). ${SKETCH_NOT_FINAL}`);results.push('The frame draws a sketch made for the choice.');}}}
+   if(heroMeaning(input)&&askedNow.length&&built.ok){const used=await drawn(),missing=askedNow.filter(id=>!used.includes(id));
+    if(missing.length){askedNotDrawn=true;notes.push(`This answer asked for ${missing.length===1?'a picture':'pictures'} that its code does not draw: ${missing.map(id=>`resources['${id}']`).join(', ')}.${used.length?` The code draws ${used.map(id=>`resources['${id}']`).join(', ')} instead.`:''} Point the code at the picture you asked for, or say why it is not used.`);results.push('The code does not draw the picture it asked for.');}}
+   if(lastTurn&&state.unloaded)pictureStop??=`designer: a picture does not load in the last turn's render: ${state.unloaded.files.join(', ').slice(0,300)}`;
+   else if(lastTurn){lastTurn.turns++;if((built.ok&&!askedNotDrawn)||lastTurn.turns>=2||state.turn>=args.maxTurns){await accept(lastTurn.by);delete hero.lastTurn;results.push('The hero frame is accepted.');}else notes.push(built.ok?'This was the last turn and its code does not draw the picture it asked for: repair only that; the frame is accepted after the next turn.':'This was the last turn and the code does not build: repair only that; the frame is accepted after the next turn.');}
+   // 4. The review: idea and craft first, then what must be fixed. Its notes are the next message.
+   else if(actions.review){
+    if(!hero.shots?.length)notes.push('Render the frame before asking for its review.');
+    else if(state.unloaded)notes.push('A picture in the frame did not load, so the frame cannot be reviewed yet: repair that first (see what must be fixed).');
+    else if(pending.size){await Promise.all(pending.values());notes.push('The pictures you asked for have arrived (see below): use them, then ask for the review again.');}
+    else if(hero.reviews>=(args.heroReviews??0)||!tools.reviewHero){await accept(tools.reviewHero&&(args.heroReviews??0)>0?'reviews-used':'no-critic');results.push('The hero frame is accepted.');}
+    else{
+     const findings=(state.lastRender?.findings??[]).map(f=>({view:f.view,severity:f.severity,detail:f.detail}));
+     if(heroMeaning(input))hero.reviewedWith=await drawn();
+     const review=await tools.reviewHero(hero.reviews+1,hero.shots,findings);hero.reviews++;await args.save(state);
+     if(!review){await accept('review-failed');results.push('The review could not run; the hero frame is accepted.');}
+     else{await args.onHero?.({kind:'reviewed',sceneId:hero.sceneId,format:hero.format,notes:review.notes.length,looked:hero.shots[0]?.file,...(review.checks?{review:{checks:review.checks,rulings:review.rulings??[],...(review.stop?{stop:review.stop}:{})}}:{})});
+      // D5: a stop by rule ends the hero review; what stays open goes to the AD and into stage E as notes.
+      // critic@3 (version 6): a review that ends with points still open gives the designer one last turn for them,
+      // with no further review; the frame is accepted after that turn.
+      const points=usesQuality(input)?[...new Set([...(review.open??[]),...review.notes.map(n=>`${n.problem} Wanted: ${n.fix}`)])]:[];
+      const by=review.stop?(review.stop==='all-pass'?'critic':review.stop==='no-progress'?'no-progress':'reviews-used'):review.accepted||!review.notes.length?'critic':hero.reviews>=(args.heroReviews??0)?'reviews-used':null;
+      if(by&&points.length&&state.turn<args.maxTurns){hero.lastTurn={by,turns:0};notes.push(lastTurnNote(points)+noMore());results.push(`Review finished: ${points.length} point${points.length===1?'':'s'} for one last turn.`);}
+      else if(review.stop){notes.push(openPointsNote(review.open??[]));await accept(review.stop==='all-pass'?'critic':review.stop==='no-progress'?'no-progress':'reviews-used');results.push(review.stop==='all-pass'?'Review finished: all checks passed.':review.stop==='no-progress'?'Stopped: no further progress — open points listed.':'Review finished after its rounds — open points listed.');}
+      else if(review.accepted||!review.notes.length){await accept('critic');results.push('The review accepted the hero frame.');}
+      else{notes.push(`The reviewer's notes on your hero frame:\n${review.notes.map(n=>`- [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}\n${usesQuality(input)?`${NOTES_INSIDE_THE_IDEA}${noMore()} Then ask for the review again.`:hero.reviews>=(args.heroReviews??0)?'Apply what you agree with; the next review request accepts the frame.':'Apply what you agree with, then ask for the review again.'}`);results.push(`Review: ${review.notes.length} note${review.notes.length===1?'':'s'}.`);}}
+    }
+   }
+  }catch(error){if(propagateExecutionFailure(error))throw error;stopOnEnvironmentFault(error);notes.push(`This step needs another attempt: ${(error instanceof Error?error.message:'').slice(0,300)}`);}
+  if(!answer.files.length&&!answer.edits?.length&&!answer.actions&&!answer.actionsError)notes.push('No files and no actions in your answer: write the complete files in fenced code blocks with their paths.');
+  state.heroNote=notes.filter(Boolean).join('\n\n');state.transcript.push({from:'tool',text:state.heroNote.slice(0,2000)});await args.save(state);
+  await args.onTurn?.({turn:state.turn,idea:answer.prose.split(/\n\s*\n/)[0]?.slice(0,600)??'',prose:answer.prose.slice(0,6000),files:[...new Set([...answer.files.map(f=>f.path),...(answer.edits??[]).map(e=>e.path)])],...(answer.raw.actions?{actions:answer.raw.actions.slice(0,4000)}:{}),results,...(looked?{looked}:{})});
+  // The same build error three times in a row: stop with a question instead of spending the turns on guesses.
+  if(paymentStop){state.heroNote=notes.filter(n=>!n.includes('could not be bought')).join('\n\n');}await stopForPayment();
+  if(pictureStop){await args.save(state);throw Object.assign(new Error('DRAFT_PICTURE_NOT_LOADED'),{detail:pictureStop});}
+  if(stuck){await args.save(state);throw Object.assign(new Error('DESIGNER_BUILD_STUCK'),{detail:`designer: the code failed to build three times in a row with the same error: ${stuck.slice(0,400)}`});}
+ }
+ // Stage H's share of turns used without an accepted review: the frame as it stands leads the other scenes.
+ // A hero that was rendered but never sent for review is reviewed once here, so the critic has seen what stage E
+ // builds on; its notes travel into stage E.
+ // A hero whose last render has a picture that did not load is never reviewed as a design or accepted.
+ if(hero.state!=='accepted'&&state.unloaded){await args.save(state);throw Object.assign(new Error('DRAFT_PICTURE_NOT_LOADED'),{detail:`designer: the hero frame's turns are used and a picture still does not load: ${state.unloaded.files.join(', ').slice(0,300)}`});}
+ if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&hero.shots?.length){
+  if(hero.reviews===0&&tools.reviewHero&&(args.heroReviews??0)>0){
+   const review=await tools.reviewHero(1,hero.shots,(state.lastRender?.findings??[]).map(f=>({view:f.view,severity:f.severity,detail:f.detail})));hero.reviews++;
+   if(review){await args.onHero?.({kind:'reviewed',sceneId:hero.sceneId,format:hero.format,notes:review.notes.length,looked:hero.shots[0]?.file,...(review.checks?{review:{checks:review.checks,rulings:review.rulings??[],...(review.stop?{stop:review.stop}:{})}}:{})});
+    if(review.notes.length)state.heroNote=[state.heroNote??'',`The reviewer's notes on your hero frame (your turns for it are used; apply what you agree with as you go on):\n${review.notes.map(n=>`- [${n.priority}] ${n.view}: ${n.problem} Wanted: ${n.fix}`).join('\n')}`].filter(Boolean).join('\n\n');
+    await accept('reviews-used');}
+   else await accept('review-failed');
+  }else await accept(hero.reviews>0?'reviews-used':'turns-used');
+ }
+ // Never on without a hero the designer saw: stage E does not open on a frame that never rendered.
+ const rendered=Object.values(state.renders).some(n=>n>0);
+ if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&!rendered){state.heroExtraTurns=(state.heroExtraTurns??0)+4;await args.save(state);}
+ if(hero.state!=='accepted'&&state.turn>=args.maxTurns&&!rendered)throw Object.assign(new Error('HERO_FRAME_NOT_RENDERED'),{detail:`designer: ${state.turn} turns were used and the hero frame never rendered${state.heroNote?`; the last message to the designer was: ${state.heroNote.slice(0,300)}`:''}`});
+ // Pictures still being made are reported to the extension stage by the usual restart path.
+ await Promise.allSettled(pending.values());
+ if(arrived.length)state.reported=[...(state.reported??[]),...arrived.map(a=>a.id).filter(Boolean)];
+ return state;
+}

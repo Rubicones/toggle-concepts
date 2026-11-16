@@ -334,9 +334,15 @@ export function visualTreatments(value: unknown): Treatment[] {
     .sort((a, b) => a.conceptId.localeCompare(b.conceptId));
 }
 
+/** C9: the visual direction's concept, written in prose before its structured fields (absent before C9). */
+export function visualConcept(value: unknown): string {
+  return evidenceText(planningObject(value).concept).trim();
+}
+
 /** Visual looks: three treatments of the chosen story compared facet by facet, each buildable on its own. */
 export function VisualTreatments({
   treatments,
+  concept,
   verdicts,
   built,
   campaignId,
@@ -345,6 +351,8 @@ export function VisualTreatments({
   build,
 }: {
   treatments: Treatment[];
+  /** C9: the visual idea in prose, shown above the structured fields. */
+  concept?: string;
   verdicts: Verdict[];
   built: Set<number>;
   campaignId: string;
@@ -367,6 +375,14 @@ export function VisualTreatments({
           near-final draft with real pictures; you see the price before anything starts.
         </p>
       </header>
+      {concept && (
+        <div className={styles.concept} aria-label="The visual idea">
+          <p className={styles.eyebrow}>THE VISUAL IDEA</p>
+          {concept.split(/\n{2,}/).map((part) => (
+            <p key={part}>{part}</p>
+          ))}
+        </div>
+      )}
       <div className={styles.compare} role="group" aria-label="Compare by">
         <span>Compare by</span>
         <button type="button" aria-pressed={facet === null} onClick={() => setFacet(null)}>

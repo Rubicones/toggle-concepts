@@ -5,6 +5,7 @@ import {squarePreviewOnly} from './preview-scope';
  * turns raw geometry into objective findings. It measures and reports only: it never moves, resizes or restyles
  * anything, and it does not choose a creative technique.
  */
+import {PLAIN_BAND_SHARE,PLAIN_BAND_OVER_REFERENCE} from './plain-band';
 import type {DirectionInput,Variant} from './types';
 import type {LiveFrameProps,LiveOptions} from './live-preview';
 import {liveFormat,liveReferenceVariant,readyLiveVariants} from './live-preview';
@@ -14,10 +15,13 @@ export type Box={x:number;y:number;width:number;height:number};
 export type InspectionView={key:string;label:string;variantId:string;props:LiveFrameProps;ordered:boolean;shot:boolean;group?:'reference'|'longest'};
 export type RawText={text:string;box:Box;fontSize:number;color:string;element:number;clipped:boolean;lines:number;background:string|null;complexBackground:boolean;overImage:string|null;brokenWords?:string[];/** Design quality plan, point 2a: the font family that really rendered this text (the first family of its font-family that is loaded and covers its letters), and whether the requested weight exists in that family's files. */font?:{family:string;weight:string;fallback?:boolean;weightMissing?:boolean;/** a loaded family earlier in the stack that lacks these letters */uncovered?:string};/** Words whose letters come from two fonts (the first font lacks some of them). */mixedFontWords?:string[]};
 export type RawImage={src:string;box:Box;naturalWidth:number;naturalHeight:number;objectFit:string;objectPosition:string;logo:boolean};
-export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[]};
+/** C8: a code-built 3D scene's canvas: where it is, the part that drew pixels (fractions of the canvas) and a 4×4 grid of
+ * the drawn pixels' luminance (-1 where nothing is drawn). */
+export type RawObject3D={box:Box;drawn:[number,number,number,number]|null;luma:number[];error?:string};
+export type RawView={width:number;height:number;texts:RawText[];images:RawImage[];logos:RawLogo[];objects3d?:RawObject3D[];/** Font families whose supplied files failed to load (a delivery problem, point 2c). */fontsFailed?:string[];/** The largest bands of plain ground in the rendered picture (views with a screenshot). */plain?:import('./plain-band').PlainBands;/** the share of the rendered picture in its one most common colour */flat?:number};
 /** ink: alpha-weighted relative luminance of the logo's own pixels; background/overImage: what it sits on. */
-export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null};
-export type FindingCode='COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED';
+export type RawLogo={id:string;box:Box;ink?:number|null;background?:string|null;overImage?:string|null;/** the nearest ground is a gradient or a background picture: its colour is not known */complexGround?:boolean};
+export type FindingCode='FRAME_SHARES'|'COPY_MISSING'|'TEXT_CLIPPED'|'TEXT_OFF_CANVAS'|'TEXT_OVERLAP'|'TEXT_OVER_LOGO'|'TEXT_TOO_SMALL'|'TEXT_OUTSIDE_SAFE_AREA'|'LOW_CONTRAST'|'CONTRAST_OVER_PICTURE'|'LOGO_MISSING'|'PICTURE_UPSCALED'|'SUBJECT_CROPPED'|'RENDER_ERROR'|'WORD_BROKEN'|'LOGO_LOW_CONTRAST'|'FONT_MIXED_IN_WORD'|'FONT_NOT_BRAND'|'FONT_WEIGHT_MISSING'|'FONT_NOT_LOADED'|'IMAGE_NOT_LOADED'|'EMPTY_BAND';
 export type Finding={code:FindingCode;severity:'hard'|'soft';view:string;detail:string;box?:Box};
 export type ViewReport={view:string;label:string;findings:Finding[];texts:number;images:number};
 export type InspectionSummary={version:1;revision:string;views:number;hard:number;soft:number;reports:ViewReport[]};
@@ -125,11 +129,23 @@ export function collectLayout(size:{width:number;height:number}):RawView{
   try{const c=document.createElement('canvas'),w=Math.min(96,img.naturalWidth),h=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));c.width=w;c.height=h;const g=c.getContext('2d');if(!g)return null;g.drawImage(img,0,0,w,h);const d=g.getImageData(0,0,w,h).data;let sum=0,weight=0;
    for(let i=0;i<d.length;i+=4){const a=d[i+3]/255;if(a<0.5)continue;sum+=a*(0.2126*linear(d[i])+0.7152*linear(d[i+1])+0.0722*linear(d[i+2]));weight+=a;}return weight?sum/weight:null;}catch{return null;}};
  const logos=Array.from(document.querySelectorAll('[data-brand-logo]')).filter(e=>visible(e)>=0.9).map(e=>{const r=e.getBoundingClientRect();let background:string|null=null;
-  for(let p:Element|null=e.parentElement;p&&p!==document.documentElement&&!background;p=p.parentElement){const s=getComputedStyle(p);if(alpha(s.backgroundColor)>=0.95)background=s.backgroundColor;}
+  // The nearest ground: a solid colour, or a gradient or picture set as a background. Behind a gradient the solid
+  // colour further out is not what the logo sits on (live run of 15 November: a white mark on a navy gradient tile was
+  // measured against the page's white, 1.0:1, and three turns went on it), so no colour is reported for it.
+  let complexGround=false;
+  for(let p:Element|null=e.parentElement;p&&p!==document.documentElement&&!background&&!complexGround;p=p.parentElement){const s=getComputedStyle(p);if(s.backgroundImage&&s.backgroundImage!=='none')complexGround=true;else if(alpha(s.backgroundColor)>=0.95)background=s.backgroundColor;}
   const cx=r.left+r.width/2,cy=r.top+r.height/2,under=images.filter(i=>!i.logo&&i.box.x<=cx&&i.box.x+i.box.width>=cx&&i.box.y<=cy&&i.box.y+i.box.height>=cy).at(-1);
-  return {id:e.getAttribute('data-brand-logo')??'',box:box(r),ink:ink(e),background,overImage:under?under.src:null};});
+  return {id:e.getAttribute('data-brand-logo')??'',box:box(r),ink:ink(e),background,overImage:under?under.src:null,...(complexGround?{complexGround:true}:{})};});
  const fontsFailed=[...new Set(faces.filter(f=>f.status==='error').map(f=>norm(f.family)))];
- return {width:size.width,height:size.height,texts,images,logos,...(fontsFailed.length?{fontsFailed}:{})};
+ // C8: code-built 3D scenes (./kit3d): read the one rendered frame back (the canvas keeps its drawing buffer).
+ const objects3d=Array.from(document.querySelectorAll('canvas[data-scene3d]')).filter(c=>visible(c)>=0.5).map(c=>{const canvas=c as HTMLCanvasElement,b=box(canvas.getBoundingClientRect());
+  if(canvas.hasAttribute('data-scene3d-error'))return {box:b,drawn:null,luma:[],error:canvas.getAttribute('data-scene3d-error')??'webgl'};
+  try{const n=32,g=document.createElement('canvas');g.width=n;g.height=n;const x=g.getContext('2d');if(!x)return {box:b,drawn:null,luma:[]};x.drawImage(canvas,0,0,n,n);const d=x.getImageData(0,0,n,n).data;
+   let x0=n,y0=n,x1=-1,y1=-1;const sum=new Array(16).fill(0),count=new Array(16).fill(0);
+   for(let y=0;y<n;y++)for(let xx=0;xx<n;xx++){const i=(y*n+xx)*4,a=d[i+3]/255;if(a<0.1)continue;x0=Math.min(x0,xx);y0=Math.min(y0,y);x1=Math.max(x1,xx);y1=Math.max(y1,y);const cell=Math.floor(y/8)*4+Math.floor(xx/8);sum[cell]+=0.2126*linear(d[i])+0.7152*linear(d[i+1])+0.0722*linear(d[i+2]);count[cell]++;}
+   return {box:b,drawn:x1<0?null:[x0/n,y0/n,(x1+1)/n,(y1+1)/n] as [number,number,number,number],luma:sum.map((v,i)=>count[i]?v/count[i]:-1)};}
+  catch{return {box:b,drawn:null,luma:[],error:'unreadable'};}});
+ return {width:size.width,height:size.height,texts,images,logos,...(fontsFailed.length?{fontsFailed}:{}),...(objects3d.length?{objects3d}:{})};
 }
 
 /** Approved copy line by line: a headline and its supporting line (after a line break) are checked separately. */
@@ -139,6 +155,7 @@ function rgb(color:string){const m=/rgba?\(([^)]+)\)/.exec(color);if(!m)return n
 function luminance(c:number[]){const f=(v:number)=>{v/=255;return v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4;};return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);}
 export function contrastRatio(a:number,b:number){const [hi,lo]=a>b?[a,b]:[b,a];return (hi+0.05)/(lo+0.05);}
 const overlap=(a:Box,b:Box)=>Math.max(0,Math.min(a.x+a.width,b.x+b.width)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.y+a.height,b.y+b.height)-Math.max(a.y,b.y));
+const place=(b:Box)=>`x ${Math.round(b.x)}–${Math.round(b.x+b.width)}, y ${Math.round(b.y)}–${Math.round(b.y+b.height)}`;
 const quote=(s:string)=>`“${s.length>60?s.slice(0,57)+'…':s}”`;
 
 /** Visible part of a picture's source as fractions [x0,y0,x1,y1] for cover/contain fits; null when unknown. */
@@ -191,7 +208,7 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
    else if(t.font.weightMissing)add('FONT_WEIGHT_MISSING','soft',`Weight ${t.font.weight} of ${t.font.family} is not in the brand files, so the browser imitates it: ${quote(t.text)}. Available: ${brandFontWeights(family)}.`,t.box);}
   for(const word of t.mixedFontWords??[])add('FONT_MIXED_IN_WORD','hard',`Letters of one word come from two fonts (the brand font lacks some of them): set the whole line in one font that has every letter: ${quote(word)} in ${quote(t.text)}`,t.box);
   for(const word of t.brokenWords??[])add('WORD_BROKEN',approvedText?'hard':'soft',`A word is split across two lines: ${quote(word)} in ${quote(t.text)}`,t.box);
-  for(const logo of raw.logos)if(overlap(t.box,logo.box)>0.1*Math.min(t.box.width*t.box.height,logo.box.width*logo.box.height))add('TEXT_OVER_LOGO','hard',`Text overlaps the logo: ${quote(t.text)}`,{x:Math.min(t.box.x,logo.box.x),y:Math.min(t.box.y,logo.box.y),width:Math.max(t.box.x+t.box.width,logo.box.x+logo.box.width)-Math.min(t.box.x,logo.box.x),height:Math.max(t.box.y+t.box.height,logo.box.y+logo.box.height)-Math.min(t.box.y,logo.box.y)});
+  for(const logo of raw.logos)if(overlap(t.box,logo.box)>0.1*Math.min(t.box.width*t.box.height,logo.box.width*logo.box.height))add('TEXT_OVER_LOGO','hard',`Text overlaps the logo: ${quote(t.text)} (the text's box: ${place(t.box)}; the logo's box: ${place(logo.box)})`,{x:Math.min(t.box.x,logo.box.x),y:Math.min(t.box.y,logo.box.y),width:Math.max(t.box.x+t.box.width,logo.box.x+logo.box.width)-Math.min(t.box.x,logo.box.x),height:Math.max(t.box.y+t.box.height,logo.box.y+logo.box.height)-Math.min(t.box.y,logo.box.y)});
  }
  for(let i=0;i<raw.texts.length;i++)for(let j=i+1;j<raw.texts.length;j++){const a=raw.texts[i],b=raw.texts[j];if(a.element===b.element)continue;
   const area=overlap(a.box,b.box),smaller=Math.min(a.box.width*a.box.height,b.box.width*b.box.height);if(smaller>0&&area>0.2*smaller)add('TEXT_OVERLAP','hard',`Text overlaps other text: ${quote(a.text)} and ${quote(b.text)}`,{x:Math.min(a.box.x,b.box.x),y:Math.min(a.box.y,b.box.y),width:Math.max(a.box.x+a.box.width,b.box.x+b.box.width)-Math.min(a.box.x,b.box.x),height:Math.max(a.box.y+a.box.height,b.box.y+b.box.height)-Math.min(a.box.y,b.box.y)});}
@@ -199,16 +216,31 @@ export function analyzeView(raw:RawView,ctx:AnalysisContext):Finding[]{
   // Measured against what the logo actually sits on: a measured picture cell, else the nearest solid background.
   const image=logo.overImage?raw.images.find(i=>i.src===logo.overImage):undefined,f=logo.overImage?ctx.facts[logo.overImage]:undefined,rect=image&&visibleSourceRect(image);let ground:number|null=null;
   if(image&&f&&rect){const cx=rect[0]+(logo.box.x+logo.box.width/2-image.box.x)/image.box.width*(rect[2]-rect[0]),cy=rect[1]+(logo.box.y+logo.box.height/2-image.box.y)/image.box.height*(rect[3]-rect[1]);ground=Math.pow(f.luma[Math.min(2,Math.max(0,Math.floor(cy*3)))*3+Math.min(2,Math.max(0,Math.floor(cx*3)))],2.2);}
-  else if(!logo.overImage&&logo.background){const bg=rgb(logo.background);if(bg)ground=luminance(bg);}
+  else if(!logo.overImage&&!logo.complexGround&&logo.background){const bg=rgb(logo.background);if(bg)ground=luminance(bg);}
   if(ground!==null){const ratio=contrastRatio(logo.ink,ground);if(ratio<2)add('LOGO_LOW_CONTRAST',logo.overImage?'soft':'hard',`The logo barely shows on its background (${ratio.toFixed(1)}:1); use a logo version or ground it reads on.`,logo.box);}
  }
  if(ctx.input.brand.logos.some(l=>l.url)&&!raw.logos.length)add('LOGO_MISSING','soft','No brand logo is visible in this view.');
  // Point 2c: a brand font file that failed to load is a delivery problem, reported once per view.
  for(const family of raw.fontsFailed??[])add('FONT_NOT_LOADED','soft',`The brand font file for ${family} did not load, so its text falls back to another font. This is a delivery problem, not a design choice.`);
+ // A picture that did not load (bench run of 2026-11-14: a supplied photograph drew as a broken-image box for nine
+ // turns and the frame was still reviewed). Hard, once per file, naming the file as the code asked for it.
+ for(const src of new Set(raw.images.filter(i=>!i.naturalWidth&&i.box.width>0&&i.box.height>0).map(i=>i.src)))add('IMAGE_NOT_LOADED','hard',unloadedDetail(src),raw.images.find(i=>i.src===src)?.box);
  for(const image of raw.images.filter(i=>!i.logo)){
   const rect=visibleSourceRect(image);if(!rect)continue;const scale=image.box.width/((rect[2]-rect[0])*image.naturalWidth);
-  if(scale>1.6)add('PICTURE_UPSCALED','soft',`A picture is enlarged ${scale.toFixed(1)}× beyond its pixels and will look soft.`,image.box);
+  // A picture drawn larger than its pixels is soft at the size a viewer gets. Named with its file, the factor and the
+  // width it would need (craft audit of 15 November: 1,024 px pictures drawn up to 1.22×; the reference sheets' were 2,048 px).
+  if(scale>PICTURE_SCALE_LIMIT){const shown=Math.round((rect[2]-rect[0])*image.naturalWidth*scale);add('PICTURE_UPSCALED','soft',`The picture "${image.src}" is drawn ${scale.toFixed(2)}× larger than its pixels (${Math.round((rect[2]-rect[0])*image.naturalWidth)} px shown at ${shown} px), so it looks soft: it needs to be at least ${Math.ceil(image.naturalWidth*scale)} px wide, or drawn smaller.`,image.box);}
   const f=ctx.facts[image.src];if(f){const [sx0,sy0,sx1,sy1]=f.subject,inside=Math.max(0,Math.min(sx1,rect[2])-Math.max(sx0,rect[0]))*Math.max(0,Math.min(sy1,rect[3])-Math.max(sy0,rect[1])),area=(sx1-sx0)*(sy1-sy0);if(area>0&&inside/area<0.6)add('SUBJECT_CROPPED','soft','The measured subject of a picture is mostly cropped out in this view.',image.box);}
+ }
+ // C8: a code-built 3D object: it must draw, stay inside its canvas and the frame, and the words over it must read.
+ for(const o of raw.objects3d??[]){
+  if(o.error||!o.drawn){add('RENDER_ERROR','hard',o.error==='webgl'?'The 3D scene could not be drawn in this browser.':'The 3D object drew nothing: check its camera, lights and size.',o.box);continue;}
+  const [x0,y0,x1,y1]=o.drawn,page=[o.box.x+x0*o.box.width,o.box.y+y0*o.box.height,o.box.x+x1*o.box.width,o.box.y+y1*o.box.height];
+  if(x0<=0.01||y0<=0.01||x1>=0.99||y1>=0.99)add('SUBJECT_CROPPED','soft','The 3D object is cut by the edge of its canvas; give it room or frame it on purpose.',o.box);
+  else if(page[0]<-1||page[1]<-1||page[2]>raw.width+1||page[3]>raw.height+1)add('SUBJECT_CROPPED','soft','The 3D object is cut by the edge of the frame.',o.box);
+  for(const t of raw.texts){const cx=t.box.x+t.box.width/2,cy=t.box.y+t.box.height/2,fg=rgb(t.color);if(!fg||t.background||cx<page[0]||cx>page[2]||cy<page[1]||cy>page[3])continue;
+   const cell=Math.min(3,Math.max(0,Math.floor((cy-o.box.y)/o.box.height*4)))*4+Math.min(3,Math.max(0,Math.floor((cx-o.box.x)/o.box.width*4))),l=o.luma[cell];if(l===undefined||l<0)continue;
+   const ratio=contrastRatio(luminance(fg),l);if(ratio<3)add('CONTRAST_OVER_PICTURE','soft',`Text sits on the 3D object (estimated ${ratio.toFixed(1)}:1); check it reads: ${quote(t.text)}`,t.box);}
  }
  return out;
 }
@@ -254,6 +286,19 @@ export function missingRequiredCopy(views:InspectionView[],raw:{key:string;raw?:
 }
 
 /** Raw browser output → per-view reports. A view that failed to build is a hard finding. */
+/** Above this factor a picture is reported as drawn larger than its pixels. */
+export const PICTURE_SCALE_LIMIT=1.1;
+/** The file name inside an "IMAGE_NOT_LOADED" finding (the comparison key of two renders). */
+export const unloadedDetail=(src:string)=>`This picture did not load: "${src||'(no source)'}". Only these files load, each with <Img src={staticFile(url)}/>: a picture you asked for (resources[id].url, or its cutoutUrl), a supplied file or a brand picture marked "use it" by the url given with its name, and a logo (brand.logos[n].url).`;
+export const unloadedFiles=(findings:Pick<Finding,'code'|'detail'>[])=>[...new Set(findings.filter(f=>f.code==='IMAGE_NOT_LOADED').map(f=>/^This picture did not load: "([^"]*)"/.exec(f.detail)?.[1]??f.detail))].sort();
+/** The measured shares of one rendered view, in one plain line. */
+export function frameShares(raw:Pick<RawView,'width'|'height'|'texts'|'images'|'flat'>):string{
+ const area=raw.width*raw.height;if(!area)return '';
+ const inside=(b:Box)=>Math.max(0,Math.min(raw.width,b.x+b.width)-Math.max(0,b.x))*Math.max(0,Math.min(raw.height,b.y+b.height)-Math.max(0,b.y));
+ const pct=(v:number)=>`${Math.round(v*100)}%`,picture=Math.max(0,...raw.images.filter(i=>!i.logo).map(i=>inside(i.box)))/area;
+ const size=Math.max(0,...raw.texts.map(t=>t.fontSize)),head=raw.texts.filter(t=>size>0&&t.fontSize>=size*0.9),headline=head.reduce((n,t)=>n+inside(t.box),0)/area;
+ return `Measured, for your judgement (no rule): ${raw.images.some(i=>!i.logo)?`the largest picture covers ${pct(picture)} of the frame`:'the frame has no picture'}; ${head.length?`the largest words cover ${pct(headline)} of it and their letters are ${pct(size/raw.height)} of its height`:'the frame has no words'}${raw.flat!==undefined?`; ${pct(raw.flat)} of the frame is one flat colour`:''}.`;
+}
 export function analyzeInspection(views:InspectionView[],raw:{revision:string;views:{key:string;raw?:RawView;error?:string}[]},input:DirectionInput,facts:Record<string,ImageFacts|undefined>):InspectionSummary{
  const reports:ViewReport[]=views.map(view=>{
   const result=raw.views.find(r=>r.key===view.key),format=view.ordered?input.formats.find(f=>f.width===view.props.width&&f.height===view.props.height):undefined;
@@ -261,6 +306,22 @@ export function analyzeInspection(views:InspectionView[],raw:{revision:string;vi
   const minTextPx=format?.minTextPx??Math.max(16,Math.round(Math.min(view.props.width,view.props.height)*32/1080));
   return {view:view.key,label:view.label,findings:analyzeView(result.raw,{view,input,minTextPx,safe:format?.safe,facts}),texts:result.raw.texts.length,images:result.raw.images.length};
  });
+ // Version 6 (live run 4): how much of the frame its largest picture, its headline and flat ground take, as numbers for
+ // the designer's and the reviewer's judgement. No threshold: a quiet frame and a full one are both the designer's.
+ if(Number(input.brief.designerVersion)>=6)for(const view of views){const r=raw.views.find(x=>x.key===view.key)?.raw,report=reports.find(x=>x.view===view.key);if(!r||!report||r.flat===undefined)continue;const line=frameShares(r);if(line)report.findings.push({code:'FRAME_SHARES',severity:'soft',view:view.key,detail:line});}
+ // A band of plain ground across the whole frame, larger than the same scene has in the reference format.
+ const reference=input.variants[0],referenceFormat=input.formats.find(f=>f.id===reference?.format)??input.formats[0];
+ for(const view of views){const band=raw.views.find(r=>r.key===view.key)?.raw?.plain;if(!band)continue;const report=reports.find(r=>r.view===view.key);if(!report)continue;
+  // The reference format is the accepted composition: its own calm space is the designer's choice.
+  if(view.props.width===referenceFormat?.width&&view.props.height===referenceFormat?.height)continue;
+  const same=views.find(v=>v.variantId===view.variantId&&v.props.sceneId===view.props.sceneId&&v.props.width===referenceFormat?.width&&v.props.height===referenceFormat?.height),ref=same&&same.key!==view.key?raw.views.find(r=>r.key===same.key)?.raw?.plain:undefined;
+  for(const [kind,b,base] of [['rows',band.rows,ref?.rows] as const,['columns',band.columns,ref?.columns] as const]){
+   const baseShare=ref?base?.share??0:undefined;
+   if(!b||b.share<PLAIN_BAND_SHARE||b.share-(baseShare??0)<PLAIN_BAND_OVER_REFERENCE)continue;
+   const format=view.ordered?input.formats.find(f=>f.width===view.props.width&&f.height===view.props.height):undefined,margin=format&&b.edge!=='middle'?format.safe[b.edge]/(kind==='rows'?format.height:format.width):0;
+   report.findings.push({code:'EMPTY_BAND',severity:'soft',view:view.key,detail:`A band of plain ground spans the full ${kind==='rows'?'width':'height'} at the ${b.edge==='middle'?'middle':b.edge} of the frame: ${Math.round(b.share*100)}% of its ${kind==='rows'?'height':'width'} with nothing in it${baseShare!==undefined?` (the reference format has ${Math.round(baseShare*100)}%)`:''}.${margin>=b.share-0.03?' The placement keeps words out of this margin; the ground, the picture or a shape can still fill it.':''}`});
+  }
+ }
  for(const finding of missingRequiredCopy(views,raw.views,input)){const report=reports.find(r=>r.view===finding.view);if(report&&!report.findings.some(f=>f.code===finding.code&&f.detail===finding.detail))report.findings.push(finding);}
  return summarizeInspection(raw.revision,reports);
 }

@@ -7,7 +7,8 @@ import type {Design} from '../../../packages/director/contract';
 import type {StillRequest} from '../../../packages/creative/media';
 import {resourceRequest,independentResourceBindings} from '../../../packages/director/resources';
 import {atomicFile} from './atomic-file';
-import {measureImageFacts} from '../../../packages/director/image-facts';
+import {measureImageFacts,type ImageFacts} from '../../../packages/director/image-facts';
+import {measureSurfaces,SURFACE_SAMPLE} from '../../../packages/director/image-surfaces';
 export type PricedResource=CatalogEntry&{requestHash:string;stepId:string;costMicroUsd:number;fileId:string;imageSource?:{url:string;mime:string};method?:import('../../../packages/director/image-merge').MergeReport};
 export type ResourceProducer=(request:StillRequest,resource:Resource)=>Promise<{revisionId:string;sha256:string;mime:string;width?:number;height?:number;costMicroUsd:number;stepId:string;bytes:Uint8Array;reused?:boolean}>;
 /** Persist each collected receipt before moving on, so interrupted catalogs resume for free. */
@@ -42,7 +43,10 @@ export async function buildResourceCatalog(args:{folder:string;input:DirectionIn
   const sourceFile=`${result.sha256}.${ext}`,filename=`${result.sha256}${finished?'-method':''}${resource.proxy?'-proxy.png':finished?'.png':'.'+ext}`,thumbnail=`${result.sha256}-thumb.png`,scale=Math.min(1,320/shown.width),canvas=createCanvas(Math.max(1,Math.round(shown.width*scale)),Math.max(1,Math.round(shown.height*scale)));
   canvas.getContext('2d').drawImage(shown,0,0,canvas.width,canvas.height);
   // Free, local measurements for the coder: subject, focus and calm/busy, light/dark areas. Never a layout decision.
-  const sample=createCanvas(64,64),sampleContext=sample.getContext('2d');sampleContext.drawImage(shown,0,0,64,64);const facts=measureImageFacts(sampleContext.getImageData(0,0,64,64).data);
+  const sample=createCanvas(64,64),sampleContext=sample.getContext('2d');sampleContext.drawImage(shown,0,0,64,64);const facts:ImageFacts=measureImageFacts(sampleContext.getImageData(0,0,64,64).data);
+  // Plain faces (a blank card, sheet or screen, and its reflection) for the kit's OnSurface: its own sample, the picture at
+  // its proportions with the long side at 256 px. Only for drafts built on the engine kit; earlier blocks keep their facts.
+  if(Number(args.input.brief?.designerVersion)>=3){const k=SURFACE_SAMPLE/Math.max(shown.width,shown.height),sw=Math.max(8,Math.round(shown.width*k)),sh=Math.max(8,Math.round(shown.height*k)),faces=createCanvas(sw,sh),facesContext=faces.getContext('2d');facesContext.imageSmoothingQuality='high';facesContext.drawImage(shown,0,0,sw,sh);facts.surfaces=measureSurfaces(facesContext.getImageData(0,0,sw,sh).data,sw,sh);}
   let rendered=finished?.bytes??result.bytes,renderWidth=shown.width,renderHeight=shown.height;if(resource.proxy){const s=Math.min(1,512/Math.max(shown.width,shown.height)),proxy=createCanvas(Math.max(1,Math.round(shown.width*s)),Math.max(1,Math.round(shown.height*s)));proxy.getContext('2d').drawImage(shown,0,0,proxy.width,proxy.height);rendered=proxy.toBuffer('image/png');renderWidth=proxy.width;renderHeight=proxy.height;}
   const persist=independent?atomicFile:writeFile;
   if(independent)await atomicFile(resolve(args.folder,'public',sourceFile),result.bytes);

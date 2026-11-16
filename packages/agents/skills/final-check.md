@@ -4,7 +4,9 @@ title: Check the frame as a viewer
 purpose: Judge a finished frame as the viewer and the brand owner would, and name what to change.
 version: 1
 roles: designer,creative-code,critic
+stages: hero,extension,critic
 ---
+## Principles
 Before a frame is called finished, look at the render, not the plan, and answer in order. A no on an earlier question outranks every later one.
 
 1. What is being sold, and to whom? Answer from the picture and headline alone, as a stranger would in two seconds. If you need the brief to answer, the frame fails.
@@ -16,3 +18,14 @@ Before a frame is called finished, look at the render, not the plan, and answer 
 7. Is the craft clean: alignment, spacing rhythm, consistent radii and strokes, image quality, the mark on a suitable ground with its clear space?
 
 Report the weakest point first and say what to change, in terms of the element and the decision (scale, position, colour proportion, wording of the break, which subject), not as a general wish. Praise is not a finding. A frame that passes the kit's rules but fails questions one to three is not approved.
+
+## Checks
+- Can a stranger say what is sold, and to whom, from the picture and the headline in two seconds?
+- Can you name one dominant element that is neither empty space nor decoration?
+- Does the picture show the product, its result or the viewer's moment?
+- Is the mark on a suitable ground with its clear space?
+
+## Signs for the reviewer
+A stranger needs the brief to say what is sold.
+No single element stands out at thumbnail size.
+The frame meets every kit rule and still could be anyone's ad.

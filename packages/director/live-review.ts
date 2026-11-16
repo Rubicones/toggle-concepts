@@ -39,6 +39,8 @@ export type LiveReviewDeps={/** Who fixes (point 4/5): the coder, or the designe
  /** Present only when the frozen quote includes critic requests. Returns the raw model text. */
  critic?:(round:number,context:unknown,views:ReviewViews)=>Promise<string>;
  criticRounds:number;
+ /** An advisory review: one round; its P0 and P1 notes get one repair turn, the rest is kept for the art director. */
+ advisory?:boolean;
  context:()=>unknown;
  state:LiveReviewState;
  save:(state:LiveReviewState)=>Promise<void>;
@@ -116,13 +118,17 @@ export async function runLiveReview(deps:LiveReviewDeps):Promise<LiveReviewRecor
    await deps.emit(`review:critic:${round}`,critique.accepted?'The creative review accepted the current views.':`The creative review returned ${plural(critique.notes.length,'note')}.`,critique,shots.length?shots[0].file:undefined);
    const owner=deps.owner??'coder',forCoder=critique.notes.filter(n=>owner==='designer'||n.recipient==='assembler');
    if(critique.accepted||!forCoder.length)break;
-   const result=await deps.repair(criticNote(critique,round,owner),'critic',round,{shots,summary});state.repairs.push({kind:'critic',round,...result});await deps.save(state);
+   // An advisory review (run contexts frozen with it): its P2 notes are kept for the art director; the P0 and P1 notes
+   // get one repair turn (bench run 14: the scenes after the hero were never repaired for craft), and no further review follows.
+   const blocking=forCoder.filter(n=>n.priority==='P0'||n.priority==='P1');
+   if(deps.advisory&&!blocking.length){await deps.emit(`review:critic:${round}:advisory`,`The creative review's ${plural(critique.notes.length,'note')} ${critique.notes.length===1?'is':'are'} kept for you; no repair round follows.`,{notes:critique.notes.length});break;}
+   const result=await deps.repair(criticNote(deps.advisory?{...critique,notes:blocking}:critique,round,owner),'critic',round,{shots,summary});state.repairs.push({kind:'critic',round,...result});await deps.save(state);
    if(!result.applied){await deps.emit(`review:critic:${round}:repair`,'The review notes could not be applied automatically; they are kept for the AD.',result);break;}
    if(!await remeasure())break;
    await gate();
   }
  }
  // A designer applied every note itself; only the coder pipeline keeps director notes aside for the AD.
- const directorNotes=deps.owner==='designer'?[]:state.critiques.flatMap(c=>c.notes.filter(n=>n.recipient==='director'));
+ const directorNotes=deps.advisory?state.critiques.flatMap(c=>c.notes.filter(n=>n.priority!=='P0'&&n.priority!=='P1')):deps.owner==='designer'?[]:state.critiques.flatMap(c=>c.notes.filter(n=>n.recipient==='director'));
  return {version:1,inspection:{revision:summary.revision,views:summary.views,hard:summary.hard,soft:summary.soft,findings:findingDigest(summary,'all',20)},gateRounds:state.gateRounds,criticRounds:state.criticRounds,critiques:state.critiques,directorNotes,repairs:state.repairs,...(state.skipped?{skipped:state.skipped}:{})};
 }

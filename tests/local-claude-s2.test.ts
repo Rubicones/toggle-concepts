@@ -30,7 +30,9 @@ const send=async(s:LocalCliSetup,f=fixture('designer-cached-claude'))=>cliTextTr
 test('Flash text roles map to the pinned Sonnet; Claude stays Claude; anything else is blocked, generation included', ()=>{
  assert.deepEqual(localModelFor('google/gemini-2.5-flash',{sonnet:'claude-sonnet-4-5-20250929'}),{target:'google/gemini-2.5-flash',execution:'claude-sonnet-4-5-20250929',rule:'flash-to-sonnet',version:'local-models@1'});
  assert.equal(localModelFor('anthropic/claude-sonnet-4.5',{sonnet:'claude-sonnet-x'}).execution,'claude-sonnet-4-5');
- for(const id of ['google/gemini-2.5-flash-image','google/gemini-2.5-pro','openai/gpt-5','google/gemini-2.5-flash-lite-preview'])assert.throws(()=>localModelFor(id,{sonnet:'claude-sonnet-x'}),/LOCAL_MODEL_MAPPING_REQUIRED/,id);
+ for(const id of ['google/gemini-2.5-flash-image','google/veo-3','openai/gpt-image-1'])assert.throws(()=>localModelFor(id,{sonnet:'claude-sonnet-x'}),/LOCAL_MODEL_MAPPING_REQUIRED/,id);
+ // Live run 2026-11-14: the critic's model google/gemini-4-argon had no mapping and every review failed mid-run.
+ for(const id of ['google/gemini-4-argon','google/gemini-2.5-pro','openai/gpt-5'])assert.deepEqual(localModelFor(id,{sonnet:'claude-sonnet-x'}),{target:id,execution:'claude-sonnet-x',rule:'other-text-to-sonnet',version:'local-models@1'},id);
  assert.throws(()=>localModelFor('google/gemini-2.5-flash',{sonnet:'sonnet'}),/LOCAL_MODEL_NOT_PINNED/,'a floating alias is not a pinned model');
  assert.ok(FLASH_TEXT_MODELS.every(id=>!/image/.test(id)));
 });
@@ -108,11 +110,11 @@ test('cancellation kills the call and reports an unknown outcome, never a late s
 
 test('refusals before anything is sent: no mapping, no visual qualification, size cap, missing schema', async()=>{
  const s=await setup('ok'),f=fixture('critic-no-images-cached');
- assert.equal((await cliTextTransport(s)('google/gemini-2.5-pro',f.prompt,f.cfg)).failure,'LOCAL_MODEL_MAPPING_REQUIRED');
+ assert.equal((await cliTextTransport(s)('google/gemini-2.5-flash-image',f.prompt,f.cfg)).failure,'LOCAL_MODEL_MAPPING_REQUIRED');
  const v=fixture('brandbook-vision');assert.equal((await send({...s,visual:false},v)).failure,'LOCAL_VISUAL_NOT_QUALIFIED');
  assert.equal((await cliTextTransport(s)(f.model,f.prompt,{...f.cfg,requestInputCap:10})).failure,'DRAFT_REQUEST_SIZE_CAP');
  assert.equal((await cliTextTransport(s)(f.model,f.prompt,{...f.cfg,outputFormat:'json_schema'})).failure,'RESPONSE_SCHEMA_REQUIRED');
- for(const r of [await cliTextTransport(s)('google/gemini-2.5-pro',f.prompt,f.cfg)])assert.equal(r.cost,0);
+ for(const r of [await cliTextTransport(s)('google/gemini-2.5-flash-image',f.prompt,f.cfg)])assert.equal(r.cost,0);
 });
 
 test('paidText keeps its reservation and claim with the CLI transport; a blocked mapping never runs the CLI', async()=>{
@@ -122,7 +124,7 @@ test('paidText keeps its reservation and claim with the CLI transport; a blocked
  const answer=await paidText({identity:'i',role:'critic',model:f.model,prompt:f.prompt,snapshot:f.cfg,allowanceMicroUsd:1e9,ledger,transport:cliTextTransport(await setup('ok',{},{FAKE_CLAUDE_ANSWER:'{"verdict":"pass"}',FAKE_CLAUDE_RECORD:record}))});
  assert.equal(answer.text,'{"verdict":"pass"}');assert.equal(answer.costMicroUsd,0);assert.deepEqual([steps.reserved,steps.claimed,steps.settled.length],[1,1,1]);
  assert.equal((steps.settled[0] as LocalTextReceipt).provider,'claude-cli');
- await assert.rejects(paidText({identity:'j',role:'critic',model:'google/gemini-2.5-pro',prompt:f.prompt,snapshot:f.cfg,allowanceMicroUsd:1e9,ledger,transport:cliTextTransport(await setup('ok',{},{FAKE_CLAUDE_RECORD:join(dir,'never.json')}))}),/LOCAL_MODEL_MAPPING_REQUIRED/);
+ await assert.rejects(paidText({identity:'j',role:'critic',model:'google/gemini-2.5-flash-image',prompt:f.prompt,snapshot:f.cfg,allowanceMicroUsd:1e9,ledger,transport:cliTextTransport(await setup('ok',{},{FAKE_CLAUDE_RECORD:join(dir,'never.json')}))}),/LOCAL_MODEL_MAPPING_REQUIRED/);
  await assert.rejects(readFile(join(dir,'never.json')),'the CLI never started');
 });
 

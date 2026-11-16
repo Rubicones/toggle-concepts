@@ -1,0 +1,9 @@
+{
+  "name": "poster",
+  "about": "Static posters in four formats: checks typography, hierarchy and how the layout adapts between formats.",
+  "brands": "all",
+  "setup": {"kind": "poster", "languages": ["en"], "formats": ["1x1", "4x5", "9x16", "16x9"],
+            "provider": {"mode": "claude", "billing": "subscription"}},
+  "stopAfter": "final",
+  "parallel": 2
+}

@@ -5,6 +5,7 @@ import {z} from 'zod';
 import {imageMethodSchemas} from './contract';
 import type {DirectionInput,Resource} from './types';
 import type {Finding} from './layout-inspection';
+import {resolveAssetReferences} from './asset-names';
 
 /** Blocks quoted with the designer (brief.designerVersion 1). Earlier blocks keep the director and the coder. */
 export const usesDesigner=(input:Pick<DirectionInput,'brief'|'stage'>)=>input.stage==='draft'&&Number(input.brief.designerVersion)>=1;
@@ -14,6 +15,14 @@ export const heroFirst=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.
 /** Engine rebuild (designerVersion 3): the draft is built on the neutral engine kit ('./kit'), and one render may show
  * several scenes. Earlier blocks run exactly as before. */
 export const usesEngineKit=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.designerVersion)>=3;
+/** Plan E1 (designerVersion 6): the hero stage gets one scene's meaning. The hero task names what the scene must make
+ * the viewer understand (the script's own words, no longer labelled as what it shows), the hero stage reads a hero-only
+ * digest, and the hero render measures the reference copy only; everything else arrives when stage E opens. Version 5
+ * blocks keep their exact texts. */
+export const heroMeaning=(input:Pick<DirectionInput,'brief'>)=>Number(input.brief.designerVersion)>=6;
+/** Chat-shaped plan C3 (brief.materialsVersion 1, engine-kit blocks of shared Local runs): the designer may name up to
+ * four catalogue entries per turn; they arrive with the next turn. Earlier blocks keep their exact requests. */
+export const usesMaterials=(input:Pick<DirectionInput,'brief'>)=>usesEngineKit(input)&&Number(input.brief.materialsVersion)===1;
 /** The scene that proves the promise: the first with a proof from the script (point 1d), else the first scene. */
 export function heroScene(input:Pick<DirectionInput,'storyboard'>){return (input.storyboard.find(s=>s.proof)??input.storyboard[0])?.id??'';}
 
@@ -37,7 +46,7 @@ export const designerTurnSchema=z.strictObject({
   scenes:z.array(z.strictObject({sceneId:id,moment:text(160),motion:text(240).optional(),sound:text(200).optional()})).min(1).max(40),
  }).optional(),
 });
-export type DesignerTurn=Omit<z.infer<typeof designerTurnSchema>,'render'>&{render?:{sceneId:string;formats:string[];more?:string[]};settleHero?:boolean;notes?:string;seen?:z.infer<typeof seenSchema>};
+export type DesignerTurn=Omit<z.infer<typeof designerTurnSchema>,'render'>&{render?:{sceneId:string;formats:string[];more?:string[]};settleHero?:boolean;notes?:string;seen?:z.infer<typeof seenSchema>;/** C3 */materials?:{name:string;why:string}[]};
 export type DesignerPicture=z.infer<typeof designerPictureSchema>;
 
 /** The provider sees the portable core; the full zod contract checks every answer afterwards. */
@@ -54,18 +63,23 @@ export const designerTurnResponseV2={name:'designer_turn_v2',schema:z.toJSONSche
 /** Version 3 turns (engine rebuild): one render may show up to three more scenes in the same formats. */
 export const designerTurnSchemaV3=designerTurnSchemaV2.extend({render:z.strictObject({sceneId:id,formats:z.array(id).max(8).default([]),more:z.array(id).max(3).default([])}).optional()});
 export const designerTurnResponseV3={name:'designer_turn_v3',schema:z.toJSONSchema(designerTurnSchemaV3,{io:'input'}) as Record<string,unknown>};
-export const designerTurnResponseFor=(input:Pick<DirectionInput,'brief'>)=>usesEngineKit(input)?designerTurnResponseV3:heroFirst(input)?designerTurnResponseV2:designerTurnResponse;
+/** C3: the designer names the materials it wants to see next turn (catalogue names, up to four, each with why). */
+export const designerTurnSchemaV3M=designerTurnSchemaV3.extend({materials:z.array(z.strictObject({name:z.string().min(1).max(80),why:z.string().min(1).max(200)})).max(4).default([])});
+export const designerTurnResponseV3M={name:'designer_turn_v3_materials',schema:z.toJSONSchema(designerTurnSchemaV3M,{io:'input'}) as Record<string,unknown>};
+export const designerTurnResponseFor=(input:Pick<DirectionInput,'brief'>)=>usesMaterials(input)?designerTurnResponseV3M:usesEngineKit(input)?designerTurnResponseV3:heroFirst(input)?designerTurnResponseV2:designerTurnResponse;
 
 /**
  * Reads one answer. Ids must be issued (scenes, formats, reference assets); a picture without a known scene or a
  * finish that omits a scene is refused with a sentence the designer can act on next turn. Sound needs an audio file.
  */
 export function readDesignerTurn(value:unknown,input:Pick<DirectionInput,'storyboard'|'formats'|'assets'>&Partial<Pick<DirectionInput,'brief'>>):DesignerTurn{
- const turn:DesignerTurn=(input.brief&&usesEngineKit({brief:input.brief})?designerTurnSchemaV3:input.brief&&heroFirst({brief:input.brief})?designerTurnSchemaV2:designerTurnSchema).parse(value),scenes=new Set(input.storyboard.map(s=>s.id)),formats=new Set(input.formats.map(f=>f.id)),assets=new Set(input.assets.map(a=>a.id));
+ const turn:DesignerTurn=(input.brief&&usesMaterials({brief:input.brief})?designerTurnSchemaV3M:input.brief&&usesEngineKit({brief:input.brief})?designerTurnSchemaV3:input.brief&&heroFirst({brief:input.brief})?designerTurnSchemaV2:designerTurnSchema).parse(value),scenes=new Set(input.storyboard.map(s=>s.id)),formats=new Set(input.formats.map(f=>f.id)),assets=new Set(input.assets.map(a=>a.id));
  const audio=input.assets.some(a=>a.mime.startsWith('audio/'));
  if(!scenes.has(turn.focus.sceneId))throw new Error(`DESIGNER_UNKNOWN_SCENE: focus.sceneId must be one of ${[...scenes].join(', ')}.`);
  for(const p of turn.pictures){
   if(!scenes.has(p.scene))throw new Error(`DESIGNER_UNKNOWN_SCENE: a picture's scene must be one of ${[...scenes].join(', ')}.`);
+  // C4: a digest names supplied files by name; the app maps names back to ids.
+  if(input.brief&&Number(input.brief.digestVersion)===1&&'brief' in input)p.referenceAssetIds=resolveAssetReferences(p.referenceAssetIds,input as Pick<DirectionInput,'assets'|'brief'>);
   const unknown=p.referenceAssetIds.find(a=>!assets.has(a));if(unknown)throw new Error(`DESIGNER_UNKNOWN_REFERENCE: ${unknown} is not a supplied file.`);
   if(p.becomes&&!p.proxyFor)delete p.becomes;
  }
@@ -75,7 +89,7 @@ export function readDesignerTurn(value:unknown,input:Pick<DirectionInput,'storyb
   if(missing.length||new Set(named).size!==named.length||named.some(s=>!scenes.has(s)))throw new Error(`DESIGNER_FINISH_SCENES: finish names every scene exactly once (${[...scenes].join(', ')}).`);
   if(!audio)for(const s of turn.finish.scenes)delete s.sound;
  }
- if(!turn.files.length&&!turn.edits.length&&!turn.pictures.length&&!turn.render&&!turn.finish&&!turn.settleHero&&!turn.notes)throw new Error('DESIGNER_EMPTY_TURN: change the code, request a picture, ask for a render or finish.');
+ if(!turn.files.length&&!turn.edits.length&&!turn.pictures.length&&!turn.render&&!turn.finish&&!turn.settleHero&&!turn.notes&&!turn.materials?.length)throw new Error('DESIGNER_EMPTY_TURN: change the code, request a picture, ask for a render or finish.');
  return turn;
 }
 
@@ -108,6 +122,7 @@ export function designerTurnSummary(results:unknown[]):string[]{
   else if(typeof r.render==='string'&&typeof r.views==='number'){const hard=Number(r.hard??0);lines.push(`Rendered ${r.views} view${r.views===1?'':'s'}: ${hard?`${hard} objective issue${hard===1?'':'s'} to fix`:'no objective issues'}.`);}
   else if(r.render==='refused')lines.push('No more revisions for this scene; the designer moves on.');
   else if(r.finish==='complete')lines.push('The draft is finished.');else if(r.finish==='refused')lines.push('Not finished yet: some options still need work.');
+  else if(Array.isArray(r.materials))lines.push(...(r.materials as string[]).map(String));
   else if(typeof r.error==='string')lines.push('This step needs another attempt.');
  }
  if(results.some(r=>(r as {refused?:string})?.refused==='seen'))lines.push('Not applied: the designer must first say what it saw in the render.');
@@ -119,13 +134,34 @@ export function designerTurnSummary(results:unknown[]):string[]{
 /** The designer's saved progress in the work state (point 4b/4e). */
 export type DesignerLoopState={
  /** LC4 (shared Local runs): the direction's stored conversation after its last accepted turn, and the files it has seen. */
- session?:{role:string;sessionId:string;tokens:number};filesSeen?:Record<string,string>;
+ session?:{role:string;sessionId:string;tokens:number;/** C6: the size of this conversation's first request (its seed), for the relative cap */seed?:number};filesSeen?:Record<string,string>;
+ /** C3: materials fetched for the next turn (names), and those already in the current conversation. */
+ materialsDue?:string[];materialsSeen?:string[];
+ /** C5 (designerVersion 4, stage H): the app's next message (the render note, corrections, the reviewer's notes); stage E
+  * has opened in the conversation (its mechanics were sent once). */
+ heroNote?:string;stageEOpened?:boolean;
+ /** C6: the phase of stage E (other scenes, formats, variations), so the timeline marks each change once. */
+ extensionPhase?:'scenes'|'formats'|'variations';
  /** Point 4a: the designer's notes, sent at the top of every request (outside the 12-result window); a restart keeps them. */
  notes?:string;
  /** point 4b: the turn after this render was already refused once for a missing seen */
  seenRefused?:boolean;
  /** Design quality plan, point 3 (designerVersion 2): the hero frame and whether it is settled. Saved, so a restart keeps it. */
- hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;acceptedBy?:'critic'|'reviews-used'|'no-critic'|'review-failed';shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
+ /** D4 (version 5): the image ideas of stage H: rounds used, the pick and why, the notes of a round where none passed. */
+ /** D5 (critic@2): the hero review's own earlier rounds, as text for the next round. */
+ heroMemory?:import('./critic-review').ReviewRound[];
+ /** D5: the end review's own earlier rounds. */
+ endMemory?:import('./critic-review').ReviewRound[];
+ ideas?:{rounds:number;picked?:number;reason?:string;notes?:string[];texts?:string[];/** version 6: the pictures made of the three ideas for the selection (resource ids, by idea) */sketches?:(string|null)[];/** why no reviewer chose (the first idea was built) */unreviewed?:string};
+ /** Live run 2026-11-14: the same build error in a row (three stops the direction with a question), and extra hero
+  * turns granted by a retry after such a stop. */
+ buildStuck?:{code:string;count:number};heroExtraTurns?:number;
+ /** Pictures that did not load in the last hero render, and for how many renders in a row (two stop the direction). */
+ unloaded?:{files:string[];renders:number};
+ /** Plan E5 (version 6): the time hero renders waited for pictures, in ms (shown per run; not a model cost). */pictureWaitMs?:number;
+ /** Live run of 15 November: pictures that could not be bought, each with its plain reason; and, when no further picture
+  * can be bought in this draft, why (cleared when the draft is started again). */pictureFailures?:{id:string;code:string;reason:string;owner?:string;said?:string}[];picturesBlocked?:string;/** live run 3: the direction stopped on a payment refusal (the picture's id), and the owner's answer to go on without pictures */paymentStopped?:string;picturesDeclined?:boolean;
+ hero?:{sceneId:string;format:string;state:'designing'|'accepted';reviews:number;/** version 6: the pictures the frame's code drew when it was last reviewed, and whether dropping them was said */reviewedWith?:string[];makingNoted?:boolean;acceptedBy?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';/** why its review did not run */reviewError?:string;/** critic@3 (version 6): the review finished with points open; the designer has one last turn, then `by` accepts */lastTurn?:{by:'critic'|'reviews-used'|'no-progress';turns:number};shots?:{label:string;file:string}[]};turn:number;startedAt:number;complete:boolean;/** pictures requested so far (counted against the approved number) */pictures:number;/** picture ids whose result reached the designer (a restart settles the rest) */reported?:string[];transcript:{from:'agent'|'tool';text:string}[];renders:Record<string,number>;finish?:NonNullable<DesignerTurn['finish']>;lastRender?:{sceneId:string;views:{label:string;file:string;width:number;height:number}[];findings:Finding[]}};
 
 /** Point 4d: the designer's look at a render, as timeline lines. */
 export function seenLines(seen:NonNullable<DesignerTurn['seen']>){return [`Read first: ${seen.first}`,`Read second: ${seen.second}`,`Read third: ${seen.third}`,...seen.weakest.map((w,i)=>`${i===0?'Weakest point':'Also weak'}: ${w}`)];}

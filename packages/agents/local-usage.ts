@@ -13,18 +13,39 @@ export type LocalCallUsage={
  trouble?:string;
  /** The largest parts of what the agent was given to read. */
  inputParts?:{part:string;tokens:number}[];
+ /** C3: the materials a single-answer role asked to see before answering. */
+ lookedAt?:string[];
+ /** Plan E2c: the conversation's size after this request's last model call, when the request made more than one
+  * (input, cached and output above count the conversation once per call). */
+ conversationSize?:number;
 };
-type Raw={input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number};
-type LocalRecord={inputParts?:{part:string;tokens:number}[];internalAttempts?:number;stopReason?:string|null;retriedAfterTimeout?:boolean;executedModel?:string;effort?:string;numTurns?:number;durationMs?:number;usage?:Raw;apiEquivalentUsd?:number;conversation?:{kind:string};stage?:string;skills?:string[]};
+type Raw={input_tokens?:number;output_tokens?:number;cache_creation_input_tokens?:number;cache_read_input_tokens?:number;cache_creation?:{ephemeral_1h_input_tokens?:number;ephemeral_5m_input_tokens?:number}};
+type Pricing={inputPrice?:number;outputPrice?:number;cacheReadPrice?:number;cacheWritePrice?:number};
+/** One request's API-equivalent price from its own tokens at its model's prices. A one-hour cache write costs twice
+ * the input price, a five-minute one the model's cache-write price (1.25 times when not published).
+ * Live run 2026-11-14: the CLI's own figure is the running total of the whole conversation, so a continued or branched
+ * conversation's requests were each shown, and summed, with everything before them ($31 shown for about $7). */
+export function tokenPricedUsd(u:Raw,p:Pricing):number|undefined{
+ if(typeof p.inputPrice!=='number'||typeof p.outputPrice!=='number')return undefined;
+ const written=u.cache_creation_input_tokens??0,hour=Math.min(written,u.cache_creation?.ephemeral_1h_input_tokens??0),short=written-hour;
+ return (u.input_tokens??0)*p.inputPrice+hour*p.inputPrice*2+short*(p.cacheWritePrice??p.inputPrice*1.25)+(u.cache_read_input_tokens??0)*(p.cacheReadPrice??p.inputPrice*0.1)+(u.output_tokens??0)*p.outputPrice;
+}
+type LocalRecord={conversationSize?:number;lastCallSize?:number;materials?:{attached?:string[]};inputParts?:{part:string;tokens:number}[];internalAttempts?:number;stopReason?:string|null;retriedAfterTimeout?:boolean;executedModel?:string;effort?:string;numTurns?:number;durationMs?:number;usage?:Raw;apiEquivalentUsd?:number;forecast?:{microUsd?:number};conversation?:{kind:string};stage?:string;skills?:string[]};
 
 /** One call's usage from a step row; null for OpenRouter steps and Local refusals that never reached the CLI. */
 export function localCallUsage(row:{role:string;usage?:unknown;config_snapshot?:unknown}):LocalCallUsage|null{
  const local=(row.usage as {_local?:LocalRecord}|null|undefined)?._local;if(!local)return null;
- const u=local.usage??{},snapshot=(row.config_snapshot??{}) as {directorRole?:string;creativeStage?:string;localStage?:string};
+ const u=local.usage??{},snapshot=(row.config_snapshot??{}) as {directorRole?:string;creativeStage?:string;localStage?:string;pricing?:Pricing};
+ // This request's own price: the CLI's figure for a conversation's first single-call request (there it is the
+ // request's own); otherwise, because that figure is a running total, its tokens at its model's prices, or the
+ // transport's per-request forecast.
+ const own=local.usage&&snapshot.pricing?tokenPricedUsd(u,snapshot.pricing):undefined,started=!local.conversation||local.conversation.kind==='new';
+ const usd=started&&(local.numTurns??1)<=1&&typeof local.apiEquivalentUsd==='number'?local.apiEquivalentUsd:own??(typeof local.forecast?.microUsd==='number'?local.forecast.microUsd/1e6:typeof local.apiEquivalentUsd==='number'?local.apiEquivalentUsd:undefined);
+ const sequence=Array.isArray((row.usage as {treatmentSequence?:unknown[]}|null|undefined)?.treatmentSequence),several=sequence||(local.numTurns??1)>1,size=local.lastCallSize??(sequence?undefined:local.conversationSize);
  return {role:snapshot.directorRole??row.role,...(snapshot.localStage??snapshot.creativeStage?{stage:snapshot.localStage??snapshot.creativeStage}:{}),
   ...(local.executedModel?{model:local.executedModel}:{}),...(local.effort?{effort:local.effort}:{}),...(local.numTurns!==undefined?{turns:local.numTurns}:{}),...(local.durationMs!==undefined?{durationMs:local.durationMs}:{}),
   input:u.input_tokens??0,cacheCreation:u.cache_creation_input_tokens??0,cacheRead:u.cache_read_input_tokens??0,output:u.output_tokens??0,
-  ...(typeof local.apiEquivalentUsd==='number'?{apiEquivalentUsd:local.apiEquivalentUsd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{}),...(requestTrouble(local)?{trouble:requestTrouble(local)}:{}),...(local.inputParts?.length?{inputParts:local.inputParts}:{}),...(local.stage?{effortStage:local.stage}:{}),...(local.skills?.length?{skills:local.skills}:{})};
+  ...(usd!==undefined?{apiEquivalentUsd:usd}:{}),...(local.conversation?{conversation:local.conversation.kind}:{}),...(requestTrouble(local)?{trouble:requestTrouble(local)}:{}),...(local.inputParts?.length?{inputParts:local.inputParts}:{}),...(local.materials?.attached?.length?{lookedAt:local.materials.attached}:{}),...(local.stage?{effortStage:local.stage}:{}),...(local.skills?.length?{skills:local.skills}:{}),...(size!==undefined&&several?{conversationSize:size}:{})};
 }
 
 /** What a Local Claude text request reserves against money caps: the smallest amount the ledger accepts. It runs on
@@ -53,6 +74,8 @@ function requestTrouble(local:LocalRecord){
  if(local.retriedAfterTimeout)parts.push('second try after no answer');
  return parts.join('; ');
 }
+/** Plan E2c, for the run page: "the conversation is 61k after this request" when the figures count it more than once. */
+export const conversationSizeNote=(u:Pick<LocalCallUsage,'conversationSize'>)=>u.conversationSize!==undefined?`the conversation is ${k(u.conversationSize)} after this request; the figures count it once per model call`:'';
 const k=(n:number)=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1000?`${Math.round(n/1000)}k`:String(n);
 /** All input the model read: new input, cache writes and cache reads. */
 export const totalInput=(u:Pick<LocalCallUsage,'input'|'cacheCreation'|'cacheRead'>)=>u.input+u.cacheCreation+u.cacheRead;
@@ -73,4 +96,44 @@ export function apiEquivalentLabel(usd:number){return `≈ $${usd.toFixed(2)} at
 export function roleAverages(calls:LocalCallUsage[]){
  const by=new Map<string,LocalCallUsage[]>();for(const c of calls)by.set(c.role,[...(by.get(c.role)??[]),c]);
  return [...by.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([role,list])=>{const t=usageTotals(list);return {role,calls:t.calls,input:Math.round((t.input+t.cacheCreation)/t.calls),cacheRead:Math.round(t.cacheRead/t.calls),output:Math.round(t.output/t.calls),apiEquivalentUsd:t.apiEquivalentUsd/t.calls,cachedShare:t.cachedShare};});
+}
+
+// ---- C7: cache discipline, per run ----
+type ReportRow={role:string;created_at?:string;config_snapshot?:unknown;usage?:unknown};
+type ReportLocal={stage?:string;effort?:string;durationMs?:number;sessionId?:string;cacheTtl?:'1h'|'5m';conversation?:{kind:string;resumedFrom?:string};usage?:Raw};
+export const CACHE_WAIT_MS=5*60*1000;
+/**
+ * The run's cache in plain numbers: the share of input read from the cache per stage; continued conversations that
+ * read little from the cache after a wait of more than five minutes (the cache had expired) or right after an effort
+ * change (thinking settings drop the cached messages); and the cache lifetime the CLI wrote.
+ */
+export function cacheReport(rows:ReportRow[]){
+ const calls=rows.map(r=>({row:r,l:(r.usage as {_local?:ReportLocal}|null|undefined)?._local})).filter((c):c is {row:ReportRow;l:ReportLocal}=>!!c.l).sort((a,b)=>String(a.row.created_at??'').localeCompare(String(b.row.created_at??'')));
+ const byStage=new Map<string,{read:number;all:number;calls:number}>(),ends=new Map<string,{at:number;effort?:string}>();let afterWait=0,afterEffort=0,oneHour=0,fiveMinutes=0;
+ for(const {row,l} of calls){
+  const u=l.usage??{},read=u.cache_read_input_tokens??0,all=(u.input_tokens??0)+(u.cache_creation_input_tokens??0)+read,stage=l.stage??(row.config_snapshot as {localStage?:string}|undefined)?.localStage??'other';
+  const s=byStage.get(stage)??{read:0,all:0,calls:0};s.read+=read;s.all+=all;s.calls++;byStage.set(stage,s);
+  if(l.cacheTtl==='1h')oneHour++;else if(l.cacheTtl==='5m')fiveMinutes++;
+  const start=Date.parse(String(row.created_at??'')),parent=l.conversation?.resumedFrom?ends.get(l.conversation.resumedFrom):undefined;
+  // A continued conversation should read most of its history from the cache; little means it was rewritten.
+  if(parent&&Number.isFinite(start)&&all>0&&read/all<0.5){if(start-parent.at>CACHE_WAIT_MS)afterWait++;else if(parent.effort&&l.effort&&parent.effort!==l.effort)afterEffort++;}
+  if(l.sessionId&&Number.isFinite(start))ends.set(l.sessionId,{at:start+(l.durationMs??0),effort:l.effort});
+ }
+ const stages=[...byStage.entries()].map(([stage,s])=>({stage,calls:s.calls,cachedShare:s.all?s.read/s.all:0})).sort((a,b)=>b.calls-a.calls);
+ return {stages,missesAfterWait:afterWait,missesAfterEffortChange:afterEffort,oneHour,fiveMinutes};
+}
+/** The report as one line for the usage panel. */
+export function cacheLine(r:ReturnType<typeof cacheReport>,label:(stage:string)=>string=s=>s){
+ if(!r.stages.length)return null;
+ const parts=[`Read from the cache: ${r.stages.map(s=>`${label(s.stage)} ${Math.round(s.cachedShare*100)}%`).join(' · ')}`];
+ if(r.missesAfterWait)parts.push(`${r.missesAfterWait} request${r.missesAfterWait===1?'':'s'} re-read the conversation after a wait of more than five minutes`);
+ if(r.missesAfterEffortChange)parts.push(`${r.missesAfterEffortChange} after an effort change`);
+ if(r.oneHour||r.fiveMinutes)parts.push(r.fiveMinutes?`cache kept 5 minutes on ${r.fiveMinutes} request${r.fiveMinutes===1?'':'s'}`:'cache kept one hour');
+ return parts.join('; ')+'.';
+}
+
+/** Plan E2e: a visual-direction step of a chosen scenario that ran as one request (no treatment sequence). */
+export function onePassNote(row:{role:string;usage?:unknown;config_snapshot?:unknown}):string{
+ const snapshot=(row.config_snapshot??{}) as {scenarioSelection?:unknown;treatmentSequence?:unknown},usage=(row.usage??{}) as {treatmentSequence?:unknown;_local?:unknown};
+ return row.role==='visual-direction'&&!!snapshot.scenarioSelection&&!snapshot.treatmentSequence&&!usage.treatmentSequence&&!!usage._local?'Visual direction: all territories in one pass.':'';
 }

@@ -59,8 +59,17 @@ export async function prepareImageMethods(folder:string,input:DirectionInput,des
 }
 
 /** Uploads this resource's application-made references to staging storage for the image request. */
+/** Version 6: one of the brand's own files as a picture reference. The file (an SVG or a picture of any size) is drawn
+ * once as a PNG of at most 1024 px on its long side, kept beside the other application-made references, and named by
+ * its hash; the same file gives the same hash. */
+export const BRAND_REFERENCE_LONG_SIDE=1024;
+export async function pinBrandReference(folder:string,url:string):Promise<{url:string;sha256:string}>{
+ const image=await loadImage(await readFile(resolve(folder,'public',url))),scale=Math.min(1,BRAND_REFERENCE_LONG_SIDE/Math.max(image.width,image.height))||1,w=Math.max(1,Math.round(image.width*scale)),h=Math.max(1,Math.round(image.height*scale));
+ const canvas=createCanvas(w,h);canvas.getContext('2d').drawImage(image,0,0,w,h);const bytes=canvas.toBuffer('image/png'),sha256=sha(bytes);
+ await mkdir(derivedDir(folder),{recursive:true});await writeFile(resolve(derivedDir(folder),`${sha256}.png`),bytes);return {url,sha256};
+}
 export async function derivedReferences(folder:string,resource:Resource,put:(key:string,body:Buffer,mime:string)=>Promise<unknown>):Promise<DerivedReference[]>{
- const items=[...(resource.sketch?.sha256?[{sha256:resource.sketch.sha256,ext:'jpg' as const,mime:'image/jpeg' as const}]:[]),...(resource.extend?.canvasSha256?[{sha256:resource.extend.canvasSha256,ext:'png' as const,mime:'image/png' as const}]:[])];
+ const items=[...(resource.sketch?.sha256?[{sha256:resource.sketch.sha256,ext:'jpg' as const,mime:'image/jpeg' as const}]:[]),...(resource.extend?.canvasSha256?[{sha256:resource.extend.canvasSha256,ext:'png' as const,mime:'image/png' as const}]:[]),...(resource.brandRefs??[]).flatMap(b=>b.sha256?[{sha256:b.sha256,ext:'png' as const,mime:'image/png' as const}]:[])];
  const out:DerivedReference[]=[];
  for(const item of items){const bytes=await readFile(resolve(derivedDir(folder),`${item.sha256}.${item.ext}`));if(sha(bytes)!==item.sha256)throw new Error('DERIVED_REFERENCE_CHANGED');const image=await loadImage(bytes),objectKey=`staging/director-derived/${item.sha256}.${item.ext}`;
   // Keys are content-addressed, so an object left by an earlier attempt (a retry) already holds these exact bytes;

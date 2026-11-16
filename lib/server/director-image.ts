@@ -26,7 +26,7 @@ export async function directorImageAdmission(admin:SupabaseClient,tenant:string,
  if(designer){
   const steps=checked(await admin.from('studio_agent_steps').select('config_snapshot').eq('run_id',runId).eq('config_snapshot->>directorBlockId',block.id).eq('config_snapshot->>directorDirectionId',meta.directionId).eq('config_snapshot->>directorRole','resources'))??[];
   const used=new Set((steps as {config_snapshot?:{directorResourceId?:string}}[]).map(s=>s.config_snapshot?.directorResourceId).filter((id):id is string=>!!id&&id!==resource.id));
-  if(used.size>=estimate.maxStills)throw new ApiError(409,'STILL_COUNT_EXHAUSTED','The approved number of pictures for this direction is used.');
+  if(used.size>=estimate.maxStills+(estimate.ideaSketches??0))throw new ApiError(409,'STILL_COUNT_EXHAUSTED','The approved number of pictures for this direction is used.');
  }
  if(meta.maxCostMicroUsd>estimate.perStillMicroUsd||reservation>meta.maxCostMicroUsd)throw new ApiError(409,'MEDIA_PRICE_CHANGED','Review the current still price.');
  const spec=resourceRequest(resource,input,estimate.perStillMicroUsd),ids=Array.from({length:PROVIDER_ATTEMPTS+MAX_LOCAL_PREFLIGHT},(_,attempt)=>{const h=createHash('sha256').update(`${runId}:${input.roundId}:${spec.key}:${createHash('sha256').update(`still-request@2\n${prompt}`).digest('hex')}${attempt?`:retry${attempt}`:''}`).digest('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;});

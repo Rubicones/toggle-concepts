@@ -6,6 +6,8 @@
 .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .09em; color: #2b7aa0; }
 .waiting { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #3f6476; background: #eef8fc; border-radius: 12px; padding: 12px 14px; }
 .note { font-size: 12px; color: #6b8794; }
+.concept { display: grid; gap: 6px; max-width: 760px; margin: 4px 0 12px; }
+.concept p:not(.eyebrow) { font-size: 14px; color: #123343; line-height: 1.65; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; align-items: stretch; }
 .card { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 22px; border-radius: 20px; border: 1px solid #dbe7ed; background: #fbfdfe; min-width: 0; transition: border-color .15s, box-shadow .15s, opacity .15s; }

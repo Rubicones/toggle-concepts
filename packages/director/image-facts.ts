@@ -17,6 +17,9 @@ export type ImageFacts={
  busy:number[];
  /** Grid cell indexes (0..8) that are calm and outside the subject, calmest first. */
  calm:number[];
+ /** Plain faces measured in the picture (a blank card, sheet, screen, or its reflection), largest first. Optional:
+  * facts stored before this measurement existed have no such field; an empty list means none was measured. */
+ surfaces?:import('./image-surfaces').Surface[];
 };
 
 const N=64;

@@ -5,6 +5,7 @@ import {Disclosure} from '@/components/ui/disclosure';
 import {Select} from '@/components/ui/select';
 import { RunStepOutput } from "./run-step-output";
 import {DirectorWorkspace} from './director-workspace';
+import {NewRunButton} from './new-run-button';
 import {CreativeProgress} from './creative-progress';
 import {CreativeReadiness} from './creative-readiness';
 import { RunBudgetCard, PreviewContinuation } from "./run-budget";
@@ -29,7 +30,7 @@ import { SharedMedia } from "./shared-media";
 import { ProviderReceipts } from "./provider-receipts";
 import { DraftReview } from "./draft-review";
 import styles from "./guided-run-workspace.module.css";
-import { BrandCheck, ScenarioChoice, VisualTreatments, visualTreatments } from "./run-decisions";
+import { BrandCheck, ScenarioChoice, VisualTreatments, visualConcept, visualTreatments } from "./run-decisions";
 function focusPlanningNote(){
  const note=document.getElementById('run-note'),panel=note?.closest('details');
  if(panel)panel.open=true;
@@ -169,7 +170,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
   const targetRole = role || (data.failureStep?.role === "creative-code" ? "script" : data.failureStep?.role) || "script";
   const scenarioJob=data.jobs.find(j=>j.job_key==='script'&&j.state==='succeeded'),scenarioOutput=scenarioJob?.output,scenarioData=scenarioOutput?readableOutput(scenarioOutput).deliverable:null,directions=scenarioPresentation(scenarioData)??[];
   const verdictsFor=(key:string)=>ideaReview.find(l=>l.key===key)?.state.result?.directions??[];
-  const lookJob=data.jobs.find(j=>j.job_key==='asset-plan'&&j.state==='succeeded'),looks=lookJob?.output?visualTreatments(readableOutput(lookJob.output).deliverable):[];
+  const lookJob=data.jobs.find(j=>j.job_key==='asset-plan'&&j.state==='succeeded'),looks=lookJob?.output?visualTreatments(readableOutput(lookJob.output).deliverable):[],lookConcept=lookJob?.output?visualConcept(readableOutput(lookJob.output).deliverable):'';
   const resumable=control&&(control.status==='paused'||(control.status==='blocked'&&["LOCAL_API_UNAVAILABLE","RUN_COORDINATOR_FAILED","ASSETS_REQUIRED"].includes(control.blocker??"")));
   return (
     <div className={styles.workspace}>
@@ -516,6 +517,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
           {looks.length > 0 && (
             <VisualTreatments
               treatments={looks}
+              concept={lookConcept}
               verdicts={verdictsFor("asset-plan")}
               built={new Set()}
               campaignId={campaignId}
@@ -528,6 +530,7 @@ export function GuidedRunWorkspace({ campaignId }: { campaignId: string }) {
             />
           )}
           {draftAccess.show&&<DirectorWorkspace campaignId={campaignId} canStart={draftAccess.canStart} buildRequest={buildRequest}/>}
+          <NewRunButton campaignId={campaignId} />
           {data.creative&&(data.directorReady?<Disclosure><summary>Earlier creative pipeline · saved history</summary><p>Earlier pipeline records are retained here. Current work and recovery controls are in Draft directions.</p><p>{data.jobs.filter(j=>j.job_key.startsWith('creative.')).length} earlier creative steps · {data.creative.questions.length} saved questions</p><Disclosure><summary>Full earlier results, costs and decisions</summary><pre className={styles.response}>{JSON.stringify({creative:data.creative,jobs:data.jobs.filter(j=>j.job_key.startsWith('creative.'))},null,2)}</pre></Disclosure></Disclosure>:<CreativeProgress value={data.creative} campaignId={campaignId} jobs={data.jobs} waits={data.creativeWaits} onWake={()=>void command({action:'wake'})} busy={busy}/>)}
           {data.creativeReadiness&&<Disclosure><summary>Source readiness from planning</summary><CreativeReadiness value={data.creativeReadiness}/></Disclosure>}
           {control.stage === "assembly" && control.status === "review" && !data.creative && draftAccess.legacy && <PreviewSources campaignId={campaignId} busy={busy} command={command} />}

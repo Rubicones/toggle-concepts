@@ -96,7 +96,8 @@ async function main() {
       const allowed = new Set(["IMAGE_REFERENCE_CHANGED","MEDIA_TOOLS_UNAVAILABLE", "PROVIDER_NOT_CONFIGURED", "IMAGE_QUOTE_INVALID", "IMAGE_PRICING_UNAVAILABLE", "IMAGE_PRICE_CHANGED", "CATALOG_UNAVAILABLE", "IMAGE_RESPONSE_INVALID", "IMAGE_RESPONSE_TOO_LARGE", "IMAGE_DIMENSIONS_INVALID", "ASSET_VALIDATION_FAILED", "STORAGE_UNAVAILABLE"]);
       const code = error instanceof Error && allowed.has(error.message) ? error.message : submitted ? "IMAGE_COLLECTION_FAILED" : "IMAGE_PREFLIGHT_FAILED";
       if (submitted) await settleCost().catch(() => {});
-      await finish(submitted && receipt?.cost == null ? "unknown" : "failed", collectedOutput, code, submitted ? receipt?.cost ?? null : 0);
+      // A failure before anything was sent keeps its own words (live run 5: the code alone did not say what failed).
+      await finish(submitted && receipt?.cost == null ? "unknown" : "failed", collectedOutput ?? (code === "IMAGE_PREFLIGHT_FAILED" ? JSON.stringify({ preflightError: (error instanceof Error ? error.message : String(error)).replace(/sk-[A-Za-z0-9_-]+/g, "sk-…").slice(0, 400) }) : collectedOutput), code, submitted ? receipt?.cost ?? null : 0);
     }
     // No provider resubmission, including after timeout/storage/decoder errors.
     process.exitCode = 1;

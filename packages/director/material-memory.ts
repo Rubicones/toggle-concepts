@@ -20,7 +20,7 @@ export function createMaterialMemory(input:DirectionInput):MaterialMemory{
   const referenceOnly=role==='reference'||/screen[ _-]?(?:shot|record)|video[ _-]?frame|скриншот|кадр/i.test(name);
   materials.push({id,sha256,url:source.url,name,mime:source.mime??(role==='font'?'font/unknown':'image/unknown'),aliases:[...new Set(aliases)],role,referenceOnly,width:source.width,height:source.height,issues:referenceOnly?['Source reference; inspect its subject before choosing a new representation.']:[]});
  };
- input.assets.forEach(a=>add(a,'unknown'));input.brand.references.forEach(r=>add(r,'reference'));input.brand.logos.forEach(l=>add(l,'logo'));(input.brand.interface??[]).forEach(i=>{add(i,'interface');const m=materials.find(x=>x.url===i.url);if(m){m.role='interface';m.referenceOnly=true;}});input.brand.fonts.forEach(f=>add(f,'font'));
+ input.assets.forEach(a=>add(a,'unknown'));input.brand.references.forEach(r=>add(r,r.use===true?'unknown':'reference'));input.brand.logos.forEach(l=>add(l,'logo'));(input.brand.interface??[]).forEach(i=>{add(i,'interface');const m=materials.find(x=>x.url===i.url);if(m){m.role='interface';m.referenceOnly=true;}});input.brand.fonts.forEach(f=>add(f,'font'));
  const rules=(Array.isArray(raw.rules)?raw.rules:[]).filter(value=>record(value).decision==='accepted'),issues:string[]=[],seen=new Map<string,string>();
  for(const value of rules){const r=record(value),key=`${r.category}.${r.key}`,text=string(r.value);if(seen.has(key)&&seen.get(key)!==text)issues.push(`Conflicting accepted values for ${key}.`);seen.set(key,text);if(r.sourceVerified===false)issues.push(`Accepted rule ${key} has no verified source.`);}
  const allowed=input.brief.referenceReconstructionAllowed===true;
@@ -54,8 +54,28 @@ export function importMaterialObservations(value:unknown,memory:MaterialMemory){
  visit(content);return {observations,issues:[...new Set(issues)]};
 }
 
-/** Source references stay available to generators, but are never shipped as final preview artwork. */
-export function previewMaterialAllowed(memory:MaterialMemory|undefined,url:string){
+/** The brand reference pictures a draft's code may draw although they are source references: the marks of the brand
+ * (kit materials whose role is logo but which are not among the logos in code: a lockup, a symbol, a shaded version of
+ * the mark) and a reference carrying `use` (a kit picture the art director marked "Use this"; the owner's decision of
+ * 15 November). Read from the block's frozen input alone, so the designer's render, the page preview and a restored
+ * draft agree. */
+export function drawableReferenceUrls(input:{brand:{references:{id:string;url:string;use?:boolean}[];rawKit?:unknown}}):string[]{
+ return drawableReferences(input).map(r=>r.url);
+}
+export function drawableReferences<R extends {id:string;url:string;use?:boolean}>(input:{brand:{references:R[];rawKit?:unknown}}):R[]{
+ const kit=(input.brand.rawKit as {materials?:{id?:string;role?:string}[]}|undefined)?.materials??[];
+ return input.brand.references.filter(r=>r.use===true||kit.some(m=>m.id===r.id&&m.role==='logo'));
+}
+/** Carries the art director's "Use this" marks into a block's brand references, at block creation (version 6): the
+ * marker travels in the frozen input, so the designer's digest, its render and the page preview agree. */
+export function markUsableReferences<T extends {references:{id:string;url:string;use?:boolean}[]}>(brand:T,markedMaterialIds:readonly string[]):T{
+ const marked=new Set(markedMaterialIds);for(const r of brand.references)if(marked.has(r.id))r.use=true;return brand;
+}
+/** Source references stay available to generators, but are never shipped as final preview artwork, unless the draft's
+ * input makes them drawable. Live run of 15 November: every "use it" brand picture failed to load, because a studio
+ * run's material memory marks each brand reference as a source reference only (the bench input had no material memory). */
+export function previewMaterialAllowed(memory:MaterialMemory|undefined,url:string,drawable?:readonly string[]){
+ if(drawable?.includes(url))return true;
  if(!memory?.reconstruction.allowed)return true;
  const source=memory.materials.find(m=>m.url===url);return !source||!source.referenceOnly||['logo','font'].includes(source.role);
 }

@@ -9,7 +9,8 @@ import {compileCreativeClaim} from './creative-compile';
 import {prepareCreativeOutput,creativeTransportUpstream,type CreativeInputs} from '../../packages/creative/protocol';
 import {loadCreativeVision} from '../../packages/creative/vision.local';
 import type {CreativeStage} from '../../packages/agents/prompts/creative-v1';
-import {textRequestQuote,retryOutputLimit,requireRequestAllowance} from '../../packages/agents/text-quote';
+import {textRequestQuote,requireRequestAllowance} from '../../packages/agents/text-quote';
+import {planningRequestSnapshot} from '../../packages/director/admission';
 import {preparePreviewProposal,PREVIEW_PROTOCOL,type PreviewInputs} from '../../packages/contracts/preview-proposal';
 import {planningTransportTask,PLANNING_RETRY_FEEDBACK,type LocalizationVariant} from '../../packages/contracts/localization';
 import {agentResponseSchema,prepareAgentOutput,outputDiagnostic,planningEnvelopeSchema,envelopeRoleInstruction,scriptProofFor} from '../../packages/contracts/agent-output';
@@ -25,7 +26,10 @@ import {studioChangeDirectory} from "../../packages/data/studio-changes";
 import type {ProviderErrorDetail} from "../../packages/contracts/provider-error";
 import {diagnoseIntakeOutput} from "../../packages/contracts/brand-intake";
 import {processBrandSheet} from "./brand-sheet";
-import {loadBrandVision,loadBrandSheetVision} from "../../packages/brand/vision.local";
+import {compactSheetFor,processCompactSheets} from "./compact-sheet";
+import {loadBrandVision,loadBrandSheetVision,loadBrandCharacterVision} from "../../packages/brand/vision.local";
+import {parseBrandCharacter,type CatalogueEntry} from "../../packages/brand/brand-pack-contents";
+import {ingestBrandCharacter} from "../../packages/brand/brand-pack-store";
 import {processBrandFieldAnalysis,flushBrandReadReceipts} from "./brand-field-analysis";
 import {processBrandMaterial} from "./brand-materials";
 import {compileDraftClaim} from "./compile-drafts";
@@ -38,6 +42,8 @@ import {modelCatalog} from "../../packages/agents/catalog";
 import type {TextSnapshot} from "../../packages/agents/text-provider";
 import {roleReasoning,usesRoleEffort} from "../../packages/agents/effort";
 import {planningPlan} from "../../packages/agents/local-session";
+import {usesPlanningChat,VISUAL_CONCEPT_TASK,sheetMaterials,sheetOnRequestLine,oneRequestVisualDirection} from "../../packages/agents/planning-chat";
+import {TERRITORY_TASK,TERRITORY_SPIRIT} from "../../packages/director/image-ideas";
 import {LOCAL_TEXT_RESERVATION_MICRO_USD} from "../../packages/agents/local-usage";
 import {stageOf} from "../../packages/agents/stage-effort";
 import {loadLocalRuntime,textExecutionFor,transportFor,sharedContextFor,planningPoints,subscriptionWaitUntil,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime,type TextExecution} from "./local-claude/runtime";
@@ -101,11 +107,16 @@ async function execute(claim:Claim){
  if(Boolean(job.payload.creativeInputs)||job.kind==='compile'){await rpc('studio_retire_creative_claim',{target_job:job.id,token:job.lease_token,device});return;}
  const beat=setInterval(()=>{if(heartbeatBusy)return;heartbeatBusy=true;void rpc("studio_heartbeat_workflow",{target_job:job.id,token:job.lease_token,device}).catch(()=>{}).finally(()=>{heartbeatBusy=false;});},15000);
  if(job.kind==="compile"){try{if(job.payload.creativeInputs)await compileCreativeClaim(job as Parameters<typeof compileCreativeClaim>[0],device);else await compileDraftClaim(job,device);}finally{clearInterval(beat);}return;}
- let outputLimit=job.payload.snapshot.maxOutputTokens,protocolSchema:string|null=null;
+ let outputLimit=job.payload.snapshot.maxOutputTokens,protocolSchema:string|null=null,characterStep:string|null=null;
  let result:{outcome:string;cost:number|null;text:string|null;generation:string|null;usage:unknown;failure:string|null;finishReason?:string|null;validation?:unknown;providerError?:ProviderErrorDetail;originalOutput?:string;normalizations?:string[]}={outcome:"failed",cost:0,text:null,generation:null,usage:null,failure:null};
  try{
   // The mode frozen on the run decides the transport; Local runs never fall back to OpenRouter.
-  execution=await textExecutionFor(admin,"run",job.run_id);const shared=sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,role:job.role,stage:stageOf(job.role),...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{})});
+  execution=await textExecutionFor(admin,"run",job.run_id);
+  // C2 (second part): the brand character request writes the brand pack itself, so it never freezes the run context.
+  const brandCharacter=!!(job.payload.snapshot as {brandCharacter?:unknown}).brandCharacter;
+  // C9: visual direction may ask for the full brand sheet's pages by name (planning-chat contexts; the transport decides).
+  const sheetPages=job.role==='visual-direction'?sheetMaterials((job.payload.snapshot as {brandSheetImages?:unknown}).brandSheetImages):[];
+  const shared=brandCharacter?undefined:sharedContextFor(admin,execution,job.run_id),transport=transportFor(execution,localRuntime,{shared,role:job.role,stage:stageOf(job.role),runId:job.run_id,...(shared?{session:async()=>planningPlan(job.role,await planningPoints(admin,job.id))}:{}),...(sheetPages.length?{materials:sheetPages}:{})});
   if(execution.mode!=="local_claude"&&!process.env.OPENROUTER_API_KEY)throw new Error("PROVIDER_NOT_CONFIGURED");
   const run=checked(await admin.from("studio_runs").select("id,config_snapshot").eq("id",job.run_id).eq("tenant_id",sharedTenant).single());
   if(!run)throw new Error("RUN_NOT_ACTIVE");
@@ -120,7 +131,7 @@ async function execute(claim:Claim){
   const modelId:string=reserved?.status==="reserved"&&reserved.model_id?reserved.model_id:agent.model_id;
   const model=(await modelCatalog()).find(m=>m.id===modelId);
   if(!model||model.outputModalities.length!==1||model.outputModalities[0]!=="text")throw new Error("MODEL_UNAVAILABLE");
-  const snapshot:Snapshot={...job.payload.snapshot,upstream,pricing:model,stepCapMicroUsd:agent.step_cap_micro_usd,maxOutputTokens:retryOutputLimit((job.payload.snapshot as unknown as {previewProtocol?:string}).previewProtocol,job.payload.snapshot.maxOutputTokens,agent.max_output_tokens,model.maxOutput),
+  const snapshot:Snapshot={...planningRequestSnapshot(job.payload.snapshot,upstream,model,agent),
    // Role effort: runs frozen at ROLE_EFFORT_VERSION or later ask for the role's level; earlier runs keep the exact earlier rule.
    ...(usesRoleEffort(job.payload.snapshot.instructions)?roleReasoning(job.role,model,execution.mode):{disableReasoning:model.id==="google/gemini-2.5-flash"})};
   const creative=job.payload.creativeInputs?{input:job.payload.creativeInputs,stage:(job.payload.snapshot as unknown as {creativeStage:Exclude<CreativeStage,'compile'>}).creativeStage}:null;
@@ -142,12 +153,26 @@ async function execute(claim:Claim){
   }
   // Treatment sequence: the three visual treatments are written one per request (packages/contracts/treatment-sequence.ts).
   let treatmentSequence=job.role==='visual-direction'&&claim.round.kind==='draft'&&!creative&&!!snapshot.scenarioSelection&&usesTreatmentSequence(snapshot.instructions);
-  const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence}):null;
+  // C9: in run contexts frozen with the planning chat, visual direction writes its concept in prose first.
+  // A request quoted before it ran (a reserved step) keeps exactly what was quoted.
+  const planningCtx=envelope&&job.role==='visual-direction'&&reserved?.status!=='reserved'&&shared?await shared().catch(()=>null):null;
+  const concept=!!planningCtx&&usesPlanningChat(planningCtx,job.role);
+  // D4: designer version 5 (frozen with the run context): visual direction writes territories, not frames.
+  const territory=concept&&!!planningCtx?.imageOwner;
+  // Plan E2 (one-mind contexts): every territory in one request, and no offer of full brand-sheet pages (the compact
+  // sheet in the shared prefix is the brand evidence). Earlier contexts keep the treatment sequence.
+  const oneRequest=oneRequestVisualDirection(planningCtx,job.role);
+  if(oneRequest)treatmentSequence=false;
+  const schema=envelope?agentResponseSchema(job.role,snapshot.campaignContext?.variantManifest,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence,...(concept?{concept:true}:{}),...(territory?{territory:true}:{})}):null;
   if(schema&&planningEnvelopeSchema({id:modelId,supportedParameters:model.supportedParameters},schema)){
    snapshot.responseSchema=modelId==='google/gemini-2.5-flash'?schema:{name:schema.name,schema:typeArraysAsAnyOf(providerJsonSchema(schema.schema)) as Record<string,unknown>};snapshot.outputFormat='json_schema';
   }
   let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence})):'';
   if(envelope)transportTask=envelopeRoleInstruction(job.role)+(transportTask?'\n'+transportTask:'');
+  // The compact sheet is in the run context; the full sheet's pages are asked for by name instead of always sent.
+  // One-mind contexts (designer version 6): the territory is written in the spirit of the brand, not out of its parts.
+  if(territory)transportTask+=`\n${TERRITORY_TASK}${oneRequest?`\n${TERRITORY_SPIRIT}`:''}`;
+  if(concept)transportTask+=`\n${VISUAL_CONCEPT_TASK}`+(sheetPages.length&&!oneRequest?`\n${sheetOnRequestLine(sheetPages)}`:'');
   // Guided planning contexts are built in SQL without the feeling brief; it travels with the task text, because the
   // frozen campaignContext is compared byte for byte at admission (studio_begin_workflow) and must stay unchanged.
   if(claim.round.kind==='draft'&&!creative&&(CREATIVE_FOCUS_ROLES as readonly string[]).includes(job.role)){
@@ -198,9 +223,10 @@ async function execute(claim:Claim){
   // A new Local request reserves the minimum (see LOCAL_TEXT_RESERVATION_MICRO_USD); an admitted one keeps its own.
   if(execution.mode==='local_claude'&&!initial)reservation=LOCAL_TEXT_RESERVATION_MICRO_USD;
   protocolSchema=snapshot.responseSchema?.name??null;
-  const vision=creative?await loadCreativeVision(creative.stage,creative.input,job.campaign_id,upstream):[...await loadBrandVision(snapshot as unknown as Record<string,unknown>,job.campaign_id),...await loadBrandSheetVision(snapshot as unknown as Record<string,unknown>)];
+  const vision=creative?await loadCreativeVision(creative.stage,creative.input,job.campaign_id,upstream):[...await loadBrandVision(snapshot as unknown as Record<string,unknown>,job.campaign_id),...(concept?[]:await loadBrandSheetVision(snapshot as unknown as Record<string,unknown>)),...await loadBrandCharacterVision(snapshot as unknown as Record<string,unknown>,job.campaign_id)];
   if(stopping)throw new Error("LOCAL_PROCESS_STOPPING");
   const submittedStep=await rpc("studio_begin_workflow",{target_job:job.id,token:job.lease_token,device,snapshot,reservation});
+  if(brandCharacter)characterStep=submittedStep.id;
   // From this point a crash/timeout is uncertain and can never be automatically resubmitted.
   submitted=true;
   outputLimit=snapshot.maxOutputTokens;
@@ -236,6 +262,9 @@ async function execute(claim:Claim){
      if(prepared.normalized)result={...result,text:prepared.text,originalOutput:text,normalizations:[PREVIEW_PROTOCOL]};
      if(prepared.blocked)result={...result,outcome:'blocked',failure:'AGENT_INPUT_BLOCKED'};
     }
+    // C2 (second part): an unreadable character answer is a failed answer (asked again like any other), never a pack.
+    const character=(snapshot as unknown as {brandCharacter?:{catalogue:CatalogueEntry[];pictures?:string[]}}).brandCharacter;
+    if(character&&result.outcome==="succeeded"){try{parseBrandCharacter(text,character.catalogue,character.pictures);}catch{result={...result,outcome:"failed",failure:"INVALID_OUTPUT_SCHEMA",validation:{code:"INVALID_OUTPUT_SCHEMA",message:"The brand character answer was unreadable or too short.",issues:[]}};}}
     if(!creative&&result.outcome==="succeeded"&&(claim.round.kind==="draft"||snapshot.outputFormat==="json_object"||snapshot.outputFormat==="json_schema")){
      const validation=prepareAgentOutput(result.text!,job.role,claim.round.kind==="draft",snapshot.campaignContext?.variantManifest);
      const bound=bindScenarioOutput(validation.text,job.role,snapshot.scenarioSelection,scenarioSelection);
@@ -251,6 +280,10 @@ async function execute(claim:Claim){
  const receipt={target_job:job.id,token:job.lease_token,device,expected_input:job.input_hash,expected_config:job.config_hash,outcome:result.outcome,actual_cost:result.cost,result_text:result.text,provider_generation:result.generation,token_usage:(result.usage||result.providerError||result.finishReason)?{...(result.usage as Record<string,unknown>),_studio:{finishReason:result.finishReason??null,maxOutputTokens:outputLimit,validation:result.validation??null,providerError:result.providerError??null,normalizations:result.normalizations??[],...(result.originalOutput?{originalOutput:result.originalOutput}:{}),responseSchema:protocolSchema}}:null,failure:result.failure};
  const file=resolve(directory,"receipts",`${attempt.id}.json`),tmp=file+'.tmp';await writeFile(tmp,JSON.stringify(receipt),{mode:0o600});await rename(tmp,file);
  await rpc("studio_complete_workflow",receipt);await unlink(file);await unlink(resolve(directory,'provider-ids',`${attempt.id}.json`)).catch(()=>{});
+ // C2 (second part): a written brand character becomes the next version of the brand pack, with its compact brand
+ // sheet, before the next request is claimed, so a run whose planning waits behind it freezes the new pack. A failure here is repaired when the brand
+ // page is opened (ingestPendingCharacters); it never stops the queue.
+ if(result.outcome==="succeeded"&&characterStep)await ingestBrandCharacter(admin,characterStep).then(pack=>pack?compactSheetFor(admin,pack):null).catch(error=>console.error('[brand-pack] the brand character could not be stored:',error instanceof Error?error.message:error));
 }
 async function main(){
  const host=new URL(process.env.NEXT_PUBLIC_APP_URL??"https://invalid").hostname;
@@ -272,7 +305,7 @@ async function main(){
   while(!stopping&&(Date.now()-idle<60000||(await runsWaiting().catch(()=>false)&&(idle=Date.now()-50000,true)))){
    if(localRuntime.setup&&Date.now()-recovered_at>30000){recovered_at=Date.now();await admin.rpc('studio_recover_local_workflow',{target_tenant:sharedTenant}).then(r=>{if(!r.error&&Number(r.data)>0){idle=Date.now();console.log(`[local] ${r.data} planning step(s) that ended without an answer went back to the queue.`);}},()=>{});}
    if(Date.now()-checked_at>5000){checked_at=Date.now();if(await codeFingerprint()!==startedWith){restartForNewCode=true;break;}}
-   await flushReceipts();await flushProviderAnchors();try{const side=directorParallel(localRuntime);if(side>1){if(await startDirectorWork(device,localRuntime,side)||directorsRunning())idle=Date.now();}else if(await processDirectorWork(device,localRuntime)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis(device,localRuntime)){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
+   await flushReceipts();await flushProviderAnchors();try{const side=directorParallel(localRuntime);if(side>1){if(await startDirectorWork(device,localRuntime,side)||directorsRunning())idle=Date.now();}else if(await processDirectorWork(device,localRuntime)){idle=Date.now();continue;}}catch(error){console.error('[director] worker step failed; it is retried on the next tick:',error instanceof Error?error.message:error);await wait(5000);}try{if(await processGuidedCampaign())idle=Date.now();}catch{/* A guided coordinator failure never replays a provider submission. */}try{await flushBrandReadReceipts();if(await processBrandFieldAnalysis(device,localRuntime)){idle=Date.now();continue;}}catch(error){const code=(error as {code?:string}).code;if(!["PGRST202","PGRST205","42P01"].includes(code??""))console.error("Brand field reader is waiting for recovery.");}try{if(await processBrandMaterial()){idle=Date.now();continue;}}catch{/* Older projects can continue M06 work until brand intake is enabled. */}try{if(await processBrandSheet()||await processCompactSheets(admin)){idle=Date.now();continue;}}catch(error){console.error("[brand-sheet] build step failed; it is retried:",error instanceof Error?error.message:error);}try{if(await processCreativeDelivery(device)){idle=Date.now();continue;}}catch{/* Deployment may still be waiting for the M07f migration. */}await rpc("studio_recover_workflow",{target_tenant:sharedTenant});
    const claim=await rpc("studio_claim_workflow",{target_tenant:sharedTenant,device}) as Claim|null;
    if(claim){idle=Date.now();await execute(claim);}else await waitForWork(idleDelay(Date.now()-idle));
   }

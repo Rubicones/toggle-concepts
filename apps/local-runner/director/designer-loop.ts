@@ -18,7 +18,7 @@ export const DESIGNER_REVISIONS_PER_SCENE=3;
 export type {DesignerLoopState} from '../../../packages/director/designer';
 import type {DesignerLoopState} from '../../../packages/director/designer';
 export const newDesignerState=(now=Date.now()):DesignerLoopState=>({turn:0,startedAt:now,complete:false,pictures:0,transcript:[],renders:{}});
-export type PictureResult={id:string;status:'ready'|'failed'|'refused';detail?:string;cutout?:boolean};
+export type PictureResult={id:string;status:'ready'|'failed'|'refused';detail?:string;cutout?:boolean;/** version 6: how many plain faces the app measured in the picture */faces?:number;/** the failure's technical code (PROVIDER_402, …) */code?:string;/** the provider's own words, when kept */said?:string};
 export type DesignerTools={
  /** Authored files only (no generated modules). */
  files:()=>Promise<{path:string;source:string}[]>;
@@ -28,18 +28,26 @@ export type DesignerTools={
  /** Measures the views in the browser; shots are JPEG files. */
  render:(views:InspectionView[])=>Promise<{summary:InspectionSummary;shots:{key:string;file:string}[]}>;
  /** Records the picture in the work state, then buys it inside the approved count (admission decides). */
- requestImage:(picture:DesignerPicture)=>Promise<PictureResult>;
+ requestImage:(picture:DesignerPicture&{/** version 6: urls of the brand's own files to take as references */brandRefs?:string[];/** version 6: an idea sketch is recorded under this issued id, apart from the designer's own pictures */resourceId?:string})=>Promise<PictureResult>;
+ /** Version 6: the brand files a picture may name as references (url, place in brand.ts, catalogue name). */brandNames?:import('../../../packages/director/picture-references').BrandName[];
+ /** C8 follow-up (version 4): a 3D model of a picture it already has (Tripo), inside the approved count; the picture stays the fallback. */
+ requestModel?:(model:{picture:string;why:string})=>Promise<{id:string;status:'model'|'picture';detail?:string}>;
  /** After a restart: recorded pictures whose result never reached the designer. `settle` returns the saved entry or
   * finishes the purchase under the same identity, so a paid picture is reused, never bought twice. */
  resumePictures?:(reported:string[])=>Promise<{id:string;settle:()=>Promise<PictureResult>}[]>;
  /** The live tools' finish: every ordered option implemented, typechecked and built. */
  finish:()=>Promise<{complete:true}|{complete:false;issue:string}>;
+ /** C3 (materialsVersion 1): materials on request. fetch plans a turn's request inside the run budget (and reports it
+  * on the timeline); load gives what is due for the next turn; left is the budget still open; references are the
+  * catalogue lines of the designer's own references (the pack's catalogue is in the run context). */
+ materials?:{fetch:(requests:{name:string;why:string}[],seen:string[])=>Promise<{lines:string[];attached:string[]}>;load:(names:string[])=>Promise<{text:string;images:{url:string;label:string}[]}>;left:()=>Promise<number>;references?:string[]};
  /** Point 3 (designerVersion 2): one critic request on the hero frame's render; undefined when the quote has no critic. */
- reviewHero?:(round:number,shots:{label:string;file:string}[],findings:{view:string;severity:string;detail:string}[])=>Promise<{accepted:boolean;notes:{recipient:string;priority:string;view:string;problem:string;fix:string}[]}|undefined>;
+ reviewHero?:(round:number,shots:{label:string;file:string}[],findings:{view:string;severity:string;detail:string}[])=>Promise<{accepted:boolean;notes:{recipient:string;priority:string;view:string;problem:string;fix:string}[];
+  /** D5 (critic@2): the check answers, the rulings on earlier notes, a stop by rule and what stays open */checks?:{label:string;ok:boolean}[];rulings?:{note:string;ruling:string}[];stop?:'all-pass'|'no-progress'|'rounds';open?:string[]}|undefined>;
 };
 /** Point 3d: hero frame milestones for the timeline. */
-export type HeroEvent={kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'no-critic'|'review-failed';looked?:string};
-export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number};scenes:{sceneId:string;formats:{format:string;renders:number;revisionsLeft:number}[]}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];/** Point 4a: the designer's own notes, always sent. */notes?:string;/** Point 4b: set when the attached images are a render the designer must look at first. */lookFirst?:boolean;/** Point 3: the hero frame to settle first (designerVersion 2). */hero?:{sceneId:string;format:string;settled:boolean;reviewsLeft:number};lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
+export type HeroEvent={/** D5 */review?:{checks:{label:string;ok:boolean}[];rulings:{note:string;ruling:string}[];stop?:string};kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string};
+export type DesignerCall=(request:{turn:number;budget:{turnsLeft:number;picturesLeft:number;/** C3 */materialsLeft?:number};/** C3: the designer's own references, by catalogue name. */references?:string[];/** C3: the text of the materials asked for last turn. */materials?:string;scenes:{sceneId:string;formats:{format:string;renders:number;revisionsLeft:number}[]}[];toolResults:{from:'agent'|'tool';text:string}[];currentFiles:{path:string;source:string}[];/** Point 4a: the designer's own notes, always sent. */notes?:string;/** Point 4b: set when the attached images are a render the designer must look at first. */lookFirst?:boolean;/** Point 3: the hero frame to settle first (designerVersion 2). */hero?:{sceneId:string;format:string;settled:boolean;reviewsLeft:number};lastRender?:{sceneId:string;views:string[];findings:{view:string;severity:string;detail:string}[]}},images:{url:string;label:string}[])=>Promise<string>;
 
 /** The views the designer asked for: the reference copy in each requested format (default: the reference format),
  * plus the longest copy in the same formats so overflow shows up while the scene is designed. Screenshots only for
@@ -64,7 +72,39 @@ export async function screenshotForDesigner(file:string,maxSide=1080){
  return `data:image/jpeg;base64,${canvas.toBuffer('image/jpeg',82).toString('base64')}`;
 }
 /** LC4: build errors as their first lines, never a file dump. */
-export const shortIssue=(issue:string)=>issue.split('\n').filter(l=>l.trim()).slice(0,12).join('\n').slice(0,1200);
+/** Every build problem the designer reads names what to change (live run 2026-11-14: a bare code was answered by ten
+ * guessing turns). A code without a line here keeps its own text, followed by what a bare code means. */
+export const BUILD_ISSUE_HELP:Record<string,string>={
+ PREVIEW_OPTIONS_FIELDS_REQUIRED:'previewOptions is missing fields. Write exactly: export const previewOptions={hooks:[…],ctas:[…],locales:[…],lengths:[…],scenes:[…],adaptive:false} with the issued ids as literal values, or delete the export: the app then lists the variations itself.',
+ PREVIEW_OPTIONS_MUST_BE_LITERAL:'previewOptions must be written out as literal values (strings, numbers, arrays, true/false): no function calls, map(), spreads or computed values. Or delete the export: the app then lists the variations itself.',
+ UNISSUED_PREVIEW_OPTION:'previewOptions names a hook, call to action, language, length or scene id that is not one of the issued ones. Use the ids from the VARIATIONS and SCENARIO sections exactly, or delete the export.',
+ INVALID_PREVIEW_LABELS:'previewOptions.labels must be {hooks:{id:"label"},…} with labels of at most 80 characters for ids listed in the same previewOptions. Remove labels if unsure.',
+ INVALID_PREVIEW_ADAPTIVENESS:'previewOptions.adaptive must be true or false.',
+ PREVIEW_OPTIONS_NOT_READY:'previewOptions lists no usable combination: include at least one issued hook, call to action, language and length, and one scene id.',
+ FRAME_NOT_WRITTEN:'There is no Frame.tsx yet: write the complete file in a fenced block that starts with ```tsx Frame.tsx.',
+ PREVIEW_IMPORT_NOT_FOUND:'A file imports a module that does not exist in this workspace. Import only react, remotion, three (through ./kit3d), ./brand, ./kit, ./kit3d and files you wrote yourself, with their exact names.',
+ PREVIEW_IMPORT_REJECTED:'A file imports a package this draft may not use. Import only react, remotion, ./brand, ./kit, ./kit3d and files you wrote yourself.',
+ WORKSPACE_PATH_REJECTED:'A file path is not allowed: write files in the workspace root with simple names (Frame.tsx, parts.tsx), no folders above it.',
+ LIVE_PREVIEW_SIZE_LIMIT:'The built code is too large for the preview: remove embedded data (base64 pictures, long generated tables) and ask for pictures instead.',
+ IMAGE_EXPORT_DISABLED:'Do not render image files in code: the app renders Frame.tsx itself.',
+ MODEL_NOT_GLB:'The 3D model file is not a GLB: use the model the app gave you through resources, unchanged.',
+};
+/** Counts the same build error in a row; returns the issue when it has now failed three times (the count restarts,
+ * so a retry gets three more attempts). A build that passes clears it. */
+export function buildStuck(state:Pick<DesignerLoopState,'buildStuck'>,issue:string|null):string|null{
+ if(issue===null){delete state.buildStuck;return null;}
+ const code=(/^[A-Z][A-Z0-9_]{5,}/.exec(issue.trim())?.[0]??issue.trim().split('\n')[0].replace(/\d+/g,'#')).slice(0,160);
+ state.buildStuck=state.buildStuck?.code===code?{code,count:state.buildStuck.count+1}:{code,count:1};
+ if(state.buildStuck.count<3)return null;
+ delete state.buildStuck;return plainBuildIssue(issue);
+}
+export function plainBuildIssue(issue:string):string{
+ const first=issue.split('\n').find(l=>l.trim())?.trim()??'',code=/^[A-Z][A-Z0-9_]{5,}/.exec(first)?.[0];
+ if(code&&BUILD_ISSUE_HELP[code])return `${BUILD_ISSUE_HELP[code]}${first.length>code.length+2?`\n(${first.slice(code.length).replace(/^[:\s]+/,'')})`:''}`;
+ if(code&&first===code)return `${code}: the app refused the files for this reason code and has no further detail. Check the last change you made against the task's rules; if the cause is unclear, undo that change.`;
+ return issue;
+}
+export const shortIssue=(issue:string)=>plainBuildIssue(issue).split('\n').filter(l=>l.trim()).slice(0,12).join('\n').slice(0,1200);
 /** Tool results since the designer's last answer: what a continued conversation does not hold yet. */
 export function sinceLastTurn(transcript:{from:'agent'|'tool';text:string}[]){let i=transcript.length;while(i>0&&transcript[i-1].from!=='agent')i--;return transcript.slice(i);}
 const hash=(text:string)=>createHash('sha256').update(text).digest('hex').slice(0,16);
@@ -73,7 +113,7 @@ export const fileHashes=(files:{path:string;source:string}[])=>Object.fromEntrie
 export function changedFiles(files:{path:string;source:string}[],seen?:Record<string,string>){return seen?files.filter(f=>seen[f.path]!==hash(f.source)):files;}
 const short=(value:unknown,max=4096)=>JSON.stringify(value).slice(0,max);
 
-export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;/** LC4: a continued conversation (shared Local runs): send only what it does not hold, and accept readable turns into it. */conversation?:{continuing:()=>boolean;accept:()=>Promise<void>};save:(state:DesignerLoopState)=>Promise<void>;/** For the timeline: the turn, its results and the screenshot the designer looked at when it wrote the turn. *//** Point 3: at most this many critic reviews of the hero frame (from the quote). */heroReviews?:number;onHero?:(event:HeroEvent)=>Promise<void>;onTurn?:(turn:DesignerTurn,results:unknown[],looked?:string)=>Promise<void>;now?:()=>number}){
+export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopState;maxTurns:number;maxPictures:number;timeMs:number;call:DesignerCall;tools:DesignerTools;/** LC4: a continued conversation (shared Local runs): send only what it does not hold, and accept readable turns into it. */conversation?:{continuing:()=>boolean;accept:()=>Promise<void>;/** C1: decides this turn's conversation before the request is built; true only on a real continuation of the designer's own conversation. */decide?:()=>Promise<boolean>;/** C1: the stored conversation is missing on this computer. */lost?:()=>void};save:(state:DesignerLoopState)=>Promise<void>;/** For the timeline: the turn, its results and the screenshot the designer looked at when it wrote the turn. *//** Point 3: at most this many critic reviews of the hero frame (from the quote). */heroReviews?:number;onHero?:(event:HeroEvent)=>Promise<void>;onTurn?:(turn:DesignerTurn,results:unknown[],looked?:string)=>Promise<void>;now?:()=>number}){
  const {input,state,tools}=args,now=args.now??Date.now,scenes=input.storyboard.map(s=>s.id),referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  const pending=new Map<string,Promise<PictureResult>>(),arrived=new Map<string,PictureResult>();
  // A control or lease failure inside a background purchase stops the loop at the next step instead of escaping unseen.
@@ -93,25 +133,44 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
  if(heroOn&&!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
  const heroOpen=()=>heroOn&&state.hero?.state!=='accepted';
  const heroAsk=()=>`Finish the hero frame first: scene ${scenes.indexOf(state.hero!.sceneId)+1} in ${ratio(state.hero!.format)}. Render it, then set settleHero for its review.`;
- const accept=async(by:'critic'|'reviews-used'|'no-critic'|'review-failed')=>{state.hero!.state='accepted';state.hero!.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:state.hero!.sceneId,format:state.hero!.format,by});};
+ const accept=async(by:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed')=>{state.hero!.state='accepted';state.hero!.acceptedBy=by;await args.save(state);await args.onHero?.({kind:'accepted',sceneId:state.hero!.sceneId,format:state.hero!.format,by});};
+ let missingRetried=false;
  while(!state.complete&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   await collect();stopIfFatal();
   const files=await tools.files(),last=state.lastRender;
   const images=last?await Promise.all(last.views.map(async v=>({url:await screenshotForDesigner(v.file,args.conversation?RENDER_LONG_SIDE:1080),label:`${v.label} (rendered, scene ${scenes.indexOf(last.sceneId)+1})`}))):[];
   let text:string;
-  try{text=await args.call({...(heroOn?{notes:state.notes??'',...(last?{lookFirst:true}:{})}:{}),turn:state.turn,budget:{turnsLeft:args.maxTurns-state.turn,picturesLeft:Math.max(0,args.maxPictures-state.pictures)},
+  // C1: the short payload only when this turn really continues the designer's own conversation; a condensed, new or
+  // restarted turn gets the full payload (every file, recent results, notes and the latest render).
+  const short=args.conversation?(args.conversation.decide?await args.conversation.decide():args.conversation.continuing()):false;
+  // C3: materials asked for last turn arrive now; a conversation that starts over no longer holds earlier ones.
+  if(!short&&state.materialsSeen?.length)state.materialsSeen=[];
+  const due=tools.materials&&state.materialsDue?.length?await tools.materials.load(state.materialsDue):null;
+  const materialsLeft=tools.materials?await tools.materials.left():undefined;
+  try{text=await args.call({...(heroOn?{notes:state.notes??'',...(last?{lookFirst:true}:{})}:{}),turn:state.turn,budget:{turnsLeft:args.maxTurns-state.turn,picturesLeft:Math.max(0,args.maxPictures-state.pictures),...(materialsLeft!==undefined?{materialsLeft}:{})},
+   ...(tools.materials?.references?.length?{references:tools.materials.references}:{}),...(due?.text?{materials:due.text}:{}),
    scenes:scenes.map(sceneId=>({sceneId,formats:input.formats.map(f=>({format:f.id,renders:state.renders[renderKey(sceneId,f.id)]??0,revisionsLeft:Math.max(0,DESIGNER_REVISIONS_PER_SCENE+1-(state.renders[renderKey(sceneId,f.id)]??0))})).filter(f=>f.renders>0||f.format===referenceFormat)})),
    // LC4: in a continued conversation the history holds everything earlier: only new results and changed files go.
-   ...(args.conversation?.continuing()?{toolResults:sinceLastTurn(state.transcript),currentFiles:changedFiles(files,state.filesSeen)}:{toolResults:state.transcript.slice(-12),currentFiles:files}),
+   ...(short?{toolResults:sinceLastTurn(state.transcript),currentFiles:changedFiles(files,state.filesSeen)}:{toolResults:state.transcript.slice(-12),currentFiles:files}),
    ...(state.hero?{hero:{sceneId:state.hero.sceneId,format:state.hero.format,settled:state.hero.state==='accepted',reviewsLeft:Math.max(0,(args.heroReviews??0)-state.hero.reviews)}}:{}),
-   ...(last?{lastRender:{sceneId:last.sceneId,views:last.views.map(v=>v.label),findings:last.findings.slice(0,30).map(f=>({view:f.view,severity:f.severity,detail:f.detail}))}}:{})},images);}
-  catch(error){if(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'){state.turn++;await log({error:'Your answer was cut off. Return a smaller turn: fewer files, exact edits.'});continue;}throw error;}
-  if(args.conversation)state.filesSeen=fileHashes(files);
+   ...(last?{lastRender:{sceneId:last.sceneId,views:last.views.map(v=>v.label),findings:last.findings.slice(0,30).map(f=>({view:f.view,severity:f.severity,detail:f.detail}))}}:{})},[...images,...(due?.images??[])]);}
+  catch(error){if(error instanceof Error&&error.message==='OUTPUT_TOKEN_LIMIT'){state.turn++;await log({error:'Your answer was cut off. Return a smaller turn: fewer files, exact edits.'});continue;}
+   // C1: the stored conversation is not on this computer: start over once with the full payload (same turn).
+   if(error instanceof Error&&error.message==='CONVERSATION_MISSING'&&args.conversation?.lost&&!missingRetried){missingRetried=true;args.conversation.lost();continue;}
+   throw error;}
+  missingRetried=false;
   const looked=last?.views[0]?.file;state.turn++;state.transcript.push({from:'agent',text:text.slice(0,2000)});delete state.lastRender;await args.save(state);
   let turn:DesignerTurn;
-  try{turn=readDesignerTurn(JSON.parse(text),input);}catch(error){await log({error:(error instanceof Error?error.message:'Unreadable answer').slice(0,600)});continue;}
+  try{turn=readDesignerTurn(JSON.parse(text),input);}catch(error){
+   // C1: an unreadable answer is not accepted into the conversation: it is not the last agent turn there, so the results
+   // it was answering stay due for the next short payload, and its files are not marked as seen.
+   if(args.conversation)state.transcript.pop();
+   await log({error:(error instanceof Error?error.message:'Unreadable answer').slice(0,600)});continue;}
   // LC4: a readable turn becomes part of the direction's conversation; an unreadable one is left out of it.
   await args.conversation?.accept();
+  if(args.conversation)state.filesSeen=fileHashes(files);
+  // C3: what arrived with this turn is in the conversation now.
+  if(due&&state.materialsDue?.length){state.materialsSeen=[...new Set([...(state.materialsSeen??[]),...state.materialsDue])];state.materialsDue=[];await args.save(state);}
   // Point 4: notes are working memory; a turn after a render must first say what it saw (look, name, then fix).
   if(heroOn&&turn.notes){state.notes=turn.notes;await args.save(state);}
   // Refused once per render: a second turn without seen is applied, so a model that keeps omitting it cannot burn
@@ -138,6 +197,11 @@ export async function runDesigner(args:{input:DirectionInput;state:DesignerLoopS
     // Version 3: the result names the resource id the picture will have, so the frame binds it without guessing.
     const issued=usesEngineKit(input)?input.resourceIds[state.pictures-1]:undefined;
     results.push({picture:'requested',...(issued?{id:issued,read:`resources['${issued}']`}:{}),scene:picture.scene,purpose:picture.purpose.slice(0,120)});
+   }
+   // C3: materials it named arrive with the next turn (inside the run budget; never twice in one conversation).
+   if(turn.materials?.length){
+    if(!tools.materials)results.push({materials:['Materials on request are not available in this draft.']});
+    else{const asked=await tools.materials.fetch(turn.materials,[...(state.materialsSeen??[]),...(state.materialsDue??[])]);state.materialsDue=[...new Set([...(state.materialsDue??[]),...asked.attached])];await args.save(state);results.push({materials:asked.lines});}
    }
    // 3. Render: only a building source; the first render designs the scene, later ones are revisions.
    if(turn.render&&built.ok){

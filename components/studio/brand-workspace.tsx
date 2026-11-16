@@ -4,6 +4,7 @@ import {Select} from '@/components/ui/select';
 import {CreativeReadiness} from './creative-readiness';
 import { ProviderFailure } from "./provider-failure";
 import { BrandIntake } from "./brand-intake";
+import { BrandPackPanel } from "./brand-pack";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,7 @@ function BrandWorkspaceContent({
         </section>
       )}
       <BrandIntake campaignId={campaignId} kitVersion={data.draft?.version ?? 0} onKitApplied={changed} />
+      {accepted && <BrandPackPanel campaignId={campaignId} />}
       {data.c1 && (
         <Disclosure className="brand-advanced">
           <summary>Advanced · campaign brand rules{accepted ? " (approved)" : ""} and history</summary>

@@ -1,4 +1,5 @@
 import {canonicalJson} from '@/packages/contracts/common';
+import {requestBrandCharacterQuietly} from '@/lib/server/brand-pack';
 import {submittedBrandbook,submittedBrandbookItems,validateBrandbookReferences} from "@/lib/server/brandbook-a1";
 import {importBrandbookToA1,brandbookRuleChoices} from "@/packages/brand/a1-handoff";
 import {draftRoundFeedback} from "@/lib/server/draft-round";
@@ -71,5 +72,8 @@ export async function POST(request:Request,ctx:RouteContext<"/api/studio/campaig
  }
  const r=await admin.from("studio_brand_revisions").select("*").eq("tenant_id",tenant).eq("campaign_id",id).eq("id",input.revisionId).maybeSingle();brandDbError(r.error);const revision=r.data;if(!revision)throw new ApiError(404,"BRAND_REVISION_REQUIRED","That Brand Kit revision does not belong to this campaign.");
  const source=a1ReviewSource(revision,actorId,{decision:input.decision,reviewerName:input.reviewerName,comments:input.comments,attestations:input.attestations});
- const result=await admin.rpc("studio_review_a1",{target_campaign:id,target_revision:input.revisionId,request_key:input.requestId,source,acting_user:actorId});brandDbError(result.error);return json({id:result.data.id},201);
+ const result=await admin.rpc("studio_review_a1",{target_campaign:id,target_revision:input.revisionId,request_key:input.requestId,source,acting_user:actorId});brandDbError(result.error);
+ // C2 (second part): an accepted brand gets its character written (Local shared runs; never stops the acceptance).
+ if(input.decision==="accepted")await requestBrandCharacterQuietly(revision.run_id);
+ return json({id:result.data.id},201);
 });}

@@ -8,7 +8,7 @@ export type BrandKit = {
  tokens:Record<string,string|number>;fonts:{family:string;url:string;weight?:string;style?:string}[];
  logos:{id:string;url:string;clearSpacePx:number;required?:boolean;/** Same drawing with currentColor resolved: for dark and for light grounds. */variants?:{onDark:string;onLight:string}}[];
  rules:{allowedFonts:string[];forbiddenColours:string[];minimumContrast:number;logoRequired?:boolean};
- rawKit?:unknown;copy:Record<string,Record<string,string>>;facts:Record<string,string>;references:{id:string;url:string}[];
+ rawKit?:unknown;copy:Record<string,Record<string,string>>;facts:Record<string,string>;references:{id:string;url:string;/** a kit picture the art director marked "Use this": draft code may draw it */use?:boolean}[];
  /** The product's UI kit parts and screenshots: evidence for interface mockups built in code, never image references. */
  interface?:{id:string;url:string;role:'uikit'|'screenshot'}[];
  /** Brand sheet pages for the live critic (blocks with brief.brandSheetVersion 1): pinned files, sent as cached images. */
@@ -25,10 +25,15 @@ export type Resource = {id:string;kind:'still'|'3d-still';proxy?:boolean;proxyFo
  /** Image methods; `source`/`sha256` fields are pinned by the application before the request, never by the model. */
  sketch?:{shapes:{role:'subject'|'object'|'horizon'|'copy'|'light';box:number[];tone:'light'|'mid'|'dark'}[];sha256?:string};
  edit?:{from:string;instruction:string;region?:number[];source?:DerivedSource};
- extend?:{from:string;place?:number[];instruction?:string;source?:DerivedSource;canvasSha256?:string}};
+ extend?:{from:string;place?:number[];instruction?:string;source?:DerivedSource;canvasSha256?:string};
+ /** Version 6: the brand's own files this picture takes as references (a mark, a kit picture marked "Use this"); the
+  * application pins each as a picture and its hash before the request. */
+ brandRefs?:{url:string;sha256?:string}[]};
 export type CatalogEntry = {id:string;url:string;thumbnail:string;width:number;height:number;sha256:string;mime:string;revisionId:string;renderSha256?:string;proxy?:boolean;proxyFor?:'video'|'3d';image?:import('./image-facts').ImageFacts;
  /** The same picture with its background removed (transparent PNG cropped to the subject), or why that failed. */
- cutout?:Cutout;cutoutFailed?:string};
+ cutout?:Cutout;cutoutFailed?:string;
+ /** C8 (designerVersion 4): a generated 3D model of the picture, placed in the same scene; the picture is its fallback. */
+ model?:{url:string;sha256:string;bytes:number}};
 export type Cutout={url:string;sha256:string;width:number;height:number;box:[number,number,number,number];objectKey?:string};
 export type DirectionInput = {protocol:'director@1';stage?:'draft'|'motion';creativeHandoff?:import('./creative-handoff').CreativeHandoff;materialMemory?:import('./material-memory').MaterialMemory;runId:string;roundId:string;directionId:string;iterationId:string;storyboard:Scene[];brand:BrandKit;brief:Record<string,unknown>;assets:CatalogEntry[];formats:Format[];variants:Variant[];resourceIds:string[];variantFacts?:Record<string,{required:string[];sceneCopy:Record<string,string[]>;storyboard?:Scene[]}>};
 export type TextBox = {text:string;x:number;y:number;width:number;height:number;fontSize:number;fontFamily:string;color:string;opacity:number};

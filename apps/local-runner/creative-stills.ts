@@ -4,7 +4,7 @@ import {validateNextUpload} from '../../packages/media/validate-upload.local';
 import type {StillProducer} from '../../packages/creative/media';
 import {stillPromptText} from '../../packages/creative/still-prompt';
 import type {CreativeInputs} from '../../packages/creative/protocol';
-import {localPreflightFailure,MAX_LOCAL_PREFLIGHT,PROVIDER_ATTEMPTS} from '../../packages/creative/still-attempts';
+import {retryPreflight,localPreflightFailure,MAX_LOCAL_PREFLIGHT,PROVIDER_ATTEMPTS} from '../../packages/creative/still-attempts';
 type StillStep={id:string;status:string;output:string|null;cost_micro_usd:number|null;error_code:string|null};
 /** Which request of a still to use: the first that is not a settled refusal. Three provider attempts per still; a
  * failure on this computer before anything reached the provider (missing ffmpeg, no key, catalog down; nothing
@@ -22,7 +22,7 @@ export async function pickStillAttempt(lookup:(attempt:number)=>Promise<{request
 }
 /** Use the existing image admission/receipt path. Never retry a failed or unknown submission. */
 export function creativeStillProducer(job:{id:string;run_id:string;round_id:string;campaign_id:string},input:CreativeInputs,options:{director?:{blockId:string;directionId:string;resourceId:string};onReceipt?:(receipt:{stepId:string;costMicroUsd:number|null;reused:boolean})=>Promise<void>}={}):StillProducer{
- return async request=>{
+ const once:StillProducer=async request=>{
   if(!input.mediaEstimate||!request.maxCostMicroUsd)throw new Error('MEDIA_PRICE_REQUIRED');
   const host=new URL(process.env.NEXT_PUBLIC_APP_URL??'https://invalid');if(!['localhost','127.0.0.1','[::1]'].includes(host.hostname))throw new Error('LOCAL_DEVICE_REQUIRED');
   const admin=adminClient(),text=stillPromptText(request.prompt);
@@ -66,6 +66,9 @@ export function creativeStillProducer(job:{id:string;run_id:string;round_id:stri
   }
   throw Object.assign(new Error('CREATIVE_IMAGE_PENDING'),{detail:'A draft still is still being drawn. The build resumes by itself and collects it; nothing is bought twice.'});
  };
+ // Live run 5: one of two pictures asked for at the same moment failed on this computer before anything was sent. Such
+ // a failure is tried once more by itself (a new request id; nothing was sent or charged the first time).
+ return async request=>{try{return await once(request);}catch(error){if(!retryPreflight(error))throw error;return once(request);}};
 }
 
 /** Director resources use the same priced image admission, receipts and reconciled outputs. */

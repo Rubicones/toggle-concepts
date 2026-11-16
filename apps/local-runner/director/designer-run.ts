@@ -1,5 +1,6 @@
 // Designer blocks in the worker (designer pipeline plan, point 4e): the real tools behind the designer loop, the
 // provisional design the preview and admission read while it works, and the finished design it leaves behind.
+import {pinBrandReference} from './image-methods';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {sandboxTool} from './sandbox';
@@ -35,7 +36,7 @@ export function designerTools(args:{folder:string;input:DirectionInput;design:De
  const settle=async(resource:Resource):Promise<PictureResult>=>{
   let entry:CatalogEntry|undefined;
   try{entry=await args.buy(resource);}catch(error){if(error instanceof Error)Object.assign(error,{resourceId:resource.id});throw error;}
-  return entry?{id:resource.id,status:'ready',...(entry.cutout?{cutout:true}:entry.cutoutFailed?{cutout:false,detail:'The cutout failed; use the rectangle.'}:{})}:{id:resource.id,status:'failed',detail:'The picture could not be made.'};
+  return entry?{id:resource.id,status:'ready',...(entry.image&&'surfaces' in entry.image?{faces:entry.image.surfaces?.length??0}:{}),...(entry.cutout?{cutout:true}:entry.cutoutFailed?{cutout:false,detail:'The cutout failed; use the rectangle.'}:{})}:{id:resource.id,status:'failed',detail:'The picture could not be made.'};
  };
  return {
   files:async()=>(await staticSourceContext(folder,input.iterationId)).files,
@@ -47,6 +48,9 @@ export function designerTools(args:{folder:string;input:DirectionInput;design:De
   },
   requestImage:async(picture):Promise<PictureResult>=>{
    const resource=pictureResource(picture,input,design.resources.map(r=>r.id));
+   if(picture.resourceId){if(!input.resourceIds.includes(picture.resourceId)||design.resources.some(r=>r.id===picture.resourceId))throw new Error('UNISSUED_RESOURCE_ID');resource.id=picture.resourceId;}
+   // Version 6: the brand's own files named as references are pinned as pictures before the request is built.
+   if(picture.brandRefs?.length)resource.brandRefs=await Promise.all(picture.brandRefs.map(url=>pinBrandReference(folder,url)));
    design.resources.push(resource);await args.save();
    return settle(resource);
   },

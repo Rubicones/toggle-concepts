@@ -1,0 +1,13 @@
+{
+  "name": "multi-lang",
+  "about": "Multi-scene 15 s video in the brand's own language plus English: checks scenes, translation and long copy.",
+  "brands": ["grit", "bakehaus", "ledgerly"],
+  "setup": {"kind": "multi", "languages": ["en"], "lengths": [15], "formats": ["9x16", "1x1"],
+            "provider": {"mode": "claude", "billing": "subscription"}},
+  "overrides": {
+    "grit": {"languages": ["sr-Latn", "en"]},
+    "bakehaus": {"languages": ["de", "en"]}
+  },
+  "stopAfter": "preview",
+  "parallel": 1
+}

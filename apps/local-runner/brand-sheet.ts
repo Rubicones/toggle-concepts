@@ -42,6 +42,18 @@ export async function renderSheetPage(html:string,launch=()=>chromium.launch({ex
  }finally{await browser.close();}
 }
 
+/** C2: one page at exactly the given size (the compact brand sheet): no slicing, the same viewport every time. */
+export async function renderFixedPage(html:string,size:{width:number;height:number},launch=()=>chromium.launch({executablePath:sheetBrowserPath(),headless:true,chromiumSandbox:false})){
+ const browser=await launch();
+ try{
+  const page=await browser.newPage({viewport:size,deviceScaleFactor:1});
+  await page.route('**/*',route=>route.request().url()===PAGE_URL?route.fulfill({status:200,contentType:'text/html; charset=utf-8',body:html}):route.abort());
+  await page.goto(PAGE_URL,{waitUntil:'load',timeout:30000});
+  await page.evaluate('(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(i=>i.decode().catch(()=>{})));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));})()');
+  return await page.screenshot({type:'png',clip:{x:0,y:0,...size}});
+ }finally{await browser.close();}
+}
+
 /** The whole sheet for one brand: every section, content-addressed. */
 export async function buildBrandSheet(admin:ReturnType<typeof adminClient>,tenant:string,campaign:string,deps:{get?:(key:string)=>Promise<Buffer>;put?:(key:string,body:Buffer,mime:string)=>Promise<unknown>;render?:typeof renderSheetPage}={}){
  const store=deps.get&&deps.put?null:objectStore(),get=deps.get??(async(key:string)=>(await store!.get(key)).body),put=deps.put??((key:string,body:Buffer,mime:string)=>store!.putStaging(key,body,mime));

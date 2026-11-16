@@ -6,3 +6,13 @@ export function transientExecutionFailure(message:string){return /^(CREATIVE_IMA
 export const LOCAL_RECOVERY_LIMIT=12;
 export function localTemporaryStop(message:string){return /^(LOCAL_RESULT_MISSING|LOCAL_REQUEST_INTERRUPTED|LOCAL_REQUEST_LIVE|PROVIDER_RECONCILIATION_REQUIRED|SAVED_REQUEST_FAILED|CLI_TIMEOUT|CLI_STALLED|CLI_NO_RESULT|CLI_ERROR)(:|$)/.test(message);}
 export function propagateExecutionFailure(error:unknown){return error instanceof Error&&(transientExecutionFailure(error.message)||/^(STALE_DIRECTOR_LEASE|DIRECTOR_LIVE_WRAP_UP|DIRECTOR_LIVE_REVISION|RUN_STOPPED|RESOURCE_PERMISSION_REQUIRED|ROLE_ALLOWANCE_EXHAUSTED|PROVIDER_RECONCILIATION_REQUIRED|DRAFT_SIZE_SCHEMA_REQUIRED)$/.test(error.message));}
+
+/** A fault of this computer or installation (a missing program or file, no disk space, a browser that will not start):
+ * nothing the designer can fix in its files. Rehearsal 2026-11-14: twelve designer turns were answered with "This step
+ * needs another attempt: ENOENT …" before anything stopped. */
+export function environmentFault(error:unknown):string|null{
+ const m=error instanceof Error?error.message:typeof error==='string'?error:'';
+ return /\b(ENOENT|EACCES|EPERM|ENOSPC|EMFILE|ENOTDIR)\b|^spawn |Executable doesn't exist|Failed to launch (the )?browser|chrome-headless-shell|Cannot find module '(?!\.)/.test(m)?m.slice(0,400):null;
+}
+/** Stops the direction with a plain question instead of passing an environment fault to the designer. */
+export function stopOnEnvironmentFault(error:unknown){const fault=environmentFault(error);if(fault)throw Object.assign(new Error('DRAFT_TOOL_UNAVAILABLE'),{detail:`designer: ${fault}`});}

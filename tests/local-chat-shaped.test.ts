@@ -131,7 +131,7 @@ test('LC3: the planning chain branches from the stored point of the previous sta
 test('LC4: a direction branches from the approved planning point, then continues from its last accepted turn', ()=>{
  const point={role:'asset-plan',sessionId:'s-plan',tokens:40000};
  assert.deepEqual(designerPlan({},point),{resume:'s-plan',fork:true,sameRole:false});
- assert.deepEqual(designerPlan({session:{role:'designer',sessionId:'s-d3',tokens:60000}},point),{resume:'s-d3',fork:true,sameRole:true});
+ assert.deepEqual(designerPlan({session:{role:'designer',sessionId:'s-d3',tokens:60000}},point),{resume:'s-d3',fork:true,sameRole:true,shortPayload:true});
  assert.deepEqual(designerPlan({session:{role:'designer',sessionId:'s-d9',tokens:CONVERSATION_CAP+1}},point),{condensed:true});
  assert.equal(designerPlan({},null),null);
 });

@@ -22,10 +22,11 @@ import {reviewCommand,validateReviewTarget,type PreviewEvidence,type ReviewRecor
 function input():DirectionInput{return {...structuredClone(recorded) as DirectionInput,resourceIds:['picture'],brand:{...structuredClone(recorded.brand),fonts:[]},variants:[...recorded.variants,{...recorded.variants[0],id:'alternate',hook:'hook-1',cta:'alt',locale:'de-DE'}]};}
 const source=()=>readFile('fixtures/director/live/Frame.tsx','utf8');
 test('readiness declarations are literal, issued, incremental and never execute code',async()=>{
- const frame=await source(),i=input();assert.equal(readLiveOptions(frame,i).options.adaptive,true);assert.equal(readLiveOptions(frame,i).options.hooks.length,2);
+ // The strict reader is the earlier pipelines'; chat designers (version 4 and later) never fail on previewOptions.
+ const frame=await source(),i=input(),strictI={...i,brief:{...i.brief,designerVersion:3}};assert.equal(readLiveOptions(frame,i).options.adaptive,true);assert.equal(readLiveOptions(frame,i).options.hooks.length,2);
  assert.equal(readLiveOptions(frame.replace("'primary','hook-1'","'primary'"),i).options.hooks.length,1);
- assert.throws(()=>readLiveOptions(frame.replace("'primary','hook-1'","'invented'"),i),/UNISSUED_PREVIEW_OPTION/);
- assert.throws(()=>readLiveOptions(frame.replace("hooks:['primary','hook-1']","hooks:doSomething()"),i),/PREVIEW_OPTIONS_MUST_BE_LITERAL/);
+ assert.throws(()=>readLiveOptions(frame.replace("'primary','hook-1'","'invented'"),strictI),/UNISSUED_PREVIEW_OPTION/);
+ assert.throws(()=>readLiveOptions(frame.replace("hooks:['primary','hook-1']","hooks:doSomething()"),strictI),/PREVIEW_OPTIONS_MUST_BE_LITERAL/);
  const legacy=readLiveOptions('export default function Frame(){return null}',i);assert.equal(legacy.legacy,true);
  const props={width:1080,height:1080,format:'square',locale:'en-GB',hook:'primary',cta:'primary',length:6,sceneId:'scene-1',moment:'hero'};assert.equal(liveSelection(i.variants,props,'hook','hook-1').cta,'alt');
  const quote=estimateLiveDirection({director:{inputPrice:3e-6,outputPrice:15e-6},assembler:{inputPrice:3e-6,outputPrice:15e-6},critic:{inputPrice:3e-6,outputPrice:15e-6}},100000,4,'recorded-live');assert.equal(quote.roles.critic.maxCostMicroUsd,0);assert.equal(quote.roles.critic.requests,0);assert.ok(quote.maxCostMicroUsd<2000000);

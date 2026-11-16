@@ -20,18 +20,25 @@ export function recoveryActions(question:ADQuestion,options:{requestSizeRequoteA
  const requestSizeRequoteAvailable=options.requestSizeRequoteAvailable===true&&question.technical?.split(':')[0]==='DRAFT_REQUEST_SIZE_CAP';
  const newRun=/^(FROZEN_MODEL_REQUIRED|LEGACY_DRAFT_READ_ONLY|VISION_MODEL_REQUIRED)(:|$)/.test(question.technical??'');
  const databaseTimeout=question.reason==='execution'&&/canceling statement due to (?:statement|lock) timeout/i.test(question.technical??'');
+ if(question.technical?.startsWith('PICTURE_PAYMENT_REFUSED'))return {extend:false,actions:question.options,sourceTooLarge:false,newRun:false,requestSizeRequoteAvailable:false};
  const actions=question.options.filter(option=>option.action!=='review'&&option.action!=='wrap-up'&&!(option.action==='resume'&&(exhausted||newRun||question.technical?.startsWith('PROMPT_TOO_LONG')))&&!(option.action==='quote-revision'&&(exhausted||databaseTimeout||question.technical?.startsWith('DRAFT_REQUEST_SIZE_CAP')&&!requestSizeRequoteAvailable)));
  return {extend:!!exhausted&&question.reason==='budget',actions:actions.map(option=>({...option,label:option.action==='quote-revision'?'Review a continuation price':option.action==='resume'?(sourceTooLarge?'Retry compacted request · within allowance':question.reason==='receipt'?'Open receipt recovery':'Retry within approved allowance'):option.label})),sourceTooLarge,newRun,requestSizeRequoteAvailable};
 }
 
 export function directionStatus(direction:DirectorView['directions'][number]){
- if(direction.question)return 'Needs your attention';
+ // Live run 5: a draft still being made was read as failed. The state is said first, in plain words.
+ if(direction.question)return `Stopped: ${direction.question.question.split(/(?<=[.!?])\s/)[0].slice(0,160)}`;
  if(direction.status==='queued')return 'Queued';
- if(direction.status==='done')return 'Saved for review';
+ if(direction.status==='done')return 'Finished: saved for your review';
+ if(direction.status==='running'&&direction.progress?.stage)return `Working: ${direction.progress.stage}`;
  if(direction.status==='running')return ({director:'Designing the direction',designer:'The designer is working',resources:'Preparing pictures and component',assembler:'Building the component',assembled:'Preparing review',critic:'Reviewing',complete:'Finishing'} as Record<string,string>)[direction.progress?.phase??'']??'Working';
  return 'Saved';
 }
 
+/** What a designer draft is working on: its key frame until that is accepted, then the other scenes, then the review. */
+export function designerStage(state:{phase?:string;designer?:{complete?:boolean;hero?:{state?:string}}|null}):'key frame'|'other scenes'|'review'{
+ return state.phase==='critic'||state.designer?.complete?'review':state.designer?.hero&&state.designer.hero.state!=='accepted'?'key frame':state.designer?.hero?'other scenes':'key frame';
+}
 /** A failed response may follow a committed action. Retain its key until success is confirmed. */
 export class DirectorAttempts{
  private pending=new Map<string,string>();
