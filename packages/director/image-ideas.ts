@@ -24,7 +24,7 @@ export const IDEAS_RANGE='Make the three differ in kind, not in detail: in what 
  * rules written that day from single frames (the kit as subject, real things only, photographs, depth), which the
  * owner refused as fixes of one request: what a frame is made with depends on the brand and on the idea. It names no
  * brand, no look, no arrangement and no preferred way of making. */
-export const BRAND_SPIRIT='THE AIM OF EVERY FRAME: an attractive picture, in the brand\'s own style, that shows the idea as vividly as it can be shown. Attractive: a stranger wants to look at it. In the brand\'s own style: made as the brand\'s own designers would make it, in its aesthetic (the brand pack gives it under AESTHETIC and FEEL, and the brand\'s own pictures show it); it is a new picture, not the parts of the kit set side by side. Vivid: the idea is seen in the picture at once, before the words are read. Every way of making is open to you (photograph, render, drawing, type, flat or with depth, real or imagined), and none is preferred: choose what makes this idea most vivid for this brand.';
+export const BRAND_SPIRIT='THE AIM OF EVERY FRAME: an attractive picture, in the brand\'s own style, that shows the idea as vividly as it can be shown. Attractive: a stranger wants to look at it. In the brand\'s own style: made as the brand\'s own designers would make it, in its aesthetic (the brand pack gives it under AESTHETIC and FEEL, and the brand\'s own pictures show it); it is a new picture, not the parts of the kit set side by side. It also belongs to the world of the brand: the subject, the setting and the taste of the picture are ones this brand would choose, as modern or as traditional, as playful or as serious as the brand is. A subject from another world does not become the brand\'s by being given its colours. Vivid: the idea is seen in the picture at once, before the words are read. Every way of making is open to you (photograph, render, drawing, type, flat or with depth, real or imagined), and none is preferred: choose what makes this idea most vivid for this brand.';
 /** The owner, 16 November: "write out what a vivid showing of an idea and an attractive picture are, as fuller general
  * rules". Principles that hold for any brand and any way of making; they name no look, no arrangement and no medium.
  * For the owner to approve. */
@@ -33,6 +33,7 @@ export const VIVID_IDEA=`AN IDEA SHOWN VIVIDLY
 - Shown, not told. The picture does the work of the idea itself: a stranger who cannot read the words still gets the point. The words finish the thought; they do not carry it.
 - A turn. Something in the picture is not as expected: two things meet that do not usually meet, a familiar thing behaves in an unfamiliar way, or a size, a place or a moment is wrong on purpose. The turn is the idea made visible.
 - Its strongest form. Take the idea as far as it goes: the largest difference, the clearest contrast, the most telling moment. A mild version of an idea is seen as no idea.
+- Its own image. Pass over the first image everyone reaches for: the stock symbol that many ads have already used for this theme is not a turn. Look for the image that only this brand, with this message, would arrive at.
 - Read at once. The viewer knows straight away what they are looking at; the surprise is in what it means, never in working out what it is.
 - About the viewer. The idea touches something the viewer wants, fears or knows from their own life.
 - Retold in one sentence. A stranger can tell it to a friend, and the friend reacts.`;
@@ -47,9 +48,12 @@ export const ATTRACTIVE_PICTURE=`AN ATTRACTIVE PICTURE
 - Finish. Everything is made with care at the size it is seen, with one light and clean edges; nothing looks unfinished, cheap or like a stand-in.
 - Feeling. The picture has a mood a viewer could name, and they want to look a little longer.`;
 /** The aim with its two fuller parts, as one block. */
+/** The owner, 16 November: "the next stages are animation; it must be known in advance what will be animated and
+ * how". A still that was never thought of as moving is repainted later. Names no kind of motion. */
+export const MOTION_AHEAD='THE FRAME WILL MOVE. Later stages animate this work, so decide now what moves and how: what the viewer sees happen, in what order, and which moment of that movement the still frame is. Choose ideas whose turn grows stronger in motion. Make the frame so that it can move: what will move is its own element (a separate picture, a cutout or something drawn in code), and is not painted into the ground behind it.';
 export const AIM_IN_FULL=`${VIVID_IDEA}\n\n${ATTRACTIVE_PICTURE}`;
 /** What each of the three ideas owes, version 6: the brand's spirit, a subject of its own and a turn worth retelling. */
-export const IDEAS_SUBJECT='The three ideas differ in their subject. Each idea has a turn with wit in it: something a stranger would retell to a friend in one sentence. Each is judged by the aim above.';
+export const IDEAS_SUBJECT='The three ideas differ in their subject. Each idea has a turn with wit in it: something a stranger would retell to a friend in one sentence. Each idea also says how it moves: what will move later and how. Each is judged by the aim above.';
 export const IDEAS_TASK_V6=IDEAS_TASK.replace('2. Push each one to be bolder and more distinct from the others.',`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE} ${IDEAS_SUBJECT}`);
 /** The territory of a direction, version 6: the same rule where the visual idea is first written. */
 export const TERRITORY_SPIRIT=`In visualIdea and productRole: ${BRAND_SPIRIT}`;

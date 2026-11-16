@@ -3,7 +3,7 @@
 // files in fenced code blocks with their paths, then at most one fenced `actions` block. The app answers like a person
 // in a chat: the render, a short plain note of what it measured (observations), and what has arrived. Pure functions.
 import {PICTURE_REFERENCES_DESIGNER} from './picture-references';
-import {BRAND_SPIRIT,AIM_IN_FULL} from './image-ideas';
+import {BRAND_SPIRIT,AIM_IN_FULL,MOTION_AHEAD} from './image-ideas';
 import {z} from 'zod';
 import type {Finding} from './layout-inspection';
 import type {DirectionInput} from './types';
@@ -184,6 +184,8 @@ What the frame shows is yours to decide.
 ${BRAND_SPIRIT}
 
 ${AIM_IN_FULL}
+
+${MOTION_AHEAD}
 
 ${SPACE_DESIGNER}
 
