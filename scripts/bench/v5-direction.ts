@@ -15,6 +15,7 @@ import {assetNames} from '../../packages/director/asset-names';
 import {usesQuality,reviewMaterialFor,chosenIdeaNote,strictRound,HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3,END_REVIEW_INSTRUCTIONS_V3} from '../../packages/director/quality';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
+import {randomUUID} from 'node:crypto';
 import {existsSync} from 'node:fs';
 import {referenceEntries,sheetEntries} from '../../apps/local-runner/director/assets';
 import {measureLogos,logoFactLines,referenceFactLines,suppliedFactLines} from '../../apps/local-runner/director/logo-facts';
@@ -41,7 +42,7 @@ import {designerRoleLine,staticRoleInstructions} from '../../packages/director/r
 import {STAGE_H_INSTRUCTIONS,heroBriefLine,pictureWaitLine,HERO_THUMBNAIL_SIDE,HERO_THUMBNAIL_LABEL} from '../../packages/director/hero-chat';
 import {heroMeaning} from '../../packages/director/designer';
 import {reviewRepairMessage} from '../../packages/director/extension-chat';
-import {ideasTaskFor,SELECTION_INSTRUCTIONS,SKETCH_SELECTION,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../packages/director/image-ideas';
+import {ideasTaskFor,ideaSketchCount,IDEA_SKETCHES,SELECTION_INSTRUCTIONS,SKETCH_SELECTION,selectionSchema,readSelection,selectionContext,wayOfMakingNote} from '../../packages/director/image-ideas';
 import {checksText,REVIEW_INSTRUCTIONS,HERO_REVIEW_WHAT,END_REVIEW_WHAT,reviewSchemaV2,reviewContextText,readReview,withAllRulings,toDesignerNotes,settleHeroReview,HERO_REVIEW_ROUNDS} from '../../packages/director/critic-review';
 import {designerDigestText,designerDigestEntries,territoryText} from '../../packages/director/designer-digest';
 import {reviewGaps,reviewReason,unreviewedStatus} from '../../packages/director/review-gaps';
@@ -173,9 +174,12 @@ export async function runV5Direction(o:V5Options):Promise<V5Result>{
  // Stage H: three ideas, the independent choice, the build in the same conversation, the hero review.
  working('hero');
  // As the worker: version 6 chooses between the three ideas by a picture of each, when four pictures or more are allowed.
- const ideaSketches=heroMeaning(input)&&maxPictures>=4&&process.env.STUDIO_IDEA_SKETCHES!=='0';
+ const ideaSketches=ideaSketchCount(input.brief)===IDEA_SKETCHES&&heroMeaning(input);
+ // An export made before the sketches were quoted has only the designer's ids: the bench issues the three more.
+ if(ideaSketches)while(input.resourceIds.length<maxPictures+IDEA_SKETCHES)input.resourceIds.push(randomUUID());
+ const sketchIds=ideaSketches?input.resourceIds.slice(maxPictures,maxPictures+IDEA_SKETCHES):[];
  await runHeroChat({input,state,maxTurns:Math.min(requests,Math.ceil(requests*HERO_TURN_SHARE)+(state.heroExtraTurns??0)),maxPictures,timeMs:3600000,tools,heroReviews,conversation,
-  ...(o.noIdeas?{}:{ideas:{task:`${owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:''}${ideasTaskFor(input,{sketches:ideaSketches})}\n\n${creatorStageText(staged,'ideas')}`,...(ideaSketches?{sketchImage:async(id:string)=>{const entry=o.catalog.find(c=>c.id===id);return entry?{url:await screenshotForDesigner(resolve(folder,'public',entry.url),768),label:id}:null;}}:{}),unreviewedReason:()=>heroReviews>0?undefined:'NO_REVIEW_IN_QUOTE',
+  ...(o.noIdeas?{}:{ideas:{task:`${owned?`You own treatment ${owned.id}${owned.name?`: ${owned.name}`:''}; the other treatments are not yours.\n\n`:''}${ideasTaskFor(input,{sketches:ideaSketches})}\n\n${creatorStageText(staged,'ideas')}`,...(ideaSketches?{sketchIds,sketchImage:async(id:string)=>{const entry=o.catalog.find(c=>c.id===id);return entry?{url:await screenshotForDesigner(resolve(folder,'public',entry.url),768),label:id}:null;}}:{}),unreviewedReason:()=>heroReviews>0?undefined:'NO_REVIEW_IN_QUOTE',
    select:async(text:string,_round:number,sketches?:{url:string;label:string}[])=>{if(heroReviews<1)return null;try{return readSelection(await call('critic','Choose one of the three ideas.',usesQuality(input)?SELECTION_INSTRUCTIONS_V3:SELECTION_INSTRUCTIONS,selectionSchema,{contextText:selectionContext(designerDigestText(input,{sceneIds:false}),text,checksText(reviewMaterialFor(input,staged,'ideas').checks),territoryText(input))+(sketches?.length?`\n\n${SKETCH_SELECTION}`:'')},sketches??[]));}catch(error){if(criticAllowanceUsed(error))return null;throw error;}},
    onIdeas:async()=>{say('Three ideas for the key frame.');},
    onChosen:async(pick,reason)=>{if(state.ideas?.unreviewed)say(`The three ideas were NOT reviewed: ${reviewReason(state.ideas.unreviewed)}. The first idea is built.`);say(`Chosen: idea ${pick} — ${reason}`);}}}),

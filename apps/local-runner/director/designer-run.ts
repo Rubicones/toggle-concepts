@@ -48,6 +48,7 @@ export function designerTools(args:{folder:string;input:DirectionInput;design:De
   },
   requestImage:async(picture):Promise<PictureResult>=>{
    const resource=pictureResource(picture,input,design.resources.map(r=>r.id));
+   if(picture.resourceId){if(!input.resourceIds.includes(picture.resourceId)||design.resources.some(r=>r.id===picture.resourceId))throw new Error('UNISSUED_RESOURCE_ID');resource.id=picture.resourceId;}
    // Version 6: the brand's own files named as references are pinned as pictures before the request is built.
    if(picture.brandRefs?.length)resource.brandRefs=await Promise.all(picture.brandRefs.map(url=>pinBrandReference(folder,url)));
    design.resources.push(resource);await args.save();

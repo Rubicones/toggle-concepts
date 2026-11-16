@@ -32,7 +32,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
  /** A picture that could not be bought: said on the timeline at once (version 6). */onPictureFailed?:(e:{id:string;failure:PictureFailure})=>Promise<void>;
  /** Plan E5 (version 6): how long a render waits for the pictures asked for (default PICTURE_HOLD_MS), and a call when a wait starts. */pictureHoldMs?:number;onPictureWait?:(e:{pictures:number;holdMs:number})=>Promise<void>;
  /** D4 (version 5): three image ideas before any code; an independent selection picks one (at most one extra round). */
- ideas?:{task:string;select:(ideas:string,round:number,sketches?:{url:string;label:string}[])=>Promise<Selection|null>;/** version 6: turns a made sketch (a resource id) into the picture the reviewer sees; absent = ideas are chosen from the text */sketchImage?:(id:string)=>Promise<{url:string;label:string}|null>;/** why the selection returned nothing without an error (no review in the quote, its allowance used) */unreviewedReason?:()=>string|undefined;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
+ ideas?:{task:string;select:(ideas:string,round:number,sketches?:{url:string;label:string}[])=>Promise<Selection|null>;/** version 6: the three issued ids of the idea sketches (quoted on their own line) */sketchIds?:string[];/** version 6: turns a made sketch (a resource id) into the picture the reviewer sees; absent = ideas are chosen from the text */sketchImage?:(id:string)=>Promise<{url:string;label:string}|null>;/** why the selection returned nothing without an error (no review in the quote, its allowance used) */unreviewedReason?:()=>string|undefined;onIdeas?:(cards:string[],text:string,round:number)=>Promise<void>;onChosen?:(pick:number,reason:string)=>Promise<void>};onHero?:(e:{kind:'started'|'reviewed'|'accepted';sceneId:string;format:string;notes?:number;by?:'critic'|'reviews-used'|'turns-used'|'no-progress'|'no-critic'|'review-failed';looked?:string})=>Promise<void>;now?:()=>number}):Promise<DesignerLoopState>{
  const {input,state,tools}=args,now=args.now??Date.now,referenceFormat=input.variants[0]?.format??input.formats[0]?.id??'';
  if(!state.hero){state.hero={sceneId:heroScene(input),format:referenceFormat,state:'designing',reviews:0};await args.save(state);await args.onHero?.({kind:'started',sceneId:state.hero.sceneId,format:state.hero.format});}
  let paymentStop:string|null=null;const stopForPayment=async()=>{if(!paymentStop)return;await args.save(state);throw Object.assign(new Error(PICTURE_PAYMENT_REFUSED),{detail:paymentStop});};
@@ -60,20 +60,20 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
    await args.ideas.onIdeas?.(ideaCards(text),text,ideas.rounds);
    // A selection that cannot run is recorded with its reason (it is said on the timeline and on the draft).
    let selectError='NO_REVIEW_IN_QUOTE';
-   // Version 6: a picture of each idea is made inside the approved number of pictures (one is always left for the frame),
-   // and the reviewer chooses by looking. Any sketch that cannot be made leaves the choice to the text, as before.
+   // Version 6: a picture of each idea is made under its own issued ids (their own line of the quote), and the reviewer
+   // chooses by looking. Any sketch that cannot be made leaves the choice to the text, as before.
    let sketches:{url:string;label:string}[]|undefined;
-   {const prompts=args.ideas.sketchImage&&ideas.rounds===1&&!state.picturesBlocked&&args.maxPictures-state.pictures>=4?sketchPrompts(text):[];
+   {const ids=args.ideas.sketchIds??[],prompts=args.ideas.sketchImage&&ids.length===3&&ideas.rounds===1&&!state.picturesBlocked?sketchPrompts(text):[];
     if(prompts.length===3){
      const aspect=(()=>{const f=input.formats.find(x=>x.id===state.hero?.format)??input.formats[0];const g=(a:number,b:number):number=>b?g(b,a%b):a,d=f?g(f.width,f.height):1;return f?`${f.width/d}:${f.height/d}`:'1:1';})();
-     const made=await Promise.all(prompts.map(async(prompt,i)=>{state.pictures++;const id=input.resourceIds[state.pictures-1];
-      try{const r=await tools.requestImage({purpose:`Sketch of idea ${i+1} for the choice between the three ideas`,scene:state.hero!.sceneId,prompt,aspect,referenceAssetIds:[],mustNotContain:[]});return r.status==='ready'?r.id:null;}
-      catch(error){if(propagateExecutionFailure(error))throw error;void id;return null;}}));
+     const made=await Promise.all(prompts.map(async(prompt,i)=>{
+      try{const r=await tools.requestImage({purpose:`Sketch of idea ${i+1} for the choice between the three ideas`,scene:state.hero!.sceneId,prompt,aspect,referenceAssetIds:[],mustNotContain:[],resourceId:ids[i]});return r.status==='ready'?r.id:null;}
+      catch(error){if(propagateExecutionFailure(error))throw error;return null;}}));
      ideas.sketches=made;await args.save(state);
      if(made.every(Boolean)){const images=await Promise.all(made.map(async(id,i)=>{const image=await args.ideas!.sketchImage!(id!);return image?{...image,label:`Sketch ${i+1}: the picture of idea ${i+1}`}:null;}));if(images.every(Boolean))sketches=images as {url:string;label:string}[];}
     }}
    const chosen=await args.ideas.select(text,ideas.rounds,sketches).catch(error=>{if(propagateExecutionFailure(error))throw error;selectError=error instanceof Error?error.message.slice(0,120):'UNREADABLE';return null;});
-   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=usesQuality(input)?reasonOnly(chosen.reason):chosen.reason;const sketch=ideas.sketches?.[chosen.pick-1];state.heroNote=chosenMessage(chosen.pick,ideas.reason,'reviewer',text)+(sketch?`\n\nThe picture made of this idea for the choice is resources['${sketch}']: use it in the frame, or ask for a better one. The three pictures made for the choice were the first three of your pictures${input.resourceIds[state.pictures]?`, so the next picture you ask for is resources['${input.resourceIds[state.pictures]}']`:', and no further picture can be asked for'}.`:'');}
+   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=usesQuality(input)?reasonOnly(chosen.reason):chosen.reason;const sketch=ideas.sketches?.[chosen.pick-1];state.heroNote=chosenMessage(chosen.pick,ideas.reason,'reviewer',text)+(sketch?`\n\nThe picture made of this idea for the choice is resources['${sketch}']: use it in the frame, or ask for a better one. It is not one of your own pictures: those are numbered as the task says.`:'');}
    else if(!chosen||ideas.rounds>=MAX_IDEA_ROUNDS){ideas.picked=1;if(!chosen)ideas.unreviewed=args.ideas.unreviewedReason?.()??selectError;ideas.reason=!chosen?'The selection could not run, so the first idea is built.':'No idea passed after the extra round, so the first idea is built.';state.heroNote=chosenMessage(1,ideas.reason,'fallback',text);}
    else ideas.notes=chosen.notes;
    await args.save(state);

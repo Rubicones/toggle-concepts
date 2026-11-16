@@ -17,7 +17,7 @@ import {DeferredDetails} from './deferred-details';
 import {RunBudgetPolicy} from './run-budget-policy';
 import styles from './director-workspace.module.css';
 
-type Quote={quoteId:string;maxCostMicroUsd:number;directions?:number;pipeline?:'designer';designer?:{turns:number;pictures:number;measuredRuns:number;typicalCostMicroUsd?:number};models?:Record<string,string>;roles?:Record<string,{maxCostMicroUsd:number}>};
+type Quote={quoteId:string;maxCostMicroUsd:number;directions?:number;pipeline?:'designer';designer?:{turns:number;pictures:number;sketches?:number;measuredRuns:number;typicalCostMicroUsd?:number};models?:Record<string,string>;roles?:Record<string,{maxCostMicroUsd:number}>};
 type Mode='start'|'rebuild'|'revision';
 const price=(micro:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:4}).format(micro/1000000);
 const roleLabel:Record<string,string>={director:'Creative direction',designer:'Designer · idea, layout and pictures',resources:'Picture resources',assembler:'Component and code',critic:'Creative review'};
@@ -105,8 +105,8 @@ function Version({iteration,variants,endpoint,busy,command,readOnly=false}:{iter
 }
 
 /** Point 6d: what a designer quote covers, in plain words, and the measured typical cost once known. */
-function DesignerAllowance({designer}:{designer?:{turns:number;pictures:number;measuredRuns:number;typicalCostMicroUsd?:number}}){
+function DesignerAllowance({designer}:{designer?:{turns:number;pictures:number;sketches?:number;measuredRuns:number;typicalCostMicroUsd?:number}}){
  if(!designer)return <>One designer per direction invents, builds, looks at and revises the draft.</>;
- const rounds=`up to ${designer.turns} design round${designer.turns===1?'':'s'}`,pictures=designer.pictures?`up to ${designer.pictures} picture${designer.pictures===1?'':'s'}`:'no generated pictures (the brief does not permit them)';
+ const rounds=`up to ${designer.turns} design round${designer.turns===1?'':'s'}`,pictures=(designer.pictures?`up to ${designer.pictures} picture${designer.pictures===1?'':'s'}`:'no generated pictures (the brief does not permit them)')+(designer.sketches?`, and ${designer.sketches} sketch pictures of the ideas for choosing between them`:'');
  return <>Per direction: one designer invents, builds, looks at and revises the draft, with {rounds} and {pictures}, plus the creative review. {designer.typicalCostMicroUsd!==undefined?`A direction has typically cost ${price(designer.typicalCostMicroUsd)} so far (${designer.measuredRuns} measured run${designer.measuredRuns===1?'':'s'}).`:'No measured runs yet, so the ceiling is generous.'}</>;
 }

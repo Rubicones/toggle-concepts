@@ -59,13 +59,16 @@ export const IDEAS_TASK_V6=IDEAS_TASK.replace('2. Push each one to be bolder and
 /** The territory of a direction, version 6: the same rule where the visual idea is first written. */
 export const TERRITORY_SPIRIT=`In visualIdea and productRole: ${BRAND_SPIRIT}`;
 /** The owner, 16 November: attractiveness cannot be read from a description, so the three ideas are chosen by looking.
- * Each idea carries the request for one picture of it; the three are made inside the approved number of pictures and
- * the reviewer chooses by what it sees. Off when the draft cannot have four pictures. */
-export const IDEAS_SKETCHES='After the three ideas add three lines that begin SKETCH 1:, SKETCH 2: and SKETCH 3:. Each is the request for one picture of that idea as the viewer would see it, written as you would ask for the finished picture, in the aesthetic of the brand, with no words in it. The three pictures are made, and the reviewer chooses one idea by looking at them. They count as three of your pictures; the picture of the chosen idea stays yours to use.';
+ * Each idea carries the request for one picture of it; the three are made and
+ * the reviewer chooses by what it sees. The three are quoted on their own line, apart from the designer's pictures. */
+export const IDEAS_SKETCHES='After the three ideas add three lines that begin SKETCH 1:, SKETCH 2: and SKETCH 3:. Each is the request for one picture of that idea as the viewer would see it, written as you would ask for the finished picture, in the aesthetic of the brand, with no words in it. The three pictures are made, and the reviewer chooses one idea by looking at them. They are made apart from your own pictures, and the picture of the chosen idea stays yours to use.';
+/** How many idea sketches a direction is quoted: three for version 6 when generated pictures are permitted (STUDIO_IDEA_SKETCHES=0 turns them off). */
+export const IDEA_SKETCHES=3;
+export const ideaSketchCount=(brief:{designerVersion?:unknown;synthesisAllowed?:unknown},env:Record<string,string|undefined>=process.env)=>Number(brief.designerVersion)>=6&&brief.synthesisAllowed===true&&env.STUDIO_IDEA_SKETCHES!=='0'?IDEA_SKETCHES:0;
 /** The three sketch requests of an ideas answer, in order; fewer than three means the ideas are chosen from the text. */
 export function sketchPrompts(text:string):string[]{
  const marks=[...text.matchAll(/^[\s>*_#-]*SKETCH\s*([123])\s*[*_]*\s*[:.]\s*[*_]*/gim)],out:string[]=[];
- for(const n of [1,2,3]){const i=marks.findIndex(m=>Number(m[1])===n);if(i<0)return [];const from=marks[i].index!+marks[i][0].length,to=marks[i+1]?.index??text.length;const prompt=text.slice(from,to).replace(/\s+/g,' ').trim();if(prompt.length<40)return [];out.push(prompt.slice(0,3800));}
+ for(const n of [1,2,3]){const i=marks.findIndex(m=>Number(m[1])===n);if(i<0)return [];const from=marks[i].index!+marks[i][0].length,fence=text.indexOf('```',from),next=marks[i+1]?.index??text.length,to=fence>=0&&fence<next?fence:next;const prompt=text.slice(from,to).replace(/\s+/g,' ').trim();if(prompt.length<40)return [];out.push(prompt.slice(0,3800));}
  return out;
 }
 /** What the reviewer reads when the sketches are attached. */
