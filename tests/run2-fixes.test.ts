@@ -107,7 +107,7 @@ test('E5: in version 6 the hero render waits for the picture it asked for, and t
  const r=await drive(6,[first,say('Done.','',{})],{pictureHoldMs:2000},()=>p.make());p.set(r.i.resourceIds[0]);
  assert.deepEqual(r.log.slice(0,6),['write','build','asked','picture','build','render:1']);
  assert.deepEqual(r.waits,['Waiting for the picture for the key frame (up to 2 s).']);
- assert.deepEqual(r.turns[0],['Saved Frame.tsx.','Asked for a picture.','Waited for the picture.','Rendered: 0 to fix, 0 observations.']);
+ assert.deepEqual(r.turns[0],['Saved Frame.tsx.','Asked for a picture.','Waited for the picture.','Rendered: 0 to fix, 0 observations.','The code does not draw the picture it asked for.']);
  assert.match(r.sent[1],/has arrived and is in this render: read resources\['/);assert.match(r.sent[1],/Its cutout is resources\['[^']*'\]\.cutoutUrl\./);
  assert.equal(r.sent[1].match(/has arrived/g)?.length,1,'said once, not again as a later arrival');assert.ok((r.state.pictureWaitMs??0)>=30);
  // The hold is bounded: a picture that is not ready in time does not stop the render, and arrives later as before.

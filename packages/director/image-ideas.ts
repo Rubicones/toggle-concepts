@@ -49,11 +49,12 @@ export const ATTRACTIVE_PICTURE=`AN ATTRACTIVE PICTURE
 - Feeling. The picture has a mood a viewer could name, and they want to look a little longer.`;
 /** The aim with its two fuller parts, as one block. */
 /** The owner, 16 November: "the next stages are animation; it must be known in advance what will be animated and
- * how". A still that was never thought of as moving is repainted later. Names no kind of motion. */
-export const MOTION_AHEAD='THE FRAME WILL MOVE. Later stages animate this work, so decide now what moves and how: what the viewer sees happen, in what order, and which moment of that movement the still frame is. Choose ideas whose turn grows stronger in motion. Make the frame so that it can move: what will move is its own element (a separate picture, a cutout or something drawn in code), and is not painted into the ground behind it.';
+ * how"; and the same day: it may be motion between scenes, inside a scene, travelling light or one principle of the
+ * whole piece, and not everything must move: what matters is that it is planned. Prefers no kind of motion. */
+export const MOTION_AHEAD='THE WORK WILL MOVE. Later stages animate it, so have a plan for its motion now and say it in a line or two. Motion can be the passage from one scene to the next, movement inside a scene, light that travels, or one principle that runs through the whole piece, the way a collage is put together and taken apart; not everything has to move, and stillness can be the choice. What matters is that the plan exists and the frames are made for it: an element that will move by itself is its own element (a separate picture, a cutout or something drawn in code) and is not painted into the ground behind it.';
 export const AIM_IN_FULL=`${VIVID_IDEA}\n\n${ATTRACTIVE_PICTURE}`;
 /** What each of the three ideas owes, version 6: the brand's spirit, a subject of its own and a turn worth retelling. */
-export const IDEAS_SUBJECT='The three ideas differ in their subject. Each idea has a turn with wit in it: something a stranger would retell to a friend in one sentence. Each idea also says how it moves: what will move later and how. Each is judged by the aim above.';
+export const IDEAS_SUBJECT='The three ideas differ in their subject. Each idea has a turn with wit in it: something a stranger would retell to a friend in one sentence. Each idea also says its plan for motion in one line. Each is judged by the aim above.';
 export const IDEAS_TASK_V6=IDEAS_TASK.replace('2. Push each one to be bolder and more distinct from the others.',`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE} ${IDEAS_SUBJECT}`);
 /** The territory of a direction, version 6: the same rule where the visual idea is first written. */
 export const TERRITORY_SPIRIT=`In visualIdea and productRole: ${BRAND_SPIRIT}`;

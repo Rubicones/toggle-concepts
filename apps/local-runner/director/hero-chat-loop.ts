@@ -118,6 +118,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
    const actions=answer.actions??{};
    // 2. Materials and pictures, inside their budgets; pictures arrive in a later message.
    if(actions.materials?.length){if(!tools.materials)notes.push('Materials are not available in this draft.');else{const asked=await tools.materials.fetch(actions.materials,[...(state.materialsSeen??[]),...(state.materialsDue??[])]);state.materialsDue=[...new Set([...(state.materialsDue??[]),...asked.attached])];notes.push(asked.lines.join('\n'));results.push(...asked.lines);}}
+   const askedNow:string[]=[];
    for(const p of actions.pictures??[]){
     if(heroMeaning(input)&&state.picturesBlocked){notes.push(noFurtherPictureNote(state.picturesBlocked));results.push('No picture: none can be bought.');break;}
     if(state.pictures>=args.maxPictures){notes.push('The approved number of pictures is used: build the rest in code or with the pictures you have.');break;}
@@ -125,7 +126,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
     // with its reason and the picture is not counted.
     const split=heroMeaning(input)?splitPictureReferences(p.references??[],input,tools.brandNames??brandReferenceNames(input)):null;
     if(split?.problems.length){notes.push(referenceRefusal(p.purpose,split.problems));continue;}
-    state.pictures++;await args.save(state);const id=input.resourceIds[state.pictures-1],key=`${state.turn}:${state.pictures}`;
+    state.pictures++;await args.save(state);const id=input.resourceIds[state.pictures-1],key=`${state.turn}:${state.pictures}`;if(id)askedNow.push(id);
     const picture={purpose:p.purpose,scene:hero.sceneId,prompt:p.prompt,aspect:p.aspect,...(split?.brandUrls.length?{brandRefs:split.brandUrls}:{}),referenceAssetIds:split?split.assetIds:resolveAssetReferences(p.references??[],input),mustNotContain:p.mustNotContain??[],...(p.cutout?{cutout:true}:{}),...(p.proxyFor?{proxyFor:p.proxyFor}:{}),...(p.becomes&&p.proxyFor?{becomes:p.becomes}:{})};
     pending.set(key,tools.requestImage(picture).then(r=>{arrived.push(r);pending.delete(key);return r;},error=>{if(propagateExecutionFailure(error))throw error;const r={id:id??'',status:'failed' as const,detail:(error instanceof Error?error.message:'').slice(0,200),code:(error instanceof Error?error.message:'').slice(0,200),said:providerSentence((error as {detail?:string}|null)?.detail)};arrived.push(r);pending.delete(key);return r;}));
     notes.push(`Asked for a picture (${p.purpose.slice(0,80)}): it will be resources['${id}'] and arrives in a later message.`);results.push('Asked for a picture.');
@@ -169,8 +170,14 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
    }
    // critic@3: this was the last turn after the review. The frame is accepted as it now stands; a turn whose code does
    // not build gets one more turn to repair it, then the frame is accepted as the turn cap accepts it.
+   // Bench run 21: the code of an answer drew another picture than the one that answer asked for (the designer counted
+   // its pictures wrongly), and the frame was accepted with it. Measured, not left to counting: a picture asked for in
+   // this answer that the code does not draw is said at once, and the last turn is not closed on it.
+   let askedNotDrawn=false;
+   if(heroMeaning(input)&&askedNow.length&&built.ok){const used=await drawn(),missing=askedNow.filter(id=>!used.includes(id));
+    if(missing.length){askedNotDrawn=true;notes.push(`This answer asked for ${missing.length===1?'a picture':'pictures'} that its code does not draw: ${missing.map(id=>`resources['${id}']`).join(', ')}.${used.length?` The code draws ${used.map(id=>`resources['${id}']`).join(', ')} instead.`:''} Point the code at the picture you asked for, or say why it is not used.`);results.push('The code does not draw the picture it asked for.');}}
    if(lastTurn&&state.unloaded)pictureStop??=`designer: a picture does not load in the last turn's render: ${state.unloaded.files.join(', ').slice(0,300)}`;
-   else if(lastTurn){lastTurn.turns++;if(built.ok||lastTurn.turns>=2||state.turn>=args.maxTurns){await accept(lastTurn.by);delete hero.lastTurn;results.push('The hero frame is accepted.');}else notes.push('This was the last turn and the code does not build: repair only that; the frame is accepted after the next turn.');}
+   else if(lastTurn){lastTurn.turns++;if((built.ok&&!askedNotDrawn)||lastTurn.turns>=2||state.turn>=args.maxTurns){await accept(lastTurn.by);delete hero.lastTurn;results.push('The hero frame is accepted.');}else notes.push(built.ok?'This was the last turn and its code does not draw the picture it asked for: repair only that; the frame is accepted after the next turn.':'This was the last turn and the code does not build: repair only that; the frame is accepted after the next turn.');}
    // 4. The review: idea and craft first, then what must be fixed. Its notes are the next message.
    else if(actions.review){
     if(!hero.shots?.length)notes.push('Render the frame before asking for its review.');
