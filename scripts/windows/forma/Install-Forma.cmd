@@ -11,6 +11,8 @@ exit /b
 # сколько угодно раз: делает только недостающее и заодно обновляет код. Forma работает в том же фоновом Ubuntu (WSL),
 # что и прежняя студия Toggle. Старые файлы Toggle из C:\toggle переносятся в C:\toggle\old-toggle-studio.
 $ErrorActionPreference = 'Continue'
+# Russian text from Ubuntu reaches this window as UTF-8; without this it shows as question marks.
+try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
 $Distro = 'Ubuntu-24.04'; $Dir = 'C:\toggle'; $Old = Join-Path $Dir 'old-toggle-studio'
 # Your name in the shared base and your working branch (never main). forma-author.txt / forma-branch.txt override them.
 $Author = 'Roman'; $Branch = 'roman/work'
