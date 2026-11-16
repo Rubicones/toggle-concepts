@@ -33,6 +33,10 @@ export const QUALITY_CHECKS:{skill:string;stage:'hero'|'ideas'|'extension';quest
  {skill:'brand-character',stage:'ideas',question:'Is the idea a new picture in the aesthetic of the brand, as its own designers would make it, and more than an arrangement of what its kit already holds?'},
  {skill:'one-idea',stage:'ideas',question:'Can a stranger retell the turn of the idea to a friend in one sentence?'},
  {skill:'final-check',stage:'hero',question:'Can a stranger, with the words covered, say what the picture shows and what is surprising in it?'},
+ // Bench runs 27, 29 and 32: against the rule, an object was drawn in code over a photograph of an empty ground. Seen on the
+ // finished frame, not left to how the rule was read.
+ {skill:'picture-brief',stage:'hero',question:'Are the things in the frame that have material and depth part of the picture itself, and not shapes drawn over an empty ground?'},
+ {skill:'picture-brief',stage:'hero',question:'Does what is set on a surface of the picture take its light and perspective, and show in its reflections and shadows too?'},
  {skill:'one-idea',stage:'hero',question:'Is the frame, with the logo covered, known as the brand by its light, colour, materials and mood, and not only by parts of its kit?'},
 ];
 /** A stage's checks and signs with the quality checks added after each skill's own (numbering continues). */
