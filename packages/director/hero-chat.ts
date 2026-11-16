@@ -3,7 +3,7 @@
 // files in fenced code blocks with their paths, then at most one fenced `actions` block. The app answers like a person
 // in a chat: the render, a short plain note of what it measured (observations), and what has arrived. Pure functions.
 import {PICTURE_REFERENCES_DESIGNER} from './picture-references';
-import {BRAND_SPIRIT,AIM_IN_FULL,MOTION_AHEAD} from './image-ideas';
+import {BRAND_SPIRIT,AIM_IN_FULL,MOTION_AHEAD,GIVING_A_BODY} from './image-ideas';
 import {z} from 'zod';
 import type {Finding} from './layout-inspection';
 import type {DirectionInput} from './types';
@@ -147,7 +147,7 @@ A finish, a material, a gradient, a shape or a mark that the brand's own kit nam
 /** The owner, 16 November: frames read "as if there were a ban on spaces and visuals with volume". There is none: the
  * skills argue against depth faked over flat shapes, and the designer read that as a rule for flatness; it also asked
  * for empty grounds and laid the subject over them in code. This only removes the misreading; it prefers no way. */
-export const SPACE_DESIGNER='No way of making is forbidden, and each has what it does well. Code is exact and flat: it sets type, marks, interfaces, diagrams and flat graphics well. A thing with material, light and depth (an object, a place, a moment) looks drawn when it is built in code: ask for it as a picture. What your skills say against depth is about glows, blurs and shadows laid over flat shapes to make them look finished; it is not about real space, volume or light. When a picture carries the idea, ask for the whole of it, with its subject in it, and not for an empty ground to lay the subject over in code. Where words or marks must sit on a thing in the picture, ask for the picture with those places left plain and calm, and set them in code.';
+export const SPACE_DESIGNER='No way of making is forbidden, and each has what it does well. Code is exact and flat: it sets type, marks, interfaces, diagrams and flat graphics well. A thing with material, light and depth (an object, a place, a moment, a device) looks drawn when it is built in code: ask for it as a picture. What your skills say against depth is about glows, blurs and shadows laid over flat shapes to make them look finished; it is not about real space, volume or light.';
 export const DEVICE_USE_DESIGNER='Use each of the brand\'s devices in the role and at the scale its own materials give it; where the brand pack lists DEVICES IN USE, follow that, and where it says "not stated", choose the role yourself and say which.';
 /** Plan E4c (version 6): the edit format, said once in the hero task and once in the stage E opening. */
 export const EDITS_NOTE=`CHANGING A FILE YOU HAVE WRITTEN
@@ -188,6 +188,8 @@ ${AIM_IN_FULL}
 ${MOTION_AHEAD}
 
 ${SPACE_DESIGNER}
+
+${GIVING_A_BODY}
 
 ${BRAND_DEVICES_DESIGNER}
 ${DEVICE_USE_DESIGNER}

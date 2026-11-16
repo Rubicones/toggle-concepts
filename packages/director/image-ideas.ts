@@ -47,6 +47,19 @@ export const ATTRACTIVE_PICTURE=`AN ATTRACTIVE PICTURE
 - A decided composition. Where the weight sits and where the air is were chosen for this idea; nothing is placed where it is by habit.
 - Finish. Everything is made with care at the size it is seen, with one light and clean edges; nothing looks unfinished, cheap or like a stand-in.
 - Feeling. The picture has a mood a viewer could name, and they want to look a little longer.`;
+/** The owner, 16 November, on brands whose product is not a physical thing (a service, software): the designer drew
+ * flat cards in code or reached for one kind of metaphor. "There are many ways, not only images like clothes: cards
+ * placed in a real space, good mockups of computers and phones with interfaces, realistic cards as paper or screens,
+ * 3D models, or code together with real or 3D objects; this is not solved by a sketch and is not only about one
+ * brand." A list of means to choose from; it names no arrangement and prefers none. For the owner to approve. */
+export const GIVING_A_BODY=`WHEN THE SUBJECT IS NOT A PHYSICAL THING (a service, software, a promise, the work itself), give it a body. There are several ways, and the three ideas do not all take the same one:
+- a thing or a moment from the viewer's life that stands for it;
+- the brand's own screens, cards or pieces of work placed in a real space, with the light and the perspective of that space;
+- a real device in a real setting, showing the interface or the work on its screen;
+- the screens or cards made into real objects (printed sheets, glass, panels), with material, thickness and shadow;
+- an object or a model made in three dimensions for the idea;
+- graphics set in code together with a photographed or three-dimensional object: the object gives material and light, the code gives the exact content.
+In each of these, what is exact (words, interface, the brand's marks) is set in code on a real surface of the picture: a screen, a sheet, a panel, a wall. Ask for the picture with that surface plain, and set the content on it in the perspective and the light of the picture. Flat shapes floating over an empty ground are none of these ways.`;
 /** The aim with its two fuller parts, as one block. */
 /** The owner, 16 November: "the next stages are animation; it must be known in advance what will be animated and
  * how"; and the same day: it may be motion between scenes, inside a scene, travelling light or one principle of the
@@ -62,9 +75,11 @@ export const TERRITORY_SPIRIT=`In visualIdea and productRole: ${BRAND_SPIRIT}`;
  * Each idea carries the request for one picture of it; the three are made and
  * the reviewer chooses by what it sees. The three are quoted on their own line, apart from the designer's pictures. */
 export const IDEAS_SKETCHES='After the three ideas add three lines that begin SKETCH 1:, SKETCH 2: and SKETCH 3:. Each is the request for one picture of that idea as the viewer would see it, written as you would ask for the finished picture, in the aesthetic of the brand, with no words in it. The three pictures are made, and the reviewer chooses one idea by looking at them. They are sketches, made apart from your own pictures, and none of them is used in the frame: you ask for the finished picture afterwards.';
-/** How many idea sketches a direction is quoted: three for version 6 when generated pictures are permitted (STUDIO_IDEA_SKETCHES=0 turns them off). */
+/** How many idea sketches a direction is quoted. Off by default: the owner, 16 November, after four runs with and
+ * without them on two brands ("I would remove the sketches": they cost three pictures and did not decide the result).
+ * STUDIO_IDEA_SKETCHES=1 turns them on for version 6 when generated pictures are permitted. */
 export const IDEA_SKETCHES=3;
-export const ideaSketchCount=(brief:{designerVersion?:unknown;synthesisAllowed?:unknown},env:Record<string,string|undefined>=process.env)=>Number(brief.designerVersion)>=6&&brief.synthesisAllowed===true&&env.STUDIO_IDEA_SKETCHES!=='0'?IDEA_SKETCHES:0;
+export const ideaSketchCount=(brief:{designerVersion?:unknown;synthesisAllowed?:unknown},env:Record<string,string|undefined>=process.env)=>Number(brief.designerVersion)>=6&&brief.synthesisAllowed===true&&env.STUDIO_IDEA_SKETCHES==='1'?IDEA_SKETCHES:0;
 /** The three sketch requests of an ideas answer, in order; fewer than three means the ideas are chosen from the text. */
 export function sketchPrompts(text:string):string[]{
  const marks=[...text.matchAll(/^[\s>*_#-]*SKETCH\s*([123])\s*[*_]*\s*[:.]\s*[*_]*/gim)],out:string[]=[];
