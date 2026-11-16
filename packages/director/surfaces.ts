@@ -1,0 +1,7 @@
+/**
+ * The designer's instruction for setting content on a plain face of a bought picture (a blank card, sheet or screen).
+ * The application measures the faces (image-surfaces.ts) and the kit's OnSurface fits content to one; this text only
+ * says that both exist and when to ask for the picture again. Not wired into any task text here.
+ */
+export const SURFACES_DESIGNER=`SETTING CONTENT ON A FACE OF A PICTURE
+A bought picture's resources[id].image.surfaces lists the plain faces the app measured in it: each has its four corners as fractions of the picture (in the order OnSurface takes them), its mean luminance and its area, largest first. To set words or an interface on such a face, use OnSurface from './kit' with those corners: <OnSurface corners={surface.corners} box={pictureBox({width,height} of the picture, the area it is drawn in, its fit, its position)} width={w} height={h}>content drawn at w by h</OnSurface>, placed in the same positioned parent as the picture and after it. It fits the content to the face in its perspective and under its light (blend 'multiply' by default; 'normal' covers the face). A dimmer surface with the same shape as a brighter one is usually that face's reflection: set the same content on it with mirror (a reflection in an upright mirror or pane) or mirror="down" (a reflection in a floor or a tabletop), at a lower opacity. When no surface was measured where you need one, ask for the picture again with the face plainer, lighter than its ground and whole inside the frame; never place content on a face by eye.`;

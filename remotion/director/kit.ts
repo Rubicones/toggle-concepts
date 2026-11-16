@@ -1,7 +1,7 @@
 // Engine kit: neutral mechanics for a draft's Frame.tsx. It measures and computes; it never decides how a frame looks.
 // No layouts, components, colours, spacing or type choices live here: everything visible is the designer's.
 // Copied into each draft workspace as ./kit (read-only), next to ./brand (designerVersion 3).
-import {useEffect, useState} from 'react';
+import {createElement, useEffect, useState, type ReactNode} from 'react';
 import {continueRender, delayRender} from 'remotion';
 
 /* ---------- the frame ---------- */
@@ -145,4 +145,55 @@ export function useFonts() {
     return () => { live = false; };
   }, [handle]);
   return ready;
+}
+
+/* ---------- content on a measured surface ---------- */
+
+export type Point = [number, number];
+export type Quad = [Point, Point, Point, Point];
+export type Box = {left: number; top: number; width: number; height: number};
+
+/**
+ * Where a picture's whole rectangle lies, in frame px, when it is shown in `area` the way CSS object-fit and
+ * object-position show it (`position` in fractions, [0.5, 0.5] is the middle). With 'cover' the box is larger than the
+ * area and partly outside it. This is the `box` that surface corners are fractions of.
+ */
+export function pictureBox(picture: {width: number; height: number}, area: Box, fit: 'cover' | 'contain' | 'fill' = 'cover', position: Point = [0.5, 0.5]): Box {
+  if (fit === 'fill') return {...area};
+  const sx = area.width / picture.width, sy = area.height / picture.height, s = fit === 'cover' ? Math.max(sx, sy) : Math.min(sx, sy);
+  const width = picture.width * s, height = picture.height * s;
+  return {left: area.left + (area.width - width) * position[0], top: area.top + (area.height - height) * position[1], width, height};
+}
+
+/**
+ * The projective transform that carries the rectangle 0,0 – width,height onto a quadrilateral given in px as top-left,
+ * top-right, bottom-right, bottom-left. Returned as the 16 numbers of a CSS matrix3d (column by column), for an
+ * element whose transform-origin is its top-left corner.
+ */
+export function homography(width: number, height: number, quad: Quad): number[] {
+  const [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = quad;
+  const dx1 = x1 - x2, dx2 = x3 - x2, dy1 = y1 - y2, dy2 = y3 - y2, sx = x0 - x1 + x2 - x3, sy = y0 - y1 + y2 - y3;
+  const den = dx1 * dy2 - dx2 * dy1 || 1e-12, g = (sx * dy2 - dx2 * sy) / den, h = (dx1 * sy - sx * dy1) / den;
+  // Unit square to quad (Heckbert), then the rectangle's own size divided out.
+  const a = (x1 - x0 + g * x1) / width, b = (x3 - x0 + h * x3) / height, d = (y1 - y0 + g * y1) / width, e = (y3 - y0 + h * y3) / height;
+  return [a, d, 0, g / width, b, e, 0, h / height, 0, 0, 1, 0, x0, y0, 0, 1];
+}
+
+/**
+ * Sets content on a plain face measured in a picture (resources[id].image.surfaces): the children are laid out in
+ * their own `width`×`height` px and carried onto the face's four corners, in its perspective. `corners` are the
+ * surface's corners (fractions of the picture); `box` is where the whole picture lies in frame px (see pictureBox).
+ * `blend: 'multiply'` (the default) lets the photographed face's own light and shading show through the content;
+ * 'normal' covers it. `mirror` flips the content sideways first, for a face seen in a mirror or glass. Place it in
+ * the same positioned parent as the picture, after it; what the content is and how it looks is the designer's.
+ */
+export function OnSurface(props: {corners: Quad; box: Box; width: number; height: number; blend?: 'multiply' | 'normal'; mirror?: boolean | 'down'; opacity?: number; children?: ReactNode}) {
+  const {corners, box, width, height, blend = 'multiply', mirror = false, opacity = 1, children} = props;
+  const px = corners.map(([x, y]): Point => [box.left + x * box.width, box.top + y * box.height]) as Quad;
+  // 'down': a reflection below the face (a floor, a tabletop) is the content turned top to bottom.
+  const quad: Quad = mirror === 'down' ? [px[3], px[2], px[1], px[0]] : mirror ? [px[1], px[0], px[3], px[2]] : px;
+  return createElement('div', {
+    'data-on-surface': mirror === 'down' ? 'mirror-down' : mirror ? 'mirror' : 'direct',
+    style: {position: 'absolute', left: 0, top: 0, width, height, overflow: 'hidden', transformOrigin: '0 0', transform: `matrix3d(${homography(width, height, quad).map(v => +v.toFixed(10)).join(',')})`, mixBlendMode: blend, opacity},
+  }, children);
 }

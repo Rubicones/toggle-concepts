@@ -4,7 +4,9 @@ import {copyFile,readFile,readdir,writeFile} from 'node:fs/promises';
 import {existsSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {join} from 'node:path';
-import {loadImage} from '@napi-rs/canvas';
+import {loadImage,createCanvas} from '@napi-rs/canvas';
+import {measureImageFacts} from '../../packages/director/image-facts';
+import {measureSurfaces,SURFACE_SAMPLE} from '../../packages/director/image-surfaces';
 import {writeResources} from '../../apps/local-runner/director/workspace';
 import type {DirectionInput,CatalogEntry,Resource} from '../../packages/director/types';
 import type {BenchBrand} from './brands';
@@ -93,6 +95,10 @@ export function fileDropPictures(pictures:string,pub:string,folder:string,input:
   if(cut)await writeFile(join(pub,cutName),cut);
   const entry={id:resource.id,url:file,thumbnail:file,width:image.width,height:image.height,sha256:'',mime:file.endsWith('png')?'image/png':'image/jpeg',revisionId:'bench',
    ...(cutImage?{cutout:{url:cutName,sha256:'',width:cutImage.width,height:cutImage.height,box:[0,0,1,1]}}:resource.cutout?{cutoutFailed:'no cutout file was put beside the picture'}:{})} as CatalogEntry;
+  // As the studio does at purchase: the picture's facts and its plain faces, measured from its pixels.
+  {const small=createCanvas(64,64),sc=small.getContext('2d');sc.drawImage(image,0,0,64,64);const facts=measureImageFacts(sc.getImageData(0,0,64,64).data);
+   const k=SURFACE_SAMPLE/Math.max(image.width,image.height),sw=Math.max(8,Math.round(image.width*k)),sh=Math.max(8,Math.round(image.height*k)),faces=createCanvas(sw,sh),fc=faces.getContext('2d');fc.imageSmoothingQuality='high';fc.drawImage(image,0,0,sw,sh);
+   entry.image={...facts,surfaces:measureSurfaces(fc.getImageData(0,0,sw,sh).data,sw,sh)};if(entry.image.surfaces?.length)say(`[bench] ${file}: ${entry.image.surfaces.length} plain face${entry.image.surfaces.length===1?'':'s'} measured.`);}
   catalog.push(entry);await writeResources(folder,input,catalog);return entry;};
 }
 

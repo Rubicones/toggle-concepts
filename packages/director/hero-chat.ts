@@ -4,6 +4,7 @@
 // in a chat: the render, a short plain note of what it measured (observations), and what has arrived. Pure functions.
 import {PICTURE_REFERENCES_DESIGNER} from './picture-references';
 import {BRAND_SPIRIT,AIM_IN_FULL,MOTION_AHEAD,GIVING_A_BODY} from './image-ideas';
+import {SURFACES_DESIGNER} from './surfaces';
 import {z} from 'zod';
 import type {Finding} from './layout-inspection';
 import type {DirectionInput} from './types';
@@ -190,6 +191,8 @@ ${MOTION_AHEAD}
 ${SPACE_DESIGNER}
 
 ${GIVING_A_BODY}
+
+${SURFACES_DESIGNER}
 
 ${BRAND_DEVICES_DESIGNER}
 ${DEVICE_USE_DESIGNER}
