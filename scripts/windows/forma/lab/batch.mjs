@@ -202,6 +202,54 @@ function scenarioText(sc, lang) {
   return [`Theme: ${sc.theme || ''}`, `Idea: ${sc.idea || ''}`, ...scenes, sc.notes ? `Notes: ${sc.notes}` : ''].filter(Boolean).join('\n');
 }
 
+// Pictures of directions and previews (needs Playwright + Chromium in the lab folder; skipped quietly otherwise),
+// so the lab chat can look at them and compare. Only reads from Forma's preview server; nothing is written to Forma.
+async function snapshots(dir, rows, preview, formats) {
+  if (process.env.LAB_NO_SHOTS) return;
+  let chromium;
+  try { ({chromium} = await import('playwright')); } catch { return; }
+  let browser;
+  try { browser = await chromium.launch(); } catch (e) { console.log('No pictures (browser did not start): ' + e.message); return; }
+  const shots = path.join(dir, 'shots');
+  await fs.mkdir(shots, {recursive: true});
+  try {
+    for (const r of rows) {
+      const base = `${String(r.no).padStart(2, '0')}-${slug(r.brand)}${r.take > 1 ? '-' + r.take : ''}`;
+      r.shots = {};
+      const styles = r.styles?.output?.styles || [];
+      if (styles.length) {
+        r.shots.styles = [];
+        const page = await browser.newPage({viewport: {width: 540, height: 960}});
+        for (const [i, st] of styles.entries()) {
+          if (!st.svg) { r.shots.styles.push(null); continue; }
+          await page.setContent(`<html><body style="margin:0;background:#fff">${st.svg}</body></html>`);
+          const el = await page.$('svg');
+          const file = `shots/${base}-direction-${i + 1}.png`;
+          await (el || page).screenshot({path: path.join(dir, file)});
+          r.shots.styles.push(file);
+        }
+        await page.close();
+      }
+      const p = r.preview?.output?.path;
+      if (p) {
+        const f = formats[r.preview.output.format] || {w: 1080, h: 1080};
+        const page = await browser.newPage({viewport: {width: f.w, height: f.h}, deviceScaleFactor: 0.5});
+        await page.goto(preview + p, {waitUntil: 'load', timeout: 60000}).catch(() => {});
+        r.shots.preview = [];
+        for (const [label, wait] of [['2s', 2000], ['end', 6000]]) {
+          await page.waitForTimeout(wait);
+          const file = `shots/${base}-preview-${label}.png`;
+          await page.screenshot({path: path.join(dir, file)});
+          r.shots.preview.push(file);
+        }
+        await page.close();
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+}
+
 export async function buildReport(dir) {
   const run = JSON.parse(await fs.readFile(path.join(dir, 'run.json'), 'utf8'));
   const status = await api('GET', '/api/status').catch(() => ({}));
@@ -210,8 +258,8 @@ export async function buildReport(dir) {
   const lang = run.plan?.setup?.languages?.[0] || 'en';
 
   const rows = [];
-  for (const item of run.items) {
-    const row = {...item};
+  for (const [n, item] of run.items.entries()) {
+    const row = {...item, no: n + 1};
     if (item.campaignId) {
       const c = await api('GET', `/api/campaigns/${item.campaignId}`).catch(err => ({error: err.message}));
       if (!c.error) {
@@ -223,21 +271,23 @@ export async function buildReport(dir) {
     }
     rows.push(row);
   }
+  await snapshots(dir, rows, preview, formats);
   await fs.writeFile(path.join(dir, 'details.json'), JSON.stringify(rows, null, 2));
 
   // Plain-text summary for the lab chat (and for Dima).
   const md = [`# ${run.batch}${run.demo ? ' (demo)' : ''}`, '', run.about, '',
     `Started ${run.startedAt} · finished ${run.finishedAt || '—'} · up to "${run.plan.stopAfter}" · setup ${JSON.stringify(run.plan.setup)}`, ''];
   for (const r of rows) {
-    md.push(`## ${r.brandName} — ${r.status}`);
+    md.push(`## #${r.no} ${r.brandName} — ${r.status}`);
     md.push(`Campaign in Forma: "${r.campaignName || '—'}" (${r.campaignId || 'not created'})`);
     if (r.error) md.push(`Error: ${r.error}`);
     if (r.timings) md.push(`Time: ${Object.entries(r.timings).map(([k, v]) => `${k} ${secs(v)}`).join(', ')}`);
     if (r.cost?.total) md.push(`Estimated cost: $${r.cost.total.toFixed(3)}`);
     if (r.scenario) md.push('', '### Script', '```', scenarioText(r.scenario.output?.scenario, lang), '```');
     if (r.styles) md.push('', '### Visual directions', ...(r.styles.output?.styles || []).map((s, i) =>
-      `${i + 1}. ${i === r.chosenIndex ? '[chosen] ' : ''}**${s.name}** — ${s.idea}\n   ${(s.direction || '').replace(/\n+/g, ' ').slice(0, 600)}`));
+      `${r.no}.${i + 1} ${i === r.chosenIndex ? '[chosen] ' : ''}**${s.name}** — ${s.idea}\n   ${(s.direction || '').replace(/\n+/g, ' ').slice(0, 600)}${r.shots?.styles?.[i] ? '\n   Picture: ' + path.join(dir, r.shots.styles[i]) : ''}`));
     if (r.preview?.output?.path) md.push('', `Preview: ${preview}${r.preview.output.path}`);
+    if (r.shots?.preview) md.push(`Preview picture (frame after 2 s and at the end): ${r.shots.preview.map(f => path.join(dir, f)).join(' , ')}`);
     if (r.final?.output?.path) md.push(`Final: ${preview}${r.final.output.path}`);
     const probs = STEPS.flatMap(s => (r[s]?.problems || []).map(p => `${s}: ${p}`));
     if (probs.length) md.push('', '### Warnings and errors in the logs', ...probs.map(p => `- ${p}`));
@@ -260,13 +310,13 @@ export async function buildReport(dir) {
     const styles = r.styles?.output?.styles || [];
     const probs = STEPS.flatMap(s => (r[s]?.problems || []).map(p => `${s}: ${p}`));
     return `<section class="card ${esc(r.status)}">
-  <header><h2>${esc(r.brandName)}</h2><span class="pill">${esc(r.status)}</span>${verdict(r.campaignName)}</header>
+  <header><h2><span class="no">#${r.no}</span> ${esc(r.brandName)}</h2><span class="pill">${esc(r.status)}</span>${verdict(r.campaignName)}</header>
   <p class="meta">In Forma: <b>${esc(r.campaignName || '—')}</b>${r.timings ? ' · ' + Object.entries(r.timings).map(([k, v]) => `${esc(k)} ${secs(v)}`).join(' · ') : ''}${r.cost?.total ? ` · ≈ $${r.cost.total.toFixed(3)}` : ''}</p>
   ${r.error ? `<p class="err">${esc(r.error)}</p>` : ''}
   ${sc ? `<details open><summary>Script</summary><pre>${esc(scenarioText(sc, lang))}</pre></details>` : ''}
   ${styles.length ? `<div class="styles">${styles.map((s, i) => `<figure class="${i === r.chosenIndex ? 'chosen' : ''}">
       ${s.svg ? `<img alt="" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(s.svg)}">` : ''}
-      <figcaption><b>${i + 1}. ${esc(s.name)}</b>${i === r.chosenIndex ? ' ✓' : ''}<br>${esc(s.idea)}</figcaption></figure>`).join('')}</div>` : ''}
+      <figcaption><b>${r.no}.${i + 1} ${esc(s.name)}</b>${i === r.chosenIndex ? ' ✓' : ''}<br>${esc(s.idea)}</figcaption></figure>`).join('')}</div>` : ''}
   ${r.preview?.output?.path ? `<div class="previews"><div><h3>Preview</h3>${frame(r.preview.output.path, r.preview.output.format)}
       <a href="${esc(preview + r.preview.output.path)}" target="_blank">open</a></div>
       ${r.final?.output?.path ? `<div><h3>Final</h3><a href="${esc(preview + r.final.output.path)}" target="_blank">open all formats</a></div>` : ''}</div>` : ''}
@@ -286,6 +336,7 @@ h1{font-size:24px;margin:0 0 4px}.sub{color:var(--mute);margin:0 0 20px}
 .pill{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:1px 9px}
 .done .pill{color:var(--ok);border-color:var(--ok)}.error .pill,.blocked .pill{color:var(--bad);border-color:var(--bad)}
 .verdict{font-size:13px;font-weight:600;border-radius:6px;padding:2px 8px}.vgood{background:#d8f3e2;color:#14532d}.vmaybe{background:#fdf0c9;color:#6b4e00}.vbad{background:#fbdada;color:#7f1d1d}
+.no{color:var(--acc)}
 .meta{color:var(--mute);font-size:13px;margin:6px 0}.err{color:var(--bad)}
 pre{white-space:pre-wrap;background:var(--bg);padding:10px 12px;border-radius:8px;font-size:13px;margin:6px 0}
 summary{cursor:pointer;font-weight:600;margin:8px 0}

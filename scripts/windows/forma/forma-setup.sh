@@ -138,8 +138,14 @@ if git -C "$REPO" fetch -q origin roman/work 2>/dev/null && git -C "$REPO" archi
       *) cp -rf "$f" "$LAB/" ;;
     esac
   done
-  mkdir -p "$WIN_DIR/lab/reports"
+  mkdir -p "$WIN_DIR/lab/reports" "$WIN_DIR/lab/inbox"
   echo "$LAB"
+  # A headless browser so the lab can take pictures of directions and previews (the chat looks at them).
+  if [ ! -d "$LAB/node_modules/playwright" ] || ! ls /root/.cache/ms-playwright 2>/dev/null | grep -q '^chromium'; then
+    echo "Ставлю браузер для снимков (один раз, пара минут)..."
+    ( cd "$LAB" && npm install --no-audit --no-fund --loglevel=error && npx playwright install --with-deps chromium >/dev/null ) \
+      || echo "Браузер для снимков не поставился: лаборатория работает, но без картинок в чате."
+  fi
 else
   echo "Не удалось скачать лабораторию (ветка roman/work). Forma работает и без неё."
 fi
@@ -151,9 +157,18 @@ export PATH="$NODE_DIR/bin:\$PATH"
 cd "$LAB" || { echo "Лаборатория не установлена. Запустите C:\\\\toggle\\\\Update-Forma.cmd."; exit 1; }
 CLAUDE_BIN="\$(cd "$REPO" && node -e "import('./claude-auth.mjs').then(m=>console.log(m.executable()))")"
 curl -s -o /dev/null http://127.0.0.1:4317/api/status || echo "Внимание: Forma не запущена. Запустите значок «Forma Studio», чат подождёт."
-exec "\$CLAUDE_BIN" "\$@"
+"\$CLAUDE_BIN" "\$@" || { echo; read -r -p "Чат закрылся с ошибкой (сообщение выше). Нажмите Enter, чтобы закрыть окно. " _; }
 LABCHAT
 chmod +x "$HOME_DIR/lab-chat.sh"; echo "$HOME_DIR/lab-chat.sh"
+# Claude's first-run screens (theme, "trust this folder") take only arrows and Enter, so typed messages seemed to vanish.
+# Mark them as done for the lab folder; keeps the theme if one was already chosen. Login stays as it is.
+LAB="$LAB" node -e '
+const fs=require("fs"),f=process.env.HOME+"/.claude.json";
+let c={};try{c=JSON.parse(fs.readFileSync(f,"utf8"))}catch{}
+c.hasCompletedOnboarding=true;c.theme=c.theme||"dark";
+c.projects=c.projects||{};const p=c.projects[process.env.LAB]||{};
+c.projects[process.env.LAB]={...p,hasTrustDialogAccepted:true,hasCompletedProjectOnboarding:true};
+fs.writeFileSync(f,JSON.stringify(c,null,2));console.log("Первый запуск чата подготовлен.")'
 
 if [ "${SKIP_CLAUDE:-}" != "1" ]; then
   step "Вход в Claude по подписке"

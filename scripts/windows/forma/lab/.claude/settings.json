@@ -4,6 +4,7 @@
       "Bash(node batch.mjs --report:*)",
       "Bash(node revise.mjs show:*)",
       "Bash(node revise.mjs mark:*)",
+      "Bash(explorer.exe:*)",
       "Bash(node api.mjs GET:*)",
       "Read(//root/forma/**)",
       "Read(//mnt/c/toggle/lab/**)",

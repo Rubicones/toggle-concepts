@@ -113,11 +113,21 @@ call "C:\toggle\Install-Forma.cmd"
 '@ | Set-Content -Encoding ASCII (Join-Path $Dir 'Update-Forma.cmd')
 @'
 @echo off
-chcp 65001 >nul
 title Forma Lab
 rem Forma Lab chat: Claude (your subscription) next to your local Forma. Runs batches, reads results, sends notes into campaigns.
-wsl.exe -d Ubuntu-24.04 -u root -- bash -lc "test -x /root/forma/lab-chat.sh && exec /root/forma/lab-chat.sh; echo; echo Lab is not installed. Double-click C:\toggle\Update-Forma.cmd.; exit 1"
-if errorlevel 1 pause
+rem Windows Terminal handles typing in Russian and Ctrl+V properly; the old console window is only a fallback.
+wsl.exe -d Ubuntu-24.04 -u root -- test -x /root/forma/lab-chat.sh
+if errorlevel 1 (
+  echo Lab is not installed. Double-click C:\toggle\Update-Forma.cmd.
+  pause
+  exit /b 1
+)
+where wt.exe >nul 2>nul
+if not errorlevel 1 (
+  start "" wt.exe new-tab --title "Forma Lab" wsl.exe -d Ubuntu-24.04 -u root -- bash /root/forma/lab-chat.sh
+  exit /b 0
+)
+wsl.exe -d Ubuntu-24.04 -u root -- bash /root/forma/lab-chat.sh
 '@ | Set-Content -Encoding ASCII (Join-Path $Dir 'Forma-Lab.cmd')
 @'
 @echo off
@@ -287,8 +297,14 @@ if git -C "$REPO" fetch -q origin roman/work 2>/dev/null && git -C "$REPO" archi
       *) cp -rf "$f" "$LAB/" ;;
     esac
   done
-  mkdir -p "$WIN_DIR/lab/reports"
+  mkdir -p "$WIN_DIR/lab/reports" "$WIN_DIR/lab/inbox"
   echo "$LAB"
+  # A headless browser so the lab can take pictures of directions and previews (the chat looks at them).
+  if [ ! -d "$LAB/node_modules/playwright" ] || ! ls /root/.cache/ms-playwright 2>/dev/null | grep -q '^chromium'; then
+    echo "Ставлю браузер для снимков (один раз, пара минут)..."
+    ( cd "$LAB" && npm install --no-audit --no-fund --loglevel=error && npx playwright install --with-deps chromium >/dev/null ) \
+      || echo "Браузер для снимков не поставился: лаборатория работает, но без картинок в чате."
+  fi
 else
   echo "Не удалось скачать лабораторию (ветка roman/work). Forma работает и без неё."
 fi
@@ -300,9 +316,18 @@ export PATH="$NODE_DIR/bin:\$PATH"
 cd "$LAB" || { echo "Лаборатория не установлена. Запустите C:\\\\toggle\\\\Update-Forma.cmd."; exit 1; }
 CLAUDE_BIN="\$(cd "$REPO" && node -e "import('./claude-auth.mjs').then(m=>console.log(m.executable()))")"
 curl -s -o /dev/null http://127.0.0.1:4317/api/status || echo "Внимание: Forma не запущена. Запустите значок «Forma Studio», чат подождёт."
-exec "\$CLAUDE_BIN" "\$@"
+"\$CLAUDE_BIN" "\$@" || { echo; read -r -p "Чат закрылся с ошибкой (сообщение выше). Нажмите Enter, чтобы закрыть окно. " _; }
 LABCHAT
 chmod +x "$HOME_DIR/lab-chat.sh"; echo "$HOME_DIR/lab-chat.sh"
+# Claude's first-run screens (theme, "trust this folder") take only arrows and Enter, so typed messages seemed to vanish.
+# Mark them as done for the lab folder; keeps the theme if one was already chosen. Login stays as it is.
+LAB="$LAB" node -e '
+const fs=require("fs"),f=process.env.HOME+"/.claude.json";
+let c={};try{c=JSON.parse(fs.readFileSync(f,"utf8"))}catch{}
+c.hasCompletedOnboarding=true;c.theme=c.theme||"dark";
+c.projects=c.projects||{};const p=c.projects[process.env.LAB]||{};
+c.projects[process.env.LAB]={...p,hasTrustDialogAccepted:true,hasCompletedProjectOnboarding:true};
+fs.writeFileSync(f,JSON.stringify(c,null,2));console.log("Первый запуск чата подготовлен.")'
 
 if [ "${SKIP_CLAUDE:-}" != "1" ]; then
   step "Вход в Claude по подписке"
