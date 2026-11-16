@@ -7,6 +7,8 @@
       "Bash(node api.mjs GET:*)",
       "Read(//root/forma/**)",
       "Read(//mnt/c/toggle/lab/**)",
+      "Edit(//mnt/c/toggle/lab/JOURNAL.md)",
+      "Write(//mnt/c/toggle/lab/JOURNAL.md)",
       "Edit(//root/forma/lab/brands/**)",
       "Edit(//root/forma/lab/batches/**)",
       "Write(//root/forma/lab/brands/**)",
