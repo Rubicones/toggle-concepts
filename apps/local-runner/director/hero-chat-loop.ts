@@ -15,7 +15,7 @@ import {propagateExecutionFailure,stopOnEnvironmentFault} from '../../../package
 import {MODELS_NOT_SET_UP} from '../../../packages/director/tripo';
 import type {DirectionInput} from '../../../packages/director/types';
 import {openPointsNote} from '../../../packages/director/critic-review';
-import {MAX_IDEA_ROUNDS,chosenMessage,ideaCards,ideasAgain,sketchPrompts,type Selection} from '../../../packages/director/image-ideas';
+import {MAX_IDEA_ROUNDS,SKETCH_NOT_FINAL,chosenMessage,ideaCards,ideasAgain,sketchPrompts,type Selection} from '../../../packages/director/image-ideas';
 import {designerViews,renderKey,screenshotForDesigner,RENDER_LONG_SIDE,shortIssue,buildStuck,type DesignerLoopState,type DesignerTools,type PictureResult} from './designer-loop';
 
 export type HeroCall=(message:string,images:{url:string;label:string}[])=>Promise<string>;
@@ -73,7 +73,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
      if(made.every(Boolean)){const images=await Promise.all(made.map(async(id,i)=>{const image=await args.ideas!.sketchImage!(id!);return image?{...image,label:`Sketch ${i+1}: the picture of idea ${i+1}`}:null;}));if(images.every(Boolean))sketches=images as {url:string;label:string}[];}
     }}
    const chosen=await args.ideas.select(text,ideas.rounds,sketches).catch(error=>{if(propagateExecutionFailure(error))throw error;selectError=error instanceof Error?error.message.slice(0,120):'UNREADABLE';return null;});
-   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=usesQuality(input)?reasonOnly(chosen.reason):chosen.reason;const sketch=ideas.sketches?.[chosen.pick-1];state.heroNote=chosenMessage(chosen.pick,ideas.reason,'reviewer',text)+(sketch?`\n\nThe picture made of this idea for the choice is resources['${sketch}']: the reviewer chose this picture and not only its description, so the frame keeps what it shows and how it is made. Use it in the frame, or ask for a better picture of the same thing; do not rebuild it another way. It is not one of your own pictures: those are numbered as the task says.`:'');}
+   if(chosen?.pick){ideas.picked=chosen.pick;ideas.reason=usesQuality(input)?reasonOnly(chosen.reason):chosen.reason;const sketch=ideas.sketches?.[chosen.pick-1];state.heroNote=chosenMessage(chosen.pick,ideas.reason,'reviewer',text)+(sketch?`\n\n${SKETCH_NOT_FINAL}`:'');}
    else if(!chosen||ideas.rounds>=MAX_IDEA_ROUNDS){ideas.picked=1;if(!chosen)ideas.unreviewed=args.ideas.unreviewedReason?.()??selectError;ideas.reason=!chosen?'The selection could not run, so the first idea is built.':'No idea passed after the extra round, so the first idea is built.';state.heroNote=chosenMessage(1,ideas.reason,'fallback',text);}
    else ideas.notes=chosen.notes;
    await args.save(state);
@@ -174,6 +174,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
    // its pictures wrongly), and the frame was accepted with it. Measured, not left to counting: a picture asked for in
    // this answer that the code does not draw is said at once, and the last turn is not closed on it.
    let askedNotDrawn=false;
+   {const sk=(state.ideas?.sketches??[]).filter((x):x is string=>!!x);if(sk.length&&built.ok){const used=await drawn();if(used.some(id=>sk.includes(id))){askedNotDrawn=true;notes.push(`The frame draws a sketch that was made only for the choice between the ideas (${used.filter(id=>sk.includes(id)).map(id=>`resources['${id}']`).join(', ')}). ${SKETCH_NOT_FINAL}`);results.push('The frame draws a sketch made for the choice.');}}}
    if(heroMeaning(input)&&askedNow.length&&built.ok){const used=await drawn(),missing=askedNow.filter(id=>!used.includes(id));
     if(missing.length){askedNotDrawn=true;notes.push(`This answer asked for ${missing.length===1?'a picture':'pictures'} that its code does not draw: ${missing.map(id=>`resources['${id}']`).join(', ')}.${used.length?` The code draws ${used.map(id=>`resources['${id}']`).join(', ')} instead.`:''} Point the code at the picture you asked for, or say why it is not used.`);results.push('The code does not draw the picture it asked for.');}}
    if(lastTurn&&state.unloaded)pictureStop??=`designer: a picture does not load in the last turn's render: ${state.unloaded.files.join(', ').slice(0,300)}`;

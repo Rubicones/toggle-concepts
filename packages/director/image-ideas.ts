@@ -61,7 +61,7 @@ export const TERRITORY_SPIRIT=`In visualIdea and productRole: ${BRAND_SPIRIT}`;
 /** The owner, 16 November: attractiveness cannot be read from a description, so the three ideas are chosen by looking.
  * Each idea carries the request for one picture of it; the three are made and
  * the reviewer chooses by what it sees. The three are quoted on their own line, apart from the designer's pictures. */
-export const IDEAS_SKETCHES='After the three ideas add three lines that begin SKETCH 1:, SKETCH 2: and SKETCH 3:. Each is the request for one picture of that idea as the viewer would see it, written as you would ask for the finished picture, in the aesthetic of the brand, with no words in it. The three pictures are made, and the reviewer chooses one idea by looking at them. They are made apart from your own pictures, and the picture of the chosen idea stays yours to use.';
+export const IDEAS_SKETCHES='After the three ideas add three lines that begin SKETCH 1:, SKETCH 2: and SKETCH 3:. Each is the request for one picture of that idea as the viewer would see it, written as you would ask for the finished picture, in the aesthetic of the brand, with no words in it. The three pictures are made, and the reviewer chooses one idea by looking at them. They are sketches, made apart from your own pictures, and none of them is used in the frame: you ask for the finished picture afterwards.';
 /** How many idea sketches a direction is quoted: three for version 6 when generated pictures are permitted (STUDIO_IDEA_SKETCHES=0 turns them off). */
 export const IDEA_SKETCHES=3;
 export const ideaSketchCount=(brief:{designerVersion?:unknown;synthesisAllowed?:unknown},env:Record<string,string|undefined>=process.env)=>Number(brief.designerVersion)>=6&&brief.synthesisAllowed===true&&env.STUDIO_IDEA_SKETCHES!=='0'?IDEA_SKETCHES:0;
@@ -71,6 +71,10 @@ export function sketchPrompts(text:string):string[]{
  for(const n of [1,2,3]){const i=marks.findIndex(m=>Number(m[1])===n);if(i<0)return [];const from=marks[i].index!+marks[i][0].length,fence=text.indexOf('```',from),next=marks[i+1]?.index??text.length,to=fence>=0&&fence<next?fence:next;const prompt=text.slice(from,to).replace(/\s+/g,' ').trim();if(prompt.length<40)return [];out.push(prompt.slice(0,3800));}
  return out;
 }
+/** The owner, 16 November, on a frame that took the chosen sketch as its picture: "the sketch went into the final as it
+ * was, it was cropped oddly and the additions over it are not well made; that is the danger of sketches". A sketch is
+ * made to be chosen between, with no room planned for the words and the mark. */
+export const SKETCH_NOT_FINAL='The picture made of this idea was a sketch for the choice and is not used in the frame. The reviewer chose what it shows and how it is made, so keep both, and ask now for the finished picture of the same thing, composed for this frame: with its place for the words and the mark, and with plain, calm places wherever code will set something on the picture.';
 /** What the reviewer reads when the sketches are attached. */
 export const SKETCH_SELECTION='A picture of each idea is attached, in order: sketch 1, sketch 2 and sketch 3. Choose by what you see in them: which picture is the most attractive, is in the brand\'s own aesthetic and shows its idea at once. The written ideas say what each picture was meant to be; a good description does not rescue a weak picture.';
 /** Version 6, only when the brand has no picture of its product or its work that the frame may show (live run of
