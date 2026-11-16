@@ -32,6 +32,7 @@ export const QUALITY_CHECKS:{skill:string;stage:'hero'|'ideas'|'extension';quest
  // brand may be the subject; what fails is an arrangement of what the kit already holds.
  {skill:'brand-character',stage:'ideas',question:'Is the idea a new picture in the aesthetic of the brand, as its own designers would make it, and more than an arrangement of what its kit already holds?'},
  {skill:'one-idea',stage:'ideas',question:'Can a stranger retell the turn of the idea to a friend in one sentence?'},
+ {skill:'final-check',stage:'hero',question:'Can a stranger, with the words covered, say what the picture shows and what is surprising in it?'},
  {skill:'one-idea',stage:'hero',question:'Is the frame, with the logo covered, known as the brand by its light, colour, materials and mood, and not only by parts of its kit?'},
 ];
 /** A stage's checks and signs with the quality checks added after each skill's own (numbering continues). */
@@ -52,8 +53,8 @@ export function reviewMaterialFor(input:DirectionInput,st:StageSkills|undefined,
 
 /** Version 6, every review: a device the brand's own kit names never counts against the work. */
 export const BRAND_DEVICES_REVIEWER='A finish, a material, a gradient, a shape or a mark that the brand\'s own kit names is the brand\'s device: it is never a sign of failure and never fails a check. The signs and checks about glows, gloss, gradients or added depth apply only to devices the brand does not own.';
-/** The owner, 16 November: in the spirit of the brand, not out of its parts (see BRAND_SPIRIT). */
-export const BRAND_SPIRIT_REVIEWER='The work is judged as a new picture in the aesthetic of the brand: the picture its own designers would make for this message, in its light, colour world, materials, finish and mood. Work that only arranges what the kit of the brand already holds (its marks, shapes, colours and patterns side by side), with no idea of its own, fails the checks about the idea, however well it is made, and a note says so. Work that has an idea and does not look like the brand fails the checks about the brand. A mark of the brand may be the subject when the idea needs it there.';
+/** The owner's one aim, 16 November, for the reviewer (see BRAND_SPIRIT). */
+export const BRAND_SPIRIT_REVIEWER='The work is judged by one aim: an attractive picture, in the brand\'s own style, that shows the idea as vividly as it can be shown. In the brand\'s own style means made as its own designers would make it, in its aesthetic; the parts of its kit set side by side are not that. Vivid means the idea is seen in the picture at once, before the words are read. No way of making is preferred or forbidden. Work that misses one of the three (it is not attractive, it is not in the brand\'s own style, or its idea is not seen) fails, however well the other two are done, and a note names which.';
 /** Version 6, every review (live run of 15 November: two review rounds each ended with the frame's subject or its way of
  * making replaced). A departure from plan D5, decided on live evidence. */
 export const SUBJECT_AND_MAKING_REVIEWER='The frame\'s main subject and its way of making stay through a review: a photographed frame stays photographed, a frame built in code stays built in code. No note asks to remove the subject or to make the frame another way; when the subject or the way of making is itself the problem, say so in one note for the art director and ask the designer for nothing about it.';
@@ -74,7 +75,7 @@ ${BRAND_SPIRIT_REVIEWER}
 ${SUBJECT_AND_MAKING_REVIEWER}
 accepted is true when every check passes, no P0 or P1 note is open, and you would present this frame to the client as it is. When every check passes and you would still not present it, accepted is false and a note says what is missing. Approved words and facts stay as they are.`;
 /** The selection's instructions in critic@3: the reason explains the choice and carries no advice on building it. */
-export const SELECTION_INSTRUCTIONS_V3=`${CRITIC_BASE} ${SELECTION_WHAT} The reason says only why this idea is the strongest of the three. It gives no advice on how to build it: no position, no added element, no arrangement and no change to the idea. ${BRAND_DEVICES_REVIEWER} ${BRAND_SPIRIT_REVIEWER} Between two ideas that pass, the one with more wit wins.`;
+export const SELECTION_INSTRUCTIONS_V3=`${CRITIC_BASE} ${SELECTION_WHAT} The reason says only why this idea is the strongest of the three. It gives no advice on how to build it: no position, no added element, no arrangement and no change to the idea. ${BRAND_DEVICES_REVIEWER} ${BRAND_SPIRIT_REVIEWER} Between two ideas that pass, the one that would show its idea most vividly wins; then the one with more wit.`;
 /** The end review in version 6: the critic@2 text with the brand's own devices said once. */
 export const END_REVIEW_INSTRUCTIONS_V3=`${REVIEW_INSTRUCTIONS(END_REVIEW_WHAT)}\n${BRAND_DEVICES_REVIEWER}\n${BRAND_SPIRIT_REVIEWER}\n${SUBJECT_AND_MAKING_REVIEWER}\n${IDEA_TURN_REVIEWER}`;
 /** The chosen idea in the designer's own words, for the hero review (critic@3). */
