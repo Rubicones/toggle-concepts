@@ -9,13 +9,16 @@
 //   node revise.mjs preview "<campaign>" "what should change in the preview"
 //   node revise.mjs final   "<campaign>" "what should change in the final"
 //   node revise.mjs show    "<campaign>"                               short state of the campaign
+//   node revise.mjs mark    "<campaign>" good|maybe|bad "short reason" verdict, shown in the campaign name in Forma
+//   node revise.mjs continue "<campaign>" [--to styles|preview|final] [--choose 2]
+//                                         take a good idea further: approve script, directions, preview…
 //
 // <campaign> is the campaign id or any part of its name (e.g. "LAB quick · Lumo").
 import {api, findCampaign} from './api.mjs';
 
 const [cmd, query, ...rest] = process.argv.slice(2);
 const usage = () => {
-  console.log('Usage: node revise.mjs styles|script|approve|choose|preview|final|show "<campaign>" [...]');
+  console.log('Usage: node revise.mjs styles|script|approve|choose|preview|final|show|mark|continue "<campaign>" [...]');
   process.exit(1);
 };
 
@@ -74,6 +77,50 @@ async function main() {
       if (!entry) throw new Error(`This campaign has no ${cmd} yet.`);
       r = await api('POST', `/api/history/${entry}/revise`, {message: rest.join(' ')});
       console.log(r.url ? `New version: ${r.url}` : JSON.stringify(r).slice(0, 500));
+      break;
+    }
+    case 'mark': {
+      const [verdict, ...words] = rest;
+      const sign = {good: '✓', maybe: '~', bad: '✗'}[verdict];
+      if (!sign) throw new Error('Verdict must be good, maybe or bad.');
+      const base = c.name.split(' — ')[0];
+      const reason = words.join(' ').trim();
+      const name = `${base} — ${sign}${reason ? ' ' + reason : ''}`.slice(0, 160);
+      await api('PATCH', `/api/campaigns/${id}`, {name});
+      console.log(`Renamed: ${name}`);
+      break;
+    }
+    case 'continue': {
+      const flag = k => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : undefined; };
+      const to = flag('--to') || 'preview';
+      if (!['styles', 'preview', 'final'].includes(to)) throw new Error('--to must be styles, preview or final.');
+      const choose = flag('--choose');
+      let cur = c;
+      const sc = cur.steps.scenario;
+      if (!sc.entryId) throw new Error('This campaign has no script yet.');
+      if (sc.needs?.includes('translation')) await api('POST', `/api/campaigns/${id}/translate`, {});
+      if (sc.needs?.includes('cuts')) await api('POST', `/api/campaigns/${id}/cuts`, {});
+      if (!sc.approvedAt || sc.stale) { console.log('Approving the script…'); cur = await api('POST', `/api/campaigns/${id}/approve`, {step: 'scenario'}); }
+      if (!cur.steps.styles?.entryId) { console.log('Three visual directions…'); cur = (await api('POST', `/api/campaigns/${id}/styles`, {})).campaign; }
+      if (to === 'styles') break;
+      const want = choose ? Number(choose) - 1 : cur.steps.styles.chosenIndex ?? 0;
+      let rebuilt = false;
+      if (cur.steps.styles.chosenIndex !== want) {
+        console.log(`Direction ${want + 1}…`);
+        cur = await api('POST', `/api/campaigns/${id}/styles/choose`, {index: want});
+      }
+      if (!cur.steps.preview?.entryId || cur.steps.preview.stale) {
+        console.log('Preview…');
+        r = await api('POST', `/api/campaigns/${id}/preview`, {});
+        console.log(`Preview: ${r.url}`);
+        rebuilt = true;
+      }
+      if (to === 'preview') break;
+      cur = await api('GET', `/api/campaigns/${id}`);
+      if (!cur.steps.preview.approvedAt || rebuilt) await api('POST', `/api/campaigns/${id}/approve`, {step: 'preview'});
+      console.log('Final (all formats)…');
+      r = await api('POST', `/api/campaigns/${id}/final`, {});
+      console.log(`Final: ${r.url}`);
       break;
     }
     default:

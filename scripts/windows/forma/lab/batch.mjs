@@ -3,6 +3,7 @@
 //   node batch.mjs batches/quick.json                 run a batch
 //   node batch.mjs batches/quick.json --demo          same, free demo mode (checks the plumbing)
 //   node batch.mjs batches/full.json --brands lumo,grit --parallel 1 --stop-after styles
+//   node batch.mjs batches/ideas.json --repeat 3       three separate ideas per brand
 //   node batch.mjs --report <results folder>          rebuild the page (e.g. after revisions)
 //
 // Only talks to the local Forma API. Never edits Forma's code or data files directly.
@@ -80,7 +81,7 @@ async function runOne(brand, plan, item, save) {
       await api('PUT', `/api/projects/${project}/file?name=${encodeURIComponent(f.name)}`, await fs.readFile(f.abs));
     }
     const setup = {...plan.setup, ...(plan.overrides?.[brand.id] || {})};
-    const camp = await api('POST', '/api/campaigns', {project, name: `LAB ${plan.label} · ${brand.name}`, setup});
+    const camp = await api('POST', '/api/campaigns', {project, name: `LAB ${plan.label} · ${brand.name}${item.take > 1 ? ' #' + item.take : ''}`, setup});
     Object.assign(item, {campaignId: camp.id, campaignName: camp.name});
     await save();
 
@@ -93,8 +94,9 @@ async function runOne(brand, plan, item, save) {
       item.error = 'Script has validation errors: ' + sc.validation.errors.map(e => e.message || e).join('; ');
       return;
     }
-    await step('approve', () => api('POST', `/api/campaigns/${camp.id}/approve`, {step: 'scenario'}));
+    // Ideas stage: stop before approval, so a good idea can still get notes and a new script before it goes on.
     if (plan.stopAfter === 'scenario') return (item.status = 'done');
+    await step('approve', () => api('POST', `/api/campaigns/${camp.id}/approve`, {step: 'scenario'}));
 
     await step('styles', () => api('POST', `/api/campaigns/${camp.id}/styles`, {}));
     if (plan.stopAfter === 'styles') return (item.status = 'done');
@@ -129,7 +131,10 @@ async function runBatch(file, opt) {
     overrides: opt.demo ? Object.fromEntries(Object.entries(batch.overrides || {}).map(([k, v]) => [k, {...v, provider: {mode: 'demo'}}])) : batch.overrides || {},
   };
   if (!STEPS.includes(plan.stopAfter)) throw new Error(`stopAfter must be one of: ${STEPS.join(', ')}`);
-  const brands = await loadBrands(opt.brands || batch.brands);
+  const brandList = await loadBrands(opt.brands || batch.brands);
+  // "repeat": N — N separate campaigns per brand (more ideas to choose from).
+  const repeat = Math.min(5, Math.max(1, Number(opt.repeat || batch.repeat || 1)));
+  const brands = brandList.flatMap(b => Array.from({length: repeat}, (_, i) => ({...b, take: i + 1})));
   const parallel = Math.max(1, Number(opt.parallel || batch.parallel || 1));
 
   const status = await api('GET', '/api/status');
@@ -143,13 +148,13 @@ async function runBatch(file, opt) {
   const run = {
     batch: plan.label, about: batch.about || '', file: path.basename(file), demo: !!opt.demo,
     startedAt: new Date().toISOString(), forma: BASE, plan,
-    items: brands.map(b => ({brand: b.id, brandName: b.name, status: 'waiting'})),
+    items: brands.map(b => ({brand: b.id, brandName: b.name + (b.take > 1 ? ' #' + b.take : ''), take: b.take, status: 'waiting'})),
   };
   let writing = Promise.resolve();
   const save = () => (writing = writing.then(() => fs.writeFile(path.join(dir, 'run.json'), JSON.stringify(run, null, 2))));
   await save();
 
-  console.log(`Batch "${plan.label}": ${brands.length} brand(s), mode ${mode}, up to "${plan.stopAfter}", ${parallel} at a time.`);
+  console.log(`Batch "${plan.label}": ${brands.length} campaign(s), mode ${mode}, up to "${plan.stopAfter}", ${parallel} at a time.`);
   console.log(`Results: ${dir}`);
   let next = 0;
   const worker = async () => {
@@ -157,9 +162,9 @@ async function runBatch(file, opt) {
       const i = next++;
       const item = run.items[i];
       item.status = 'running'; item.startedAt = new Date().toISOString();
-      console.log(`→ ${brands[i].name}`);
+      console.log(`→ ${item.brandName}`);
       await runOne(brands[i], plan, item, save);
-      console.log(`${item.status === 'done' ? '✓' : '✗'} ${brands[i].name}${item.error ? ' — ' + item.error : ''}`);
+      console.log(`${item.status === 'done' ? '✓' : '✗'} ${item.brandName}${item.error ? ' — ' + item.error : ''}`);
     }
   };
   await Promise.all(Array.from({length: Math.min(parallel, brands.length)}, worker));
@@ -246,12 +251,16 @@ export async function buildReport(dir) {
     return `<div class="frame" style="width:${Math.round(f.w * scale)}px;height:${Math.round(f.h * scale)}px">
       <iframe loading="lazy" src="${esc(preview + p)}" style="width:${f.w}px;height:${f.h}px;transform:scale(${scale})"></iframe></div>`;
   };
+  const verdict = name => {
+    const m = String(name || '').match(/ — ([✓~✗])(.*)$/);
+    return m ? `<span class="verdict v${{'✓': 'good', '~': 'maybe', '✗': 'bad'}[m[1]]}">${esc(m[1] + m[2])}</span>` : '';
+  };
   const card = r => {
     const sc = r.scenario?.output?.scenario;
     const styles = r.styles?.output?.styles || [];
     const probs = STEPS.flatMap(s => (r[s]?.problems || []).map(p => `${s}: ${p}`));
     return `<section class="card ${esc(r.status)}">
-  <header><h2>${esc(r.brandName)}</h2><span class="pill">${esc(r.status)}</span></header>
+  <header><h2>${esc(r.brandName)}</h2><span class="pill">${esc(r.status)}</span>${verdict(r.campaignName)}</header>
   <p class="meta">In Forma: <b>${esc(r.campaignName || '—')}</b>${r.timings ? ' · ' + Object.entries(r.timings).map(([k, v]) => `${esc(k)} ${secs(v)}`).join(' · ') : ''}${r.cost?.total ? ` · ≈ $${r.cost.total.toFixed(3)}` : ''}</p>
   ${r.error ? `<p class="err">${esc(r.error)}</p>` : ''}
   ${sc ? `<details open><summary>Script</summary><pre>${esc(scenarioText(sc, lang))}</pre></details>` : ''}
@@ -276,6 +285,7 @@ h1{font-size:24px;margin:0 0 4px}.sub{color:var(--mute);margin:0 0 20px}
 .card header{display:flex;gap:10px;align-items:center}.card h2{font-size:19px;margin:0}
 .pill{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:1px 9px}
 .done .pill{color:var(--ok);border-color:var(--ok)}.error .pill,.blocked .pill{color:var(--bad);border-color:var(--bad)}
+.verdict{font-size:13px;font-weight:600;border-radius:6px;padding:2px 8px}.vgood{background:#d8f3e2;color:#14532d}.vmaybe{background:#fdf0c9;color:#6b4e00}.vbad{background:#fbdada;color:#7f1d1d}
 .meta{color:var(--mute);font-size:13px;margin:6px 0}.err{color:var(--bad)}
 pre{white-space:pre-wrap;background:var(--bg);padding:10px 12px;border-radius:8px;font-size:13px;margin:6px 0}
 summary{cursor:pointer;font-weight:600;margin:8px 0}
@@ -300,6 +310,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const opt = args(process.argv.slice(2));
   const job = opt.report ? buildReport(path.resolve(opt.report))
     : opt._[0] ? runBatch(opt._[0], opt)
-    : Promise.reject(new Error('Usage: node batch.mjs batches/<name>.json [--demo] [--brands a,b] [--parallel N] [--stop-after scenario|styles|preview|final]\n       node batch.mjs --report <results folder>'));
+    : Promise.reject(new Error('Usage: node batch.mjs batches/<name>.json [--demo] [--brands a,b] [--repeat N] [--parallel N] [--stop-after scenario|styles|preview|final]\n       node batch.mjs --report <results folder>'));
   job.catch(e => { console.error('Error:', e.message); process.exit(1); });
 }

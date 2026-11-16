@@ -38,10 +38,28 @@
 
 Перед командами node: `cd /root/forma/lab`. Node уже в PATH (если нет — `export PATH=/root/toggle/tools/node-v22.22.0-linux-x64/bin:/root/forma/tools/node-v22.22.0-linux-x64/bin:$PATH`).
 
-## Прогоны пачками
+## Как работаем: два этапа (так договорились с Димой)
+
+1. **Идеи пачкой.** `node batch.mjs batches/ideas.json` — для каждого бренда только сценарий
+   (тема, идея, сцены, тексты), по 2 идеи на бренд. Это дёшево. Дальше сценарий не утверждается.
+2. **Разбор идей с Романом.** Прочитай `summary.md`, коротко опиши каждую идею и свою оценку.
+   Роман решает. Каждую идею помечай в Forma (`revise.mjs mark`): хорошая (`good`), доработать (`maybe`), плохая (`bad`),
+   и коротко почему. Пометка видна Диме прямо в названии кампании в панели.
+3. **Доводка хороших.** Если идея почти хорошая — `revise.mjs script` с заметками, новый сценарий, снова оценка.
+4. **Видео только для хороших.** `revise.mjs continue "<кампания>"` — утверждает сценарий, делает 3 направления,
+   превью; `--choose N` — какое направление; `--to final` — все форматы. Видео не собираем для идей
+   с пометкой `bad` и `maybe`.
+5. **Отчёт Диме** (см. ниже): что гоняли, какие идеи хорошие/плохие и почему, какие повторяющиеся проблемы движка.
+
+Всё, что делается через лабораторию, Дима видит в своей панели: кампании `LAB …` с автором Roman — сценарии,
+направления, превью и финалы; в названии — оценка; правки превью и финала — в окне Revisions;
+заметки к сценарию и направлениям сохраняются в шагах кампании. Полный разбор — в отчёте.
+
 
 ```bash
 node batch.mjs batches/demo.json                       # бесплатная проверка, что всё работает
+node batch.mjs batches/ideas.json                      # этап 1: только идеи, по 2 на бренд
+node batch.mjs batches/ideas.json --brands lumo --repeat 3   # три идеи для одного бренда
 node batch.mjs batches/quick.json                      # сценарии + 3 направления для всех брендов (дёшево)
 node batch.mjs batches/preview.json --brands lumo,grit # + превью, только два бренда
 node batch.mjs batches/quick.json --demo               # любую пачку можно прогнать в демо
@@ -65,7 +83,8 @@ node batch.mjs --report /mnt/c/toggle/lab/<папка>      # пересобра
   },
   "overrides": {"grit": {"languages": ["sr-Latn", "en"]}},
   "notes": "заметки к сценарию для всех брендов",
-  "stopAfter": "styles",               // scenario | styles | preview | final
+  "stopAfter": "scenario",             // scenario (только идея) | styles | preview | final
+  "repeat": 2,                         // сколько отдельных идей на бренд (1–5)
   "choose": 0,                         // какое направление брать в превью (0, 1, 2)
   "parallel": 2
 }
@@ -108,6 +127,10 @@ node batch.mjs --report /mnt/c/toggle/lab/<папка>      # пересобра
 Перед отправкой покажи Роману текст одной строкой.
 
 ```bash
+node revise.mjs mark    "LAB ideas · Lumo #2" good "crescent-moon idea is clear and on brief"
+node revise.mjs mark    "LAB ideas · Grit Gym" bad "generic gym cliché, ignores beginners' fear"
+node revise.mjs continue "LAB ideas · Lumo #2"                   # хорошую идею — в направления и превью
+node revise.mjs continue "LAB ideas · Lumo #2" --choose 2 --to final
 node revise.mjs show    "LAB quick · Lumo"                       # где кампания сейчас
 node revise.mjs styles  "LAB quick · Lumo" all "Less dark, warmer night mood; drop the receipt idea"
 node revise.mjs styles  "LAB quick · Lumo" 2 "Use the crescent from the logo as the hero shape"
@@ -136,8 +159,9 @@ node revise.mjs final   "LAB quick · Lumo" "9:16: headline hits the top safe zo
 3. **Проблемы** — для каждой: что видно (бренд, шаг, пример текста или описание кадра), как часто
    повторяется, предполагаемая причина в движке (файл и место, если нашёл), что предлагаем.
    Сначала самое важное.
-4. **Какие замечания уже отправлены в кампании** — название кампании и текст замечания, чтобы Дима
+4. **Оценки идей** — таблица: кампания, оценка, почему (то же, что в названиях в панели).
+5. **Какие замечания уже отправлены в кампании** — название кампании и текст замечания, чтобы Дима
    нашёл их в панели.
-5. **Вопросы к Диме.**
+6. **Вопросы к Диме.**
 
 Пиши так, чтобы Дима мог действовать, не переспрашивая. Никаких ключей и содержимого `.env`.
