@@ -83,7 +83,7 @@ export async function runHeroChat(args:{input:DirectionInput;state:DesignerLoopS
  let missingRetried=false;
  while(hero.state!=='accepted'&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
   // What arrived since the last answer; a continued conversation holds everything earlier.
-  const pictures:string[]=[];for(const p of arrived.splice(0))pictures.push(p.status==='ready'?`The picture ${p.id} has arrived: read resources['${p.id}'].`:await failed(p));
+  const pictures:string[]=[];for(const p of arrived.splice(0))pictures.push(p.status==='ready'?`The picture ${p.id} has arrived: read resources['${p.id}'].${p.faces===undefined?'':p.faces?` ${p.faces===1?'One plain face was':`${p.faces} plain faces were`} measured in it (onPicture gives ${p.faces===1?'it':'them'}).`:' No plain face was measured in it.'}`:await failed(p));
   if(paymentStop){const kept=pictures.filter(n=>!n.includes('could not be bought'));if(kept.length)state.heroNote=[state.heroNote??'',...kept].filter(Boolean).join('\n\n');}
   await stopForPayment();
   const short=args.conversation?await args.conversation.decide():state.turn>0;

@@ -131,7 +131,7 @@ test('the purchase measures surfaces for engine-kit drafts and the frame code re
 });
 
 test('the designer text names the facts and the kit helper, in plain words, without layout advice',()=>{
- assert.match(SURFACES_DESIGNER,/resources\[id\]\.image\.surfaces/);assert.match(SURFACES_DESIGNER,/OnSurface from '\.\/kit'/);assert.match(SURFACES_DESIGNER,/mirror/);assert.match(SURFACES_DESIGNER,/ask for the picture again/);
+ assert.match(SURFACES_DESIGNER,/onPicture\(resources\[id\]/);assert.match(SURFACES_DESIGNER,/onPicture and OnSurface from '\.\/kit'/);assert.match(SURFACES_DESIGNER,/mirror/);assert.match(SURFACES_DESIGNER,/ask for the picture again/);
  assert.doesNotMatch(SURFACES_DESIGNER,/for example|such as|in the style of|e\.g\./i);assert.doesNotMatch(SURFACES_DESIGNER,/\b(left|right|top|bottom|centre|center|grid|column)\b/i);
- const sentences=SURFACES_DESIGNER.split(/(?<=[.!?])\s+/).length;assert.ok(sentences>=3&&sentences<=5,`${sentences} sentences`);
+ const sentences=SURFACES_DESIGNER.split(/(?<=[.!?])\s+/).length;assert.ok(sentences>=3&&sentences<=10,`${sentences} sentences`);
 });

@@ -35,7 +35,7 @@ export async function runExtensionChat(args:{input:DirectionInput;state:Designer
  const pending=new Map<string,Promise<PictureResult>>(),arrived:PictureResult[]=[];let missingRetried=false;
  let phase=extensionPhase(input,state.renders);if(state.extensionPhase!==phase){state.extensionPhase=phase;await args.save(state);await args.onPhase?.(phase,phaseLabels[phase]);}
  while(!state.complete&&state.turn<args.maxTurns&&now()-state.startedAt<args.timeMs){
-  const pictures:string[]=[];for(const p of arrived.splice(0)){if(p.status==='ready'){pictures.push(`The picture ${p.id} has arrived: read resources['${p.id}'].`);continue;}
+  const pictures:string[]=[];for(const p of arrived.splice(0)){if(p.status==='ready'){pictures.push(`The picture ${p.id} has arrived: read resources['${p.id}'].${p.faces===undefined?'':p.faces?` ${p.faces===1?'One plain face was':`${p.faces} plain faces were`} measured in it (onPicture gives ${p.faces===1?'it':'them'}).`:' No plain face was measured in it.'}`);continue;}
    // Version 6: the plain reason and, once, how many pictures can still be had.
    if(!heroMeaning(input)){pictures.push(`The picture ${p.id} could not be made${p.detail?` (${p.detail})`:''}.`);continue;}
    const said=recordPictureFailure(state,p,args.maxPictures);await args.save(state);await args.onPictureFailed?.({id:p.id,failure:said.failure});pictures.push(said.note);}

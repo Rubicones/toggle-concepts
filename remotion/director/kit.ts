@@ -166,6 +166,17 @@ export function pictureBox(picture: {width: number; height: number}, area: Box, 
 }
 
 /**
+ * Where a bought picture lies in the frame and where its measured plain faces are, read straight from resources[id]:
+ * `box` is the whole picture in frame px when it is drawn into `area` with this fit and position, and `faces` are the
+ * corners of its measured faces, largest first (empty when none was measured or the picture has not arrived). Sizes kept
+ * as text and a missing `image` are handled here, so the frame's code does not have to.
+ */
+export function onPicture(resource: {width?: number | string; height?: number | string; image?: {surfaces?: {corners: Quad}[]}} | undefined, area: Box, fit: 'cover' | 'contain' | 'fill' = 'cover', position: Point = [0.5, 0.5]): {box: Box; faces: Quad[]} {
+  const width = Number(resource?.width) || area.width, height = Number(resource?.height) || area.height;
+  return {box: pictureBox({width, height}, area, fit, position), faces: (resource?.image?.surfaces ?? []).map(f => f.corners)};
+}
+
+/**
  * The projective transform that carries the rectangle 0,0 – width,height onto a quadrilateral given in px as top-left,
  * top-right, bottom-right, bottom-left. Returned as the 16 numbers of a CSS matrix3d (column by column), for an
  * element whose transform-origin is its top-left corner.
@@ -187,8 +198,9 @@ export function homography(width: number, height: number, quad: Quad): number[] 
  * 'normal' covers it. `mirror` flips the content sideways first, for a face seen in a mirror or glass. Place it in
  * the same positioned parent as the picture, after it; what the content is and how it looks is the designer's.
  */
-export function OnSurface(props: {corners: Quad; box: Box; width: number; height: number; blend?: 'multiply' | 'normal'; mirror?: boolean | 'down'; opacity?: number; children?: ReactNode}) {
+export function OnSurface(props: {corners: Quad | undefined; box: Box; width: number; height: number; blend?: 'multiply' | 'normal'; mirror?: boolean | 'down'; opacity?: number; children?: ReactNode}) {
   const {corners, box, width, height, blend = 'multiply', mirror = false, opacity = 1, children} = props;
+  if (!corners) return null; // no measured face: nothing is placed by eye
   const px = corners.map(([x, y]): Point => [box.left + x * box.width, box.top + y * box.height]) as Quad;
   // 'down': a reflection below the face (a floor, a tabletop) is the content turned top to bottom.
   const quad: Quad = mirror === 'down' ? [px[3], px[2], px[1], px[0]] : mirror ? [px[1], px[0], px[3], px[2]] : px;

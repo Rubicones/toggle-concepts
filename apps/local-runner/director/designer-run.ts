@@ -36,7 +36,7 @@ export function designerTools(args:{folder:string;input:DirectionInput;design:De
  const settle=async(resource:Resource):Promise<PictureResult>=>{
   let entry:CatalogEntry|undefined;
   try{entry=await args.buy(resource);}catch(error){if(error instanceof Error)Object.assign(error,{resourceId:resource.id});throw error;}
-  return entry?{id:resource.id,status:'ready',...(entry.cutout?{cutout:true}:entry.cutoutFailed?{cutout:false,detail:'The cutout failed; use the rectangle.'}:{})}:{id:resource.id,status:'failed',detail:'The picture could not be made.'};
+  return entry?{id:resource.id,status:'ready',...(entry.image&&'surfaces' in entry.image?{faces:entry.image.surfaces?.length??0}:{}),...(entry.cutout?{cutout:true}:entry.cutoutFailed?{cutout:false,detail:'The cutout failed; use the rectangle.'}:{})}:{id:resource.id,status:'failed',detail:'The picture could not be made.'};
  };
  return {
   files:async()=>(await staticSourceContext(folder,input.iterationId)).files,
