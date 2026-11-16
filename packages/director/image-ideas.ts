@@ -34,7 +34,7 @@ export const VIVID_IDEA=`AN IDEA SHOWN VIVIDLY
 - A turn. Something in the picture is not as expected: two things meet that do not usually meet, a familiar thing behaves in an unfamiliar way, or a size, a place or a moment is wrong on purpose. The turn is the idea made visible.
 - Its strongest form. Take the idea as far as it goes: the largest difference, the clearest contrast, the most telling moment. A mild version of an idea is seen as no idea.
 - Its own image. Pass over the first image everyone reaches for: the stock symbol that many ads have already used for this theme is not a turn. Look for the image that only this brand, with this message, would arrive at.
-- Read at once. The viewer knows straight away what they are looking at; the surprise is in what it means, never in working out what it is.
+- Read at once. The viewer knows straight away what they are looking at, with no special knowledge: the things in the picture are ones anyone would name. The surprise is in what it means, never in working out what it is. Unusual is not the same as vivid: a rare object or an elaborate construction that has to be explained loses to a plain thing whose turn is seen at once.
 - About the viewer. The idea touches something the viewer wants, fears or knows from their own life.
 - Retold in one sentence. A stranger can tell it to a friend, and the friend reacts.`;
 export const ATTRACTIVE_PICTURE=`AN ATTRACTIVE PICTURE
