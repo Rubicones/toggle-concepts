@@ -354,6 +354,17 @@ ${rows.map(card).join('\n')}
 </main></body></html>`;
   await fs.writeFile(path.join(dir, 'index.html'), html);
   console.log(`Page: ${path.join(dir, 'index.html')}`);
+  // Same results as a private link that opens on the phone and on any computer (7 days).
+  try {
+    const {shareRun} = await import('./share.mjs');
+    const url = await shareRun(dir, {scenarioText});
+    if (url) {
+      console.log(`LINK (phone and computer, 7 days): ${url}`);
+      await fs.appendFile(path.join(dir, 'summary.md'), `\nLink for Roman (phone and computer, 7 days): ${url}\n`);
+    }
+  } catch (e) {
+    console.log('Link was not made: ' + e.message);
+  }
   return dir;
 }
 
