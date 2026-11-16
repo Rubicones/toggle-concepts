@@ -1,7 +1,7 @@
 <# :
 @echo off
 chcp 65001 >nul
-rem Forma Studio: install or update. Double-click; nothing needs to be typed except your name once.
+rem Forma Studio: install or update. Double-click; nothing needs to be typed.
 set "FORMA_SELF=%~f0"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ((Get-Content -LiteralPath $env:FORMA_SELF -Raw -Encoding UTF8))"
 pause
@@ -11,7 +11,9 @@ exit /b
 # сколько угодно раз: делает только недостающее и заодно обновляет код. Forma работает в том же фоновом Ubuntu (WSL),
 # что и прежняя студия Toggle. Старые файлы Toggle из C:\toggle переносятся в C:\toggle\old-toggle-studio.
 $ErrorActionPreference = 'Continue'
-$Distro = 'Ubuntu-24.04'; $Dir = 'C:\toggle'; $Old = Join-Path $Dir 'old-toggle-studio'; $Branch = 'main'
+$Distro = 'Ubuntu-24.04'; $Dir = 'C:\toggle'; $Old = Join-Path $Dir 'old-toggle-studio'
+# Your name in the shared base and your working branch (never main). forma-author.txt / forma-branch.txt override them.
+$Author = 'Roman'; $Branch = 'roman/work'
 function Step($t) { Write-Host "`n== $t" -ForegroundColor Cyan }
 New-Item -ItemType Directory -Force $Dir | Out-Null
 $Self = Join-Path $Dir 'Install-Forma.cmd'
@@ -76,24 +78,20 @@ $found = @($Dir, (Join-Path $env:USERPROFILE 'Downloads')) | ForEach-Object { Ge
 if ($found -and (-not (Test-Path $envFile) -or $found.LastWriteTime -gt (Get-Item $envFile).LastWriteTime)) { Copy-Item -Force $found.FullName $envFile; Write-Host "Настройки взяты из $($found.FullName)" }
 if (Test-Path $envFile) {
   $text = [IO.File]::ReadAllText($envFile)
-  $current = if ($text -match '(?m)^FORMA_AUTHOR=([^#\r\n]*)') { $Matches[1].Trim() } else { '' }
   $authorFile = Join-Path $Dir 'forma-author.txt'
-  $author = if (Test-Path $authorFile) { (Get-Content -LiteralPath $authorFile -TotalCount 1 -Encoding UTF8).Trim() } else { '' }
-  if (-not $author) {
-    $answer = Read-Host "Ваше имя: им подписываются ваши запуски в общей базе (Enter — оставить «$current»)"
-    $author = if ($answer.Trim()) { $answer.Trim() } else { $current }
-    if ($author) { [IO.File]::WriteAllText($authorFile, $author) }
-  }
-  if ($author -and $author -ne $current) {
-    if ($text -match '(?m)^FORMA_AUTHOR=') { $text = [regex]::Replace($text, '(?m)^FORMA_AUTHOR=[^\r\n]*', "FORMA_AUTHOR=$author") } else { $text += "`nFORMA_AUTHOR=$author`n" }
-    [IO.File]::WriteAllText($envFile, $text, (New-Object Text.UTF8Encoding $false))
-  }
-  Write-Host "Настройки: $envFile (автор: $author)" -ForegroundColor Green
+  if (Test-Path $authorFile) { $named = (Get-Content -LiteralPath $authorFile -TotalCount 1 -Encoding UTF8).Trim(); if ($named) { $Author = $named } }
+  if ($text -match '(?m)^FORMA_AUTHOR=') { $text = [regex]::Replace($text, '(?m)^FORMA_AUTHOR=[^\r\n]*', "FORMA_AUTHOR=$Author") } else { $text += "`nFORMA_AUTHOR=$Author`n" }
+  # Dima's own model keys stay out: Claude runs on your subscription, and Codex is not used. The shared base (Supabase,
+  # R2) and the picture key stay.
+  $text = [regex]::Replace($text, '(?m)^(ANTHROPIC_API_KEY|CODEX_API_KEY|OPENAI_API_KEY)=[^\r\n]*', '# $1 removed by Install-Forma: Claude runs on your subscription')
+  [IO.File]::WriteAllText($envFile, $text, (New-Object Text.UTF8Encoding $false))
+  $pictures = if ($text -match '(?m)^OPENROUTER_API_KEY=\s*(\S+)') { 'ключ OpenRouter …' + $Matches[1].Substring([Math]::Max(0, $Matches[1].Length - 4)) } else { 'ключа OpenRouter нет: картинки и видео не генерируются' }
+  Write-Host "Настройки: $envFile. Автор: $Author. Claude: ваша подписка. Картинки: $pictures." -ForegroundColor Green
 } else { Write-Host "Файла настроек нет. Положите файл от Димы в $Dir и запустите установщик ещё раз. Без него Forma работает только в тестовом режиме." -ForegroundColor Yellow }
 
 $BranchFile = Join-Path $Dir 'forma-branch.txt'
 if (Test-Path $BranchFile) { $Named = (Get-Content -LiteralPath $BranchFile -TotalCount 1).Trim(); if ($Named -match '^[A-Za-z0-9._/-]+$') { $Branch = $Named } }
-Write-Host "Ветка кода: $Branch$(if ($Branch -ne 'main') { ' (из forma-branch.txt; удалите файл, чтобы вернуться на main)' })"
+Write-Host "Рабочая ветка: $Branch"
 
 Step 'Ярлыки'
 @'
@@ -150,7 +148,11 @@ step "Код: ветка $BRANCH"
 if [ ! -d "$REPO/.git" ]; then git clone -q https://github.com/Rubicones/forma.git "$REPO"; fi
 cd "$REPO"
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "В папке есть локальные правки кода: оставляю как есть, обновление пропущено."
-else { git fetch -q origin "$BRANCH" && git checkout -q -B "$BRANCH" "origin/$BRANCH"; } || echo "Не удалось обновить код; продолжаю с текущей версией."; fi
+else
+  # The working branch is made by the chat on its first push; until then the code comes from main.
+  if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then USE="$BRANCH"; else USE=main; [ "$BRANCH" != main ] && echo "Ветки $BRANCH ещё нет (её создаст чат при первой правке): пока беру main."; fi
+  { git fetch -q origin "$USE" && git checkout -q -B "$USE" "origin/$USE"; } || echo "Не удалось обновить код; продолжаю с текущей версией."
+fi
 git log --oneline -1
 
 step "Настройки (.env)"

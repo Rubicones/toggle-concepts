@@ -28,7 +28,11 @@ step "Код: ветка $BRANCH"
 if [ ! -d "$REPO/.git" ]; then git clone -q https://github.com/Rubicones/forma.git "$REPO"; fi
 cd "$REPO"
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "В папке есть локальные правки кода: оставляю как есть, обновление пропущено."
-else { git fetch -q origin "$BRANCH" && git checkout -q -B "$BRANCH" "origin/$BRANCH"; } || echo "Не удалось обновить код; продолжаю с текущей версией."; fi
+else
+  # The working branch is made by the chat on its first push; until then the code comes from main.
+  if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then USE="$BRANCH"; else USE=main; [ "$BRANCH" != main ] && echo "Ветки $BRANCH ещё нет (её создаст чат при первой правке): пока беру main."; fi
+  { git fetch -q origin "$USE" && git checkout -q -B "$USE" "origin/$USE"; } || echo "Не удалось обновить код; продолжаю с текущей версией."
+fi
 git log --oneline -1
 
 step "Настройки (.env)"
