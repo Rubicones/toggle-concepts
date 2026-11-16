@@ -30,9 +30,9 @@ export const QUALITY_CHECKS:{skill:string;stage:'hero'|'ideas'|'extension';quest
  {skill:'one-idea',stage:'ideas',question:'Can the idea be made from what the brand really has: its supplied files, pictures that can be generated, and code?'},
  // The owner, 16 November: pictures were put together from the brand's parts and had no witty idea. A mark of the
  // brand may be the subject; what fails is an arrangement of what the kit already holds.
- {skill:'brand-character',stage:'ideas',question:'Is the idea a new picture in the character of the brand, and more than an arrangement of what the kit of the brand already holds?'},
+ {skill:'brand-character',stage:'ideas',question:'Is the idea a new picture in the aesthetic of the brand, as its own designers would make it, and more than an arrangement of what its kit already holds?'},
  {skill:'one-idea',stage:'ideas',question:'Can a stranger retell the turn of the idea to a friend in one sentence?'},
- {skill:'one-idea',stage:'hero',question:'Is the frame a new picture in the character of the brand, and more than an arrangement of what the kit of the brand already holds?'},
+ {skill:'one-idea',stage:'hero',question:'Is the frame, with the logo covered, known as the brand by its light, colour, materials and mood, and not only by parts of its kit?'},
 ];
 /** A stage's checks and signs with the quality checks added after each skill's own (numbering continues). */
 /** Whether the hero scene's approved words hold the call to action. */
@@ -53,7 +53,7 @@ export function reviewMaterialFor(input:DirectionInput,st:StageSkills|undefined,
 /** Version 6, every review: a device the brand's own kit names never counts against the work. */
 export const BRAND_DEVICES_REVIEWER='A finish, a material, a gradient, a shape or a mark that the brand\'s own kit names is the brand\'s device: it is never a sign of failure and never fails a check. The signs and checks about glows, gloss, gradients or added depth apply only to devices the brand does not own.';
 /** The owner, 16 November: in the spirit of the brand, not out of its parts (see BRAND_SPIRIT). */
-export const BRAND_SPIRIT_REVIEWER='The work is judged as a new picture in the character of the brand. Work that only arranges what the kit of the brand already holds (its marks, shapes, colours and patterns side by side), with no idea of its own, fails the checks about the idea, however well it is made, and a note says so. A mark or a device of the brand may be the subject when the idea does something with it that the kit does not already show.';
+export const BRAND_SPIRIT_REVIEWER='The work is judged as a new picture in the aesthetic of the brand: the picture its own designers would make for this message, in its light, colour world, materials, finish and mood. Work that only arranges what the kit of the brand already holds (its marks, shapes, colours and patterns side by side), with no idea of its own, fails the checks about the idea, however well it is made, and a note says so. Work that has an idea and does not look like the brand fails the checks about the brand. A mark of the brand may be the subject when the idea needs it there.';
 /** Version 6, every review (live run of 15 November: two review rounds each ended with the frame's subject or its way of
  * making replaced). A departure from plan D5, decided on live evidence. */
 export const SUBJECT_AND_MAKING_REVIEWER='The frame\'s main subject and its way of making stay through a review: a photographed frame stays photographed, a frame built in code stays built in code. No note asks to remove the subject or to make the frame another way; when the subject or the way of making is itself the problem, say so in one note for the art director and ask the designer for nothing about it.';

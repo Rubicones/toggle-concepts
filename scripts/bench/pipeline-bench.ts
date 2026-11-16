@@ -212,7 +212,11 @@ async function benchFromExport(folder:string){
  const read=async(p:string)=>JSON.parse(await readFile(join(folder,p),'utf8'));
  const blocks=await read('database/studio_director_blocks.json') as {snapshot:{inputs:DirectionInput[]}}[],input=structuredClone(blocks.at(-1)!.snapshot.inputs[Number(arg('direction','0'))]);
  if(!input)throw new Error('The export has no direction at that index.');
- const context=await read('device/run-context.json') as {system:string;brief:string;materials?:RunContext['materials'];images?:unknown},pack=context.system.slice(context.system.indexOf('\n',context.system.indexOf('BRAND PACK'))+1),brief=context.brief.slice(context.brief.indexOf('\n')+1);
+ // --direction-name=<words>: rename the direction (an experiment switch, for a direction whose name fixes the subject).
+ {const d=input.creativeHandoff?.intent.direction as {name?:string}|undefined;if(d&&arg('direction-name',''))d.name=arg('direction-name','');}
+ const context=await read('device/run-context.json') as {system:string;brief:string;materials?:RunContext['materials'];images?:unknown},packText=context.system.slice(context.system.indexOf('\n',context.system.indexOf('BRAND PACK'))+1),
+  // --pack-aesthetic=<file>: a stand-in for the AESTHETIC label of a pack written before the label existed (an experiment switch).
+  pack=arg('pack-aesthetic','')?packText.replace('\n\nDEVICES:',`\n\n${(await readFile(resolve(arg('pack-aesthetic','')),'utf8')).trim()}\n\nDEVICES:`):packText,brief=context.brief.slice(context.brief.indexOf('\n')+1);
  const out=resolve(arg('out','artifacts/bench'),`export-${input.directionId.slice(0,8)}-${arg('chat-baseline','0')==='1'?'chat':`v${Number(arg('designer','0'))||5}`}${arg('hero-only','0')==='1'?'-hero':''}${ablationName}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'')}`);await mkdir(out,{recursive:true});
  process.env.TOGGLE_HOME??=resolve(out,'home');
  const workspace=await createWorkspace(resolve(out,'workspace'),input),pub=join(workspace,'public'),source=join(folder,'designer',input.directionId.slice(0,8),'workspace','public');
