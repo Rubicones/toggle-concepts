@@ -214,6 +214,9 @@ async function benchFromExport(folder:string){
  if(!input)throw new Error('The export has no direction at that index.');
  // --direction-name=<words>: rename the direction (an experiment switch, for a direction whose name fixes the subject).
  {const d=input.creativeHandoff?.intent.direction as {name?:string}|undefined;if(d&&arg('direction-name',''))d.name=arg('direction-name','');}
+ // --territory=<file>: replace the direction's territory (JSON with visualIdea, twoSeconds, productRole, makingTechnique, success), to
+ // rehearse a territory written under newer rules without the visual-direction stage (an experiment switch).
+ if(arg('territory','')){const t=(input.creativeHandoff as {visual?:{content?:{treatments?:Record<string,unknown>[]}}}|undefined)?.visual?.content?.treatments?.[0];if(t)Object.assign(t,JSON.parse(await readFile(resolve(arg('territory','')),'utf8')));}
  const context=await read('device/run-context.json') as {system:string;brief:string;materials?:RunContext['materials'];images?:unknown},packText=context.system.slice(context.system.indexOf('\n',context.system.indexOf('BRAND PACK'))+1),
   // --pack-aesthetic=<file>: a stand-in for the AESTHETIC label of a pack written before the label existed (an experiment switch).
   pack=arg('pack-aesthetic','')?packText.replace('\n\nDEVICES:',`\n\n${(await readFile(resolve(arg('pack-aesthetic','')),'utf8')).trim()}\n\nDEVICES:`):packText,brief=context.brief.slice(context.brief.indexOf('\n')+1);
