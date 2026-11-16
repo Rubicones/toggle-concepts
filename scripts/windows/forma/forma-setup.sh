@@ -125,6 +125,36 @@ exec npm start
 START
 chmod +x "$HOME_DIR/start.sh"; echo "$HOME_DIR/start.sh"
 
+step "Лаборатория: пачки прогонов и чат"
+# Lab tools live on Roman's branch (lab/), separate from Dima's code. Tools are refreshed on every update;
+# brands/ and batches/ only gain new files, so Roman's own brands and batches are never overwritten.
+LAB="$HOME_DIR/lab"; LAB_TMP="$(mktemp -d)"
+if git -C "$REPO" fetch -q origin roman/work 2>/dev/null && git -C "$REPO" archive FETCH_HEAD lab | tar -x -C "$LAB_TMP"; then
+  mkdir -p "$LAB/brands" "$LAB/batches"
+  for f in "$LAB_TMP"/lab/* "$LAB_TMP"/lab/.claude; do
+    [ -e "$f" ] || continue
+    case "$(basename "$f")" in
+      brands|batches) cp -r --update=none "$f/." "$LAB/$(basename "$f")/" ;;
+      *) cp -rf "$f" "$LAB/" ;;
+    esac
+  done
+  mkdir -p "$WIN_DIR/lab/reports"
+  echo "$LAB"
+else
+  echo "Не удалось скачать лабораторию (ветка roman/work). Forma работает и без неё."
+fi
+rm -rf "$LAB_TMP"
+cat > "$HOME_DIR/lab-chat.sh" <<LABCHAT
+#!/usr/bin/env bash
+# Opens the Forma Lab chat: Claude Code on Roman's subscription, in /root/forma/lab, next to his local Forma.
+export PATH="$NODE_DIR/bin:\$PATH"
+cd "$LAB" || { echo "Лаборатория не установлена. Запустите C:\\\\toggle\\\\Update-Forma.cmd."; exit 1; }
+CLAUDE_BIN="\$(cd "$REPO" && node -e "import('./claude-auth.mjs').then(m=>console.log(m.executable()))")"
+curl -s -o /dev/null http://127.0.0.1:4317/api/status || echo "Внимание: Forma не запущена. Запустите значок «Forma Studio», чат подождёт."
+exec "\$CLAUDE_BIN" "\$@"
+LABCHAT
+chmod +x "$HOME_DIR/lab-chat.sh"; echo "$HOME_DIR/lab-chat.sh"
+
 if [ "${SKIP_CLAUDE:-}" != "1" ]; then
   step "Вход в Claude по подписке"
   if node -e "import('./claude-auth.mjs').then(m=>m.subscriptionReady()).then(r=>process.exit(r?0:1))"; then echo "Уже выполнен."
@@ -138,4 +168,4 @@ if [ "${SKIP_CLAUDE:-}" != "1" ]; then
     if [ "$answer" != "no" ]; then "$CLAUDE_BIN" auth login --claudeai || echo "Вход не завершён: повторите позже двойным кликом по Install-Forma.cmd."; fi
   fi
 fi
-printf '\n\033[32mГотово. Запуск: значок «Forma Studio» на рабочем столе (или C:\\toggle\\Start-Forma.cmd).\033[0m\n'
+printf '\n\033[32mГотово. Запуск: значок «Forma Studio» на рабочем столе (или C:\\toggle\\Start-Forma.cmd). Чат-лаборатория: значок «Forma Lab».\033[0m\n'

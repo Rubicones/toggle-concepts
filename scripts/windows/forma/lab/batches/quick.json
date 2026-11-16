@@ -1,0 +1,10 @@
+{
+  "name": "quick",
+  "about": "Scripts and three visual directions for every brand. No previews, so it is the cheapest real check of ideas and directions.",
+  "brands": "all",
+  "setup": {"kind": "single", "languages": ["en"], "lengths": [8], "formats": ["1x1"],
+            "provider": {"mode": "claude", "billing": "subscription"}},
+  "notes": "",
+  "stopAfter": "styles",
+  "parallel": 2
+}

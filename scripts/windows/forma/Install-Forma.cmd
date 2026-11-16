@@ -107,9 +107,24 @@ if errorlevel 1 pause
 '@ | Set-Content -Encoding ASCII (Join-Path $Dir 'Start-Forma.cmd')
 @'
 @echo off
-rem Updates Forma (code, settings, dependencies): the installer doubles as the updater.
+rem Updates Forma (code, settings, dependencies, lab): fetches the newest installer, then runs it.
+curl.exe -fsSL -o "C:\toggle\Install-Forma.new.cmd" "https://raw.githubusercontent.com/Rubicones/forma/roman/work/windows/Install-Forma.cmd" && move /y "C:\toggle\Install-Forma.new.cmd" "C:\toggle\Install-Forma.cmd" >nul
 call "C:\toggle\Install-Forma.cmd"
 '@ | Set-Content -Encoding ASCII (Join-Path $Dir 'Update-Forma.cmd')
+@'
+@echo off
+chcp 65001 >nul
+title Forma Lab
+rem Forma Lab chat: Claude (your subscription) next to your local Forma. Runs batches, reads results, sends notes into campaigns.
+wsl.exe -d Ubuntu-24.04 -u root -- bash -lc "test -x /root/forma/lab-chat.sh && exec /root/forma/lab-chat.sh; echo; echo Lab is not installed. Double-click C:\toggle\Update-Forma.cmd.; exit 1"
+if errorlevel 1 pause
+'@ | Set-Content -Encoding ASCII (Join-Path $Dir 'Forma-Lab.cmd')
+@'
+@echo off
+rem Opens the folder with batch results (each run has index.html) and reports for Dima.
+if not exist "C:\toggle\lab" mkdir "C:\toggle\lab"
+explorer.exe C:\toggle\lab
+'@ | Set-Content -Encoding ASCII (Join-Path $Dir 'Open-Lab-Results.cmd')
 @'
 @echo off
 chcp 65001 >nul
@@ -126,7 +141,9 @@ explorer.exe \\wsl.localhost\Ubuntu-24.04\root\forma\forma
 '@ | Set-Content -Encoding ASCII (Join-Path $Dir 'Open-Forma-Folder.cmd')
 $l = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Forma Studio.lnk'))
 $l.TargetPath = Join-Path $Dir 'Start-Forma.cmd'; $l.WorkingDirectory = $Dir; $l.Save()
-Write-Host 'Start-Forma.cmd, Update-Forma.cmd, Export-Forma-Campaign.cmd, Open-Forma-Folder.cmd и значок «Forma Studio» на рабочем столе.'
+$l = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Forma Lab.lnk'))
+$l.TargetPath = Join-Path $Dir 'Forma-Lab.cmd'; $l.WorkingDirectory = $Dir; $l.Save()
+Write-Host 'Start-Forma.cmd, Update-Forma.cmd, Export-Forma-Campaign.cmd, Open-Forma-Folder.cmd, Forma-Lab.cmd, Open-Lab-Results.cmd и значки «Forma Studio» и «Forma Lab» на рабочем столе.'
 
 Step 'Forma внутри Ubuntu'
 $setup = @'
@@ -257,6 +274,36 @@ exec npm start
 START
 chmod +x "$HOME_DIR/start.sh"; echo "$HOME_DIR/start.sh"
 
+step "Лаборатория: пачки прогонов и чат"
+# Lab tools live on Roman's branch (lab/), separate from Dima's code. Tools are refreshed on every update;
+# brands/ and batches/ only gain new files, so Roman's own brands and batches are never overwritten.
+LAB="$HOME_DIR/lab"; LAB_TMP="$(mktemp -d)"
+if git -C "$REPO" fetch -q origin roman/work 2>/dev/null && git -C "$REPO" archive FETCH_HEAD lab | tar -x -C "$LAB_TMP"; then
+  mkdir -p "$LAB/brands" "$LAB/batches"
+  for f in "$LAB_TMP"/lab/* "$LAB_TMP"/lab/.claude; do
+    [ -e "$f" ] || continue
+    case "$(basename "$f")" in
+      brands|batches) cp -r --update=none "$f/." "$LAB/$(basename "$f")/" ;;
+      *) cp -rf "$f" "$LAB/" ;;
+    esac
+  done
+  mkdir -p "$WIN_DIR/lab/reports"
+  echo "$LAB"
+else
+  echo "Не удалось скачать лабораторию (ветка roman/work). Forma работает и без неё."
+fi
+rm -rf "$LAB_TMP"
+cat > "$HOME_DIR/lab-chat.sh" <<LABCHAT
+#!/usr/bin/env bash
+# Opens the Forma Lab chat: Claude Code on Roman's subscription, in /root/forma/lab, next to his local Forma.
+export PATH="$NODE_DIR/bin:\$PATH"
+cd "$LAB" || { echo "Лаборатория не установлена. Запустите C:\\\\toggle\\\\Update-Forma.cmd."; exit 1; }
+CLAUDE_BIN="\$(cd "$REPO" && node -e "import('./claude-auth.mjs').then(m=>console.log(m.executable()))")"
+curl -s -o /dev/null http://127.0.0.1:4317/api/status || echo "Внимание: Forma не запущена. Запустите значок «Forma Studio», чат подождёт."
+exec "\$CLAUDE_BIN" "\$@"
+LABCHAT
+chmod +x "$HOME_DIR/lab-chat.sh"; echo "$HOME_DIR/lab-chat.sh"
+
 if [ "${SKIP_CLAUDE:-}" != "1" ]; then
   step "Вход в Claude по подписке"
   if node -e "import('./claude-auth.mjs').then(m=>m.subscriptionReady()).then(r=>process.exit(r?0:1))"; then echo "Уже выполнен."
@@ -270,7 +317,7 @@ if [ "${SKIP_CLAUDE:-}" != "1" ]; then
     if [ "$answer" != "no" ]; then "$CLAUDE_BIN" auth login --claudeai || echo "Вход не завершён: повторите позже двойным кликом по Install-Forma.cmd."; fi
   fi
 fi
-printf '\n\033[32mГотово. Запуск: значок «Forma Studio» на рабочем столе (или C:\\toggle\\Start-Forma.cmd).\033[0m\n'
+printf '\n\033[32mГотово. Запуск: значок «Forma Studio» на рабочем столе (или C:\\toggle\\Start-Forma.cmd). Чат-лаборатория: значок «Forma Lab».\033[0m\n'
 '@
 [IO.File]::WriteAllText((Join-Path $Dir 'forma-setup.sh'), ($setup -replace "`r", ''), (New-Object Text.UTF8Encoding $false))
 wsl.exe -d $Distro -u root -- bash /mnt/c/toggle/forma-setup.sh $Branch

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node batch.mjs --report:*)",
+      "Bash(node revise.mjs show:*)",
+      "Bash(node api.mjs GET:*)",
+      "Read(//root/forma/**)",
+      "Read(//mnt/c/toggle/lab/**)",
+      "Edit(//root/forma/lab/brands/**)",
+      "Edit(//root/forma/lab/batches/**)",
+      "Write(//root/forma/lab/brands/**)",
+      "Write(//root/forma/lab/batches/**)",
+      "Write(//mnt/c/toggle/lab/reports/**)",
+      "Edit(//mnt/c/toggle/lab/reports/**)"
+    ],
+    "deny": [
+      "Edit(//root/forma/forma/**)",
+      "Write(//root/forma/forma/**)",
+      "Read(//root/forma/forma/.env)",
+      "Read(//mnt/c/toggle/forma.env)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
