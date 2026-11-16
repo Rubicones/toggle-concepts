@@ -144,6 +144,10 @@ export function heroBriefLine(input:DirectionInput){
 export const BRAND_DEVICES_DESIGNER=`THE BRAND'S OWN DEVICES
 A finish, a material, a gradient, a shape or a mark that the brand's own kit names is this brand's: use it with confidence, as the kit describes it. What your skills say against depth, gloss, glows or gradients added to make a frame look finished is about devices the brand does not own.`;
 /** Version 6 (live run 4): a device keeps the role and the scale the brand gives it. */
+/** The owner, 16 November, on a frame of flat cards laid in code over a photograph of an empty wall: "flat, as if
+ * there were a ban on spaces and visuals with volume". There is none: the skills argue against depth faked over flat
+ * shapes, and the designer read that as a rule for flatness. Names no look and no arrangement. */
+export const SPACE_DESIGNER='Space and volume are open to you. When the idea is a place, an object or a moment, make it as one picture with real depth: the subject in its space, with perspective, material, cast shadows and one light, photographed or rendered. Ask for that whole picture; do not ask for an empty ground and lay flat shapes over it in code. Code sets the words, the mark and what must be exact, and what it adds over a picture takes the perspective and the light of that picture. Flat graphics are right when the idea itself is flat. What your skills say against depth is about glows, blurs and shadows laid over flat shapes; it is not about real space.';
 export const DEVICE_USE_DESIGNER='Use each of the brand\'s devices in the role and at the scale its own materials give it; where the brand pack lists DEVICES IN USE, follow that, and where it says "not stated", choose the role yourself and say which.';
 /** Plan E4c (version 6): the edit format, said once in the hero task and once in the stage E opening. */
 export const EDITS_NOTE=`CHANGING A FILE YOU HAVE WRITTEN
@@ -178,6 +182,7 @@ Its approved words${b.locale?` (${b.locale})`:''}, exactly as written, nothing a
 What the frame shows is yours to decide.
 
 ${BRAND_SPIRIT}
+${SPACE_DESIGNER}
 
 ${BRAND_DEVICES_DESIGNER}
 ${DEVICE_USE_DESIGNER}
