@@ -114,7 +114,7 @@ call "C:\toggle\Install-Forma.cmd"
 @'
 @echo off
 title Forma Lab
-rem Forma Lab chat: Claude (your subscription) next to your local Forma. Runs batches, reads results, sends notes into campaigns.
+rem Forma Lab: starts Forma and connects the lab to the Claude app (phone or claude.ai/code). Keep the window open while you work.
 rem Windows Terminal handles typing in Russian and Ctrl+V properly; the old console window is only a fallback.
 wsl.exe -d Ubuntu-24.04 -u root -- test -x /root/forma/lab-chat.sh
 if errorlevel 1 (
@@ -309,15 +309,30 @@ else
   echo "Не удалось скачать лабораторию (ветка roman/work). Forma работает и без неё."
 fi
 rm -rf "$LAB_TMP"
-cat > "$HOME_DIR/lab-chat.sh" <<LABCHAT
+cat > "$HOME_DIR/lab-chat.sh" <<'LABCHAT'
 #!/usr/bin/env bash
-# Opens the Forma Lab chat: Claude Code on Roman's subscription, in /root/forma/lab, next to his local Forma.
-export PATH="$NODE_DIR/bin:\$PATH"
-cd "$LAB" || { echo "Лаборатория не установлена. Запустите C:\\\\toggle\\\\Update-Forma.cmd."; exit 1; }
-CLAUDE_BIN="\$(cd "$REPO" && node -e "import('./claude-auth.mjs').then(m=>console.log(m.executable()))")"
-curl -s -o /dev/null http://127.0.0.1:4317/api/status || echo "Внимание: Forma не запущена. Запустите значок «Forma Studio», чат подождёт."
-"\$CLAUDE_BIN" "\$@" || { echo; read -r -p "Чат закрылся с ошибкой (сообщение выше). Нажмите Enter, чтобы закрыть окно. " _; }
+# Forma Lab: starts Forma if needed, then connects the lab folder to the Claude app (phone or claude.ai/code)
+# through Remote Control. Work happens here on this computer; Roman writes from the app. "lab-chat.sh local" = chat in this window.
+export PATH="@NODE_DIR@/bin:$PATH"
+cd "@LAB@" || { echo "Лаборатория не установлена. Запустите C:\\toggle\\Update-Forma.cmd."; read -r _; exit 1; }
+CLAUDE_BIN="$(cd "@REPO@" && node -e "import('./claude-auth.mjs').then(m=>console.log(m.executable()))")"
+up(){ curl -s -o /dev/null --max-time 2 http://127.0.0.1:4317/api/status; }
+if ! up; then
+  echo "Запускаю Forma..."
+  nohup "@HOME_DIR@/start.sh" > "@HOME_DIR@/forma.log" 2>&1 &
+  for i in $(seq 1 60); do up && break; sleep 2; done
+  up && echo "Forma работает: http://127.0.0.1:4317" || echo "Forma не запустилась, подробности: @HOME_DIR@/forma.log"
+fi
+if [ "${1:-}" = "local" ]; then shift; "$CLAUDE_BIN" "$@"; exit; fi
+echo
+echo "Лаборатория подключается к приложению Claude."
+echo "Откройте Claude на телефоне (раздел Code) или claude.ai/code в браузере и выберите сессию «Forma Lab»."
+echo "Это окно не закрывайте: пока оно открыто, Forma и лаборатория работают. Закрыть = остановить всё."
+echo
+"$CLAUDE_BIN" remote-control --name "Forma Lab" --spawn same-dir \
+  || { echo; read -r -p "Подключение не удалось (сообщение выше). Нажмите Enter, чтобы закрыть окно. " _; }
 LABCHAT
+sed -i -e "s|@NODE_DIR@|$NODE_DIR|g" -e "s|@LAB@|$LAB|g" -e "s|@REPO@|$REPO|g" -e "s|@HOME_DIR@|$HOME_DIR|g" "$HOME_DIR/lab-chat.sh"
 chmod +x "$HOME_DIR/lab-chat.sh"; echo "$HOME_DIR/lab-chat.sh"
 # Claude's first-run screens (theme, "trust this folder") take only arrows and Enter, so typed messages seemed to vanish.
 # Mark them as done for the lab folder; keeps the theme if one was already chosen. Login stays as it is.
