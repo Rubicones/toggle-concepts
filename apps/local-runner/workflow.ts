@@ -43,7 +43,7 @@ import type {TextSnapshot} from "../../packages/agents/text-provider";
 import {roleReasoning,usesRoleEffort} from "../../packages/agents/effort";
 import {planningPlan} from "../../packages/agents/local-session";
 import {usesPlanningChat,VISUAL_CONCEPT_TASK,sheetMaterials,sheetOnRequestLine,oneRequestVisualDirection} from "../../packages/agents/planning-chat";
-import {TERRITORY_TASK} from "../../packages/director/image-ideas";
+import {TERRITORY_TASK,TERRITORY_SPIRIT} from "../../packages/director/image-ideas";
 import {LOCAL_TEXT_RESERVATION_MICRO_USD} from "../../packages/agents/local-usage";
 import {stageOf} from "../../packages/agents/stage-effort";
 import {loadLocalRuntime,textExecutionFor,transportFor,sharedContextFor,planningPoints,subscriptionWaitUntil,markSubscriptionLimit,keepLocalDiagnostics,type LocalRuntime,type TextExecution} from "./local-claude/runtime";
@@ -170,7 +170,8 @@ async function execute(claim:Claim){
   let transportTask=claim.round.kind==='draft'&&snapshot.campaignContext?.variantManifest?(job.role==='variants'?variantAuditTask+(job.attempt_count>1?`\n${PLANNING_RETRY_FEEDBACK}`:''):planningTransportTask(job.role,snapshot.campaignContext.variantManifest.entries as LocalizationVariant[],job.attempt_count,{scriptProof,scenarioSelection,scenarioId:snapshot.scenarioSelection?.scenarioId,treatmentSequence})):'';
   if(envelope)transportTask=envelopeRoleInstruction(job.role)+(transportTask?'\n'+transportTask:'');
   // The compact sheet is in the run context; the full sheet's pages are asked for by name instead of always sent.
-  if(territory)transportTask+=`\n${TERRITORY_TASK}`;
+  // One-mind contexts (designer version 6): the territory is written in the spirit of the brand, not out of its parts.
+  if(territory)transportTask+=`\n${TERRITORY_TASK}${oneRequest?`\n${TERRITORY_SPIRIT}`:''}`;
   if(concept)transportTask+=`\n${VISUAL_CONCEPT_TASK}`+(sheetPages.length&&!oneRequest?`\n${sheetOnRequestLine(sheetPages)}`:'');
   // Guided planning contexts are built in SQL without the feeling brief; it travels with the task text, because the
   // frozen campaignContext is compared byte for byte at admission (studio_begin_workflow) and must stay unchanged.

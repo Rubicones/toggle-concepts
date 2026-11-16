@@ -19,7 +19,17 @@ Keep the answer short, about 600 to 1,000 tokens. An independent reviewer picks 
  * of every run were one object alone on a plain ground, and the owner asked for live photographs and fuller frames. A
  * range rule, not a look: it asks that one of three be a whole scene when the direction allows a photograph. */
 export const IDEAS_RANGE='Make the three differ in kind, not in detail: in what is shown, in how close the viewer is to it, and in how much of the frame it takes. When the direction allows a photograph, at least one idea is a whole scene, a place or a moment with the subject in it, and not the subject alone on a plain ground.';
-export const IDEAS_TASK_V6=IDEAS_TASK.replace('2. Push each one to be bolder and more distinct from the others.',`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE}`);
+/** The owner, 16 November, after bench runs 14 and 15 (every direction and all three ideas of each run took the
+ * brand's own mark as the subject of the frame): "each time there is an attempt to put the picture together from the
+ * parts of the brand; it must be in the spirit of the brand". The rule for every stage that decides what a frame shows:
+ * a new picture with the brand's character, never an arrangement of the kit's parts; a mark of the brand may be
+ * the subject (the owner's correction the same day). Names no brand, no look and no arrangement. */
+export const BRAND_SPIRIT='Work in the spirit of the brand, not out of its parts. The kit of the brand shows its character: how it looks, sounds and feels. Make a new picture that has this character and an idea of its own. Do not put a picture together by arranging what the kit already holds (its marks, shapes, colours and gradients side by side): that gives a page of the brand book, not an ad. A mark or a device of the brand may be the subject of a frame when the idea does something with it that the kit does not already show. The idea and the picture are new; the character is the brand\'s.';
+/** What each of the three ideas owes, version 6: the brand's spirit, a subject of its own and a turn worth retelling. */
+export const IDEAS_SUBJECT=`${BRAND_SPIRIT} The three ideas do not all take the same subject. Each idea has a turn with wit in it: something a stranger would retell to a friend in one sentence.`;
+export const IDEAS_TASK_V6=IDEAS_TASK.replace('2. Push each one to be bolder and more distinct from the others.',`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE} ${IDEAS_SUBJECT}`);
+/** The territory of a direction, version 6: the same rule where the visual idea is first written. */
+export const TERRITORY_SPIRIT=`In visualIdea and productRole: ${BRAND_SPIRIT}`;
 /** Version 6, only when the brand has no picture of its product or its work that the frame may show (live run of
  * 15 November: a service brand with no cleared work; every idea became "the ad shows itself", a blank plate carrying the
  * headline). A rule about what the subject may be, not a look. For the owner to approve. */
@@ -29,7 +39,7 @@ export const IDEAS_WITHOUT_PRODUCT_PICTURE='This brand has no picture of its pro
 export function hasShowablePicture(input:{assets?:{url:string}[];brand?:{references?:{url?:string;use?:boolean}[];interface?:unknown[]}}):boolean{
  return (input.assets??[]).some(a=>/\.(png|jpe?g|webp)$/i.test(a.url))||(input.brand?.references??[]).some(r=>r.use===true)||(input.brand?.interface??[]).length>0;
 }
-export const ideasTaskFor=(input:{brief:{designerVersion?:unknown};assets?:{url:string}[];brand?:{references?:{url?:string;use?:boolean}[];interface?:unknown[]}})=>Number(input.brief.designerVersion)>=6?(hasShowablePicture(input)?IDEAS_TASK_V6:IDEAS_TASK_V6.replace(IDEAS_RANGE,`${IDEAS_RANGE} ${IDEAS_WITHOUT_PRODUCT_PICTURE}`)):IDEAS_TASK;
+export const ideasTaskFor=(input:{brief:{designerVersion?:unknown};assets?:{url:string}[];brand?:{references?:{url?:string;use?:boolean}[];interface?:unknown[]}})=>Number(input.brief.designerVersion)>=6?(hasShowablePicture(input)?IDEAS_TASK_V6:IDEAS_TASK_V6.replace(IDEAS_SUBJECT,`${IDEAS_SUBJECT} ${IDEAS_WITHOUT_PRODUCT_PICTURE}`)):IDEAS_TASK;
 export const ideasAgain=(notes:string[])=>`None of the three ideas passes the key checks:\n${notes.map(n=>`- ${n}`).join('\n')}\nWrite three new ideas the same way (IDEA 1, IDEA 2, IDEA 3), bolder and closer to the territory. This is the last ideas round.`;
 /** The chosen idea in the designer's own words (the whole of its IDEA n section); when the sections cannot be told
  * apart, the whole ideas answer, so the build never starts without the idea's text. */

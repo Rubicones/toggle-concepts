@@ -30,7 +30,7 @@ test('critic@3: the added checks are yes/no questions inside the skill editor\'s
   const check=checkSkillDraft({title:file.title,purpose:file.purpose,stages:file.stages,principles:file.principles,checks:[...file.checks,...added],signs:file.signs});
   assert.deepEqual(check.errors,[],skill);assert.ok(file.checks.length+added.length<=SKILL_PART_LIMITS.checks,`${skill}: at most six checks`);
  }
- assert.equal(QUALITY_CHECKS.filter(c=>c.stage==='hero').length,9);assert.equal(QUALITY_CHECKS.filter(c=>c.stage==='ideas').length,1);
+ assert.equal(QUALITY_CHECKS.filter(c=>c.stage==='hero').length,10);assert.equal(QUALITY_CHECKS.filter(c=>c.stage==='ideas').length,3);
  // The instruction texts keep the owner's rules too: no examples, links or names.
  for(const text of [HERO_REVIEW_INSTRUCTIONS_V3,SELECTION_INSTRUCTIONS_V3,NOTES_INSIDE_THE_IDEA,lastTurnNote(['x'])])assert.deepEqual(checkSkillDraft({title:'t',purpose:'p',stages:['critic'],principles:text,checks:[],signs:''}).errors.filter(e=>!/tokens/.test(e)),[]);
  // Principles are untouched, so every stage is where it was, inside its budget.
@@ -43,7 +43,7 @@ test('critic@3: version 5 reads the same checks as before; version 6 adds its ch
  // A hero scene whose words hold the call to action is asked every check.
  const withCta=(()=>{const i=input(6);i.brief={...i.brief,cta:heroBrief(i).lines[0]};return i;})();assert.equal(heroHasCallToAction(withCta),true);assert.equal(heroHasCallToAction(input(6)),false);
  const before=stageReviewMaterial(staged,'hero').checks,after=reviewMaterialFor(withCta,staged,'hero',{chosenIdea:true}).checks;
- assert.equal(after.length,before.length+9);assert.equal(reviewMaterialFor(withCta,staged,'hero').checks.length,before.length+8,'without a chosen idea its check is left out');
+ assert.equal(after.length,before.length+10);assert.equal(reviewMaterialFor(withCta,staged,'hero').checks.length,before.length+9,'without a chosen idea its check is left out');
  // Without a call to action in the hero's words, the two checks about one are not asked (a check that cannot apply
  // would always be a no); the others keep their numbers.
  const without=reviewMaterialFor(input(6),staged,'hero',{chosenIdea:true}).checks;assert.equal(without.length,after.length-2);assert.ok(!without.some(c=>/call to action/i.test(c.question)));
@@ -53,7 +53,7 @@ test('critic@3: version 5 reads the same checks as before; version 6 adds its ch
  const composition=after.filter(c=>c.skill==='frame-composition');assert.deepEqual(composition.map(c=>c.n),[1,2,3,4,5]);
  assert.equal(composition[3].question,'Do all parts of the frame share one direction of light, one perspective and one scale?');
  assert.deepEqual(new Set(after.map(c=>`${c.skill} ${c.n}`)).size,after.length,'no number twice');
- const ideas=reviewMaterialFor(input(6),staged,'ideas').checks;assert.equal(ideas.length,stageReviewMaterial(staged,'ideas').checks.length+1);
+ const ideas=reviewMaterialFor(input(6),staged,'ideas').checks;assert.equal(ideas.length,stageReviewMaterial(staged,'ideas').checks.length+3);
  assert.equal(ideas.find(c=>c.skill==='one-idea'&&c.n===3)?.question,'Can the idea be made from what the brand really has: its supplied files, pictures that can be generated, and code?');
 });
 
@@ -129,8 +129,8 @@ test('brand devices and the advisory mode: the texts keep the owner\'s rules, an
 });
 
 test('version 6: the ideas differ in kind; the kit\'s other marks reach the designer as drawable, once each', async()=>{
- const {IDEAS_TASK,IDEAS_TASK_V6,IDEAS_RANGE,ideasTaskFor}=await import('../packages/director/image-ideas');const {referenceFactLines}=await import('../apps/local-runner/director/logo-facts');const {mkdir}=await import('node:fs/promises');
- assert.equal(ideasTaskFor(input(5)),IDEAS_TASK);assert.equal(ideasTaskFor(input(6)),IDEAS_TASK_V6);assert.ok(IDEAS_TASK_V6.includes(`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE}`)&&IDEAS_TASK_V6.length===IDEAS_TASK.length+IDEAS_RANGE.length+1);
+ const {IDEAS_TASK,IDEAS_TASK_V6,IDEAS_RANGE,IDEAS_SUBJECT,ideasTaskFor}=await import('../packages/director/image-ideas');const {referenceFactLines}=await import('../apps/local-runner/director/logo-facts');const {mkdir}=await import('node:fs/promises');
+ assert.equal(ideasTaskFor(input(5)),IDEAS_TASK);assert.equal(ideasTaskFor(input(6)),IDEAS_TASK_V6);assert.ok(IDEAS_TASK_V6.includes(`2. Push each one to be bolder and more distinct from the others. ${IDEAS_RANGE} ${IDEAS_SUBJECT}`)&&IDEAS_TASK_V6.length===IDEAS_TASK.length+IDEAS_RANGE.length+IDEAS_SUBJECT.length+2);
  assert.deepEqual(checkSkillDraft({title:'t',purpose:'p',stages:['ideas'],principles:IDEAS_RANGE,checks:[],signs:''}).errors,[]);
  // A brand whose kit holds a shaded version of its mark beside the flat logos: it is listed once, with its url.
  const folder=await mkdtemp(join(tmpdir(),'marks-'));await mkdir(join(folder,'public'));

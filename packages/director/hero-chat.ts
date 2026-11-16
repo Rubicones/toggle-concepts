@@ -3,6 +3,7 @@
 // files in fenced code blocks with their paths, then at most one fenced `actions` block. The app answers like a person
 // in a chat: the render, a short plain note of what it measured (observations), and what has arrived. Pure functions.
 import {PICTURE_REFERENCES_DESIGNER} from './picture-references';
+import {BRAND_SPIRIT} from './image-ideas';
 import {z} from 'zod';
 import type {Finding} from './layout-inspection';
 import type {DirectionInput} from './types';
@@ -175,6 +176,8 @@ Make Scene ${b.number} of ${b.of} as one finished frame in ${b.format?`${b.forma
 What it must make the viewer understand: ${b.meaning}${b.proof?`\nWhat proves it: ${b.proof}`:''}
 Its approved words${b.locale?` (${b.locale})`:''}, exactly as written, nothing added: ${b.lines.length?b.lines.map(l=>`"${l}"`).join(' / '):'none'}
 What the frame shows is yours to decide.
+
+${BRAND_SPIRIT}
 
 ${BRAND_DEVICES_DESIGNER}
 ${DEVICE_USE_DESIGNER}

@@ -28,6 +28,11 @@ export const QUALITY_CHECKS:{skill:string;stage:'hero'|'ideas'|'extension';quest
  {skill:'type-as-voice',stage:'hero',question:'Is the word that carries the idea the first word a viewer reads in the headline?'},
  {skill:'revise-with-reason',stage:'hero',question:'Is the idea on the frame the chosen idea, as written under THE CHOSEN IDEA?'},
  {skill:'one-idea',stage:'ideas',question:'Can the idea be made from what the brand really has: its supplied files, pictures that can be generated, and code?'},
+ // The owner, 16 November: pictures were put together from the brand's parts and had no witty idea. A mark of the
+ // brand may be the subject; what fails is an arrangement of what the kit already holds.
+ {skill:'brand-character',stage:'ideas',question:'Is the idea a new picture in the character of the brand, and more than an arrangement of what the kit of the brand already holds?'},
+ {skill:'one-idea',stage:'ideas',question:'Can a stranger retell the turn of the idea to a friend in one sentence?'},
+ {skill:'one-idea',stage:'hero',question:'Is the frame a new picture in the character of the brand, and more than an arrangement of what the kit of the brand already holds?'},
 ];
 /** A stage's checks and signs with the quality checks added after each skill's own (numbering continues). */
 /** Whether the hero scene's approved words hold the call to action. */
@@ -47,6 +52,8 @@ export function reviewMaterialFor(input:DirectionInput,st:StageSkills|undefined,
 
 /** Version 6, every review: a device the brand's own kit names never counts against the work. */
 export const BRAND_DEVICES_REVIEWER='A finish, a material, a gradient, a shape or a mark that the brand\'s own kit names is the brand\'s device: it is never a sign of failure and never fails a check. The signs and checks about glows, gloss, gradients or added depth apply only to devices the brand does not own.';
+/** The owner, 16 November: in the spirit of the brand, not out of its parts (see BRAND_SPIRIT). */
+export const BRAND_SPIRIT_REVIEWER='The work is judged as a new picture in the character of the brand. Work that only arranges what the kit of the brand already holds (its marks, shapes, colours and patterns side by side), with no idea of its own, fails the checks about the idea, however well it is made, and a note says so. A mark or a device of the brand may be the subject when the idea does something with it that the kit does not already show.';
 /** Version 6, every review (live run of 15 November: two review rounds each ended with the frame's subject or its way of
  * making replaced). A departure from plan D5, decided on live evidence. */
 export const SUBJECT_AND_MAKING_REVIEWER='The frame\'s main subject and its way of making stay through a review: a photographed frame stays photographed, a frame built in code stays built in code. No note asks to remove the subject or to make the frame another way; when the subject or the way of making is itself the problem, say so in one note for the art director and ask the designer for nothing about it.';
@@ -63,12 +70,13 @@ export const HERO_REVIEW_INSTRUCTIONS_V3=`${CRITIC_BASE} This is the hero frame,
 2. Answer every check yes or no, with one line of evidence from the render (s = skill id, n = check number). Yes means the thing is plainly true of this frame as a stranger sees it. When your evidence needs a reservation (it is implied, partly so, acceptable, or the check does not apply), the answer is no.
 3. Then add new notes. Each names its skill and check, has a priority (P0 blocks, P1 should, P2 could) and names the view. In problem, say what a viewer sees or fails to understand. In fix, say what must become true for the viewer and what must stay as it is. The solution is the designer's: a fix names no position, no added element, no arrangement and no other idea. A note that contradicts an earlier one names it in replaces and says why it no longer holds; otherwise replaces is empty.
 ${BRAND_DEVICES_REVIEWER}
+${BRAND_SPIRIT_REVIEWER}
 ${SUBJECT_AND_MAKING_REVIEWER}
 accepted is true when every check passes, no P0 or P1 note is open, and you would present this frame to the client as it is. When every check passes and you would still not present it, accepted is false and a note says what is missing. Approved words and facts stay as they are.`;
 /** The selection's instructions in critic@3: the reason explains the choice and carries no advice on building it. */
-export const SELECTION_INSTRUCTIONS_V3=`${CRITIC_BASE} ${SELECTION_WHAT} The reason says only why this idea is the strongest of the three. It gives no advice on how to build it: no position, no added element, no arrangement and no change to the idea. ${BRAND_DEVICES_REVIEWER}`;
+export const SELECTION_INSTRUCTIONS_V3=`${CRITIC_BASE} ${SELECTION_WHAT} The reason says only why this idea is the strongest of the three. It gives no advice on how to build it: no position, no added element, no arrangement and no change to the idea. ${BRAND_DEVICES_REVIEWER} ${BRAND_SPIRIT_REVIEWER} Between two ideas that pass, the one with more wit wins.`;
 /** The end review in version 6: the critic@2 text with the brand's own devices said once. */
-export const END_REVIEW_INSTRUCTIONS_V3=`${REVIEW_INSTRUCTIONS(END_REVIEW_WHAT)}\n${BRAND_DEVICES_REVIEWER}\n${SUBJECT_AND_MAKING_REVIEWER}\n${IDEA_TURN_REVIEWER}`;
+export const END_REVIEW_INSTRUCTIONS_V3=`${REVIEW_INSTRUCTIONS(END_REVIEW_WHAT)}\n${BRAND_DEVICES_REVIEWER}\n${BRAND_SPIRIT_REVIEWER}\n${SUBJECT_AND_MAKING_REVIEWER}\n${IDEA_TURN_REVIEWER}`;
 /** The chosen idea in the designer's own words, for the hero review (critic@3). */
 export function chosenIdeaNote(ideas:{picked?:number;texts?:string[]}|undefined):string{
  const text=ideas?.picked&&ideas.texts?.length?ideaText(ideas.texts.at(-1)!,ideas.picked).slice(0,1600):'';
